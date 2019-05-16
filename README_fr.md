@@ -1,6 +1,8 @@
 STUdio - Story Teller Unleashed
 ===============================
 
+[This README in english](README.md)
+
 Un ensemble d'outils pour lire, créer et transférer des packs d'histoires de et vers la Fabrique à Histoires Lunii\*.
 
 

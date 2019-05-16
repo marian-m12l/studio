@@ -1,6 +1,8 @@
 STUdio - Story Teller Unleashed
 ===============================
 
+[Ce README en français](README_fr.md)
+
 A set of tools to read, create and transfer story packs from and to the Lunii\* story teller device.
 
 
