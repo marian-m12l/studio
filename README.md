@@ -113,8 +113,9 @@ An action node is just a list of available options. Each option takes a short, r
 
 ### Image asset sectors
 
-TODO Colors ???
-Image assets are 24-bits, 320x240, Windows BMP files. If the last sector is incomplete, it is padded with zeros.
+Image assets are 24-bits, 320x240, Windows BMP files. Images may use colors, even though some colors may not render
+accurately due to the screen being behind the plastic cover.
+If the last sector is incomplete, it is padded with zeros.
 
 ### Audio asset sectors
 

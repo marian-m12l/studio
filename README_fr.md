@@ -113,8 +113,9 @@ Un nœud d'action est simplement une liste d'options disponibles. Chaque option 
 
 ### Secteur ressource image
 
-TODO Couleurs ???
-Les ressources d'image sont des fichiers Windows BMP, 24-bits, de 320x240. Si le dernier secteur est incomplet, il est complété par des zéros.
+Les ressources d'image sont des fichiers Windows BMP, 24-bits, de 320x240. Les images peuvent être en couleurs, bien que
+certains couleurs ne seront certainement pas affichées fidèlement par l'écran situé derrière le boîtier en plastique.
+Si le dernier secteur est incomplet, il est complété par des zéros.
 
 ### Secteur ressource audio
 
