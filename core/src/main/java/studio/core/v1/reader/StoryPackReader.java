@@ -50,7 +50,7 @@ public class StoryPackReader {
                 assetAddrsToVisit.add(imageAssetAddr);
             }
 
-            // Image asset
+            // Audio asset
             int audioOffset = dis.readInt();
             int audioSize = dis.readInt();
             AssetAddr audioAssetAddr = null;
@@ -89,8 +89,8 @@ public class StoryPackReader {
 
             // Build stage node
             SectorAddr address = new SectorAddr(i);
-            Transition okTransition = new Transition(null, okTransitionIndex);
-            Transition homeTransition = new Transition(null, homeTransitionIndex);
+            Transition okTransition = okActionNodeAddr != null ? new Transition(null, okTransitionIndex) : null;
+            Transition homeTransition = homeActionNodeAddr != null ? new Transition(null, homeTransitionIndex) : null;
             StageNode stageNode = new StageNode(
                     uuid,
                     null,
