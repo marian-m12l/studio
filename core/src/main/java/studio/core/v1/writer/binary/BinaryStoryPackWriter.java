@@ -4,12 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package studio.core.v1.writer;
+package studio.core.v1.writer.binary;
 
 import studio.core.v1.Constants;
 import studio.core.v1.model.*;
-import studio.core.v1.reader.AssetAddr;
-import studio.core.v1.reader.SectorAddr;
+import studio.core.v1.reader.binary.AssetAddr;
+import studio.core.v1.reader.binary.SectorAddr;
 
 import java.io.DataOutputStream;
 import java.io.IOException;
@@ -18,7 +18,7 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 
-public class StoryPackWriter {
+public class BinaryStoryPackWriter {
 
     public void write(StoryPack pack, OutputStream outputStream) throws IOException {
         DataOutputStream dos = new DataOutputStream(outputStream);

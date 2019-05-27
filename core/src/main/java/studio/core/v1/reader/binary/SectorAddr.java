@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package studio.core.v1.reader;
+package studio.core.v1.reader.binary;
 
 import java.util.Objects;
 

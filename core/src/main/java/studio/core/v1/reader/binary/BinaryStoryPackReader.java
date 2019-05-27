@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package studio.core.v1.reader;
+package studio.core.v1.reader.binary;
 
 import studio.core.v1.Constants;
 import studio.core.v1.model.*;
@@ -14,7 +14,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.util.*;
 
-public class StoryPackReader {
+public class BinaryStoryPackReader {
 
     public StoryPack read(InputStream inputStream) throws IOException {
         DataInputStream dis = new DataInputStream(inputStream);
