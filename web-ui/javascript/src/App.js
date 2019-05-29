@@ -6,7 +6,7 @@
 
 import React from 'react';
 
-import CustomPackEditor from './components/CustomPackEditor';
+import PackEditor from './components/PackEditor';
 
 import './App.css';
 
@@ -19,7 +19,7 @@ function App() {
                     Welcome to STUdio Web UI.
                 </p>
             </header>
-            <CustomPackEditor/>
+            <PackEditor/>
         </div>
     );
 }

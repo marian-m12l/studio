@@ -16,10 +16,10 @@ import {writeToArchive} from "../utils/writer";
 import {readFromArchive} from "../utils/reader";
 import {sample} from "../utils/sample";
 
-import './CustomPackEditor.css';
+import './PackEditor.css';
 
 
-class CustomPackEditor extends React.Component {
+class PackEditor extends React.Component {
 
     constructor(props) {
         super(props);
@@ -90,4 +90,4 @@ class CustomPackEditor extends React.Component {
     }
 }
 
-export default CustomPackEditor;
+export default PackEditor;
