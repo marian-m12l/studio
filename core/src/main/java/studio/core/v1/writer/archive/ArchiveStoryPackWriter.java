@@ -39,7 +39,11 @@ public class ArchiveStoryPackWriter {
         writer.setIndent("    ");
         writer.beginObject();
 
+        // Write file format metadata
+        writer.name("format").value("v1");
+
         // Write metadata
+        writer.name("title").value("MISSING_PACK_TITLE");
         writer.name("version").value(pack.getVersion());
 
         // Write stage nodes and keep track of action nodes and assets

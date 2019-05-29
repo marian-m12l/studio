@@ -18,6 +18,7 @@
 
     <modules>
         <module>core</module>
+        <module>web-ui</module>
     </modules>
 
     <build>
