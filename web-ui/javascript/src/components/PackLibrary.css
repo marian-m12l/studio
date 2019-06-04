@@ -1,0 +1,49 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+.pack-library {
+    display: flex;
+}
+
+.pack-library .plugged-device {
+    width: 20vw;
+    background-color: #f7d296;
+}
+
+.pack-library .local-library {
+    width: 80vw;
+    background-color: #cccccc;
+}
+
+.header {
+    height: 160px;
+    padding: 10px;
+}
+
+.pack-library .plugged-device .header {
+    background-color: #f6b54d;
+}
+
+.pack-library .local-library .header {
+    background-color: #aaaaaa;
+}
+
+.progress-bar {
+    background-color: #30acaa;
+}
+
+.pack-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    padding: 10px;
+}
+
+.empty {
+    text-align: center;
+    font-weight: bold;
+    font-size: 150%;
+    padding: 10px;
+}

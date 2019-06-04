@@ -6,6 +6,7 @@
 
 import React from 'react';
 import * as SRD from 'storm-react-diagrams';
+
 import StageNodeModel from '../models/StageNodeModel';
 import StageNodeWidget from '../widgets/StageNodeWidget';
 

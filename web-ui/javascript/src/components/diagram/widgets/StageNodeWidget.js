@@ -6,10 +6,13 @@
 
 import React from 'react';
 import PropTypes from "prop-types";
+import {connect} from "react-redux";
+import { toast } from 'react-toastify';
 import * as SRD from 'storm-react-diagrams';
 
 import EditableHeader from './composites/EditableHeader';
 import StageNodeModel from "../models/StageNodeModel";
+import {showViewer, setViewerStage} from "../../../actions";
 
 
 class StageNodeWidget extends React.Component {
@@ -49,6 +52,12 @@ class StageNodeWidget extends React.Component {
         this.props.updateCanvas();
     };
 
+    openViewer = (e) => {
+        let viewingNode = this.props.node;
+        this.props.setViewerStage(viewingNode);
+        this.props.showViewer();
+    };
+
     render() {
         return (
             <div className='basic-node stage-node'>
@@ -84,9 +93,8 @@ class StageNodeWidget extends React.Component {
                                 file = event.dataTransfer.files[0];
                                 console.log('Dropped file name = ' + file.name);
                             }
-                            console.log(file.type);
                             if (file.type !== 'image/bmp') {
-                                // TODO error notification
+                                toast.error("Image asset must be in bitmap format.");
                                 return;
                             }
                             let reader = new FileReader();
@@ -100,7 +108,7 @@ class StageNodeWidget extends React.Component {
                             event.preventDefault();
                         }}>
                         {!this.props.node.image && <span className="dropzone glyphicon glyphicon-picture"/>}
-                        {this.props.node.image && <img src={this.props.node.image} className="dropzone" style={{height: '43px'}}/>}
+                        {this.props.node.image && <img src={this.props.node.image} className="dropzone" style={{height: '43px'}} onClick={this.openViewer}/>}
                     </div>
                     <div className="audio-asset"
                         onDrop={event => {
@@ -122,9 +130,8 @@ class StageNodeWidget extends React.Component {
                                 file = event.dataTransfer.files[0];
                                 console.log('Dropped file name = ' + file.name);
                             }
-                            console.log(file.type);
                             if (file.type !== 'audio/x-wav') {
-                                // TODO error notification
+                                toast.error("Audio asset must be in Wave format.");
                                 return;
                             }
                             let reader = new FileReader();
@@ -138,9 +145,7 @@ class StageNodeWidget extends React.Component {
                             event.preventDefault();
                         }}>
                         {!this.props.node.audio && <span className="dropzone glyphicon glyphicon-music"/>}
-                        {this.props.node.audio && <span className="dropzone glyphicon glyphicon-play" onClick={e => {
-                            new Audio(this.props.node.audio).play();
-                        }}/>}
+                        {this.props.node.audio && <span className="dropzone glyphicon glyphicon-play" onClick={this.openViewer}/>}
                     </div>
                 </div>
                 <div className='ports'>
@@ -161,4 +166,16 @@ StageNodeWidget.propTypes = {
     updateCanvas: PropTypes.func.isRequired
 };
 
-export default StageNodeWidget;
+const mapStateToProps = (state, ownProps) => ({
+    viewer: state.viewer
+});
+
+const mapDispatchToProps = (dispatch, ownProps) => ({
+    showViewer: () => dispatch(showViewer()),
+    setViewerStage: (stage) => dispatch(setViewerStage(stage))
+});
+
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(StageNodeWidget)

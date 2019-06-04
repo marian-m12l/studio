@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import { toast } from 'react-toastify';
 import * as SRD from 'storm-react-diagrams';
 import 'storm-react-diagrams/dist/style.min.css';
 
@@ -12,9 +13,9 @@ import StageNodeFactory from "./factories/StageNodeFactory";
 import ActionNodeFactory from "./factories/ActionNodeFactory";
 import PackDiagramModel from "./models/PackDiagramModel";
 import PackDiagramWidget from "./widgets/PackDiagramWidget";
-import {writeToArchive} from "../utils/writer";
-import {readFromArchive} from "../utils/reader";
-import {sample} from "../utils/sample";
+import {writeToArchive} from "../../utils/writer";
+import {readFromArchive} from "../../utils/reader";
+import {sample} from "../../utils/sample";
 
 import './PackEditor.css';
 
@@ -44,13 +45,15 @@ class PackEditor extends React.Component {
     };
 
     savePack = () => {
-        writeToArchive(this.engine.diagramModel).then(blob => {
-            var a = document.getElementById('download');
-            a.href = URL.createObjectURL(blob);
-            a.download = this.engine.diagramModel.title + '.zip';
-            a.click();
-            URL.revokeObjectURL(a.href);
-        });
+        writeToArchive(this.engine.diagramModel)
+            .then(blob => {
+                var a = document.getElementById('download');
+                a.href = URL.createObjectURL(blob);
+                a.download = this.engine.diagramModel.title + '.zip';
+                a.click();
+                URL.revokeObjectURL(a.href);
+            })
+            .catch(e => toast.error("Failed to save story pack."));
     };
 
     showFileSelector = () => {
@@ -61,7 +64,7 @@ class PackEditor extends React.Component {
         let file = event.target.files[0];
         console.log('Selected file name = ' + file.name);
         if (file.type !== 'application/zip') {
-            // TODO error notification
+            toast.error("Story pack file must be in zip archive format.");
             return;
         }
 
@@ -69,17 +72,19 @@ class PackEditor extends React.Component {
     };
 
     loadPack = (file) => {
-        readFromArchive(file).then(loadedModel => {
-            this.engine.setDiagramModel(loadedModel);
-            this.forceUpdate();
-        });
+        readFromArchive(file)
+            .then(loadedModel => {
+                this.engine.setDiagramModel(loadedModel);
+                this.forceUpdate();
+            })
+            .catch(e => toast.error("Failed to load story pack."));
     };
 
     render() {
         return (
             <div className="custom-pack-editor">
-                <a id="download" style={{visibility: 'hidden'}} />
-                <input type="file" id="upload" style={{visibility: 'hidden'}} onChange={this.packFileSelected} />
+                <a id="download" style={{visibility: 'hidden', position: 'absolute'}} />
+                <input type="file" id="upload" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.packFileSelected} />
                 <span title="Load pack" className="btn btn-default glyphicon glyphicon-folder-open" onClick={this.showFileSelector}/>
                 <span title="Save pack" className="btn btn-default glyphicon glyphicon-floppy-disk" onClick={this.savePack}/>
                 <span title="Clear pack" className="btn btn-default glyphicon glyphicon-trash" onClick={this.clear}/>

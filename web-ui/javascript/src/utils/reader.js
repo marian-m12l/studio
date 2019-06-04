@@ -7,9 +7,9 @@
 import * as dagre from 'dagre';
 import JSZip from 'jszip';
 
-import StageNodeModel from "../components/models/StageNodeModel";
-import ActionNodeModel from "../components/models/ActionNodeModel";
-import PackDiagramModel from "../components/models/PackDiagramModel";
+import StageNodeModel from "../components/diagram/models/StageNodeModel";
+import ActionNodeModel from "../components/diagram/models/ActionNodeModel";
+import PackDiagramModel from "../components/diagram/models/PackDiagramModel";
 
 
 export function readFromArchive(file) {

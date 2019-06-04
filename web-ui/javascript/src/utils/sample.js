@@ -4,9 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import StageNodeModel from "../components/models/StageNodeModel";
-import ActionNodeModel from "../components/models/ActionNodeModel";
-import PackDiagramModel from "../components/models/PackDiagramModel";
+import StageNodeModel from "../components/diagram/models/StageNodeModel";
+import ActionNodeModel from "../components/diagram/models/ActionNodeModel";
+import PackDiagramModel from "../components/diagram/models/PackDiagramModel";
 
 
 export function sample() {

@@ -1,0 +1,44 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+.pack-viewer {
+    z-index: auto;
+}
+
+.pack-viewer .casing {
+    stroke-width: 4;
+    stroke: #30acaa;
+    fill: #40bcba;
+}
+
+.pack-viewer .casing.translucent {
+    fill-opacity: 0.4;
+}
+
+.pack-viewer image#asset {
+    mix-blend-mode: screen;
+}
+
+.pack-viewer .button {
+    stroke-width: 4;
+    stroke: #eead45;
+    fill: #febd55;
+}
+
+.pack-viewer .button text {
+    font-family: sans-serif;
+    fill: #eb8036;
+    stroke: none;
+}
+
+.pack-viewer .actionable:hover {
+    fill: #f6b54d;
+    stroke: #eead45;
+}
+
+.pack-viewer a:hover, .pack-viewer a:link, .pack-viewer a:visited, .pack-viewer a:active {
+    text-decoration: none;
+}

@@ -10,11 +10,18 @@
 
 .App-header {
     background-color: #282c34;
-    min-height: 10vh;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     font-size: calc(10px + 2vmin);
     color: white;
+}
+
+.App-header .controls .btn {
+    font-size: 100%;
+}
+
+.App-header .btn.focus, .App-header .btn:focus, .App-header .btn:hover {
+    color: #919e3d;
 }
