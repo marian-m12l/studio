@@ -21,7 +21,7 @@ export function readFromArchive(file) {
             return archive.file("story.json").async('string').then(storyJson => {
                 let json = JSON.parse(storyJson);
 
-                var loadedModel = new PackDiagramModel(json.title, json.version);
+                var loadedModel = new PackDiagramModel(json.title, json.version, (json.description || ''));
 
                 let links = [];
 
@@ -36,7 +36,20 @@ export function readFromArchive(file) {
                     })
                 );
 
-                let assetsPromises = [];
+                let thumbnailPromise = new Promise((resolve, reject) => {
+                    let thumb = archive.file('thumbnail.png');
+                    if (thumb) {
+                        thumb.async('base64').then(base64Thumb => {
+                            resolve('data:image/png;base64,' + base64Thumb);
+                        });
+                    } else {
+                        resolve(null);
+                    }
+                }).then(thumb => loadedModel.thumbnail = thumb);
+
+                let assetsPromises = [
+                    thumbnailPromise
+                ];
 
                 let stageNodes = new Map(
                     json.stageNodes.map(node => {
@@ -51,7 +64,7 @@ export function readFromArchive(file) {
                             } else {
                                 resolve(null);
                             }
-                        });
+                        }).then(image => stageNode.image = image);
                         let audioPromise = new Promise((resolve, reject) => {
                             if (node.audio) {
                                 archive.file('assets/'+node.audio).async('base64').then(base64Asset => {
@@ -60,11 +73,8 @@ export function readFromArchive(file) {
                             } else {
                                 resolve(null);
                             }
-                        });
-                        Promise.all([imagePromise, audioPromise]).then(assets => {
-                            stageNode.image = assets[0];
-                            stageNode.audio = assets[1];
-                        });
+                        }).then(audio => stageNode.audio = audio);
+
                         // Will have to wait for asset promises
                         assetsPromises.push(imagePromise);
                         assetsPromises.push(audioPromise);

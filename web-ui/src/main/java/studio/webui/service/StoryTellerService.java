@@ -6,7 +6,6 @@
 
 package studio.webui.service;
 
-import com.google.gson.JsonParser;
 import com.lunii.device.gateway.DriverException;
 import com.lunii.device.wrapper.InconsistentMemoryException;
 import com.lunii.device.wrapper.StoryTellerDriver;
@@ -19,25 +18,23 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 
-import java.io.FileNotFoundException;
-import java.io.FileReader;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class StoryTellerService {
 
-    public static final String STORAGE_ROOT = "https://storage.googleapis.com/lunii-data-prod";
-    public static final String PROP_DB_OFFICIAL = "studio.db.official";
-    public static final String PATH_DB_OFFICIAL_JSON = ".studio/db/official.json";
-
     private final Logger LOGGER = LoggerFactory.getLogger(StoryTellerService.class);
 
     private final EventBus eventBus;
 
+    private final DatabaseMetadataService databaseMetadataService;
+
     private StoryTellerHandler storyTellerHandler;
 
-    public StoryTellerService(EventBus eventBus) {
+
+    public StoryTellerService(EventBus eventBus, DatabaseMetadataService databaseMetadataService) {
         this.eventBus = eventBus;
+        this.databaseMetadataService = databaseMetadataService;
 
         LOGGER.info("Setting up story teller driver");
         StoryTellerDriver driver = new StoryTellerDriver();
@@ -122,29 +119,19 @@ public class StoryTellerService {
     }
 
     private JsonObject getPackMetadata(StoryTellerPack pack) {
-        JsonParser parser = new JsonParser();
-        try {
-            // Fetch from official metadata database file (path may be overridden by system property `studio.db.official`)
-            String databasePath = System.getProperty(PROP_DB_OFFICIAL, System.getProperty("user.home") + PATH_DB_OFFICIAL_JSON);
-            com.google.gson.JsonObject root = parser.parse(new FileReader(databasePath)).getAsJsonObject();
-            Optional<String> maybePackKey = root.keySet().stream().filter(key -> root.getAsJsonObject(key).get("uuid").getAsString().equalsIgnoreCase(pack.getUuid())).findFirst();
-            if (maybePackKey.isPresent()) {
-                com.google.gson.JsonObject packMetadata = root.getAsJsonObject(maybePackKey.get());
-                return new JsonObject()
+        return databaseMetadataService.getPackMetadata(pack.getUuid())
+                .map(metadata -> new JsonObject()
                         .put("uuid", pack.getUuid())
-                        .put("title", packMetadata.get("title").getAsString())
-                        .put("description", packMetadata.get("description").getAsString())
-                        .put("image", STORAGE_ROOT + packMetadata.getAsJsonObject("image").get("image_url").getAsString())
-                        .put("sectorSize", pack.getSectorSize());
-            }
-        } catch (FileNotFoundException e) {
-            LOGGER.error("Missing official metadata database file", e);
-        }
-
-        // Missing metadata
-        return new JsonObject()
-                .put("uuid", pack.getUuid())
-                .put("sectorSize", pack.getSectorSize());
+                        .put("title", metadata.getTitle())
+                        .put("description", metadata.getDescription())
+                        .put("image", metadata.getThumbnail())
+                        .put("sectorSize", pack.getSectorSize())
+                        .put("official", metadata.isOfficial())
+                )
+                .orElse(new JsonObject()
+                        .put("uuid", pack.getUuid())
+                        .put("sectorSize", pack.getSectorSize())
+                );
     }
 
 }

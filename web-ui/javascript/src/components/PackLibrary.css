@@ -10,12 +10,15 @@
 
 .pack-library .plugged-device {
     width: 20vw;
+    min-width: 175px;
     background-color: #f7d296;
 }
 
 .pack-library .local-library {
     width: 80vw;
+    min-width: 175px;
     background-color: #cccccc;
+    flex-grow: 1;
 }
 
 .header {
@@ -47,3 +50,60 @@
     font-size: 150%;
     padding: 10px;
 }
+
+.pack-grid .pack-thumb {
+    position: relative;
+    margin: auto;
+    width: 128px;
+    height: 128px;
+}
+
+.pack-grid .pack-ribbon {
+    position: absolute;
+    right: -5px; top: -5px;
+    z-index: 1;
+    overflow: hidden;
+    width: 75px; height: 75px;
+    text-align: right;
+}
+.pack-grid .pack-ribbon span {
+    font-size: 10px;
+    color: #fff;
+    text-transform: uppercase;
+    text-align: center;
+    font-weight: bold; line-height: 20px;
+    transform: rotate(45deg);
+    width: 100px; display: block;
+    background: #79A70A;
+    background: linear-gradient(#9BC90D 0%, #79A70A 100%);
+    box-shadow: 0 3px 10px -5px rgba(0, 0, 0, 1);
+    position: absolute;
+    top: 19px; right: -21px;
+}
+.pack-grid .pack-ribbon span::before {
+    content: '';
+    position: absolute;
+    left: 0px; top: 100%;
+    z-index: -1;
+    border-left: 3px solid #79A70A;
+    border-right: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+    border-top: 3px solid #79A70A;
+}
+.pack-grid .pack-ribbon span::after {
+    content: '';
+    position: absolute;
+    right: 0%; top: 100%;
+    z-index: -1;
+    border-right: 3px solid #79A70A;
+    border-left: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+    border-top: 3px solid #79A70A;
+}
+.pack-grid .pack-ribbon.red span {background: linear-gradient(#F70505 0%, #8F0808 100%);}
+.pack-grid .pack-ribbon.red span::before {border-left-color: #8F0808; border-top-color: #8F0808;}
+.pack-grid .pack-ribbon.red span::after {border-right-color: #8F0808; border-top-color: #8F0808;}
+
+.pack-grid .pack-ribbon.blue span {background: linear-gradient(#2989d8 0%, #1e5799 100%);}
+.pack-grid .pack-ribbon.blue span::before {border-left-color: #1e5799; border-top-color: #1e5799;}
+.pack-grid .pack-ribbon.blue span::after {border-right-color: #1e5799; border-top-color: #1e5799;}

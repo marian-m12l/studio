@@ -8,6 +8,7 @@ package studio.core.v1.reader.binary;
 
 import studio.core.v1.Constants;
 import studio.core.v1.model.*;
+import studio.core.v1.model.metadata.StoryPackMetadata;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -15,6 +16,28 @@ import java.io.InputStream;
 import java.util.*;
 
 public class BinaryStoryPackReader {
+
+    public StoryPackMetadata readMetadata(InputStream inputStream) throws IOException {
+        DataInputStream dis = new DataInputStream(inputStream);
+
+        // Pack metadata model
+        StoryPackMetadata metadata = new StoryPackMetadata();
+
+        // Read sector 1
+        dis.skipBytes(3);   // Skip to version
+        metadata.setVersion(dis.readShort());
+        dis.skipBytes(Constants.SECTOR_SIZE - 5); // Skip to end of sector
+
+        // Read main stage node
+        long uuidLowBytes = dis.readLong();
+        long uuidHighBytes = dis.readLong();
+        String uuid = (new UUID(uuidLowBytes, uuidHighBytes)).toString();
+        metadata.setUuid(uuid);
+
+        dis.close();
+
+        return metadata;
+    }
 
     public StoryPack read(InputStream inputStream) throws IOException {
         DataInputStream dis = new DataInputStream(inputStream);
@@ -185,6 +208,8 @@ public class BinaryStoryPackReader {
 
             currentOffset += assetAddr.getSize();
         }
+
+        dis.close();
 
         return new StoryPack(factoryDisabled, version, List.copyOf(stageNodes.values()));
     }

@@ -11,6 +11,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.commons.io.IOUtils;
 import studio.core.v1.model.*;
+import studio.core.v1.model.metadata.StoryPackMetadata;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -20,6 +21,49 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
 public class ArchiveStoryPackReader {
+
+    public StoryPackMetadata readMetadata(InputStream inputStream) throws IOException {
+        // Zip archive contains a json file and separate assets
+        ZipInputStream zis = new ZipInputStream(inputStream);
+
+        // Pack metadata model
+        StoryPackMetadata metadata = new StoryPackMetadata();
+
+
+        ZipEntry entry;
+        while((entry = zis.getNextEntry()) != null) {
+            // Story descriptor file: story.json
+            if (!entry.isDirectory() && entry.getName().equalsIgnoreCase("story.json")) {
+                JsonParser parser = new JsonParser();
+                JsonObject root = parser.parse(new InputStreamReader(zis)).getAsJsonObject();
+
+                // Read metadata
+                metadata.setVersion(root.get("version").getAsShort());
+                Optional.ofNullable(root.get("title")).ifPresent(title ->
+                        metadata.setTitle(title.getAsString())
+                );
+                Optional.ofNullable(root.get("description")).ifPresent(desc ->
+                        metadata.setDescription(desc.getAsString())
+                );
+
+                // Read first stage node
+                JsonObject mainStageNode = root.getAsJsonArray("stageNodes").get(0).getAsJsonObject();
+                metadata.setUuid(mainStageNode.get("uuid").getAsString());
+            }
+            // Pack thumbnail
+            else if (!entry.isDirectory() && entry.getName().equalsIgnoreCase("thumbnail.png")) {
+                metadata.setThumbnail(IOUtils.toByteArray(zis));
+            }
+            // Ignore asset files
+            else if (!entry.isDirectory() && entry.getName().startsWith("assets/")) {
+                // no-op
+            }
+        }
+
+        zis.close();
+
+        return metadata;
+    }
 
     public StoryPack read(InputStream inputStream) throws IOException {
 

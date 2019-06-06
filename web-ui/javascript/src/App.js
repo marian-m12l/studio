@@ -13,7 +13,7 @@ import 'react-toastify/dist/ReactToastify.css';
 import PackEditor from './components/diagram/PackEditor';
 import PackLibrary from './components/PackLibrary';
 import EditorPackViewer from "./components/viewer/EditorPackViewer";
-import {checkDevice, devicePlugged, deviceUnplugged} from "./actions";
+import {checkDevice, devicePlugged, deviceUnplugged, loadLibrary} from "./actions";
 
 import './App.css';
 
@@ -54,6 +54,8 @@ class App extends React.Component {
 
         // Check whether device is already plugged on startup
         this.props.checkDevice();
+        // Load library on startup
+        this.props.loadLibrary();
     }
 
     componentWillReceiveProps(nextProps, nextContext) {
@@ -102,7 +104,8 @@ const mapStateToProps = (state, ownProps) => ({
 const mapDispatchToProps = (dispatch, ownProps) => ({
     checkDevice: () => dispatch(checkDevice()),
     onDevicePlugged: (metadata) => dispatch(devicePlugged(metadata)),
-    onDeviceUnplugged: () => dispatch(deviceUnplugged())
+    onDeviceUnplugged: () => dispatch(deviceUnplugged()),
+    loadLibrary: () => dispatch(loadLibrary())
 });
 
 export default connect(

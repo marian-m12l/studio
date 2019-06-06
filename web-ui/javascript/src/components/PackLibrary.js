@@ -66,7 +66,7 @@ class PackLibrary extends React.Component {
                         {this.state.device.packs.map(pack =>
                             <div key={pack.uuid}>
                                 <div><img src={pack.image || defaultImage} width="128" height="128" /></div>
-                                <div><span>{pack.title}</span></div>
+                                <div><span>{pack.title || pack.uuid}</span></div>
                             </div>
                         )}
                     </div>}
@@ -75,14 +75,17 @@ class PackLibrary extends React.Component {
                 {this.state.library && <div className="local-library">
                     <div className="header">
                         <h4>LOCAL LIBRARY</h4>
-                        {this.state.device.metadata && <div><strong>Path:</strong> {this.state.device.metadata.path}</div>}
+                        {this.state.library.metadata && <div><strong>Path:</strong> {this.state.library.metadata.path}</div>}
                     </div>
                     {this.state.library.packs.length === 0 && <div className="empty">No story packs in library, yet.</div>}
                     {this.state.library.packs.length > 0 && <div className="pack-grid">
                         {this.state.library.packs.map(pack =>
                             <div key={pack.uuid}>
-                                <div><img src={pack.image || defaultImage} width="128" height="128" /></div>
-                                <div><span>{pack.title}</span></div>
+                                <div className="pack-thumb">
+                                    <img src={pack.image || defaultImage} width="128" height="128" />
+                                    {pack.official && <div className="pack-ribbon"><span>Official</span></div>}
+                                </div>
+                                <div><span>{pack.title || pack.uuid}</span></div>
                             </div>
                         )}
                     </div>}

@@ -72,10 +72,15 @@ export function writeToArchive(diagramModel) {
             };
         });
 
+    if (diagramModel.thumbnail) {
+        zip.file('thumbnail.png', diagramModel.thumbnail.substring(diagramModel.thumbnail.indexOf(',')+1), {base64: true});
+    }
+
     let storyJson = {
         format: 'v1',
         title: diagramModel.title,
         version: diagramModel.version,
+        description: diagramModel.description,
         stageNodes,
         actionNodes
     };

@@ -30,6 +30,11 @@
 
     <dependencies>
         <dependency>
+            <groupId>studio</groupId>
+            <artifactId>studio-core</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-core</artifactId>
             <version>${vertx.version}</version>

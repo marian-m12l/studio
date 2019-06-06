@@ -9,9 +9,6 @@ package studio.webui;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.bridge.BridgeEventType;
@@ -22,22 +19,33 @@ import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
+import studio.webui.api.DeviceController;
+import studio.webui.api.LibraryController;
+import studio.webui.service.LibraryService;
+import studio.webui.service.DatabaseMetadataService;
 import studio.webui.service.StoryTellerService;
 
-import java.util.Optional;
 import java.util.Set;
 
 public class MainVerticle extends AbstractVerticle {
 
     private final Logger LOGGER = LoggerFactory.getLogger(StoryTellerService.class);
 
+    private DatabaseMetadataService databaseMetadataService;
+    private LibraryService libraryService;
     private StoryTellerService storyTellerService;
 
     @Override
     public void start() {
 
+        // Service that manages pack metadata
+        databaseMetadataService = new DatabaseMetadataService();
+
+        // Service that manages local library
+        libraryService = new LibraryService(databaseMetadataService);
+
         // Service that manages link with the story teller device
-        storyTellerService = new StoryTellerService(vertx.eventBus());
+        storyTellerService = new StoryTellerService(vertx.eventBus(), databaseMetadataService);
 
 
         Router router = Router.router(vertx);
@@ -46,7 +54,7 @@ public class MainVerticle extends AbstractVerticle {
         router.route("/eventbus/*").handler(eventBusHandler());
 
         // Rest API
-        router.mountSubRouter("/api", apiRouter(storyTellerService));
+        router.mountSubRouter("/api", apiRouter());
 
         // Static resources (/webroot)
         router.route().handler(StaticHandler.create().setCachingEnabled(false));
@@ -65,7 +73,7 @@ public class MainVerticle extends AbstractVerticle {
         });
     }
 
-    private Router apiRouter(StoryTellerService storyTellerService) {
+    private Router apiRouter() {
         Router router = Router.router(vertx);
 
         // Handle cross-origin calls
@@ -85,24 +93,12 @@ public class MainVerticle extends AbstractVerticle {
         router.route().consumes("application/json");
         router.route().produces("application/json");
 
-        // Plugged device metadata
-        router.get("/device/infos").handler(ctx -> {
-            Optional<JsonObject> maybeDeviceInfos = storyTellerService.deviceInfos();
-            maybeDeviceInfos.ifPresentOrElse(
-                    deviceInfos -> ctx.response()
-                            .putHeader("content-type", "application/json")
-                            .end(Json.encode(deviceInfos)),
-                    () -> ctx.response()
-                            .setStatusCode(404)
-            );
-        });
-        // Plugged device packs list
-        router.get("/device/packs").handler(ctx -> {
-            JsonArray devicePacks = storyTellerService.packs();
-            ctx.response()
-                    .putHeader("content-type", "application/json")
-                    .end(Json.encode(devicePacks));
-        });
+
+        // Device services
+        router.mountSubRouter("/device", DeviceController.apiRouter(vertx, storyTellerService));
+
+        // Library services
+        router.mountSubRouter("/library", LibraryController.apiRouter(vertx, libraryService));
 
         return router;
     }

@@ -9,10 +9,12 @@ import * as SRD from 'storm-react-diagrams'
 
 class PackDiagramModel extends SRD.DiagramModel {
 
-    constructor(title = 'Pack title', version = 1) {
+    constructor(title = 'Pack title', version = 1, description = '', thumbnail = '') {
         super('pack');
         this.title = title;
         this.version = version;
+        this.description = description;
+        this.thumbnail = thumbnail;
     }
 
 }

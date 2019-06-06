@@ -7,7 +7,32 @@
 import { toast } from 'react-toastify';
 
 import {fetchDeviceInfos, fetchDevicePacks} from '../services/device';
+import {fetchLibraryInfos, fetchLibraryPacks} from '../services/library';
 
+
+export const loadLibrary = () => {
+    return dispatch => {
+        let toastId = toast("Loading library...", { autoClose: false });
+        return fetchLibraryInfos()
+            .then(metadata => {
+                console.log("fetching library packs...");
+                toast.update(toastId,{ render: "Fetching library's story packs..." });
+                return fetchLibraryPacks()
+                    .then(packs => {
+                        toast.update(toastId, { type: toast.TYPE.INFO, render: `Fetched ${packs.length} packs from library.`, autoClose: 5000 });
+                        dispatch(setLibrary(metadata, packs));
+                    })
+                    .catch(e => {
+                        console.error('failed to fetch library packs', e);
+                        toast.update(toastId, { type: toast.TYPE.ERROR, render: `Failed to fetch packs from library.`, autoClose: 5000 });
+                    });
+            })
+            .catch(e => {
+                console.error('failed to fetch library infos', e);
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: `Failed to load library.`, autoClose: 5000 });
+            });
+    }
+};
 
 export const setLibrary = (metadata, packs) => ({
     type: 'SET_LIBRARY',
@@ -22,10 +47,11 @@ export const checkDevice = () => {
         return fetchDeviceInfos()
             .then(metadata => {
                 if (metadata && Object.keys(metadata).length > 0) {
-                    toast.update(toastId, {type: toast.TYPE.INFO, render: `Device is plugged.`, autoClose: 5000});
+                    toast.update(toastId, { type: toast.TYPE.INFO, render: `Device is plugged.`, autoClose: 5000 });
                     dispatch(devicePlugged(metadata));
                 } else {
                     // Device not plugged, nothing to do
+                    toast.dismiss(toastId);
                 }
             })
             .catch(e => {
@@ -46,7 +72,6 @@ export const devicePlugged = (metadata) => {
         let toastId = toast("Fetching device's story packs...", { autoClose: false });
         return fetchDevicePacks()
             .then(packs => {
-                console.log('fetched packs: ' + packs);
                 toast.update(toastId, { type: toast.TYPE.INFO, render: `Fetched ${packs.length} packs from device.`, autoClose: 5000 });
                 dispatch(setDevicePacks(packs));
             })
