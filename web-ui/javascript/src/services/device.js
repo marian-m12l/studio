@@ -14,3 +14,21 @@ export const fetchDevicePacks = () => {
     return fetch('http://localhost:8080/api/device/packs')
         .then(response => response.json());
 };
+
+export const addFromLibrary = (path) => {
+    return fetch('http://localhost:8080/api/device/addFromLibrary', {
+        method: "POST",
+        headers: { "Content-Type" : "application/json" },
+        body: JSON.stringify({path})
+    })
+        .then(response => response.json());
+};
+
+export const removeFromDevice = (uuid) => {
+    return fetch('http://localhost:8080/api/device/removeFromDevice', {
+        method: "POST",
+        headers: { "Content-Type" : "application/json" },
+        body: JSON.stringify({uuid})
+    })
+        .then(response => response.json());
+};

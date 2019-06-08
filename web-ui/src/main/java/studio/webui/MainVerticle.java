@@ -16,6 +16,7 @@ import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
+import io.vertx.ext.web.handler.ErrorHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
@@ -59,6 +60,9 @@ public class MainVerticle extends AbstractVerticle {
         // Static resources (/webroot)
         router.route().handler(StaticHandler.create().setCachingEnabled(false));
 
+        // Error handler
+        router.route().failureHandler(ErrorHandler.create(true));
+
         vertx.createHttpServer().requestHandler(router).listen(8080);
     }
 
@@ -95,7 +99,7 @@ public class MainVerticle extends AbstractVerticle {
 
 
         // Device services
-        router.mountSubRouter("/device", DeviceController.apiRouter(vertx, storyTellerService));
+        router.mountSubRouter("/device", DeviceController.apiRouter(vertx, storyTellerService, libraryService));
 
         // Library services
         router.mountSubRouter("/library", LibraryController.apiRouter(vertx, libraryService));

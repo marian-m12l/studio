@@ -107,3 +107,7 @@
 .pack-grid .pack-ribbon.blue span {background: linear-gradient(#2989d8 0%, #1e5799 100%);}
 .pack-grid .pack-ribbon.blue span::before {border-left-color: #1e5799; border-top-color: #1e5799;}
 .pack-grid .pack-ribbon.blue span::after {border-right-color: #1e5799; border-top-color: #1e5799;}
+
+.device-dropzone {
+    min-height: 200px;
+}

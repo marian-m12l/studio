@@ -10,10 +10,11 @@ import { ToastContainer, toast } from 'react-toastify';
 import EventBus from 'vertx3-eventbus-client';
 import 'react-toastify/dist/ReactToastify.css';
 
+import {AppContext} from './AppContext';
 import PackEditor from './components/diagram/PackEditor';
 import PackLibrary from './components/PackLibrary';
 import EditorPackViewer from "./components/viewer/EditorPackViewer";
-import {checkDevice, devicePlugged, deviceUnplugged, loadLibrary} from "./actions";
+import {actionCheckDevice, actionDevicePlugged, deviceUnplugged, actionLoadLibrary} from "./actions";
 
 import './App.css';
 
@@ -23,6 +24,7 @@ class App extends React.Component {
     constructor(props) {
         super(props);
         this.state = {
+            eventBus: null,
             shown: 'library',
             viewer: null
         };
@@ -32,30 +34,32 @@ class App extends React.Component {
         // Set up vert.x eventbus
         console.log("Setting up vert.x event bus...");
         let eventBus = new EventBus('http://localhost:8080/eventbus');
-        eventBus.onopen = () => {
-            console.log("vert.x event bus open. Registering handlers...");
-            eventBus.registerHandler('storyteller.plugged', (error, message) => {
-                console.log("Received `storyteller.plugged` event from vert.x event bus.");
-                console.log(message.body);
-                toast.info("Story Teller plugged");
-                this.props.onDevicePlugged(message.body);
-            });
-            eventBus.registerHandler('storyteller.unplugged', (error, message) => {
-                console.log("Received `storyteller.unplugged` event from vert.x event bus.");
-                toast.info("Story Teller unplugged");
-                this.props.onDeviceUnplugged();
-            });
-            eventBus.registerHandler('storyteller.failure', (error, message) => {
-                console.log("Received `storyteller.failure` event from vert.x event bus.");
-                toast.error("Story Teller failure");
-                this.props.onDeviceUnplugged();
-            });
-        };
+        this.setState({eventBus}, () => {
+            this.state.eventBus.onopen = () => {
+                console.log("vert.x event bus open. Registering handlers...");
+                this.state.eventBus.registerHandler('storyteller.plugged', (error, message) => {
+                    console.log("Received `storyteller.plugged` event from vert.x event bus.");
+                    console.log(message.body);
+                    toast.info("Story Teller plugged");
+                    this.props.onDevicePlugged(message.body);
+                });
+                this.state.eventBus.registerHandler('storyteller.unplugged', (error, message) => {
+                    console.log("Received `storyteller.unplugged` event from vert.x event bus.");
+                    toast.info("Story Teller unplugged");
+                    this.props.onDeviceUnplugged();
+                });
+                this.state.eventBus.registerHandler('storyteller.failure', (error, message) => {
+                    console.log("Received `storyteller.failure` event from vert.x event bus.");
+                    toast.error("Story Teller failure");
+                    this.props.onDeviceUnplugged();
+                });
+            };
 
-        // Check whether device is already plugged on startup
-        this.props.checkDevice();
-        // Load library on startup
-        this.props.loadLibrary();
+            // Check whether device is already plugged on startup
+            this.props.checkDevice();
+            // Load library on startup
+            this.props.loadLibrary();
+        });
     }
 
     componentWillReceiveProps(nextProps, nextContext) {
@@ -78,21 +82,23 @@ class App extends React.Component {
 
     render() {
         return (
-            <div className="App">
-                <ToastContainer/>
-                {this.state.viewer}
-                <header className="App-header">
-                    <p>
-                        Welcome to STUdio Web UI.
-                    </p>
-                    <div className="controls">
-                        <span title="Pack library" className={`btn glyphicon glyphicon-film ${this.state.shown === 'library' && 'active'}`} onClick={this.showLibrary}/>
-                        <span title="Pack editor" className={`btn glyphicon glyphicon-wrench ${this.state.shown === 'editor' && 'active'}`} onClick={this.showEditor}/>
-                    </div>
-                </header>
-                {this.state.shown === 'library' && <PackLibrary/>}
-                {this.state.shown === 'editor' && <PackEditor/>}
-            </div>
+            <AppContext.Provider value={{eventBus: this.state.eventBus}}>
+                <div className="App">
+                    <ToastContainer/>
+                    {this.state.viewer}
+                    <header className="App-header">
+                        <p>
+                            Welcome to STUdio Web UI.
+                        </p>
+                        <div className="controls">
+                            <span title="Pack library" className={`btn glyphicon glyphicon-film ${this.state.shown === 'library' && 'active'}`} onClick={this.showLibrary}/>
+                            <span title="Pack editor" className={`btn glyphicon glyphicon-wrench ${this.state.shown === 'editor' && 'active'}`} onClick={this.showEditor}/>
+                        </div>
+                    </header>
+                    {this.state.shown === 'library' && <PackLibrary/>}
+                    {this.state.shown === 'editor' && <PackEditor/>}
+                </div>
+            </AppContext.Provider>
         );
     }
 }
@@ -102,10 +108,10 @@ const mapStateToProps = (state, ownProps) => ({
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-    checkDevice: () => dispatch(checkDevice()),
-    onDevicePlugged: (metadata) => dispatch(devicePlugged(metadata)),
+    checkDevice: () => dispatch(actionCheckDevice()),
+    onDevicePlugged: (metadata) => dispatch(actionDevicePlugged(metadata)),
     onDeviceUnplugged: () => dispatch(deviceUnplugged()),
-    loadLibrary: () => dispatch(loadLibrary())
+    loadLibrary: () => dispatch(actionLoadLibrary())
 });
 
 export default connect(

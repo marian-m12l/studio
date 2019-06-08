@@ -6,11 +6,11 @@
 
 import { toast } from 'react-toastify';
 
-import {fetchDeviceInfos, fetchDevicePacks} from '../services/device';
+import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice} from '../services/device';
 import {fetchLibraryInfos, fetchLibraryPacks} from '../services/library';
 
 
-export const loadLibrary = () => {
+export const actionLoadLibrary = () => {
     return dispatch => {
         let toastId = toast("Loading library...", { autoClose: false });
         return fetchLibraryInfos()
@@ -41,14 +41,14 @@ export const setLibrary = (metadata, packs) => ({
 });
 
 
-export const checkDevice = () => {
+export const actionCheckDevice = () => {
     return dispatch => {
         let toastId = toast("Checking device...", { autoClose: false });
         return fetchDeviceInfos()
             .then(metadata => {
-                if (metadata && Object.keys(metadata).length > 0) {
+                if (metadata && Object.keys(metadata).length > 0 && metadata.plugged) {
                     toast.update(toastId, { type: toast.TYPE.INFO, render: `Device is plugged.`, autoClose: 5000 });
-                    dispatch(devicePlugged(metadata));
+                    dispatch(actionDevicePlugged(metadata));
                 } else {
                     // Device not plugged, nothing to do
                     toast.dismiss(toastId);
@@ -61,12 +61,9 @@ export const checkDevice = () => {
     }
 };
 
-export const devicePlugged = (metadata) => {
+export const actionDevicePlugged = (metadata) => {
     return dispatch => {
-        dispatch({
-            type: 'DEVICE_PLUGGED',
-            metadata
-        });
+        dispatch(devicePlugged(metadata));
 
         console.log("fetching device packs...");
         let toastId = toast("Fetching device's story packs...", { autoClose: false });
@@ -81,6 +78,81 @@ export const devicePlugged = (metadata) => {
             });
     }
 };
+
+export const actionRefreshDevice = () => {
+    return dispatch => {
+        return fetchDeviceInfos()
+            .then(metadata => {
+                if (metadata && Object.keys(metadata).length > 0 && metadata.plugged) {
+                    return fetchDevicePacks()
+                        .then(packs => {
+                            dispatch(devicePlugged(metadata));
+                            dispatch(setDevicePacks(packs));
+                        });
+                }
+            })
+            .catch(e => {
+                console.error('failed to refresh device', e);
+                toast("Failed to refresh device.", { type: toast.TYPE.ERROR, autoClose: 5000 });
+            });
+    }
+};
+
+export const actionAddFromLibrary = (path, context) => {
+    return dispatch => {
+        let toastId = toast("Adding pack to device...", { autoClose: false });
+        return addFromLibrary(path)
+            .then(resp => {
+                // Monitor transfer progress
+                let transferId = resp.transferId;
+                context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.progress', (error, message) => {
+                    console.log("Received `storyteller.transfer."+transferId+".progress` event from vert.x event bus.");
+                    console.log(message.body);
+                    toast.update(toastId, {progress: message.body.progress, autoClose: false});
+                });
+                context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.done', (error, message) => {
+                    console.log("Received `storyteller.transfer."+transferId+".done` event from vert.x event bus.");
+                    console.log(message.body);
+                    if (message.body.success) {
+                        toast.update(toastId, {progress: null, type: toast.TYPE.SUCCESS, render: 'Pack added to device', autoClose: 5000});
+                        // Refresh device metadata and packs list
+                        dispatch(actionRefreshDevice());
+                    } else {
+                        toast.update(toastId, {progress: null, type: toast.TYPE.ERROR, render: 'Failed to add pack to device', autoClose: 5000});
+                    }
+                });
+            })
+            .catch(e => {
+                console.error('failed to add pack to device', e);
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: `Failed to add pack to device.`, autoClose: 5000 });
+            });
+    }
+};
+
+export const actionRemoveFromDevice = (uuid) => {
+    return dispatch => {
+        let toastId = toast("Removing pack from device...", { autoClose: false });
+        return removeFromDevice(uuid)
+            .then(resp => {
+                if (resp.success) {
+                    toast.update(toastId, {type: toast.TYPE.SUCCESS, render: 'Pack removed from device', autoClose: 5000});
+                    // Refresh device metadata and packs list
+                    dispatch(actionRefreshDevice());
+                } else {
+                    toast.update(toastId, {type: toast.TYPE.ERROR, render: 'Failed to remove pack from device', autoClose: 5000});
+                }
+            })
+            .catch(e => {
+                console.error('failed to remove pack from device', e);
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: `Failed to remove pack from device.`, autoClose: 5000 });
+            });
+    }
+};
+
+export const devicePlugged = (metadata) => ({
+    type: 'DEVICE_PLUGGED',
+    metadata
+});
 
 export const deviceUnplugged = () => ({
     type: 'DEVICE_UNPLUGGED'

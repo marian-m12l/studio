@@ -10,12 +10,15 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.reader.archive.ArchiveStoryPackReader;
 import studio.core.v1.reader.binary.BinaryStoryPackReader;
+import studio.core.v1.writer.binary.BinaryStoryPackWriter;
 
 import java.io.File;
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -61,16 +64,48 @@ public class LibraryService {
                 return new JsonArray(
                         paths
                                 .filter(Files::isRegularFile)
-                                .map(this::readPackFile)
+                                .map(path -> this.readPackFile(path).map(
+                                        meta -> this.getPackMetadata(meta, path.getFileName().toString())
+                                ))
                                 .filter(Optional::isPresent)
                                 .map(Optional::get)
-                                .map(this::getPackMetadata)
                                 .collect(Collectors.toList())
                 );
             } catch (IOException e) {
                 LOGGER.error("Failed to read packs from local library", e);
                 throw new RuntimeException(e);
             }
+        }
+    }
+
+    public Optional<File> getPackFile(String packPath) {
+        // Archive format packs must first be converted to binary format
+        if (packPath.endsWith(".zip")) {
+            try {
+                File tmp = File.createTempFile(packPath, ".pack");
+
+                LOGGER.warn("Pack to transfer is in archive format. Converting to binary format and storing in temporary file: " + tmp.getAbsolutePath());
+
+                LOGGER.warn("Reading archive format pack");
+                ArchiveStoryPackReader packReader = new ArchiveStoryPackReader();
+                FileInputStream fis = new FileInputStream(libraryPath() + packPath);
+                StoryPack storyPack = packReader.read(fis);
+                fis.close();
+
+                LOGGER.warn("Writing binary format pack");
+                BinaryStoryPackWriter packWriter = new BinaryStoryPackWriter();
+                FileOutputStream fos = new FileOutputStream(tmp);
+                packWriter.write(storyPack, fos);
+                fos.close();
+
+                return Optional.of(tmp);
+            } catch (IOException e) {
+                LOGGER.error("Failed to convert archive format pack to binary format");
+                e.printStackTrace();
+                return Optional.empty();
+            }
+        } else {
+            return Optional.of(new File(libraryPath() + packPath));
         }
     }
 
@@ -114,10 +149,11 @@ public class LibraryService {
         return Optional.empty();
     }
 
-    private JsonObject getPackMetadata(StoryPackMetadata packMetadata) {
+    private JsonObject getPackMetadata(StoryPackMetadata packMetadata, String path) {
         JsonObject json = new JsonObject()
                 .put("uuid", packMetadata.getUuid())
-                .put("version", packMetadata.getVersion());
+                .put("version", packMetadata.getVersion())
+                .put("path", path);
         Optional.ofNullable(packMetadata.getTitle()).ifPresent(title -> json.put("title", title));
         Optional.ofNullable(packMetadata.getDescription()).ifPresent(desc -> json.put("description", desc));
         Optional.ofNullable(packMetadata.getThumbnail()).ifPresent(thumb -> json.put("image", "data:image/png;base64," + Base64.getEncoder().encodeToString(thumb)));
