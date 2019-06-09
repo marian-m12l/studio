@@ -171,6 +171,11 @@ export const hideViewer = () => ({
     type: 'HIDE_VIEWER'
 });
 
+export const setViewerDiagram = (diagram) => ({
+    type: 'SET_VIEWER_DIAGRAM',
+    diagram
+});
+
 export const setViewerStage = (stage) => ({
     type: 'SET_VIEWER_STAGE',
     stage

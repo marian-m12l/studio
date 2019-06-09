@@ -171,12 +171,12 @@ export function sample() {
         // First character option, go to question 2 (choose place) or back to question 1
         characterChoice1Ports.out.link(character1Node.fromPort),
         character1Node.okPort.link(questionsOption2Ports.in),
-        character1Node.homePort.link(questionsOption1Ports.in),
+        // No home transition (but HOME button enabled) --> back to main (pack selection) stage node
 
         // Second character option, go to question 3 (choose place) or back to question 1
         characterChoice2Ports.out.link(character2Node.fromPort),
         character2Node.okPort.link(questionsOption3Ports.in),
-        character2Node.homePort.link(questionsOption1Ports.in),
+        // No home transition (but HOME button enabled) --> back to main (pack selection) stage node
 
         // Question 2 for character 1, go and play the chosen story or back to question 1
         questionsOption2Ports.out.link(aliceQuestion2Node.fromPort),

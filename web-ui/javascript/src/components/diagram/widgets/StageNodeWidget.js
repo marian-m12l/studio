@@ -12,7 +12,7 @@ import * as SRD from 'storm-react-diagrams';
 
 import EditableHeader from './composites/EditableHeader';
 import StageNodeModel from "../models/StageNodeModel";
-import {showViewer, setViewerStage} from "../../../actions";
+import {showViewer, setViewerDiagram, setViewerStage, setViewerAction} from "../../../actions";
 
 
 class StageNodeWidget extends React.Component {
@@ -54,7 +54,16 @@ class StageNodeWidget extends React.Component {
 
     openViewer = (e) => {
         let viewingNode = this.props.node;
+        this.props.setViewerDiagram(this.props.diagramEngine.diagramModel);
         this.props.setViewerStage(viewingNode);
+        let fromLinks = Object.values(viewingNode.fromPort.getLinks());
+        if (fromLinks.length > 0) {
+            let firstActionNode = fromLinks[0].getSourcePort().getParent();
+            this.props.setViewerAction({
+                node: firstActionNode,
+                index: firstActionNode.optionsOut.indexOf(fromLinks[0].getSourcePort())
+            });
+        }
         this.props.showViewer();
     };
 
@@ -172,7 +181,9 @@ const mapStateToProps = (state, ownProps) => ({
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
     showViewer: () => dispatch(showViewer()),
-    setViewerStage: (stage) => dispatch(setViewerStage(stage))
+    setViewerDiagram: (diagram) => dispatch(setViewerDiagram(diagram)),
+    setViewerStage: (stage) => dispatch(setViewerStage(stage)),
+    setViewerAction: (action) => dispatch(setViewerAction(action))
 });
 
 export default connect(

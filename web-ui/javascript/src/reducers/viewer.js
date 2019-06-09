@@ -12,7 +12,8 @@ const initialState = {
     action: {
         node: null,
         index: null
-    }
+    },
+    diagram: null
 };
 
 const viewer = (state = initialState, action) => {
@@ -21,6 +22,8 @@ const viewer = (state = initialState, action) => {
             return { ...state, show: true };
         case 'HIDE_VIEWER':
             return initialState;
+        case 'SET_VIEWER_DIAGRAM':
+            return { ...state, diagram: action.diagram };
         case 'SET_VIEWER_STAGE':
             return { ...state, stage: action.stage };
         case 'SET_VIEWER_ACTION':

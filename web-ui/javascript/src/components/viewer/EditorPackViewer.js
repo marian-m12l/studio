@@ -112,7 +112,15 @@ class EditorPackViewer extends React.Component {
         if (this.props.viewer.stage.homePort) {
             let homeLinks = Object.values(this.props.viewer.stage.homePort.getLinks());
             if (homeLinks.length !== 1) {
-                toast.error('Missing action node for HOME transition');
+                // Back to main (pack selection) stage node, which is (theoretically) the only stage node with an empty from port
+                let mainNode = Object.values(this.props.viewer.diagram.nodes)
+                    .filter(node => node.getType() === 'stage')
+                    .filter(node => Object.values(node.fromPort.getLinks()).length === 0)[0];
+                this.props.setViewerStage(mainNode);
+                this.props.setViewerAction({
+                    node: null,
+                    index: null
+                });
             } else {
                 let homeTargetPort = homeLinks[0].getTargetPort();
                 let homeTargetActionNode = homeTargetPort.getParent();
