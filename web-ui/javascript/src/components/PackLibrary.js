@@ -8,7 +8,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 
 import './PackLibrary.css';
-import {actionAddFromLibrary, actionRemoveFromDevice} from "../actions";
+import {actionAddFromLibrary, actionRemoveFromDevice, actionAddToLibrary} from "../actions";
 import {AppContext} from "../AppContext";
 
 
@@ -59,6 +59,18 @@ class PackLibrary extends React.Component {
         return () => this.props.removeFromDevice(uuid);
     };
 
+    onDropPackIntoLibrary = (event) => {
+        event.preventDefault();
+        let packData = event.dataTransfer.getData("device-pack");
+        if (!packData) {
+            // Ignore missing node data
+            return;
+        }
+        var data = JSON.parse(packData);
+        // Transfer pack and show progress
+        this.props.addToLibrary(data.uuid, this.context);
+    };
+
     render() {
         let storagePercentage = null;
         if (this.state.device.metadata) {
@@ -85,8 +97,12 @@ class PackLibrary extends React.Component {
                         {this.state.device.packs.length === 0 && <div className="empty">No story packs in device, yet.</div>}
                         {this.state.device.packs.length > 0 && <div className="pack-grid">
                             {this.state.device.packs.map(pack =>
-                                <div key={pack.uuid}>
-                                    <div><img src={pack.image || defaultImage} width="128" height="128"/></div>
+                                <div key={pack.uuid}
+                                     draggable={true}
+                                     onDragStart={event => {
+                                         event.dataTransfer.setData("device-pack", JSON.stringify(pack));
+                                     }}>
+                                    <div><img src={pack.image || defaultImage} width="128" height="128" draggable={false} /></div>
                                     <div><span>{pack.title || pack.uuid}</span> <a href="#" onClick={this.onRemovePackFromDevice(pack.uuid)}>&times;</a></div>
                                 </div>
                             )}
@@ -99,22 +115,26 @@ class PackLibrary extends React.Component {
                         <h4>LOCAL LIBRARY</h4>
                         {this.state.library.metadata && <div><strong>Path:</strong> {this.state.library.metadata.path}</div>}
                     </div>
-                    {this.state.library.packs.length === 0 && <div className="empty">No story packs in library, yet.</div>}
-                    {this.state.library.packs.length > 0 && <div className="pack-grid">
-                        {this.state.library.packs.map(pack =>
-                            <div key={pack.uuid}
-                                 draggable={true}
-                                 onDragStart={event => {
-                                     event.dataTransfer.setData("local-library-pack", JSON.stringify(pack));
-                                 }}>
-                                <div className="pack-thumb">
-                                    <img src={pack.image || defaultImage} width="128" height="128" draggable={false} />
-                                    {pack.official && <div className="pack-ribbon"><span>Official</span></div>}
+                    <div className="library-dropzone"
+                         onDrop={this.onDropPackIntoLibrary}
+                         onDragOver={event => { event.preventDefault(); }}>
+                        {this.state.library.packs.length === 0 && <div className="empty">No story packs in library, yet.</div>}
+                        {this.state.library.packs.length > 0 && <div className="pack-grid">
+                            {this.state.library.packs.map(pack =>
+                                <div key={pack.uuid}
+                                     draggable={true}
+                                     onDragStart={event => {
+                                         event.dataTransfer.setData("local-library-pack", JSON.stringify(pack));
+                                     }}>
+                                    <div className="pack-thumb">
+                                        <img src={pack.image || defaultImage} width="128" height="128" draggable={false} />
+                                        {pack.official && <div className="pack-ribbon"><span>Official</span></div>}
+                                    </div>
+                                    <div><span>{pack.title || pack.uuid}</span></div>
                                 </div>
-                                <div><span>{pack.title || pack.uuid}</span></div>
-                            </div>
-                        )}
+                            )}
                     </div>}
+                    </div>
                 </div>}
             </div>
         );
@@ -131,6 +151,7 @@ const mapStateToProps = (state, ownProps) => ({
 const mapDispatchToProps = (dispatch, ownProps) => ({
     addFromLibrary: (path, context) => dispatch(actionAddFromLibrary(path, context)),
     removeFromDevice: (uuid) => dispatch(actionRemoveFromDevice(uuid)),
+    addToLibrary: (uuid, context) => dispatch(actionAddToLibrary(uuid, context)),
 });
 
 export default connect(

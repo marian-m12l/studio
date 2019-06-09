@@ -17,6 +17,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import studio.core.v1.Constants;
 
 import java.io.File;
 import java.util.Optional;
@@ -174,6 +175,57 @@ public class StoryTellerService {
                 e.printStackTrace();
                 return false;
             }
+        }
+    }
+
+    public Optional<String> extractPack(String uuid, File destFile) {
+        if (storyTellerHandler == null) {
+            return Optional.empty();
+        } else {
+            String transferId = UUID.randomUUID().toString();
+            // Perform transfer asynchronously, and send events on eventbus to monitor progress and end of transfer
+            Timer timer = new Timer();
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    try {
+                        if (storyTellerHandler.getStoriesPacks().stream().anyMatch(p -> p.getUuid().equalsIgnoreCase(uuid))) {
+                            // Check that the destination is available
+                            if (destFile.exists()) {
+                                LOGGER.error("Cannot extract pack from device because the destination file already exists");
+                                eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
+                                return;
+                            }
+
+                            StoryTellerPack pack = storyTellerHandler.getStoriesPacks().stream()
+                                    .filter(p -> p.getUuid().equalsIgnoreCase(uuid))
+                                    .collect(Collectors.toList())
+                                    .get(0);
+                            storyTellerHandler.writeToFileFromSD(Constants.PACKS_LIST_SECTOR+pack.getStartSector(), pack.getSectorSize(), destFile, new ProgressCallback() {
+                                @Override
+                                public boolean onProgress(Progress progress) {
+                                    // Send events on eventbus to monitor progress
+                                    double p = progress.getWorkDone().doubleValue() / progress.getTotalWork().doubleValue();
+                                    LOGGER.debug("Pack extraction progress... " + progress.getWorkDone() + " / " + progress.getTotalWork() + " (" + p + ")");
+                                    eventBus.send("storyteller.transfer."+transferId+".progress", new JsonObject().put("progress", p));
+                                    return true;
+                                }
+                            });
+                            // Send event on eventbus to signal end of transfer
+                            eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", true));
+                        } else {
+                            LOGGER.error("Cannot extract pack from device because it is not on the device");
+                            eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
+                        }
+                    } catch (Exception e) {
+                        LOGGER.error("Failed to add pack to device", e);
+                        e.printStackTrace();
+                        // Send event on eventbus to signal transfer failure
+                        eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
+                    }
+                }
+            }, 0);
+            return Optional.of(transferId);
         }
     }
 

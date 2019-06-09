@@ -16,6 +16,7 @@ import io.vertx.ext.web.Router;
 import studio.webui.service.LibraryService;
 import studio.webui.service.StoryTellerService;
 
+import java.io.File;
 import java.util.Optional;
 
 public class DeviceController {
@@ -85,6 +86,25 @@ public class DeviceController {
                 LOGGER.error("Pack was not removed from device");
                 ctx.fail(500);
             }
+        });
+
+        // Add pack from device to library
+        router.post("/addToLibrary").handler(ctx -> {
+            String uuid = ctx.getBodyAsJson().getString("uuid");
+            // Transfer pack file to library file
+            String path = libraryService.libraryPath() + uuid + ".pack";
+            storyTellerService.extractPack(uuid, new File(path))
+                    .ifPresentOrElse(
+                            transferId ->
+                                    // Return the transfer id, which is used to monitor transfer progress
+                                    ctx.response()
+                                            .putHeader("content-type", "application/json")
+                                            .end(Json.encode(new JsonObject().put("transferId", transferId))),
+                            () -> {
+                                LOGGER.error("Failed to transfer pack from device");
+                                ctx.fail(500);
+                            }
+                    );
         });
 
         return router;

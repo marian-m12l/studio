@@ -10,6 +10,8 @@ public class Constants {
 
     public static final int SECTOR_SIZE = 512;
 
+    public static final int PACKS_LIST_SECTOR = 100000;
+
     public static final byte[] CHECK_BYTES = {
             (byte) 0x5F, (byte) 0xCE, (byte) 0xD6, (byte) 0x7E, (byte) 0x0E, (byte) 0x50, (byte) 0x46, (byte) 0xB8,
             (byte) 0xAE, (byte) 0x55, (byte) 0xDA, (byte) 0x8C, (byte) 0x45, (byte) 0xC8, (byte) 0x98, (byte) 0x8A,

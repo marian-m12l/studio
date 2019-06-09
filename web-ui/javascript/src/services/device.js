@@ -32,3 +32,12 @@ export const removeFromDevice = (uuid) => {
     })
         .then(response => response.json());
 };
+
+export const addToLibrary = (uuid) => {
+    return fetch('http://localhost:8080/api/device/addToLibrary', {
+        method: "POST",
+        headers: { "Content-Type" : "application/json" },
+        body: JSON.stringify({uuid})
+    })
+        .then(response => response.json());
+};

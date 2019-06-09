@@ -6,7 +6,7 @@
 
 import { toast } from 'react-toastify';
 
-import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice} from '../services/device';
+import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice, addToLibrary} from '../services/device';
 import {fetchLibraryInfos, fetchLibraryPacks} from '../services/library';
 
 
@@ -145,6 +145,53 @@ export const actionRemoveFromDevice = (uuid) => {
             .catch(e => {
                 console.error('failed to remove pack from device', e);
                 toast.update(toastId, { type: toast.TYPE.ERROR, render: `Failed to remove pack from device.`, autoClose: 5000 });
+            });
+    }
+};
+
+export const actionAddToLibrary = (uuid, context) => {
+    return dispatch => {
+        let toastId = toast("Adding pack to local library...", { autoClose: false });
+        return addToLibrary(uuid)
+            .then(resp => {
+                // Monitor transfer progress
+                let transferId = resp.transferId;
+                context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.progress', (error, message) => {
+                    console.log("Received `storyteller.transfer."+transferId+".progress` event from vert.x event bus.");
+                    console.log(message.body);
+                    toast.update(toastId, {progress: message.body.progress, autoClose: false});
+                });
+                context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.done', (error, message) => {
+                    console.log("Received `storyteller.transfer."+transferId+".done` event from vert.x event bus.");
+                    console.log(message.body);
+                    if (message.body.success) {
+                        toast.update(toastId, {progress: null, type: toast.TYPE.SUCCESS, render: 'Pack added to library', autoClose: 5000});
+                        // Refresh device metadata and packs list
+                        dispatch(actionRefreshLibrary());
+                    } else {
+                        toast.update(toastId, {progress: null, type: toast.TYPE.ERROR, render: 'Failed to add pack to library', autoClose: 5000});
+                    }
+                });
+            })
+            .catch(e => {
+                console.error('failed to add pack to library', e);
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: `Failed to add pack to library.`, autoClose: 5000 });
+            });
+    }
+};
+
+export const actionRefreshLibrary = () => {
+    return dispatch => {
+        return fetchLibraryInfos()
+            .then(metadata => {
+                return fetchLibraryPacks()
+                    .then(packs => {
+                        dispatch(setLibrary(metadata, packs));
+                    });
+            })
+            .catch(e => {
+                console.error('failed to refresh library', e);
+                toast('Failed to refresh library.', { type: toast.TYPE.ERROR, autoClose: 5000 });
             });
     }
 };

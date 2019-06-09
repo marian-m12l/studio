@@ -109,7 +109,7 @@ public class LibraryService {
         }
     }
 
-    private String libraryPath() {
+    public String libraryPath() {
         // Path may be overridden by system property `studio.library`
         return System.getProperty(LOCAL_LIBRARY_PROP, System.getProperty("user.home") + LOCAL_LIBRARY_PATH);
     }
