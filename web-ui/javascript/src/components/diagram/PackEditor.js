@@ -5,6 +5,7 @@
  */
 
 import React from 'react';
+import {connect} from "react-redux";
 import { toast } from 'react-toastify';
 import * as SRD from 'storm-react-diagrams';
 import 'storm-react-diagrams/dist/style.min.css';
@@ -15,9 +16,9 @@ import PackDiagramModel from "./models/PackDiagramModel";
 import PackDiagramWidget from "./widgets/PackDiagramWidget";
 import {writeToArchive} from "../../utils/writer";
 import {readFromArchive} from "../../utils/reader";
-import {sample} from "../../utils/sample";
 
 import './PackEditor.css';
+import {setEditorDiagram} from "../../actions";
 
 
 class PackEditor extends React.Component {
@@ -25,31 +26,53 @@ class PackEditor extends React.Component {
     constructor(props) {
         super(props);
 
-        this.engine = new SRD.DiagramEngine();
-        this.engine.installDefaultFactories();
+        let engine = new SRD.DiagramEngine();
+        engine.installDefaultFactories();
 
         let updateCanvas = () => {
             this.forceUpdate();
         };
-        this.engine.registerNodeFactory(new StageNodeFactory(updateCanvas));
-        this.engine.registerNodeFactory(new ActionNodeFactory(updateCanvas));
+        engine.registerNodeFactory(new StageNodeFactory(updateCanvas));
+        engine.registerNodeFactory(new ActionNodeFactory(updateCanvas));
 
-        let model = sample();
+        this.state = {
+            engine,
+            diagram: null
+        };
+    }
 
-        this.engine.setDiagramModel(model);
+    componentDidMount() {
+        if (this.props.editor.diagram) {
+            let engine = this.state.engine;
+            engine.setDiagramModel(this.props.editor.diagram);
+            this.setState({
+                engine,
+                diagram: this.props.editor.diagram
+            });
+        }
+    }
+
+    componentWillReceiveProps(nextProps, nextContext) {
+        if (nextProps.editor.diagram && nextProps.editor.diagram !== this.state.diagram) {
+            let engine = this.state.engine;
+            engine.setDiagramModel(nextProps.editor.diagram);
+            this.setState({
+                engine,
+                diagram: nextProps.editor.diagram
+            });
+        }
     }
 
     clear = () => {
-        this.engine.setDiagramModel(new PackDiagramModel());
-        this.forceUpdate();
+        this.props.setEditorDiagram(new PackDiagramModel());
     };
 
     savePack = () => {
-        writeToArchive(this.engine.diagramModel)
+        writeToArchive(this.state.engine.diagramModel)
             .then(blob => {
                 var a = document.getElementById('download');
                 a.href = URL.createObjectURL(blob);
-                a.download = this.engine.diagramModel.title + '.zip';
+                a.download = this.state.engine.diagramModel.title + '.zip';
                 a.click();
                 URL.revokeObjectURL(a.href);
             })
@@ -74,8 +97,7 @@ class PackEditor extends React.Component {
     loadPack = (file) => {
         readFromArchive(file)
             .then(loadedModel => {
-                this.engine.setDiagramModel(loadedModel);
-                this.forceUpdate();
+                this.props.setEditorDiagram(loadedModel);
             })
             .catch(e => toast.error("Failed to load story pack."));
     };
@@ -89,10 +111,22 @@ class PackEditor extends React.Component {
                 <span title="Save pack" className="btn btn-default glyphicon glyphicon-floppy-disk" onClick={this.savePack}/>
                 <span title="Clear pack" className="btn btn-default glyphicon glyphicon-trash" onClick={this.clear}/>
 
-                <PackDiagramWidget diagramEngine={this.engine}/>
+                <PackDiagramWidget diagramEngine={this.state.engine}/>
             </div>
         );
     }
 }
 
-export default PackEditor;
+const mapStateToProps = (state, ownProps) => ({
+    editor: state.editor
+});
+
+const mapDispatchToProps = (dispatch, ownProps) => ({
+    setEditorDiagram: (diagram) => dispatch(setEditorDiagram(diagram))
+});
+
+export default connect(
+    mapStateToProps,
+    mapDispatchToProps
+)(PackEditor)
+

@@ -185,3 +185,8 @@ export const setViewerAction = (action) => ({
     type: 'SET_VIEWER_ACTION',
     action
 });
+
+export const setEditorDiagram = (diagram) => ({
+    type: 'SET_EDITOR_DIAGRAM',
+    diagram
+});

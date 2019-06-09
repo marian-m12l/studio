@@ -14,7 +14,8 @@ import {AppContext} from './AppContext';
 import PackEditor from './components/diagram/PackEditor';
 import PackLibrary from './components/PackLibrary';
 import EditorPackViewer from "./components/viewer/EditorPackViewer";
-import {actionCheckDevice, actionDevicePlugged, deviceUnplugged, actionLoadLibrary} from "./actions";
+import {sample} from "./utils/sample";
+import {actionCheckDevice, actionDevicePlugged, deviceUnplugged, actionLoadLibrary, setEditorDiagram} from "./actions";
 
 import './App.css';
 
@@ -57,8 +58,12 @@ class App extends React.Component {
 
             // Check whether device is already plugged on startup
             this.props.checkDevice();
+
             // Load library on startup
             this.props.loadLibrary();
+
+            // Load sample diagram in editor
+            this.props.setEditorDiagram(sample());
         });
     }
 
@@ -111,7 +116,8 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     checkDevice: () => dispatch(actionCheckDevice()),
     onDevicePlugged: (metadata) => dispatch(actionDevicePlugged(metadata)),
     onDeviceUnplugged: () => dispatch(deviceUnplugged()),
-    loadLibrary: () => dispatch(actionLoadLibrary())
+    loadLibrary: () => dispatch(actionLoadLibrary()),
+    setEditorDiagram: (diagram) => dispatch(setEditorDiagram(diagram))
 });
 
 export default connect(

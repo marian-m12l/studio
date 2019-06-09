@@ -6,12 +6,14 @@
 
 import { combineReducers } from 'redux';
 import device from './device';
+import editor from './editor';
 import library from './library';
 import viewer from './viewer';
 
 
 export default combineReducers({
     device,
+    editor,
     library,
     viewer
 });

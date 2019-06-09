@@ -62,11 +62,11 @@ class PackDiagramWidget extends React.Component {
 
             {/* Metadata */}
             <label htmlFor="pack-title">Title:</label>
-            <input id="pack-title" type="text" value={this.props.diagramEngine.getDiagramModel().title} onChange={this.changeTitle}/>
+            <input id="pack-title" type="text" value={this.props.diagramEngine.getDiagramModel().title || ''} onChange={this.changeTitle}/>
             <label htmlFor="pack-version">Version:</label>
-            <input id="pack-version" type="number" value={this.props.diagramEngine.getDiagramModel().version} onChange={this.changeVersion}/>
+            <input id="pack-version" type="number" value={this.props.diagramEngine.getDiagramModel().version || ''} onChange={this.changeVersion}/>
             <label htmlFor="pack-description">Description:</label>
-            <textarea id="pack-description" value={this.props.diagramEngine.getDiagramModel().description} style={{display: 'inline-block'}} onChange={this.changeDescription}/>
+            <textarea id="pack-description" value={this.props.diagramEngine.getDiagramModel().description || ''} style={{display: 'inline-block'}} onChange={this.changeDescription}/>
             <label htmlFor="pack-thumb">Thumbnail:</label>
             <input type="file" id="pack-thumb" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.changeThumbnail} />
             <img src={this.props.diagramEngine.getDiagramModel().thumbnail || defaultImage} width="128" height="128" onClick={this.showThumbnailSelector} />
