@@ -26,6 +26,7 @@
         <frontend-maven-plugin.version>1.7.6</frontend-maven-plugin.version>
         <vertx.version>3.7.0</vertx.version>
         <vertx.main.verticle>studio.webui.MainVerticle</vertx.main.verticle>
+        <system.libs>${user.home}/.studio/lib</system.libs>
     </properties>
 
     <dependencies>
@@ -69,25 +70,47 @@
             <artifactId>lunii-device-gateway</artifactId>
             <version>unknown</version>
             <scope>system</scope>
-            <systemPath>${basedir}/../lunii/libs/lunii-device-gateway.jar</systemPath>
+            <systemPath>${system.libs}/lunii-device-gateway.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.lunii</groupId>
             <artifactId>lunii-device-wrapper</artifactId>
             <version>unknown</version>
             <scope>system</scope>
-            <systemPath>${basedir}/../lunii/libs/lunii-device-wrapper.jar</systemPath>
+            <systemPath>${system.libs}/lunii-device-wrapper.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>com.lunii</groupId>
             <artifactId>lunii-java-util</artifactId>
             <version>unknown</version>
             <scope>system</scope>
-            <systemPath>${basedir}/../lunii/libs/lunii-java-util.jar</systemPath>
+            <systemPath>${system.libs}/lunii-java-util.jar</systemPath>
         </dependency>
     </dependencies>
 
     <build>
+        <resources>
+            <!-- regular resource processing for everything except scripts -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <excludes>
+                    <exclude>studio.sh</exclude>
+                    <exclude>studio.bat</exclude>
+                </excludes>
+            </resource>
+            <!-- resource processing with a different output directory for scripts -->
+            <resource>
+                <directory>src/main/resources</directory>
+                <includes>
+                    <include>studio.sh</include>
+                    <include>studio.bat</include>
+                </includes>
+                <!-- relative to target/classes -->
+                <targetPath>..</targetPath>
+                <filtering>true</filtering>
+            </resource>
+        </resources>
+
         <plugins>
 
             <plugin>
@@ -158,33 +181,42 @@
 
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-shade-plugin</artifactId>
-                <version>3.2.1</version>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <!-- Copy dependencies into `lib` folder -->
                 <executions>
-                    <!-- Uber Jar -->
                     <execution>
-                        <phase>package</phase>
+                        <id>copy-dependencies</id>
+                        <phase>prepare-package</phase>
                         <goals>
-                            <goal>shade</goal>
+                            <goal>copy-dependencies</goal>
                         </goals>
                         <configuration>
-                            <transformers>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
-                                    <manifestEntries>
-                                        <Main-Class>io.vertx.core.Launcher</Main-Class>
-                                        <Main-Verticle>${vertx.main.verticle}</Main-Verticle>
-                                    </manifestEntries>
-                                </transformer>
-                                <transformer implementation="org.apache.maven.plugins.shade.resource.AppendingTransformer">
-                                    <resource>META-INF/services/io.vertx.core.spi.VerticleFactory</resource>
-                                </transformer>
-                            </transformers>
-                            <artifactSet>
-                            </artifactSet>
-                            <outputFile>${project.build.directory}/${project.artifactId}-${project.version}-fat.jar</outputFile>
+                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                            <excludeScope>system</excludeScope>
                         </configuration>
                     </execution>
                 </executions>
+            </plugin>
+
+            <!-- Distributable assembly -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-assembly-plugin</artifactId>
+                <version>3.1.1</version>
+                <executions>
+                    <execution>
+                        <id>make-assembly</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>single</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/main/assembly/dist.xml</descriptor>
+                    </descriptors>
+                </configuration>
             </plugin>
 
             <!-- Run the app with `mvn exec:java` -->
