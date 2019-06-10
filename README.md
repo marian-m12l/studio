@@ -11,13 +11,71 @@ DISCLAIMER
 
 This software relies on my own reverse engineering research, which is limited to gathering the information necessary to ensure interoperability with the Lunii\* story teller device, and does not distribute any protected content.
 
+This software is still in an early stage of development, and as such has not yet been thoroughly tested. In particular, it has only been used on a very small number of devices, and may brick your device. USE AT YOUR OWN RISK.
+
 \* Lunii is a registered trademark of Lunii SAS. I am (and this work is) in no way affiliated with Lunii SAS.
 
 
 USAGE
 -----
 
-TODO
+### Prerequisite
+
+#### Lunii\* Story Teller driver
+
+Transfer of story pack to and from the Story Teller device is handled by the official Lunii\* driver. This driver
+is distributed with the Luniistore\* software, and must be obtained through it:
+
+* Download and install the official Luniistore\* software
+* Create the folders `.studio/lib/` in your home directory (e.g. `mkdir -p ~/.studio/lib` on Linux)
+* From `~/.local/share/Luniitheque/lib`, copy these three JAR files into `~/.studio/lib/`:
+  * `lunii-java-util.jar`
+  * `lunii-device-gateway.jar`
+  * `lunii-device-wrapper.jar`
+
+#### Official pack metadata database
+
+In order to display story pack metadata, they must be downloaded and stored on a local database file.
+
+* Start the official Luniistore\* software and log into your account to get a fresh authentication token (valid for one hour)
+* Open `~/.local/share/Luniitheque/.local.properties` in a text editor, and note the value of the `tokens.access_tokens.data.firebase` attribute in the `tokens` property
+* Query `https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN` and save the result as `~/.studio/db/official.json` (e.g. `curl -v -X GET https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN > ~/.studio/db/official.json`)
+
+### Building the application
+
+Once you have cloned this repository, execute `mvn clean install` to build the application. This will produce the distribution archive in `web-ui/target/`.
+
+### Starting the application
+
+Your must first build the application or download a distribution archive.
+
+To start the application: 
+* Unzip the distribution archive
+* Run the launcher script: either `studio.sh` or `studio.bat` depending on your platform. You may need to make them executable first.
+If run in a terminal, it should display some logs, ending with `INFOS: Succeeded in deploying verticle`.
+* Open a browser and type the url `http://localhost:8080` to load the web UI.
+
+### Using the application
+
+The web UI is made of two screens:
+
+* The pack library, to manage your local library and transfer to / from your device
+* The pack editor, to create or edit a story pack
+
+#### Pack library
+
+The pack library screen always shows the story packs in your local library. These are the packs located in `~/.studio/library`. The packs may be either in binary format (the official format, understood by the device) or archive format (the unofficial format, used for story pack creation and edition).
+
+When the device is plugged, another pane will appear on the left side, showing the device metadata and story packs. Dragging and dropping a pack from or to the device will initiate the transfer.
+
+#### Pack editor
+
+The pack editor screen show the current story pack being edited. By default, it shows a sample story pack intended as a model of correct usage.
+
+A pack is composed of a few metadata and the diagram describing the various steps in the story:
+
+* Stage nodes are used to display an image and/or play a sound
+* Action nodes are used to transition from one stage to the next, and to manage the available options
 
 
 STORY TELLER DEVICE MEMORY 
@@ -124,15 +182,6 @@ Audio assets are signed 16-bits, mono, 32000 Hz, WAVE files. If the last sector 
 ### Check bytes sector
 
 The last sector of a pack file must contain a predefined sequence of 512 bytes.
-
-
-LUNII\* STORY TELLER DRIVER
---------------------------
-
-Transfer of story pack to and from the Story Teller device is handled by the official Lunii\* driver. This driver
-is distributed with the Luniistore\* software, and must be obtained through it :
-
-TODO Instructions to get the driver
 
 
 LICENSE

@@ -11,13 +11,71 @@ PRÉAMBULE
 
 Ce logiciel s'appuie sur mes propres recherches de rétro ingénierie, limitées à la collecte des informations nécessaires à l'intéropérabilité avec la Fabrique à Histoires Lunii\*, et ne distribue aucun contenu protégé.
 
+Ce logiciel est encore à un stade précoce de développement, et n'a donc pas encore été testé minutieusement. En particulier, il n'a été utilisé que sur un nombre très restreint d'appareils, et pourrait endommager votre appareil. EN UTILISANT CE LOGICIEL, VOUS EN ASSUMEZ LE RISQUE.
+
 \* Lunii et "ma fabrique à histoires" sont des marques enregistrées de Lunii SAS. Je ne suis (et ce travail n'est) en aucun cas affilié à Lunii SAS.
 
 
 UTILISATION
 -----------
 
-TODO
+### Prerequisite
+
+#### Lunii\* Story Teller driver
+
+Le transfert de packs d'histoires de et vers la Fabrique à Histoire\* est géré par le pilote Lunii\* officiel. Ce pilote
+est distribué avec le logiciel Luniistore\*, et doit y être récupéré:
+
+* Télécharger et installer le logiciel Luniistore\*
+* Créer les répertoires `.studio/lib/` dans votre dossier personnel (e.g. `mkdir -p ~/.studio/lib` sur Linux)
+* Depuis `~/.local/share/Luniitheque/lib`, copiez ces trois fichiers JAR vers `~/.studio/lib/` :
+  * `lunii-java-util.jar`
+  * `lunii-device-gateway.jar`
+  * `lunii-device-wrapper.jar`
+
+#### Base de données officielle des métadonnées de packs d'histoires
+
+Afin d'afficher les métadonnées des packs d'histoires, celles-ci doivent être téléchargées et stockées dans un fichier local.
+
+* Lancer le logiciel Luniistore\* et connectez-vous afin d'obtenir un jeton d'authentification (valable pendant une heure)
+* Ouvrez `~/.local/share/Luniitheque/.local.properties` dans une éditeur de texte, et notez la valeur de l'attribut `tokens.access_tokens.data.firebase` dans la propriété `tokens`
+* Appelez `https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN` et enregistrez le résultat dans `~/.studio/db/official.json` (e.g. `curl -v -X GET https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN > ~/.studio/db/official.json`)
+
+### Construire l'application
+
+Après avoir cloné ce dépôt de sources, exécuter `mvn clean install` pour construire l'application. Ceci créera l'archive de distribution dans `web-ui/target/`.
+
+### Démarrer l'application
+
+Vous devez d'abord contruire l'application ou télécharger une archive de distribution.
+
+Pour démarrer l'application :
+* Décompressez l'archive de distribution
+* Exécutez le script de lancement : `studio.sh` ou `studio.bat` selon votre plate-forme. Vous devrez probablement rendre ce fichier exécutable d'abord.
+Si la commande est exécutée dans un terminale, des logs devraient s'afficher, en se terminant par `INFOS: Succeeded in deploying verticle`.
+* Ouvrez un navigateur et saisissez l'url `http://localhost:8080` pour charger l'interface web.
+
+### Utiliser l'application
+
+L'interface web est composée de deux écrans :
+
+* La bibliothèque d'histoires, qui permet de gérer la bibliothèque locale et de transférer de / vers la Fabrique à Histoire\* 
+* L'éditeur d'histoire, opur pour créer ou modifier un pack d'histoire
+
+#### Bibliothèque d'histoires
+
+L'écran de la bibliothèque d'histoires affiche toujours votre bibliothèque locale. Il s'agit des packs d'histoires situés dnas le répertoire `~/.studio/library`. Ces packs peuvent être au format binaire (le format officiel, supporté par l'appareil) ou au format archive (le format officieux, utilisé pour la création et la modification de packs d'histoires).
+
+Dans l'appareil est branché, un panneau apparaît sur la gauche, affichant les métadaonnées et les packs d'histoires de l'appareil. Glisser et déposer un pack depuis ou vers l'appareil commencera le transfert.
+
+#### Éditeur d'histoire
+
+L'écran de l'éditeur d'histoire affiche l'histoire en cours de modification. Par défaut, un exemple est affiché, dont le but est de proposer un modèle d'utilisation correcte.
+
+Un pack est composé de quelques métadonnées et du diagramme décrivant les différentes étapes de l'histoire :
+
+* Les nœuds de scène permettent d'afficher une image et/ou de jouer un son
+* Les nœuds d'action permettent de passer d'une scène à la suivante, et de gérer les options disponibles
 
 
 MÉMOIRE DE LA FABRIQUE À HISTOIRES\*
@@ -124,15 +182,6 @@ Les ressources audio sont des fichiers WAVE, 16-bits signés, 32 000 Hz. Si le d
 ### Secteur octets de vérification
 
 Le dernier secteur d'un fichier de pack d'histoires doit contenir une séquence prédéfinie de 512 octets.
-
-
-PILOTE FABRIQUE À HISTOIRES LUNII\*
------------------------------------
-
-Le transfert de packs d'histoires de et vers la Fabrique à Histoire\* est géré par le pilote Lunii\* officiel. Ce pilote
-est distribué avec le logiciel Luniistore\*, et doit y être récupére :
-
-TODO Instructions pour récupérer le pilote
 
 
 LICENCE
