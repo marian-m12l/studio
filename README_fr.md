@@ -19,16 +19,36 @@ Ce logiciel est encore à un stade précoce de développement, et n'a donc pas e
 UTILISATION
 -----------
 
-### Prerequisite
+### Prérequis
 
-#### Lunii\* Story Teller driver
+Pour exécuter l'application :
+* JRE 10+
+
+Pour construire l'application :
+* Git
+* JDK 10+
+* Maven 3+
+
+#### Logiciel Luniistore\*
+
+Cette application nécessite certaines ressources du logiciel officiel Luniistore\*.
+
+* Téléchargez-le et installez-le
+* Les ressources nécessaires sont dans un répertoire de l'utilisateur, appelé `$LOCAL_LUNIITHEQUE` dans la suite de ce document. Son chemin dépend de votre plate-forme :
+  * Sur Linux, il se trouve au chemin `~/.local/share/Luniitheque`
+  * Sur Windows, il se trouve au chemin `%UserProfile%\AppData\Roaming\Luniitheque`
+* Les ressources doivent être copiées dans un répertoire nouvellement créé de l'utilisateur (appelé `$DOT_STUDIO` par la suite) afin d'être lues par l'application. Le chemin attendu dépend de votre plate-forme :
+  * Sur Linux, `~/.studio`
+  * Sur Windows, `%UserProfile%\.studio`
+
+#### Pilote de la Fabrique à Histoire\*
 
 Le transfert de packs d'histoires de et vers la Fabrique à Histoire\* est géré par le pilote Lunii\* officiel. Ce pilote
 est distribué avec le logiciel Luniistore\*, et doit y être récupéré:
 
 * Télécharger et installer le logiciel Luniistore\*
-* Créer les répertoires `.studio/lib/` dans votre dossier personnel (e.g. `mkdir -p ~/.studio/lib` sur Linux)
-* Depuis `~/.local/share/Luniitheque/lib`, copiez ces trois fichiers JAR vers `~/.studio/lib/` :
+* Créer les répertoires `$DOT_STUDIO/lib/` dans votre dossier personnel (e.g. `mkdir -p ~/.studio/lib` sur Linux, `mkdir %UserProfile%\.studio` sur Windows)
+* Depuis `$LOCAL_LUNIITHEQUE/lib`, copiez ces trois fichiers JAR vers `$DOT_STUDIO/lib/` :
   * `lunii-java-util.jar`
   * `lunii-device-gateway.jar`
   * `lunii-device-wrapper.jar`
@@ -37,9 +57,11 @@ est distribué avec le logiciel Luniistore\*, et doit y être récupéré:
 
 Afin d'afficher les métadonnées des packs d'histoires, celles-ci doivent être téléchargées et stockées dans un fichier local.
 
-* Lancer le logiciel Luniistore\* et connectez-vous afin d'obtenir un jeton d'authentification (valable pendant une heure)
-* Ouvrez `~/.local/share/Luniitheque/.local.properties` dans une éditeur de texte, et notez la valeur de l'attribut `tokens.access_tokens.data.firebase` dans la propriété `tokens`
-* Appelez `https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN` et enregistrez le résultat dans `~/.studio/db/official.json` (e.g. `curl -v -X GET https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN > ~/.studio/db/official.json`)
+* Lancer le logiciel Luniistore\* afin d'obtenir un jeton d'authentification (valable pendant une heure)
+* Ouvrez `$LOCAL_LUNIITHEQUE/.local.properties` dans une éditeur de texte, et notez la valeur du jeton :
+  * Si vous êtes connecté sur le logiciel Luniistore\*, le jeton se trouve dans la propriété `tokens`, attribut `tokens.access_tokens.data.firebase`
+  * Si vous n'êtes pas connecté sur le logiciel Luniistore\*, le jeton se trouve dans la propriété `token`, attribut `firebase`
+* Appelez `https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN` et enregistrez le résultat dans `$DOT_STUDIO/db/official.json` (e.g. `curl -v -X GET https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN > ~/.studio/db/official.json`)
 
 ### Construire l'application
 
@@ -64,7 +86,7 @@ L'interface web est composée de deux écrans :
 
 #### Bibliothèque d'histoires
 
-L'écran de la bibliothèque d'histoires affiche toujours votre bibliothèque locale. Il s'agit des packs d'histoires situés dnas le répertoire `~/.studio/library`. Ces packs peuvent être au format binaire (le format officiel, supporté par l'appareil) ou au format archive (le format officieux, utilisé pour la création et la modification de packs d'histoires).
+L'écran de la bibliothèque d'histoires affiche toujours votre bibliothèque locale. Il s'agit des packs d'histoires situés dnas le répertoire `$DOT_STUDIO/library`. Ces packs peuvent être au format binaire (le format officiel, supporté par l'appareil) ou au format archive (le format officieux, utilisé pour la création et la modification de packs d'histoires).
 
 Dans l'appareil est branché, un panneau apparaît sur la gauche, affichant les métadaonnées et les packs d'histoires de l'appareil. Glisser et déposer un pack depuis ou vers l'appareil commencera le transfert.
 
