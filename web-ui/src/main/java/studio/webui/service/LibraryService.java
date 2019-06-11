@@ -42,15 +42,20 @@ public class LibraryService {
     }
 
     public Optional<JsonObject> libraryInfos() {
-        // Check that local library folder exists
+        // Create the local library folder if needed
         File libraryFolder = new File(libraryPath());
         if (!libraryFolder.exists() || !libraryFolder.isDirectory()) {
-            return Optional.empty();
-        } else {
-            return Optional.of(new JsonObject()
-                    .put("path", libraryPath())
-            );
+            try {
+                Files.createDirectories(Paths.get(libraryPath()));
+            } catch (IOException e) {
+                LOGGER.error("Failed to initialize local library", e);
+                e.printStackTrace();
+                return Optional.empty();
+            }
         }
+        return Optional.of(new JsonObject()
+                .put("path", libraryPath())
+        );
     }
 
     public JsonArray packs() {
