@@ -142,7 +142,7 @@ public class BinaryStoryPackReader {
                 transitionsWithAction.put(okActionNodeAddr, twa);
             }
             if (homeActionNodeAddr != null) {
-                List<Transition> twa = transitionsWithAction.getOrDefault(okActionNodeAddr, new ArrayList<>());
+                List<Transition> twa = transitionsWithAction.getOrDefault(homeActionNodeAddr, new ArrayList<>());
                 twa.add(homeTransition);
                 transitionsWithAction.put(homeActionNodeAddr, twa);
             }
