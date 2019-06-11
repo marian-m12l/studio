@@ -173,6 +173,10 @@
     flex-grow: 1;
 }
 
+.storm-diagrams-canvas .basic-node.stage-node .assets .preview {
+    flex-grow: 1;
+}
+
 .storm-diagrams-canvas .basic-node.action-node {
     min-width: 20em;
     background-color: #9e7a34;

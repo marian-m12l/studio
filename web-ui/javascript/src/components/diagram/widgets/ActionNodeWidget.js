@@ -30,16 +30,19 @@ class ActionNodeWidget extends React.Component {
     editName = (event) => {
         this.props.node.name = event.target.value;
         this.props.updateCanvas();
+        this.forceUpdate();
     };
 
     addOption = () => {
         this.props.node.addOption();
         this.props.updateCanvas();
+        this.forceUpdate();
     };
 
     removeOption = () => {
         this.props.node.removeOption();
         this.props.updateCanvas();
+        this.forceUpdate();
     };
 
     render() {

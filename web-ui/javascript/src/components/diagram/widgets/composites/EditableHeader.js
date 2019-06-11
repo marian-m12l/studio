@@ -17,6 +17,7 @@ const EditableHeader = ({node, beingEdited, onToggleEdit, onChange}) => {
                 {beingEdited ? <input type="text" value={node.name} onChange={onChange} onKeyUp={e => e.stopPropagation()} /> : <strong>{node.name}</strong>}
             </span>
             <span className={'btn btn-xs glyphicon glyphicon-pencil' + (beingEdited ? ' active' : '')}
+                  title="Edit node title"
                   onClick={onToggleEdit} />
         </div>
     )
