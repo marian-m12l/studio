@@ -50,10 +50,15 @@ public class ArchiveStoryPackWriter {
         Map<ActionNode, String> actionNodeToId = new HashMap<>();
         writer.name("stageNodes");
         writer.beginArray();
-        for (StageNode node : pack.getStageNodes()) {
+        for (int i = 0; i < pack.getStageNodes().size(); i++) {
+            StageNode node = pack.getStageNodes().get(i);
             writer.beginObject();
             writer.name("uuid").value(node.getUuid());
             writer.name("name").value("MISSING_NAME");
+            if (i == 0) {
+                // The first stage node is marked as such
+                writer.name("squareOne").value(true);
+            }
             writer.name("image");
             if (node.getImage() == null) {
                 writer.nullValue();

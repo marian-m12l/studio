@@ -154,6 +154,10 @@
     border: solid 2px #3e451f;
 }
 
+.storm-diagrams-canvas .basic-node.stage-node.square-one {
+    border: solid 5px #b1be5d;
+}
+
 .storm-diagrams-canvas .basic-node.stage-node .assets {
     font-size: 300%;
     display: flex;

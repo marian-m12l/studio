@@ -19,6 +19,7 @@ import {readFromArchive} from "../../utils/reader";
 
 import './PackEditor.css';
 import {setEditorDiagram} from "../../actions";
+import StageNodeModel from "./models/StageNodeModel";
 
 
 class PackEditor extends React.Component {
@@ -64,7 +65,18 @@ class PackEditor extends React.Component {
     }
 
     clear = () => {
-        this.props.setEditorDiagram(new PackDiagramModel());
+        let model = new PackDiagramModel();
+
+        // Set 'square one' stage node
+        let packSelectionNode = new StageNodeModel("Pack selection stage");
+        packSelectionNode.squareOne = true;
+        packSelectionNode.setControl('wheel', true);
+        packSelectionNode.setControl('ok', true);
+        packSelectionNode.setPosition(50, 200);
+
+        model.addNode(packSelectionNode);
+
+        this.props.setEditorDiagram(model);
     };
 
     savePack = () => {

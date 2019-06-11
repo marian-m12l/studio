@@ -112,10 +112,10 @@ class EditorPackViewer extends React.Component {
         if (this.props.viewer.stage.homePort) {
             let homeLinks = Object.values(this.props.viewer.stage.homePort.getLinks());
             if (homeLinks.length !== 1) {
-                // Back to main (pack selection) stage node, which is (theoretically) the only stage node with an empty from port
+                // Back to main (pack selection) stage node
                 let mainNode = Object.values(this.props.viewer.diagram.nodes)
                     .filter(node => node.getType() === 'stage')
-                    .filter(node => Object.values(node.fromPort.getLinks()).length === 0)[0];
+                    .filter(node => node.squareOne)[0];
                 this.props.setViewerStage(mainNode);
                 this.props.setViewerAction({
                     node: null,

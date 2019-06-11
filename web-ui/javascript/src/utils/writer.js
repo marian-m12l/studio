@@ -28,7 +28,7 @@ export function writeToArchive(diagramModel) {
             }
             let okTarget = (node.okPort && node.okPort.getLinks() && Object.values(node.okPort.getLinks()).length > 0) ? Object.values(node.okPort.getLinks())[0].getTargetPort() : null;
             let homeTarget = (node.homePort && node.homePort.getLinks() && Object.values(node.homePort.getLinks()).length > 0) ? Object.values(node.homePort.getLinks())[0].getTargetPort() : null;
-            return {
+            let stage = {
                 uuid: node.uuid,
                 name: node.name,
                 position: {
@@ -51,6 +51,10 @@ export function writeToArchive(diagramModel) {
                     : null,
                 controlSettings: node.controls
             };
+            if (node.squareOne) {
+                stage.squareOne = true;
+            }
+            return stage;
         });
 
     let actionNodes = Object.values(diagramModel.nodes)

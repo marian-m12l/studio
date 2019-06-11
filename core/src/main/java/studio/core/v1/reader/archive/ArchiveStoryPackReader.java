@@ -78,6 +78,8 @@ public class ArchiveStoryPackReader {
         short version = 0;
         // Keep stage nodes in the order they appear
         LinkedHashMap<String, StageNode> stageNodes = new LinkedHashMap<>();
+        // Keep first node
+        StageNode squareOne = null;
 
 
         ZipEntry entry;
@@ -129,6 +131,9 @@ public class ArchiveStoryPackReader {
                                     controlSettings.get("autoplay").getAsBoolean()
                             )
                     );
+                    if (node.get("squareOne") != null && node.get("squareOne").getAsBoolean()) {
+                        squareOne = stageNode;
+                    }
                     stageNodes.put(uuid, stageNode);
                 }
 
@@ -173,6 +178,13 @@ public class ArchiveStoryPackReader {
 
         zis.close();
 
-        return new StoryPack(factoryDisabled, version, List.copyOf(stageNodes.values()));
+        // Make sure the first node is actually 'square one'
+        List<StageNode> nodes = new ArrayList<>(stageNodes.values());
+        if (squareOne != null) {
+            nodes.remove(squareOne);
+            nodes.add(0, squareOne);
+        }
+
+        return new StoryPack(factoryDisabled, version, nodes);
     }
 }

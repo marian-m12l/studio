@@ -14,6 +14,7 @@ class StageNodeModel extends SRD.NodeModel {
         super('stage');
         this.uuid = uuid || uuidv4();
         this.name = name;
+        this.squareOne = false;
         this.image = null;
         this.audio = null;
         this.controls = {

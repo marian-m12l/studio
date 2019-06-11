@@ -159,7 +159,7 @@ class StageNodeWidget extends React.Component {
 
     render() {
         return (
-            <div className='basic-node stage-node'>
+            <div className={`basic-node stage-node ${this.props.node.squareOne && 'square-one'}`}>
                 <EditableHeader beingEdited={this.state.beingEdited} onToggleEdit={this.toggleEdit} onChange={this.editName} node={this.props.node} />
                 <div className="controls">
                     <span title="Allow wheel selection" className={'btn btn-xs glyphicon glyphicon-resize-horizontal' + (this.props.node.controls.wheel ? ' active' : '')} onClick={this.toggleControl('wheel')}/>

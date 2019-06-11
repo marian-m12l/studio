@@ -55,6 +55,8 @@ export function readFromArchive(file) {
                     json.stageNodes.map(node => {
                         // Build stage node
                         var stageNode = new StageNodeModel(node.name, node.uuid);
+                        // Square one
+                        stageNode.squareOne = node.squareOne || false;
                         // Async load from asset files
                         let imagePromise = new Promise((resolve, reject) => {
                             if (node.image) {
