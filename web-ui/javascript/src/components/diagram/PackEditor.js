@@ -80,15 +80,20 @@ class PackEditor extends React.Component {
     };
 
     savePack = () => {
+        let toastId = toast("Saving story pack...", { autoClose: false });
         writeToArchive(this.state.engine.diagramModel)
             .then(blob => {
+                toast.update(toastId, { type: toast.TYPE.SUCCESS, render: 'Saved story pack.', autoClose: 5000});
                 var a = document.getElementById('download');
                 a.href = URL.createObjectURL(blob);
                 a.download = this.state.engine.diagramModel.title + '.zip';
                 a.click();
                 URL.revokeObjectURL(a.href);
             })
-            .catch(e => toast.error("Failed to save story pack."));
+            .catch(e => {
+                console.error('failed to save story pack', e);
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: 'Failed to save story pack.', autoClose: 5000 });
+            });
     };
 
     showFileSelector = () => {
@@ -107,11 +112,16 @@ class PackEditor extends React.Component {
     };
 
     loadPack = (file) => {
+        let toastId = toast("Loading story pack...", { autoClose: false });
         readFromArchive(file)
             .then(loadedModel => {
+                toast.update(toastId, { type: toast.TYPE.SUCCESS, render: 'Loaded story pack.', autoClose: 5000});
                 this.props.setEditorDiagram(loadedModel);
             })
-            .catch(e => toast.error("Failed to load story pack."));
+            .catch(e => {
+                console.error('failed to load story pack', e);
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: 'Failed to load story pack.', autoClose: 5000 });
+            });
     };
 
     render() {
