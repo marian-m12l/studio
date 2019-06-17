@@ -19,7 +19,7 @@ This software is still in an early stage of development, and as such has not yet
 USAGE
 -----
 
-### Prerequisite
+### Prerequisite
 
 To run the application:
 * JRE 10+
@@ -40,7 +40,7 @@ This application requires some assets from the official Luniistore\* software.
   * On Linux, `~/.studio`
   * On Windows, `%UserProfile%\.studio`
 
-#### Lunii\* Story Teller driver
+#### Lunii\* Story Teller driver
 
 Transfer of story pack to and from the Story Teller device is handled by the official Lunii\* driver. This driver
 is distributed with the Luniistore\* software, and must be obtained through it:
@@ -51,21 +51,21 @@ is distributed with the Luniistore\* software, and must be obtained through it:
   * `lunii-device-gateway.jar`
   * `lunii-device-wrapper.jar`
 
-#### Official pack metadata database
+#### Official pack metadata database
 
 In order to display story pack metadata, they must be downloaded and stored on a local database file.
 
 * Start the official Luniistore\* software to get a fresh authentication token (valid for one hour)
 * Open `$LOCAL_LUNIITHEQUE/.local.properties` in a text editor, and note the value of the token:
-  * If your are logged in on the Luniistore\* software, the token is located on the `tokens` property, `tokens.access_tokens.data.firebase` attribute
-  * If your are not logged in on the Luniistore\* software, the token is located on the `token` property, `firebase` attribute
+  * If your are logged in on the Luniistore\* software, the token is located on the `tokens` property, `tokens.access_tokens.data.firebase` attribute
+  * If your are not logged in on the Luniistore\* software, the token is located on the `token` property, `firebase` attribute
 * Query `https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN` and save the result as `$DOT_STUDIO/db/official.json` (e.g. `curl -v -X GET https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN > ~/.studio/db/official.json`)
 
 ### Building the application
 
 Once you have cloned this repository, execute `mvn clean install` to build the application. This will produce the distribution archive in `web-ui/target/`.
 
-### Starting the application
+### Starting the application
 
 Your must first build the application or download a distribution archive.
 
@@ -75,14 +75,14 @@ To start the application:
 If run in a terminal, it should display some logs, ending with `INFOS: Succeeded in deploying verticle`.
 * Open a browser and type the url `http://localhost:8080` to load the web UI.
 
-### Using the application
+### Using the application
 
 The web UI is made of two screens:
 
 * The pack library, to manage your local library and transfer to / from your device
 * The pack editor, to create or edit a story pack
 
-#### Pack library
+#### Pack library
 
 The pack library screen always shows the story packs in your local library. These are the packs located in `$DOT_STUDIO/library`. The packs may be either in binary format (the official format, understood by the device) or archive format (the unofficial format, used for story pack creation and edition).
 
@@ -204,7 +204,7 @@ If the last sector is incomplete, it is padded with zeros.
 
 Audio assets are signed 16-bits, mono, 32000 Hz, WAVE files. If the last sector is incomplete, it is padded with zeros.
 
-### Check bytes sector
+### Check bytes sector
 
 The last sector of a pack file must contain a predefined sequence of 512 bytes.
 

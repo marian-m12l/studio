@@ -19,7 +19,7 @@ Ce logiciel est encore à un stade précoce de développement, et n'a donc pas e
 UTILISATION
 -----------
 
-### Prérequis
+### Prérequis
 
 Pour exécuter l'application :
 * JRE 10+
@@ -41,7 +41,7 @@ Cette application nécessite certaines ressources du logiciel officiel Luniistor
   * Sur Linux, `~/.studio`
   * Sur Windows, `%UserProfile%\.studio`
 
-#### Pilote de la Fabrique à Histoire\*
+#### Pilote de la Fabrique à Histoire\*
 
 Le transfert de packs d'histoires de et vers la Fabrique à Histoire\* est géré par le pilote Lunii\* officiel. Ce pilote
 est distribué avec le logiciel Luniistore\*, et doit y être récupéré:
@@ -67,7 +67,7 @@ Afin d'afficher les métadonnées des packs d'histoires, celles-ci doivent être
 
 Après avoir cloné ce dépôt de sources, exécuter `mvn clean install` pour construire l'application. Ceci créera l'archive de distribution dans `web-ui/target/`.
 
-### Démarrer l'application
+### Démarrer l'application
 
 Vous devez d'abord contruire l'application ou télécharger une archive de distribution.
 
@@ -77,14 +77,14 @@ Pour démarrer l'application :
 Si la commande est exécutée dans un terminale, des logs devraient s'afficher, en se terminant par `INFOS: Succeeded in deploying verticle`.
 * Ouvrez un navigateur et saisissez l'url `http://localhost:8080` pour charger l'interface web.
 
-### Utiliser l'application
+### Utiliser l'application
 
 L'interface web est composée de deux écrans :
 
 * La bibliothèque d'histoires, qui permet de gérer la bibliothèque locale et de transférer de / vers la Fabrique à Histoire\* 
 * L'éditeur d'histoire, opur pour créer ou modifier un pack d'histoire
 
-#### Bibliothèque d'histoires
+#### Bibliothèque d'histoires
 
 L'écran de la bibliothèque d'histoires affiche toujours votre bibliothèque locale. Il s'agit des packs d'histoires situés dnas le répertoire `$DOT_STUDIO/library`. Ces packs peuvent être au format binaire (le format officiel, supporté par l'appareil) ou au format archive (le format officieux, utilisé pour la création et la modification de packs d'histoires).
 
@@ -206,7 +206,7 @@ Si le dernier secteur est incomplet, il est complété par des zéros.
 
 Les ressources audio sont des fichiers WAVE, 16-bits signés, 32 000 Hz. Si le dernier secteur est incomplet, il est complété par des zéros.
 
-### Secteur octets de vérification
+### Secteur octets de vérification
 
 Le dernier secteur d'un fichier de pack d'histoires doit contenir une séquence prédéfinie de 512 octets.
 
