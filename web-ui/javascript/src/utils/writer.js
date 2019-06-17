@@ -9,7 +9,7 @@ import JSZip from 'jszip';
 import {hashDataUrl} from "./hash";
 
 
-export function writeToArchive(diagramModel) {
+export async function writeToArchive(diagramModel) {
     // Build zip archive
     var zip = new JSZip();
     var zipAssets = zip.folder('assets');
@@ -17,13 +17,14 @@ export function writeToArchive(diagramModel) {
     // Keep track of written assets
     let written = [];
 
-    let stageNodes = Object.values(diagramModel.nodes)
+    let stageNodesPromises = Object.values(diagramModel.nodes)
         .filter(node => node.getType() === 'stage')
-        .map(node => {
+        .map(async node => {
             // Store assets as separate files in archive
             let imageFile = null;
             if (node.image) {
-                imageFile = hashDataUrl(node.image) + '.bmp';
+                let hash = await hashDataUrl(node.image);
+                imageFile = hash + '.bmp';
                 if (written.indexOf(imageFile) === -1) {
                     zipAssets.file(imageFile, node.image.substring(node.image.indexOf(',') + 1), {base64: true});
                     written.push(imageFile);
@@ -31,7 +32,8 @@ export function writeToArchive(diagramModel) {
             }
             let audioFile = null;
             if (node.audio) {
-                audioFile = hashDataUrl(node.audio) + '.wav';
+                let hash = await hashDataUrl(node.audio);
+                audioFile = hash + '.wav';
                 if (written.indexOf(audioFile) === -1) {
                     zipAssets.file(audioFile, node.audio.substring(node.audio.indexOf(',')+1), {base64: true});
                     written.push(audioFile);
@@ -67,6 +69,7 @@ export function writeToArchive(diagramModel) {
             }
             return stage;
         });
+    let stageNodes = await Promise.all(stageNodesPromises);
 
     let actionNodes = Object.values(diagramModel.nodes)
         .filter(node => node.getType() === 'action')

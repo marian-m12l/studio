@@ -10,10 +10,9 @@ export function hashDataUrl(dataUrl) {
         atob(dataUrl.substring(dataUrl.indexOf(',') + 1)),
         c => c.charCodeAt(0)
     );
-    // Compute sha1 hash
-    let hash = window.crypto.subtle.digest('SHA-1', bytes);
-    // Convert to hex string
-    return hexString(hash);
+    // Compute sha1 hash and convert to hex string
+    return window.crypto.subtle.digest('SHA-1', bytes)
+        .then(hash => hexString(hash));
 }
 
 function hexString(buffer) {
