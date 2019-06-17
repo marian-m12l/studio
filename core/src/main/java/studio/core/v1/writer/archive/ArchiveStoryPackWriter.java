@@ -7,6 +7,7 @@
 package studio.core.v1.writer.archive;
 
 import com.google.gson.stream.JsonWriter;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.StageNode;
@@ -63,7 +64,7 @@ public class ArchiveStoryPackWriter {
             if (node.getImage() == null) {
                 writer.nullValue();
             } else {
-                String assetFileName = node.getUuid() + ".bmp";
+                String assetFileName = DigestUtils.sha1Hex(node.getImage().getBitmapData()) + ".bmp";
                 writer.value(assetFileName);
                 assets.put(assetFileName, node.getImage().getBitmapData());
             }
@@ -71,7 +72,7 @@ public class ArchiveStoryPackWriter {
             if (node.getAudio() == null) {
                 writer.nullValue();
             } else {
-                String assetFileName = node.getUuid() + ".wav";
+                String assetFileName = DigestUtils.sha1Hex(node.getAudio().getWaveData()) + ".wav";
                 writer.value(assetFileName);
                 assets.put(assetFileName, node.getAudio().getWaveData());
             }

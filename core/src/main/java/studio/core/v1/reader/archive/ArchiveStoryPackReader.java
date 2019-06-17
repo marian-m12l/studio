@@ -78,6 +78,8 @@ public class ArchiveStoryPackReader {
         short version = 0;
         // Keep stage nodes in the order they appear
         LinkedHashMap<String, StageNode> stageNodes = new LinkedHashMap<>();
+        // Keep asset name to stage nodes map
+        Map<String, List<StageNode>> assetToStageNodes = new HashMap<>();
         // Keep first node
         StageNode squareOne = null;
 
@@ -131,9 +133,24 @@ public class ArchiveStoryPackReader {
                                     controlSettings.get("autoplay").getAsBoolean()
                             )
                     );
+
                     if (node.get("squareOne") != null && node.get("squareOne").getAsBoolean()) {
                         squareOne = stageNode;
                     }
+
+                    if (node.get("image") != null) {
+                        String imageAssetName = node.get("image").getAsString();
+                        List<StageNode> atsn = assetToStageNodes.getOrDefault(imageAssetName, new ArrayList<>());
+                        atsn.add(stageNode);
+                        assetToStageNodes.put(imageAssetName, atsn);
+                    }
+                    if (node.get("audio") != null) {
+                        String audioAssetName = node.get("audio").getAsString();
+                        List<StageNode> atsn = assetToStageNodes.getOrDefault(audioAssetName, new ArrayList<>());
+                        atsn.add(stageNode);
+                        assetToStageNodes.put(audioAssetName, atsn);
+                    }
+
                     stageNodes.put(uuid, stageNode);
                 }
 
@@ -162,17 +179,20 @@ public class ArchiveStoryPackReader {
         for (Map.Entry<String, byte[]> assetEntry : assets.entrySet()) {
             String assetName = assetEntry.getKey();
             int dotIndex = assetName.lastIndexOf(".");
-            String uuid = assetName.substring(0, dotIndex);
             String extension = assetName.substring(dotIndex+1);
 
-            StageNode stageNode = stageNodes.get(uuid);
-
-            if (extension.equalsIgnoreCase("bmp")) {
-                stageNode.setImage(new ImageAsset(assetEntry.getValue()));
-            } else if (extension.equalsIgnoreCase("wav")) {
-                stageNode.setAudio(new AudioAsset(assetEntry.getValue()));
-            } else {
-                // Unsupported asset
+            // Stage nodes explicitly reference their assets' filenames
+            List<StageNode> stageNodesReferencingAsset = assetToStageNodes.get(assetName);
+            if (stageNodesReferencingAsset != null && !stageNodesReferencingAsset.isEmpty()) {
+                for (StageNode stageNode : stageNodesReferencingAsset) {
+                    if (extension.equalsIgnoreCase("bmp")) {
+                        stageNode.setImage(new ImageAsset(assetEntry.getValue()));
+                    } else if (extension.equalsIgnoreCase("wav")) {
+                        stageNode.setAudio(new AudioAsset(assetEntry.getValue()));
+                    } else {
+                        // Unsupported asset
+                    }
+                }
             }
         }
 

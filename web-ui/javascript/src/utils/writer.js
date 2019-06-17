@@ -6,11 +6,16 @@
 
 import JSZip from 'jszip';
 
+import {hashDataUrl} from "./hash";
+
 
 export function writeToArchive(diagramModel) {
     // Build zip archive
     var zip = new JSZip();
     var zipAssets = zip.folder('assets');
+
+    // Keep track of written assets
+    let written = [];
 
     let stageNodes = Object.values(diagramModel.nodes)
         .filter(node => node.getType() === 'stage')
@@ -18,13 +23,19 @@ export function writeToArchive(diagramModel) {
             // Store assets as separate files in archive
             let imageFile = null;
             if (node.image) {
-                imageFile = node.uuid + '.bmp';
-                zipAssets.file(imageFile, node.image.substring(node.image.indexOf(',')+1), {base64: true});
+                imageFile = hashDataUrl(node.image) + '.bmp';
+                if (written.indexOf(imageFile) === -1) {
+                    zipAssets.file(imageFile, node.image.substring(node.image.indexOf(',') + 1), {base64: true});
+                    written.push(imageFile);
+                }
             }
             let audioFile = null;
             if (node.audio) {
-                audioFile = node.uuid + '.wav';
-                zipAssets.file(audioFile, node.audio.substring(node.audio.indexOf(',')+1), {base64: true});
+                audioFile = hashDataUrl(node.audio) + '.wav';
+                if (written.indexOf(audioFile) === -1) {
+                    zipAssets.file(audioFile, node.audio.substring(node.audio.indexOf(',')+1), {base64: true});
+                    written.push(audioFile);
+                }
             }
             let okTarget = (node.okPort && node.okPort.getLinks() && Object.values(node.okPort.getLinks()).length > 0) ? Object.values(node.okPort.getLinks())[0].getTargetPort() : null;
             let homeTarget = (node.homePort && node.homePort.getLinks() && Object.values(node.homePort.getLinks()).length > 0) ? Object.values(node.homePort.getLinks())[0].getTargetPort() : null;
