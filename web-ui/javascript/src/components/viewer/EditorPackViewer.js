@@ -91,7 +91,7 @@ class EditorPackViewer extends React.Component {
             } else {
                 let okTargetPort = okLinks[0].getTargetPort();
                 let okTargetActionNode = okTargetPort.getParent();
-                let targetIndex = okTargetActionNode.optionsIn.indexOf(okTargetPort);
+                let targetIndex = (okTargetPort === okTargetActionNode.randomOptionIn) ? Math.floor(Math.random() * okTargetActionNode.optionsOut.length) : okTargetActionNode.optionsIn.indexOf(okTargetPort);
                 let optionLinks = Object.values(okTargetActionNode.optionsOut[targetIndex].getLinks());
                 if (optionLinks.length !== 1) {
                     toast.error('Missing stage node for OK transition');
@@ -124,7 +124,7 @@ class EditorPackViewer extends React.Component {
             } else {
                 let homeTargetPort = homeLinks[0].getTargetPort();
                 let homeTargetActionNode = homeTargetPort.getParent();
-                let targetIndex = homeTargetActionNode.optionsIn.indexOf(homeTargetPort);
+                let targetIndex = (homeTargetPort === homeTargetActionNode.randomOptionIn) ? Math.floor(Math.random() * homeTargetActionNode.optionsOut.length) : homeTargetActionNode.optionsIn.indexOf(homeTargetPort);
                 let optionLinks = Object.values(homeTargetActionNode.optionsOut[targetIndex].getLinks());
                 if (optionLinks.length !== 1) {
                     toast.error('Missing stage node for HOME transition');

@@ -57,6 +57,7 @@ class ActionNodeWidget extends React.Component {
                 <div className='ports'>
                     <div className='in'>
                         {this.props.node.optionsIn.map(opt => <SRD.DefaultPortLabel key={opt.getID()} model={opt} />)}
+                        <SRD.DefaultPortLabel key={this.props.node.randomOptionIn.getID()} model={this.props.node.randomOptionIn} className="random" />
                     </div>
                     <div className='out'>
                         {this.props.node.optionsOut.map(opt => <SRD.DefaultPortLabel key={opt.getID()} model={opt} />)}

@@ -174,16 +174,21 @@ For instance, a pack with 4 stage nodes and 2 action nodes has the following str
 | 25 - 28        | Audio start sector        | int      | Offset from first stage node or -1  |
 | 29 - 32        | Audio size                | int      | Number of sectors                   |
 | 33 - 34        | Action when OK pressed    | short    | Offset from first stage node or -1  |
-| 35 - 36        | Options in transition     | short    | Number of available options         |
-| 37 - 38        | Chosen option             | short    | Index of the selected option        |
+| 35 - 36        | Options in transition     | short    | Number of available options or -1   |
+| 37 - 38        | Chosen option             | short    | Index of the selected option or -1  |
 | 39 - 40        | Action when HOME pressed  | short    | Offset from first stage node or -1  |
-| 41 - 42        | Options in transition     | short    | Number of available options         |
-| 43 - 44        | Chosen option             | short    | Index of the selected option        |
+| 41 - 42        | Options in transition     | short    | Number of available options or -1   |
+| 43 - 44        | Chosen option             | short    | Index of the selected option or -1  |
 | 45 - 46        | Wheel enabled             | short    | 0 or 1                              |
 | 47 - 48        | OK enabled                | short    | 0 or 1                              |
 | 49 - 50        | HOME enabled              | short    | 0 or 1                              |
 | 51 - 52        | PAUSE enabled             | short    | 0 or 1                              |
 | 53 - 54        | Auto jump when audio ends | short    | 0 or 1                              |
+
+Transitions when pressing OK or HOME generally direct to a given option of the next action node's list of options.
+However, some edge cases exist:
+* If the action is set but the chosen index is `-1`, then a **random** option of the list is selected.
+* If HOME button is enabled but **no action** is set (i.e. all transition fields are `-1`), the user is directed all the way back to the main stage (story-pack selection).
 
 ### Action node sector
 

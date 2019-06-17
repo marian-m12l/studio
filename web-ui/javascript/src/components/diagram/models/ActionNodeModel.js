@@ -15,6 +15,8 @@ class ActionNodeModel extends SRD.NodeModel {
         // Available options
         this.optionsIn = [];
         this.optionsOut = [];
+        // Random option
+        this.randomOptionIn = this.addPort(new SRD.DefaultPortModel(true, SRD.Toolkit.UID(), "Random option"));
     }
 
     addOption = () => {

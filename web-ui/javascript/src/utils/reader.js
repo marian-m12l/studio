@@ -92,7 +92,10 @@ export function readFromArchive(file) {
                                 actionNode.addOption();
                             }
                             let optionPort = actionNode.optionsIn[node.okTransition.optionIndex];
-                            links.push(stageNode.okPort.link(optionPort))
+                            if (node.okTransition.optionIndex === -1) {
+                                optionPort = actionNode.randomOptionIn;
+                            }
+                            links.push(stageNode.okPort.link(optionPort));
                         }
                         if (node.homeTransition) {
                             let actionNode = actionNodes.get(node.homeTransition.actionNode);
@@ -100,6 +103,9 @@ export function readFromArchive(file) {
                                 actionNode.addOption();
                             }
                             let optionPort = actionNode.optionsIn[node.homeTransition.optionIndex];
+                            if (node.homeTransition.optionIndex === -1) {
+                                optionPort = actionNode.randomOptionIn;
+                            }
                             links.push(stageNode.homePort.link(optionPort))
                         }
                         if (node.position) {

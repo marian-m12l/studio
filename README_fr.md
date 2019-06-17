@@ -176,16 +176,21 @@ Exemple de structure d'un pack avec 4 nœuds de scène et 2 nœuds d'action :
 | 25 - 28        | Secteur de début de son          | int      | Offset par rapport au premier nœud de scène ou -1 |
 | 29 - 32        | Taille du son                    | int      | Nombre de secteurs                                |
 | 33 - 34        | Action si OK appuyé              | short    | Offset par rapport au premier nœud de scène ou -1 |
-| 35 - 36        | Options dans la transition       | short    | Nombre d'options disponibles                      |
-| 37 - 38        | Option choisie                   | short    | Indice de l'option sélectionnée                   |
-| 39 - 40        | Action si MAISON apputyé         | short    | Offset par rapport au premier nœud de scène ou -1 |
-| 41 - 42        | Options dans la transition       | short    | Nombre d'options disponibles                      |
-| 43 - 44        | Option choisie                   | short    | Indice de l'option sélectionnée                   |
+| 35 - 36        | Options dans la transition       | short    | Nombre d'options disponibles ou -1                |
+| 37 - 38        | Option choisie                   | short    | Indice de l'option sélectionnée ou -1             |
+| 39 - 40        | Action si MAISON appuyé          | short    | Offset par rapport au premier nœud de scène ou -1 |
+| 41 - 42        | Options dans la transition       | short    | Nombre d'options disponibles ou -1                |
+| 43 - 44        | Option choisie                   | short    | Indice de l'option sélectionnée ou -1             |
 | 45 - 46        | Molette autorisée                | short    | 0 or 1                                            |
 | 47 - 48        | OK autorisé                      | short    | 0 or 1                                            |
 | 49 - 50        | MAISON autorisé                  | short    | 0 or 1                                            |
 | 51 - 52        | PAUSE autorisé                   | short    | 0 or 1                                            |
 | 53 - 54        | Avancement auto à la fin du son  | short    | 0 or 1                                            |
+
+Les transitions liées aux boutons OK et MAISON dirigent généralement vers une options donnée dans la liste des options du prochain nœud d'action.
+Cependant, des cas particuliers existent :
+* Si l'action est définie mais l'indice choisi est `-1`, une option est sélectionnée **aléatoirement** dans la liste.
+* Si le bouton MAISON est activé mais **aucune action** n'est définie (i.e. tous les champs de transition à `-1`), l'utilisateur est renvoyé au nœuds de scène principal (choix du pack d'histoires).
 
 ### Secteur nœud d'action
 

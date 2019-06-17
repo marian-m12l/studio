@@ -90,6 +90,11 @@
 .storm-diagrams-canvas .port:hover, .storm-diagrams-canvas .port.selected {
     background: #c0ff00;
 }
+.storm-diagrams-canvas .random .port:after {
+    width: 15px;
+    height: 15px;
+    content: '\1f500';
+}
 .storm-diagrams-canvas .basic-node {
     background-color: #1e1e1e;
     border-radius: 5px;

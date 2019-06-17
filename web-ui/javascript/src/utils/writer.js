@@ -51,13 +51,13 @@ export function writeToArchive(diagramModel) {
                 okTransition: okTarget
                     ? {
                         actionNode: okTarget.getParent().getID(),   // Action nodes referenced by "technical" id
-                        optionIndex: okTarget.getParent().optionsIn.indexOf(okTarget)
+                        optionIndex: (okTarget === okTarget.getParent().randomOptionIn) ? -1 : okTarget.getParent().optionsIn.indexOf(okTarget)
                     }
                     : null,
                 homeTransition: homeTarget
                     ? {
                         actionNode: homeTarget.getParent().getID(),    // Action nodes referenced by "technical" id
-                        optionIndex: homeTarget.getParent().optionsIn.indexOf(homeTarget)
+                        optionIndex: (homeTarget === homeTarget.getParent().randomOptionIn) ? -1 : homeTarget.getParent().optionsIn.indexOf(homeTarget)
                     }
                     : null,
                 controlSettings: node.controls
