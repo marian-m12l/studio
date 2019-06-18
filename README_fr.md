@@ -69,7 +69,7 @@ Après avoir cloné ce dépôt de sources, exécuter `mvn clean install` pour co
 
 ### Démarrer l'application
 
-Vous devez d'abord contruire l'application ou télécharger une archive de distribution.
+Vous devez d'abord contruire l'application ou télécharger une archive de distribution ([dans la dernière release](https://github.com/marian-m12l/studio/releases/latest)).
 
 Pour démarrer l'application :
 * Décompressez l'archive de distribution

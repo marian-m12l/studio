@@ -67,7 +67,7 @@ Once you have cloned this repository, execute `mvn clean install` to build the a
 
 ### Starting the application
 
-Your must first build the application or download a distribution archive.
+Your must first build the application or download a distribution archive ([check the latest release](https://github.com/marian-m12l/studio/releases/latest)).
 
 To start the application: 
 * Unzip the distribution archive
