@@ -1,0 +1,119 @@
+{
+
+  "header": {
+    "welcome": "Welcome to STUdio",
+    "buttons": {
+      "library": "Pack library",
+      "editor": "Pack editor"
+    }
+  },
+
+  "library": {
+    "device": {
+      "title": "DEVICE",
+      "uuid": "UUID:",
+      "serial": "Serial number:",
+      "firmware": "Firmware version:",
+      "empty": "No story packs in device, yet."
+    },
+    "local": {
+      "title": "LOCAL LIBRARY",
+      "path": "Path:",
+      "empty": "No story packs in library, yet."
+    },
+    "official": "Official"
+  },
+
+  "editor": {
+    "actions": {
+      "load": "Load pack",
+      "save": "Save pack",
+      "clear": "Clear pack"
+    },
+    "metadata": {
+      "title": "Title:",
+      "version": "Version:",
+      "desc": "Description:",
+      "thumb": "Thumbnail:"
+    },
+    "tray": {
+      "title": "Drag to add",
+      "stage": "Stage Node",
+      "action": "Action Node"
+    },
+    "diagram": {
+      "editTitle": "Edit node title",
+      "stage": {
+        "controls": {
+          "wheel": "Allow wheel selection",
+          "ok": "Allow OK button",
+          "home": "Allow {{count}}HOME button",
+          "pause": "Allow PAUSE button",
+          "autoplay": "Enable autoplay"
+        },
+        "image": "Image asset",
+        "audio": "Audio asset",
+        "preview": "Preview"
+      },
+      "action": {
+        "options": "Options:"
+      }
+    }
+  },
+
+  "toasts": {
+    "library": {
+      "loading": "Loading library...",
+      "fetching": "Fetching library's story packs...",
+      "fetched": "Fetched {{count}} pack from library.",
+      "fetched_plural": "Fetched {{count}} packs from library.",
+      "loadingFailed": "Failed to load library.",
+      "fetchingFailed": "Failed to fetch packs from library.",
+      "adding": "Adding pack to local library...",
+      "added": "Pack added to library.",
+      "addingFailed": "Failed to add pack to library.",
+      "refreshingFailed": "Failed to refresh library."
+    },
+    "device": {
+      "monitoring": {
+        "plugged": "Story Teller plugged.",
+        "unplugged": "Story Teller unplugged.",
+        "failure": "Story Teller failure."
+      },
+      "checking": "Checking device...",
+      "plugged": "Device is plugged.",
+      "checkingFailed": "Failed to check device.",
+      "fetching": "Fetching device's story packs...",
+      "fetched": "Fetched {{count}} pack from device.",
+      "fetched_plural": "Fetched {{count}} packs from device.",
+      "fetchingFailed": "Failed to fetch packs from device.",
+      "refreshingFailed": "Failed to refresh device.",
+      "adding": "Adding pack to device...",
+      "added": "Pack added to device.",
+      "addingFailed": "Failed to add pack to device.",
+      "removing": "Removing pack from device...",
+      "removed": "Pack removed from device.",
+      "removingFailed": "Failed to remove pack from device."
+    },
+    "editor": {
+      "saving": "Saving story pack...",
+      "saved": "Saved story pack.",
+      "savingFailed": "Failed to save story pack.",
+      "loadingWrongType": "Story pack file must be in ZIP archive format.",
+      "loading": "Loading story pack...",
+      "loaded": "Loaded story pack.",
+      "loadingFailed": "Failed to load story pack.",
+      "thumbWrongType": "Thumbnail must be in PNG format.",
+      "imageAssetWrongType": "Supported image asset formats are: BMP, JPEG, PNG.",
+      "audioAssetWrongType": "Supported audio asset formats are: WAV, MP3, OGG."
+    },
+    "viewer": {
+      "missingPrevStage": "Missing stage node for previous option.",
+      "missingNextStage": "Missing stage node for next option.",
+      "missingOkAction": "Missing action node for OK transition.",
+      "missingOkStage": "Missing stage node for OK transition.",
+      "missingHomeStage": "Missing stage node for HOME transition."
+    }
+  }
+
+}

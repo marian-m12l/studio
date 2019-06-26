@@ -7,6 +7,7 @@
 import React from 'react';
 import {connect} from "react-redux";
 import { toast } from 'react-toastify';
+import {withTranslation} from "react-i18next";
 
 import PackViewer from './PackViewer';
 import {hideViewer, setViewerAction, setViewerStage} from "../../actions";
@@ -48,11 +49,12 @@ class EditorPackViewer extends React.Component {
     };
 
     onWheelLeft = () => {
+        const { t } = this.props;
         if (this.props.viewer.action.node) {
             let nextIndex = this.props.viewer.action.index === 0 ? (this.props.viewer.action.node.optionsOut.length - 1) : (this.props.viewer.action.index - 1);
             let optionLinks = Object.values(this.props.viewer.action.node.optionsOut[nextIndex].getLinks());
             if (optionLinks.length !== 1) {
-                toast.error('Missing stage node for previous option');
+                toast.error(t('toasts.viewer.missingPrevStage'));
             } else {
                 let nextChoice = optionLinks[0].getTargetPort().getParent();
 
@@ -66,11 +68,12 @@ class EditorPackViewer extends React.Component {
     };
 
     onWheelRight = () => {
+        const { t } = this.props;
         if (this.props.viewer.action.node) {
             let nextIndex = (this.props.viewer.action.index + 1) % this.props.viewer.action.node.optionsOut.length;
             let optionLinks = Object.values(this.props.viewer.action.node.optionsOut[nextIndex].getLinks());
             if (optionLinks.length !== 1) {
-                toast.error('Missing stage node for next option');
+                toast.error(t('toasts.viewer.missingNextStage'));
             } else {
                 let nextChoice = optionLinks[0].getTargetPort().getParent();
 
@@ -84,17 +87,18 @@ class EditorPackViewer extends React.Component {
     };
 
     onOk = () => {
+        const { t } = this.props;
         if (this.props.viewer.stage.okPort) {
             let okLinks = Object.values(this.props.viewer.stage.okPort.getLinks());
             if (okLinks.length !== 1) {
-                toast.error('Missing action node for OK transition');
+                toast.error(t('toasts.viewer.missingOkAction'));
             } else {
                 let okTargetPort = okLinks[0].getTargetPort();
                 let okTargetActionNode = okTargetPort.getParent();
                 let targetIndex = (okTargetPort === okTargetActionNode.randomOptionIn) ? Math.floor(Math.random() * okTargetActionNode.optionsOut.length) : okTargetActionNode.optionsIn.indexOf(okTargetPort);
                 let optionLinks = Object.values(okTargetActionNode.optionsOut[targetIndex].getLinks());
                 if (optionLinks.length !== 1) {
-                    toast.error('Missing stage node for OK transition');
+                    toast.error(t('toasts.viewer.missingOkStage'));
                 } else {
                     let nextNode = optionLinks[0].getTargetPort().getParent();
 
@@ -109,6 +113,7 @@ class EditorPackViewer extends React.Component {
     };
 
     onHome = () => {
+        const { t } = this.props;
         if (this.props.viewer.stage.homePort) {
             let homeLinks = Object.values(this.props.viewer.stage.homePort.getLinks());
             if (homeLinks.length !== 1) {
@@ -127,7 +132,7 @@ class EditorPackViewer extends React.Component {
                 let targetIndex = (homeTargetPort === homeTargetActionNode.randomOptionIn) ? Math.floor(Math.random() * homeTargetActionNode.optionsOut.length) : homeTargetActionNode.optionsIn.indexOf(homeTargetPort);
                 let optionLinks = Object.values(homeTargetActionNode.optionsOut[targetIndex].getLinks());
                 if (optionLinks.length !== 1) {
-                    toast.error('Missing stage node for HOME transition');
+                    toast.error(t('toasts.viewer.missingHomeStage'));
                 } else {
                     let nextNode = optionLinks[0].getTargetPort().getParent();
 
@@ -171,7 +176,9 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     setViewerAction: (action) => dispatch(setViewerAction(action))
 });
 
-export default connect(
-    mapStateToProps,
-    mapDispatchToProps
-)(EditorPackViewer)
+export default withTranslation()(
+    connect(
+        mapStateToProps,
+        mapDispatchToProps
+    )(EditorPackViewer)
+)

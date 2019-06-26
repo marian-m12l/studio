@@ -8,6 +8,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { ToastContainer, toast } from 'react-toastify';
 import EventBus from 'vertx3-eventbus-client';
+import { withTranslation } from 'react-i18next';
 import 'react-toastify/dist/ReactToastify.css';
 
 import {AppContext} from './AppContext';
@@ -32,6 +33,7 @@ class App extends React.Component {
     }
 
     componentDidMount() {
+        const { t } = this.props;
         // Set up vert.x eventbus
         console.log("Setting up vert.x event bus...");
         let eventBus = new EventBus('http://localhost:8080/eventbus');
@@ -41,17 +43,17 @@ class App extends React.Component {
                 this.state.eventBus.registerHandler('storyteller.plugged', (error, message) => {
                     console.log("Received `storyteller.plugged` event from vert.x event bus.");
                     console.log(message.body);
-                    toast.info("Story Teller plugged");
+                    toast.info(t('toasts.device.monitoring.plugged'));
                     this.props.onDevicePlugged(message.body);
                 });
                 this.state.eventBus.registerHandler('storyteller.unplugged', (error, message) => {
                     console.log("Received `storyteller.unplugged` event from vert.x event bus.");
-                    toast.info("Story Teller unplugged");
+                    toast.info(t('toasts.device.monitoring.unplugged'));
                     this.props.onDeviceUnplugged();
                 });
                 this.state.eventBus.registerHandler('storyteller.failure', (error, message) => {
                     console.log("Received `storyteller.failure` event from vert.x event bus.");
-                    toast.error("Story Teller failure");
+                    toast.error(t('toasts.device.monitoring.failure'));
                     this.props.onDeviceUnplugged();
                 });
             };
@@ -86,18 +88,23 @@ class App extends React.Component {
     };
 
     render() {
+        const { t, i18n } = this.props;
         return (
             <AppContext.Provider value={{eventBus: this.state.eventBus}}>
                 <div className="App">
                     <ToastContainer/>
                     {this.state.viewer}
                     <header className="App-header">
-                        <p>
-                            Welcome to STUdio Web UI.
-                        </p>
+                        <div className="flags">
+                            <span title="Français" onClick={() => i18n.changeLanguage('fr')}>🇫🇷&nbsp;</span>
+                            <span title="English" onClick={() => i18n.changeLanguage('en')}>🇬🇧&nbsp;</span>
+                        </div>
+                        <div  className="welcome">
+                            {t('header.welcome')}
+                        </div>
                         <div className="controls">
-                            <span title="Pack library" className={`btn glyphicon glyphicon-film ${this.state.shown === 'library' && 'active'}`} onClick={this.showLibrary}/>
-                            <span title="Pack editor" className={`btn glyphicon glyphicon-wrench ${this.state.shown === 'editor' && 'active'}`} onClick={this.showEditor}/>
+                            <span title={t('header.buttons.library')} className={`btn glyphicon glyphicon-film ${this.state.shown === 'library' && 'active'}`} onClick={this.showLibrary}/>
+                            <span title={t('header.buttons.editor')} className={`btn glyphicon glyphicon-wrench ${this.state.shown === 'editor' && 'active'}`} onClick={this.showEditor}/>
                         </div>
                     </header>
                     {this.state.shown === 'library' && <PackLibrary/>}
@@ -113,14 +120,16 @@ const mapStateToProps = (state, ownProps) => ({
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-    checkDevice: () => dispatch(actionCheckDevice()),
-    onDevicePlugged: (metadata) => dispatch(actionDevicePlugged(metadata)),
+    checkDevice: () => dispatch(actionCheckDevice(ownProps.t)),
+    onDevicePlugged: (metadata) => dispatch(actionDevicePlugged(metadata, ownProps.t)),
     onDeviceUnplugged: () => dispatch(deviceUnplugged()),
-    loadLibrary: () => dispatch(actionLoadLibrary()),
+    loadLibrary: () => dispatch(actionLoadLibrary(ownProps.t)),
     setEditorDiagram: (diagram) => dispatch(setEditorDiagram(diagram))
 });
 
-export default connect(
-    mapStateToProps,
-    mapDispatchToProps
-)(App)
+export default withTranslation()(
+    connect(
+        mapStateToProps,
+        mapDispatchToProps
+    )(App)
+)

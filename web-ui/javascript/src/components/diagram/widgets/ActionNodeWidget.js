@@ -7,6 +7,7 @@
 import React from 'react';
 import PropTypes from "prop-types";
 import * as SRD from 'storm-react-diagrams';
+import {withTranslation} from "react-i18next";
 
 import EditableHeader from './composites/EditableHeader';
 import ActionNodeModel from "../models/ActionNodeModel";
@@ -46,11 +47,12 @@ class ActionNodeWidget extends React.Component {
     };
 
     render() {
+        const { t } = this.props;
         return (
             <div className='basic-node action-node'>
                 <EditableHeader beingEdited={this.state.beingEdited} onToggleEdit={this.toggleEdit} onChange={this.editName} node={this.props.node} />
                 <div className='title'>
-                    <span className='name'>Options:</span>
+                    <span className='name'>{t('editor.diagram.action.options')}</span>
                     {this.props.node.optionsIn.length > 0 && <span className='btn btn-xs glyphicon glyphicon-minus' onClick={this.removeOption} />}
                     <span className='btn btn-xs glyphicon glyphicon-plus' onClick={this.addOption} />
                 </div>
@@ -75,4 +77,4 @@ ActionNodeWidget.propTypes = {
     updateCanvas: PropTypes.func.isRequired
 };
 
-export default ActionNodeWidget;
+export default withTranslation()(ActionNodeWidget);

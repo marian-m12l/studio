@@ -1,0 +1,119 @@
+{
+
+  "header": {
+    "welcome": "Bienvenue dans STUdio",
+    "buttons": {
+      "library": "Bibliothèque",
+      "editor": "Éditeur"
+    }
+  },
+
+  "library": {
+    "device": {
+      "title": "APPAREIL",
+      "uuid": "UUID :",
+      "serial": "Numéro de série :",
+      "firmware": "Version firmware :",
+      "empty": "Aucun pack d'histoires dans l'appareil."
+    },
+    "local": {
+      "title": "BIBLIOTHÈQUE LOCALE",
+      "path": "Chemin :",
+      "empty": "Aucun pack d'histoires dans la bibliothèque."
+    },
+    "official": "Officiel"
+  },
+
+  "editor": {
+    "actions": {
+      "load": "Charger un pack",
+      "save": "Enregistrer le pack",
+      "clear": "Réinitialiser"
+    },
+    "metadata": {
+      "title": "Titre :",
+      "version": "Version :",
+      "desc": "Description :",
+      "thumb": "Miniature :"
+    },
+    "tray": {
+      "title": "Déposez pour ajouter",
+      "stage": "Nœud de scène",
+      "action": "Nœud d'action"
+    },
+    "diagram": {
+      "editTitle": "Éditer le titre",
+      "stage": {
+        "controls": {
+          "wheel": "Autoriser la molette de sélection",
+          "ok": "Autoriser le bouton OK",
+          "home": "Autoriser le bouton MAISON",
+          "pause": "Autoriser le bouton PAUSE",
+          "autoplay": "Lecture automatique"
+        },
+        "image": "Ressource image",
+        "audio": "Ressource audio",
+        "preview": "Aperçu"
+      },
+      "action": {
+        "options": "Options :"
+      }
+    }
+  },
+
+  "toasts": {
+    "library": {
+      "loading": "Chargement de la bibliothèque...",
+      "fetching": "Récupération des packs d'histoires de la bibliothèque...",
+      "fetched": "{{count}} pack récupéré depuis la bibliothèque.",
+      "fetched_plural": "{{count}} packs récupérés depuis la bibliothèque.",
+      "loadingFailed": "Échec du chargement de la bibliothèque.",
+      "fetchingFailed": "Échec de la récupération des packs d'histoires de la bibliothèque.",
+      "adding": "Ajout du pack à la bibliothèque...",
+      "added": "Pack ajouté à la bibliothèque.",
+      "addingFailed": "Échec de l'ajout du pack à la bibliothèque.",
+      "refreshingFailed": "Échec du rafraîchissement de la bibliothèque."
+    },
+    "device": {
+      "monitoring": {
+        "plugged": "Fabrique à histoires branchée.",
+        "unplugged": "Fabrique à histoires débranchée.",
+        "failure": "Échec d'accès à la fabrique à histoires."
+      },
+      "checking": "Vérification de l'appareil...",
+      "plugged": "L'appareil est branché.",
+      "checkingFailed": "Échec de la vérification de l'appareil.",
+      "fetching": "Récupération des packs d'histoires de l'appareil...",
+      "fetched": "{{count}} pack récupéré depuis l'appareil.",
+      "fetched_plural": "{{count}} packs récupérés depuis l'appareil.",
+      "fetchingFailed": "Échec de la récupération des packs d'histoires de l'appareil.",
+      "refreshingFailed": "Échec du rafraîchissement de l'appareil.",
+      "adding": "Ajout du pack à l'appareil...",
+      "added": "Pack ajouté à l'appareil.",
+      "addingFailed": "Échec de l'ajout du pack à l'appareil.",
+      "removing": "Retrait du pack de l'appareil...",
+      "removed": "Pack retiré de l'appareil.",
+      "removingFailed": "Échec du retrait du pack de l'appareil."
+    },
+    "editor": {
+      "saving": "Enregistrement du pack d'histoires...",
+      "saved": "Pack d'histoires enregistré.",
+      "savingFailed": "Échec de l'enregistrement du pack d'histoires.",
+      "loadingWrongType": "Le fichier du pack d'histoires doit être au format archive ZIP.",
+      "loading": "Chargement du pack d'histoires...",
+      "loaded": "Pack d'histoires chargé.",
+      "loadingFailed": "Échec du chargement du pack d'histoires.",
+      "thumbWrongType": "La miniature doit être au format PNG.",
+      "imageAssetWrongType": "Les formats d'image supportés sont : BMP, JPEG, PNG.",
+      "audioAssetWrongType": "Les formats audio supportés sont : WAV, MP3, OGG."
+    },
+    "viewer": {
+      "missingPrevStage": "Il manque le nœud de scène pour l'option précédente.",
+      "missingNextStage": "Il manque le nœud de scène pour l'option suivante.",
+      "missingOkAction": "Il manque le nœud d'action pour la transition OK.",
+      "missingOkStage": "Il manque le nœud de scène pour la transition OK.",
+      "missingHomeStage": "Il manque le nœud de scène pour la transition MAISON."
+    }
+  }
+
+}

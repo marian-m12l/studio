@@ -6,10 +6,12 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
+import {withTranslation} from "react-i18next";
 
-import './PackLibrary.css';
 import {actionAddFromLibrary, actionRemoveFromDevice, actionAddToLibrary} from "../actions";
 import {AppContext} from "../AppContext";
+
+import './PackLibrary.css';
 
 
 class PackLibrary extends React.Component {
@@ -72,6 +74,7 @@ class PackLibrary extends React.Component {
     };
 
     render() {
+        const { t } = this.props;
         let storagePercentage = null;
         if (this.state.device.metadata) {
             storagePercentage = (100.00 * this.state.device.metadata.storage.taken / this.state.device.metadata.storage.size).toFixed(0) + '%';
@@ -82,10 +85,10 @@ class PackLibrary extends React.Component {
                 {/* Device view, if plugged */}
                 {this.state.device.metadata && <div className="plugged-device">
                     <div className="header">
-                        <h4>DEVICE</h4>
-                        <div><strong>UUID:</strong> {this.state.device.metadata.uuid}</div>
-                        <div><strong>Serial number:</strong> {this.state.device.metadata.serial || 'N/C'}</div>
-                        <div><strong>Firmware version:</strong> {this.state.device.metadata.firmware || 'N/C'}</div>
+                        <h4>{t('library.device.title')}</h4>
+                        <div><strong>{t('library.device.uuid')}</strong> {this.state.device.metadata.uuid}</div>
+                        <div><strong>{t('library.device.serial')}</strong> {this.state.device.metadata.serial || '-'}</div>
+                        <div><strong>{t('library.device.firmware')}</strong> {this.state.device.metadata.firmware || '-'}</div>
                         {this.state.device.metadata.error && <p><strong>DEVICE HAS ERRORS</strong></p>}
                         <div className="progress">
                             <div className="progress-bar" role="progressbar" style={{width: storagePercentage}} aria-valuenow={this.state.device.metadata.storage.taken} aria-valuemin="0" aria-valuemax={this.state.device.metadata.storage.size}>{storagePercentage}</div>
@@ -94,7 +97,7 @@ class PackLibrary extends React.Component {
                     <div className="device-dropzone"
                          onDrop={this.onDropPackIntoDevice}
                          onDragOver={event => { event.preventDefault(); }}>
-                        {this.state.device.packs.length === 0 && <div className="empty">No story packs in device, yet.</div>}
+                        {this.state.device.packs.length === 0 && <div className="empty">{t('library.device.empty')}</div>}
                         {this.state.device.packs.length > 0 && <div className="pack-grid">
                             {this.state.device.packs.map(pack =>
                                 <div key={pack.uuid}
@@ -104,7 +107,7 @@ class PackLibrary extends React.Component {
                                      }}>
                                     <div className="pack-thumb">
                                         <img src={pack.image || defaultImage} width="128" height="128" draggable={false} />
-                                        {pack.official && <div className="pack-ribbon"><span>Official</span></div>}
+                                        {pack.official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
                                     </div>
                                     <div><span>{pack.title || pack.uuid}</span> <a href="#" onClick={this.onRemovePackFromDevice(pack.uuid)}>&times;</a></div>
                                 </div>
@@ -115,13 +118,13 @@ class PackLibrary extends React.Component {
                 {/* Local pack library */}
                 {this.state.library && <div className="local-library">
                     <div className="header">
-                        <h4>LOCAL LIBRARY</h4>
-                        {this.state.library.metadata && <div><strong>Path:</strong> {this.state.library.metadata.path}</div>}
+                        <h4>{t('library.local.title')}</h4>
+                        {this.state.library.metadata && <div><strong>{t('library.local.path')}</strong> {this.state.library.metadata.path}</div>}
                     </div>
                     <div className="library-dropzone"
                          onDrop={this.onDropPackIntoLibrary}
                          onDragOver={event => { event.preventDefault(); }}>
-                        {this.state.library.packs.length === 0 && <div className="empty">No story packs in library, yet.</div>}
+                        {this.state.library.packs.length === 0 && <div className="empty">{t('library.local.empty')}</div>}
                         {this.state.library.packs.length > 0 && <div className="pack-grid">
                             {this.state.library.packs.map(pack =>
                                 <div key={pack.uuid}
@@ -131,7 +134,7 @@ class PackLibrary extends React.Component {
                                      }}>
                                     <div className="pack-thumb">
                                         <img src={pack.image || defaultImage} width="128" height="128" draggable={false} />
-                                        {pack.official && <div className="pack-ribbon"><span>Official</span></div>}
+                                        {pack.official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
                                     </div>
                                     <div><span>{pack.title || pack.uuid}</span></div>
                                 </div>
@@ -152,12 +155,14 @@ const mapStateToProps = (state, ownProps) => ({
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-    addFromLibrary: (uuid, path, context) => dispatch(actionAddFromLibrary(uuid, path, context)),
-    removeFromDevice: (uuid) => dispatch(actionRemoveFromDevice(uuid)),
-    addToLibrary: (uuid, context) => dispatch(actionAddToLibrary(uuid, context)),
+    addFromLibrary: (uuid, path, context) => dispatch(actionAddFromLibrary(uuid, path, context, ownProps.t)),
+    removeFromDevice: (uuid) => dispatch(actionRemoveFromDevice(uuid, ownProps.t)),
+    addToLibrary: (uuid, context) => dispatch(actionAddToLibrary(uuid, context, ownProps.t)),
 });
 
-export default connect(
-    mapStateToProps,
-    mapDispatchToProps
-)(PackLibrary)
+export default withTranslation()(
+    connect(
+        mapStateToProps,
+        mapDispatchToProps
+    )(PackLibrary)
+)

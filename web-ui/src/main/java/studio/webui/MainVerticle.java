@@ -58,6 +58,19 @@ public class MainVerticle extends AbstractVerticle {
 
         Router router = Router.router(vertx);
 
+        // Handle cross-origin calls
+        router.route().handler(CorsHandler.create("http://localhost:3000")
+                .allowedMethods(Set.of(
+                        HttpMethod.GET,
+                        HttpMethod.POST
+                ))
+                .allowedHeaders(Set.of(
+                        HttpHeaders.ACCEPT.toString(),
+                        HttpHeaders.CONTENT_TYPE.toString(),
+                        "x-requested-with"
+                ))
+        );
+
         // Bridge event-bus to client-side app
         router.route("/eventbus/*").handler(eventBusHandler());
 
@@ -86,18 +99,6 @@ public class MainVerticle extends AbstractVerticle {
 
     private Router apiRouter() {
         Router router = Router.router(vertx);
-
-        // Handle cross-origin calls
-        router.route().handler(CorsHandler.create("*")
-                .allowedMethods(Set.of(
-                        HttpMethod.GET,
-                        HttpMethod.POST
-                ))
-                .allowedHeaders(Set.of(
-                        HttpHeaders.ACCEPT.toString(),
-                        HttpHeaders.CONTENT_TYPE.toString()
-                ))
-        );
 
         // Handle JSON
         router.route().handler(BodyHandler.create());

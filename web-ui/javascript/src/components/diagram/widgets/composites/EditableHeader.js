@@ -6,9 +6,11 @@
 
 import React from 'react';
 import * as SRD from 'storm-react-diagrams';
+import { useTranslation } from 'react-i18next';
 
 
 const EditableHeader = ({node, beingEdited, onToggleEdit, onChange}) => {
+    const { t } = useTranslation();
     return (
         <div className='title'>
             {node.fromPort && <SRD.DefaultPortLabel model={node.fromPort} />}
@@ -17,7 +19,7 @@ const EditableHeader = ({node, beingEdited, onToggleEdit, onChange}) => {
                 {beingEdited ? <input type="text" value={node.name} onChange={onChange} onKeyUp={e => e.stopPropagation()} /> : <strong>{node.name}</strong>}
             </span>
             <span className={'btn btn-xs glyphicon glyphicon-pencil' + (beingEdited ? ' active' : '')}
-                  title="Edit node title"
+                  title={t('editor.diagram.editTitle')}
                   onClick={onToggleEdit} />
         </div>
     )

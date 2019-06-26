@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import React from 'react';
+import React, {Suspense} from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 import { createStore, applyMiddleware } from 'redux';
@@ -12,6 +12,7 @@ import thunkMiddleware from 'redux-thunk';
 
 import App from './App';
 import rootReducer from './reducers';
+import './i18n';
 
 import './index.css';
 
@@ -23,7 +24,9 @@ const store = createStore(
 
 ReactDOM.render(
     <Provider store={store}>
-        <App />
+        <Suspense fallback="Loading...">
+            <App />
+        </Suspense>
     </Provider>,
     document.getElementById('root')
 );

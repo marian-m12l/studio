@@ -8,18 +8,19 @@ import React from 'react';
 import {connect} from "react-redux";
 import { toast } from 'react-toastify';
 import * as SRD from 'storm-react-diagrams';
+import {withTranslation} from "react-i18next";
 import 'storm-react-diagrams/dist/style.min.css';
 
 import StageNodeFactory from "./factories/StageNodeFactory";
 import ActionNodeFactory from "./factories/ActionNodeFactory";
 import PackDiagramModel from "./models/PackDiagramModel";
+import StageNodeModel from "./models/StageNodeModel";
 import PackDiagramWidget from "./widgets/PackDiagramWidget";
 import {writeToArchive} from "../../utils/writer";
 import {readFromArchive} from "../../utils/reader";
 
 import './PackEditor.css';
 import {setEditorDiagram} from "../../actions";
-import StageNodeModel from "./models/StageNodeModel";
 
 
 class PackEditor extends React.Component {
@@ -80,10 +81,11 @@ class PackEditor extends React.Component {
     };
 
     savePack = () => {
-        let toastId = toast("Saving story pack...", { autoClose: false });
+        const { t } = this.props;
+        let toastId = toast(t('toasts.editor.saving'), { autoClose: false });
         writeToArchive(this.state.engine.diagramModel)
             .then(blob => {
-                toast.update(toastId, { type: toast.TYPE.SUCCESS, render: 'Saved story pack.', autoClose: 5000});
+                toast.update(toastId, { type: toast.TYPE.SUCCESS, render: t('toasts.editor.saved'), autoClose: 5000});
                 var a = document.getElementById('download');
                 a.href = URL.createObjectURL(blob);
                 a.download = this.state.engine.diagramModel.title + '.zip';
@@ -92,7 +94,7 @@ class PackEditor extends React.Component {
             })
             .catch(e => {
                 console.error('failed to save story pack', e);
-                toast.update(toastId, { type: toast.TYPE.ERROR, render: 'Failed to save story pack.', autoClose: 5000 });
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.editor.savingFailed'), autoClose: 5000 });
             });
     };
 
@@ -101,10 +103,11 @@ class PackEditor extends React.Component {
     };
 
     packFileSelected = (event) => {
+        const { t } = this.props;
         let file = event.target.files[0];
         console.log('Selected file name = ' + file.name);
         if (file.type !== 'application/zip') {
-            toast.error("Story pack file must be in zip archive format.");
+            toast.error(t('toasts.editor.loadingWrongType'));
             return;
         }
 
@@ -112,26 +115,28 @@ class PackEditor extends React.Component {
     };
 
     loadPack = (file) => {
-        let toastId = toast("Loading story pack...", { autoClose: false });
+        const { t } = this.props;
+        let toastId = toast(t('toasts.editor.loading'), { autoClose: false });
         readFromArchive(file)
             .then(loadedModel => {
-                toast.update(toastId, { type: toast.TYPE.SUCCESS, render: 'Loaded story pack.', autoClose: 5000});
+                toast.update(toastId, { type: toast.TYPE.SUCCESS, render: t('toasts.editor.loaded'), autoClose: 5000});
                 this.props.setEditorDiagram(loadedModel);
             })
             .catch(e => {
                 console.error('failed to load story pack', e);
-                toast.update(toastId, { type: toast.TYPE.ERROR, render: 'Failed to load story pack.', autoClose: 5000 });
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.editor.loadingFailed'), autoClose: 5000 });
             });
     };
 
     render() {
+        const { t } = this.props;
         return (
             <div className="custom-pack-editor">
                 <a id="download" style={{visibility: 'hidden', position: 'absolute'}} />
                 <input type="file" id="upload" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.packFileSelected} />
-                <span title="Load pack" className="btn btn-default glyphicon glyphicon-folder-open" onClick={this.showFileSelector}/>
-                <span title="Save pack" className="btn btn-default glyphicon glyphicon-floppy-disk" onClick={this.savePack}/>
-                <span title="Clear pack" className="btn btn-default glyphicon glyphicon-trash" onClick={this.clear}/>
+                <span title={t('editor.actions.load')} className="btn btn-default glyphicon glyphicon-folder-open" onClick={this.showFileSelector}/>
+                <span title={t('editor.actions.save')} className="btn btn-default glyphicon glyphicon-floppy-disk" onClick={this.savePack}/>
+                <span title={t('editor.actions.clear')} className="btn btn-default glyphicon glyphicon-trash" onClick={this.clear}/>
 
                 <PackDiagramWidget diagramEngine={this.state.engine}/>
             </div>
@@ -147,8 +152,9 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     setEditorDiagram: (diagram) => dispatch(setEditorDiagram(diagram))
 });
 
-export default connect(
-    mapStateToProps,
-    mapDispatchToProps
-)(PackEditor)
-
+export default withTranslation()(
+    connect(
+        mapStateToProps,
+        mapDispatchToProps
+    )(PackEditor)
+)

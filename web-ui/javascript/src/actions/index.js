@@ -10,26 +10,26 @@ import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice, ad
 import {fetchLibraryInfos, fetchLibraryPacks} from '../services/library';
 
 
-export const actionLoadLibrary = () => {
+export const actionLoadLibrary = (t) => {
     return dispatch => {
-        let toastId = toast("Loading library...", { autoClose: false });
+        let toastId = toast(t('toasts.library.loading'), { autoClose: false });
         return fetchLibraryInfos()
             .then(metadata => {
                 console.log("fetching library packs...");
-                toast.update(toastId,{ render: "Fetching library's story packs..." });
+                toast.update(toastId,{ render: t('toasts.library.fetching') });
                 return fetchLibraryPacks()
                     .then(packs => {
-                        toast.update(toastId, { type: toast.TYPE.INFO, render: `Fetched ${packs.length} packs from library.`, autoClose: 5000 });
+                        toast.update(toastId, { type: toast.TYPE.INFO, render: t('toasts.library.fetched', { count: packs.length }), autoClose: 5000 });
                         dispatch(setLibrary(metadata, packs));
                     })
                     .catch(e => {
                         console.error('failed to fetch library packs', e);
-                        toast.update(toastId, { type: toast.TYPE.ERROR, render: `Failed to fetch packs from library.`, autoClose: 5000 });
+                        toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.library.fetchingFailed'), autoClose: 5000 });
                     });
             })
             .catch(e => {
                 console.error('failed to fetch library infos', e);
-                toast.update(toastId, { type: toast.TYPE.ERROR, render: `Failed to load library.`, autoClose: 5000 });
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.library.loadingFailed'), autoClose: 5000 });
             });
     }
 };
@@ -41,14 +41,14 @@ export const setLibrary = (metadata, packs) => ({
 });
 
 
-export const actionCheckDevice = () => {
+export const actionCheckDevice = (t) => {
     return dispatch => {
-        let toastId = toast("Checking device...", { autoClose: false });
+        let toastId = toast(t('toasts.device.checking'), { autoClose: false });
         return fetchDeviceInfos()
             .then(metadata => {
                 if (metadata && Object.keys(metadata).length > 0 && metadata.plugged) {
-                    toast.update(toastId, { type: toast.TYPE.INFO, render: `Device is plugged.`, autoClose: 5000 });
-                    dispatch(actionDevicePlugged(metadata));
+                    toast.update(toastId, { type: toast.TYPE.INFO, render: t('toasts.device.plugged'), autoClose: 5000 });
+                    dispatch(actionDevicePlugged(metadata, t));
                 } else {
                     // Device not plugged, nothing to do
                     toast.dismiss(toastId);
@@ -56,30 +56,30 @@ export const actionCheckDevice = () => {
             })
             .catch(e => {
                 console.error('failed to fetch device infos', e);
-                toast.update(toastId, { type: toast.TYPE.ERROR, render: `Failed to check device.`, autoClose: 5000 });
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.device.checkingFailed'), autoClose: 5000 });
             });
     }
 };
 
-export const actionDevicePlugged = (metadata) => {
+export const actionDevicePlugged = (metadata, t) => {
     return dispatch => {
         dispatch(devicePlugged(metadata));
 
         console.log("fetching device packs...");
-        let toastId = toast("Fetching device's story packs...", { autoClose: false });
+        let toastId = toast(t('toasts.device.fetching'), { autoClose: false });
         return fetchDevicePacks()
             .then(packs => {
-                toast.update(toastId, { type: toast.TYPE.INFO, render: `Fetched ${packs.length} packs from device.`, autoClose: 5000 });
+                toast.update(toastId, { type: toast.TYPE.INFO, render: t('toasts.device.fetched', { count: packs.length }), autoClose: 5000 });
                 dispatch(setDevicePacks(packs));
             })
             .catch(e => {
                 console.error('failed to fetch device packs', e);
-                toast.update(toastId, { type: toast.TYPE.ERROR, render: `Failed to fetch packs from device.`, autoClose: 5000 });
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.device.fetchingFailed'), autoClose: 5000 });
             });
     }
 };
 
-export const actionRefreshDevice = () => {
+export const actionRefreshDevice = (t) => {
     return dispatch => {
         return fetchDeviceInfos()
             .then(metadata => {
@@ -93,14 +93,14 @@ export const actionRefreshDevice = () => {
             })
             .catch(e => {
                 console.error('failed to refresh device', e);
-                toast("Failed to refresh device.", { type: toast.TYPE.ERROR, autoClose: 5000 });
+                toast(t('toasts.device.refreshingFailed'), { type: toast.TYPE.ERROR, autoClose: 5000 });
             });
     }
 };
 
-export const actionAddFromLibrary = (uuid, path, context) => {
+export const actionAddFromLibrary = (uuid, path, context, t) => {
     return dispatch => {
-        let toastId = toast("Adding pack to device...", { autoClose: false });
+        let toastId = toast(t('toasts.device.adding'), { autoClose: false });
         return addFromLibrary(uuid, path)
             .then(resp => {
                 // Monitor transfer progress
@@ -114,44 +114,44 @@ export const actionAddFromLibrary = (uuid, path, context) => {
                     console.log("Received `storyteller.transfer."+transferId+".done` event from vert.x event bus.");
                     console.log(message.body);
                     if (message.body.success) {
-                        toast.update(toastId, {progress: null, type: toast.TYPE.SUCCESS, render: 'Pack added to device', autoClose: 5000});
+                        toast.update(toastId, {progress: null, type: toast.TYPE.SUCCESS, render: t('toasts.device.added'), autoClose: 5000});
                         // Refresh device metadata and packs list
-                        dispatch(actionRefreshDevice());
+                        dispatch(actionRefreshDevice(t));
                     } else {
-                        toast.update(toastId, {progress: null, type: toast.TYPE.ERROR, render: 'Failed to add pack to device', autoClose: 5000});
+                        toast.update(toastId, {progress: null, type: toast.TYPE.ERROR, render: t('toasts.device.addingFailed'), autoClose: 5000});
                     }
                 });
             })
             .catch(e => {
                 console.error('failed to add pack to device', e);
-                toast.update(toastId, { type: toast.TYPE.ERROR, render: `Failed to add pack to device.`, autoClose: 5000 });
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.device.addingFailed'), autoClose: 5000 });
             });
     }
 };
 
-export const actionRemoveFromDevice = (uuid) => {
+export const actionRemoveFromDevice = (uuid, t) => {
     return dispatch => {
-        let toastId = toast("Removing pack from device...", { autoClose: false });
+        let toastId = toast(t('toasts.device.removing'), { autoClose: false });
         return removeFromDevice(uuid)
             .then(resp => {
                 if (resp.success) {
-                    toast.update(toastId, {type: toast.TYPE.SUCCESS, render: 'Pack removed from device', autoClose: 5000});
+                    toast.update(toastId, {type: toast.TYPE.SUCCESS, render: t('toasts.device.removed'), autoClose: 5000});
                     // Refresh device metadata and packs list
-                    dispatch(actionRefreshDevice());
+                    dispatch(actionRefreshDevice(t));
                 } else {
-                    toast.update(toastId, {type: toast.TYPE.ERROR, render: 'Failed to remove pack from device', autoClose: 5000});
+                    toast.update(toastId, {type: toast.TYPE.ERROR, render: t('toasts.device.removingFailed'), autoClose: 5000});
                 }
             })
             .catch(e => {
                 console.error('failed to remove pack from device', e);
-                toast.update(toastId, { type: toast.TYPE.ERROR, render: `Failed to remove pack from device.`, autoClose: 5000 });
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.device.removingFailed'), autoClose: 5000 });
             });
     }
 };
 
-export const actionAddToLibrary = (uuid, context) => {
+export const actionAddToLibrary = (uuid, context, t) => {
     return dispatch => {
-        let toastId = toast("Adding pack to local library...", { autoClose: false });
+        let toastId = toast(t('toasts.library.adding'), { autoClose: false });
         return addToLibrary(uuid)
             .then(resp => {
                 // Monitor transfer progress
@@ -165,22 +165,22 @@ export const actionAddToLibrary = (uuid, context) => {
                     console.log("Received `storyteller.transfer."+transferId+".done` event from vert.x event bus.");
                     console.log(message.body);
                     if (message.body.success) {
-                        toast.update(toastId, {progress: null, type: toast.TYPE.SUCCESS, render: 'Pack added to library', autoClose: 5000});
+                        toast.update(toastId, {progress: null, type: toast.TYPE.SUCCESS, render: t('toasts.library.added'), autoClose: 5000});
                         // Refresh device metadata and packs list
-                        dispatch(actionRefreshLibrary());
+                        dispatch(actionRefreshLibrary(t));
                     } else {
-                        toast.update(toastId, {progress: null, type: toast.TYPE.ERROR, render: 'Failed to add pack to library', autoClose: 5000});
+                        toast.update(toastId, {progress: null, type: toast.TYPE.ERROR, render: t('toasts.library.addingFailed'), autoClose: 5000});
                     }
                 });
             })
             .catch(e => {
                 console.error('failed to add pack to library', e);
-                toast.update(toastId, { type: toast.TYPE.ERROR, render: `Failed to add pack to library.`, autoClose: 5000 });
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.library.addingFailed'), autoClose: 5000 });
             });
     }
 };
 
-export const actionRefreshLibrary = () => {
+export const actionRefreshLibrary = (t) => {
     return dispatch => {
         return fetchLibraryInfos()
             .then(metadata => {
@@ -191,7 +191,7 @@ export const actionRefreshLibrary = () => {
             })
             .catch(e => {
                 console.error('failed to refresh library', e);
-                toast('Failed to refresh library.', { type: toast.TYPE.ERROR, autoClose: 5000 });
+                toast(t('toasts.library.refreshingFailed'), { type: toast.TYPE.ERROR, autoClose: 5000 });
             });
     }
 };

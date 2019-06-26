@@ -6,6 +6,7 @@
 
 import React from 'react';
 import PropTypes from 'prop-types';
+import {withTranslation} from "react-i18next";
 
 
 class TrayWidget extends React.Component {
@@ -17,9 +18,10 @@ class TrayWidget extends React.Component {
 
 
     render() {
+        const { t } = this.props;
         return (
             <div className="tray">
-                <h4>Drag to add</h4>
+                <h4>{t('editor.tray.title')}</h4>
                 {this.props.children}
             </div>
         );
@@ -31,4 +33,4 @@ TrayWidget.propTypes = {
     children: PropTypes.node.isRequired
 };
 
-export default TrayWidget;
+export default withTranslation()(TrayWidget);
