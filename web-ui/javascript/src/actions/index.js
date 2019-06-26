@@ -98,10 +98,10 @@ export const actionRefreshDevice = () => {
     }
 };
 
-export const actionAddFromLibrary = (path, context) => {
+export const actionAddFromLibrary = (uuid, path, context) => {
     return dispatch => {
         let toastId = toast("Adding pack to device...", { autoClose: false });
-        return addFromLibrary(path)
+        return addFromLibrary(uuid, path)
             .then(resp => {
                 // Monitor transfer progress
                 let transferId = resp.transferId;

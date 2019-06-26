@@ -8,20 +8,30 @@ package studio.core.v1.model;
 
 public class AudioAsset implements Asset {
 
-    private byte[] waveData;
+    private String mimeType;
+    private byte[] rawData;
 
     public AudioAsset() {
     }
 
-    public AudioAsset(byte[] waveData) {
-        this.waveData = waveData;
+    public AudioAsset(String mimeType, byte[] rawData) {
+        this.mimeType = mimeType;
+        this.rawData = rawData;
     }
 
-    public byte[] getWaveData() {
-        return waveData;
+    public String getMimeType() {
+        return mimeType;
     }
 
-    public void setWaveData(byte[] waveData) {
-        this.waveData = waveData;
+    public void setMimeType(String mimeType) {
+        this.mimeType = mimeType;
+    }
+
+    public byte[] getRawData() {
+        return rawData;
+    }
+
+    public void setRawData(byte[] rawData) {
+        this.rawData = rawData;
     }
 }

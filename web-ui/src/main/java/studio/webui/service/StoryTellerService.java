@@ -26,7 +26,7 @@ import java.util.TimerTask;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-public class StoryTellerService {
+public class StoryTellerService implements IStoryTellerService {
 
     private final Logger LOGGER = LoggerFactory.getLogger(StoryTellerService.class);
 
@@ -123,7 +123,7 @@ public class StoryTellerService {
         }
     }
 
-    public Optional<String> addPack(File packFile) {
+    public Optional<String> addPack(String uuid, File packFile) {
         if (storyTellerHandler == null) {
             return Optional.empty();
         } else {
@@ -134,6 +134,12 @@ public class StoryTellerService {
                 @Override
                 public void run() {
                     try {
+                        // Make sure the device does not already contain this pack
+                        if (storyTellerHandler.getStoriesPacks().stream().anyMatch(p -> p.getUuid().equalsIgnoreCase(uuid))) {
+                            LOGGER.error("Cannot add pack to device because the device already contains this pack");
+                            eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
+                            return;
+                        }
                         storyTellerHandler.addStoryPack(-1, packFile, new ProgressCallback() {
                             @Override
                             public boolean onProgress(Progress progress) {
@@ -153,7 +159,7 @@ public class StoryTellerService {
                         eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
                     }
                 }
-            }, 0);
+            }, 1000);
             return Optional.of(transferId);
         }
     }
@@ -218,13 +224,13 @@ public class StoryTellerService {
                             eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
                         }
                     } catch (Exception e) {
-                        LOGGER.error("Failed to add pack to device", e);
+                        LOGGER.error("Failed to extract pack from device", e);
                         e.printStackTrace();
                         // Send event on eventbus to signal transfer failure
                         eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
                     }
                 }
-            }, 0);
+            }, 1000);
             return Optional.of(transferId);
         }
     }

@@ -8,20 +8,30 @@ package studio.core.v1.model;
 
 public class ImageAsset implements Asset {
 
-    private byte[] bitmapData;
+    private String mimeType;
+    private byte[] rawData;
 
     public ImageAsset() {
     }
 
-    public ImageAsset(byte[] bitmapData) {
-        this.bitmapData = bitmapData;
+    public ImageAsset(String mimeType, byte[] rawData) {
+        this.mimeType = mimeType;
+        this.rawData = rawData;
     }
 
-    public byte[] getBitmapData() {
-        return bitmapData;
+    public String getMimeType() {
+        return mimeType;
     }
 
-    public void setBitmapData(byte[] bitmapData) {
-        this.bitmapData = bitmapData;
+    public void setMimeType(String mimeType) {
+        this.mimeType = mimeType;
+    }
+
+    public byte[] getRawData() {
+        return rawData;
+    }
+
+    public void setRawData(byte[] rawData) {
+        this.rawData = rawData;
     }
 }

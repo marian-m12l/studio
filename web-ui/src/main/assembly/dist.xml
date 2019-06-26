@@ -17,6 +17,15 @@
             <outputDirectory>lib</outputDirectory>
             <unpack>false</unpack>
         </dependencySet>
+        <dependencySet>
+            <useProjectArtifact>false</useProjectArtifact>
+            <outputDirectory>lib</outputDirectory>
+            <unpack>false</unpack>
+            <scope>system</scope>
+            <excludes>
+                <exclude>com.lunii:*</exclude>
+            </excludes>
+        </dependencySet>
     </dependencySets>
 
     <fileSets>

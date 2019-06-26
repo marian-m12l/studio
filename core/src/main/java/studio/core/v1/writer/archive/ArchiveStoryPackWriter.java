@@ -64,17 +64,21 @@ public class ArchiveStoryPackWriter {
             if (node.getImage() == null) {
                 writer.nullValue();
             } else {
-                String assetFileName = DigestUtils.sha1Hex(node.getImage().getBitmapData()) + ".bmp";
+                byte[] imageData = node.getImage().getRawData();
+                String extension = extensionFromMimeType(node.getImage().getMimeType());
+                String assetFileName = DigestUtils.sha1Hex(imageData) + extension;
                 writer.value(assetFileName);
-                assets.put(assetFileName, node.getImage().getBitmapData());
+                assets.putIfAbsent(assetFileName, imageData);
             }
             writer.name("audio");
             if (node.getAudio() == null) {
                 writer.nullValue();
             } else {
-                String assetFileName = DigestUtils.sha1Hex(node.getAudio().getWaveData()) + ".wav";
+                byte[] audioData = node.getAudio().getRawData();
+                String extension = extensionFromMimeType(node.getAudio().getMimeType());
+                String assetFileName = DigestUtils.sha1Hex(audioData) + extension;
                 writer.value(assetFileName);
-                assets.put(assetFileName, node.getAudio().getWaveData());
+                assets.putIfAbsent(assetFileName, audioData);
             }
             writer.name("okTransition");
             if (node.getOkTransition() == null) {
@@ -144,6 +148,25 @@ public class ArchiveStoryPackWriter {
 
         zos.flush();
         zos.close();
+    }
+
+    private String extensionFromMimeType(String mimeType) {
+        switch (mimeType) {
+            case "image/bmp":
+                return ".bmp";
+            case "image/png":
+                return ".png";
+            case "image/jpeg":
+                return ".jpg";
+            case "audio/x-wav":
+                return ".wav";
+            case "audio/mpeg":
+                return ".mp3";
+            case "audio/ogg":
+                return ".ogg";
+            default:
+                return "";
+        }
     }
 
 }

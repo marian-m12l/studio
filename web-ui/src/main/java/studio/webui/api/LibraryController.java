@@ -9,11 +9,8 @@ package studio.webui.api;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.Router;
 import studio.webui.service.LibraryService;
-
-import java.util.Optional;
 
 public class LibraryController {
     
@@ -22,13 +19,9 @@ public class LibraryController {
 
         // Local library device metadata
         router.get("/infos").handler(ctx -> {
-            Optional<JsonObject> maybeLibraryInfos = libraryService.libraryInfos();
-            maybeLibraryInfos.ifPresentOrElse(
-                    libraryInfos -> ctx.response()
-                            .putHeader("content-type", "application/json")
-                            .end(Json.encode(libraryInfos)),
-                    () -> ctx.fail(404)
-            );
+            ctx.response()
+                    .putHeader("content-type", "application/json")
+                    .end(Json.encode(libraryService.libraryInfos()));
         });
 
         // Local library packs list

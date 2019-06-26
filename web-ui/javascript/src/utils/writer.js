@@ -24,7 +24,7 @@ export async function writeToArchive(diagramModel) {
             let imageFile = null;
             if (node.image) {
                 let hash = await hashDataUrl(node.image);
-                imageFile = hash + '.bmp';
+                imageFile = hash + extensionFromDataUrl(node.image);
                 if (written.indexOf(imageFile) === -1) {
                     zipAssets.file(imageFile, node.image.substring(node.image.indexOf(',') + 1), {base64: true});
                     written.push(imageFile);
@@ -33,7 +33,7 @@ export async function writeToArchive(diagramModel) {
             let audioFile = null;
             if (node.audio) {
                 let hash = await hashDataUrl(node.audio);
-                audioFile = hash + '.wav';
+                audioFile = hash + extensionFromDataUrl(node.audio);
                 if (written.indexOf(audioFile) === -1) {
                     zipAssets.file(audioFile, node.audio.substring(node.audio.indexOf(',')+1), {base64: true});
                     written.push(audioFile);
@@ -107,4 +107,24 @@ export async function writeToArchive(diagramModel) {
 
     // Promise of Blob
     return zip.generateAsync({type: "blob"});
+}
+
+function extensionFromDataUrl(dataUrl) {
+    let mimeType = dataUrl.substring(dataUrl.indexOf(':') + 1, dataUrl.indexOf(';base64,'));
+    switch (mimeType) {
+        case 'image/bmp':
+            return '.bmp';
+        case 'image/png':
+            return '.png';
+        case 'image/jpeg':
+            return '.jpg';
+        case 'audio/x-wav':
+            return '.wav';
+        case 'audio/mpeg':
+            return '.mp3';
+        case 'audio/ogg':
+            return '.ogg';
+        default:
+            return '';
+    }
 }

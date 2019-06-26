@@ -212,4 +212,8 @@ The last sector of a pack file must contain a predefined sequence of 512 bytes.
 LICENSE
 -------
 
-This project is licensed under the terms of the Mozilla Public License 2.0.
+This project is licensed under the terms of the **Mozilla Public License 2.0**. The terms of the license are in
+the `LICENSE` file.
+
+The `vorbis-java` library, as well as the `VorbisEncoder` class are licensed by the Xiph.org Foundation. The terms of
+the license can found in the `LICENSE.vorbis-java` file.

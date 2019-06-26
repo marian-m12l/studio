@@ -52,7 +52,7 @@ class PackLibrary extends React.Component {
         }
         var data = JSON.parse(packData);
         // Transfer pack and show progress
-        this.props.addFromLibrary(data.path, this.context);
+        this.props.addFromLibrary(data.uuid, data.path, this.context);
     };
 
     onRemovePackFromDevice = (uuid) => {
@@ -102,7 +102,10 @@ class PackLibrary extends React.Component {
                                      onDragStart={event => {
                                          event.dataTransfer.setData("device-pack", JSON.stringify(pack));
                                      }}>
-                                    <div><img src={pack.image || defaultImage} width="128" height="128" draggable={false} /></div>
+                                    <div className="pack-thumb">
+                                        <img src={pack.image || defaultImage} width="128" height="128" draggable={false} />
+                                        {pack.official && <div className="pack-ribbon"><span>Official</span></div>}
+                                    </div>
                                     <div><span>{pack.title || pack.uuid}</span> <a href="#" onClick={this.onRemovePackFromDevice(pack.uuid)}>&times;</a></div>
                                 </div>
                             )}
@@ -149,7 +152,7 @@ const mapStateToProps = (state, ownProps) => ({
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-    addFromLibrary: (path, context) => dispatch(actionAddFromLibrary(path, context)),
+    addFromLibrary: (uuid, path, context) => dispatch(actionAddFromLibrary(uuid, path, context)),
     removeFromDevice: (uuid) => dispatch(actionRemoveFromDevice(uuid)),
     addToLibrary: (uuid, context) => dispatch(actionAddToLibrary(uuid, context)),
 });

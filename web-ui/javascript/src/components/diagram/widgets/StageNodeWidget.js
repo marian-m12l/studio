@@ -71,10 +71,6 @@ class StageNodeWidget extends React.Component {
             return;
         }
         let file = this.getDroppedFile(event);
-        if (file.type !== 'image/bmp') {
-            toast.error("Image asset must be in bitmap format.");
-            return;
-        }
         this.editImage(file);
     };
 
@@ -85,14 +81,15 @@ class StageNodeWidget extends React.Component {
     imageFileSelected = (event) => {
         let file = event.target.files[0];
         console.log('Selected file name = ' + file.name);
-        if (file.type !== 'image/bmp') {
-            toast.error("Image asset must be in bitmap format.");
-            return;
-        }
         this.editImage(file);
     };
 
     editImage = (file) => {
+        if (['image/bmp', 'image/jpeg', 'image/png'].indexOf(file.type) === -1) {
+            toast.error("Supported image asset formats are: BMP, JPEG, PNG");
+            return;
+        }
+
         let reader = new FileReader();
         let that = this;
         reader.addEventListener("load", function () {
@@ -110,10 +107,6 @@ class StageNodeWidget extends React.Component {
             return;
         }
         let file = this.getDroppedFile(event);
-        if (file.type !== 'audio/x-wav') {
-            toast.error("Audio asset must be in Wave format.");
-            return;
-        }
         this.editAudio(file);
     };
 
@@ -124,14 +117,16 @@ class StageNodeWidget extends React.Component {
     audioFileSelected = (event) => {
         let file = event.target.files[0];
         console.log('Selected file name = ' + file.name);
-        if (file.type !== 'audio/x-wav') {
-            toast.error("Audio asset must be in Wave format.");
-            return;
-        }
         this.editAudio(file);
     };
 
     editAudio = (file) => {
+        console.log(file.type);
+        if (['audio/x-wav', 'audio/mpeg', 'audio/ogg', 'video/ogg'].indexOf(file.type) === -1) {
+            toast.error("Supported audio asset formats are: WAV, MP3, OGG");
+            return;
+        }
+
         let reader = new FileReader();
         let that = this;
         reader.addEventListener("load", function () {

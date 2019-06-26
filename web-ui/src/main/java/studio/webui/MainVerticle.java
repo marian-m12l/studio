@@ -22,19 +22,21 @@ import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import studio.webui.api.DeviceController;
 import studio.webui.api.LibraryController;
+import studio.webui.service.IStoryTellerService;
 import studio.webui.service.LibraryService;
 import studio.webui.service.DatabaseMetadataService;
 import studio.webui.service.StoryTellerService;
+import studio.webui.service.mock.MockStoryTellerService;
 
 import java.util.Set;
 
 public class MainVerticle extends AbstractVerticle {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(StoryTellerService.class);
+    private final Logger LOGGER = LoggerFactory.getLogger(MainVerticle.class);
 
     private DatabaseMetadataService databaseMetadataService;
     private LibraryService libraryService;
-    private StoryTellerService storyTellerService;
+    private IStoryTellerService storyTellerService;
 
     @Override
     public void start() {
@@ -46,7 +48,12 @@ public class MainVerticle extends AbstractVerticle {
         libraryService = new LibraryService(databaseMetadataService);
 
         // Service that manages link with the story teller device
-        storyTellerService = new StoryTellerService(vertx.eventBus(), databaseMetadataService);
+        if (isDevMode()) {
+            LOGGER.warn("[DEV MODE] Initializing mock storyteller service");
+            storyTellerService = new MockStoryTellerService(vertx.eventBus(), databaseMetadataService);
+        } else {
+            storyTellerService = new StoryTellerService(vertx.eventBus(), databaseMetadataService);
+        }
 
 
         Router router = Router.router(vertx);
@@ -105,5 +112,9 @@ public class MainVerticle extends AbstractVerticle {
         router.mountSubRouter("/library", LibraryController.apiRouter(vertx, libraryService));
 
         return router;
+    }
+
+    private boolean isDevMode() {
+        return "dev".equalsIgnoreCase(System.getProperty("env", "prod"));
     }
 }

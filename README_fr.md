@@ -214,4 +214,8 @@ Le dernier secteur d'un fichier de pack d'histoires doit contenir une séquence 
 LICENCE
 -------
 
-Ce projet est distribué sous la licence Mozilla Public License 2.0.
+Ce projet est distribué sous la licence **Mozilla Public License 2.0**. Les termes de la licence sont dans le
+fichier `LICENSE`.
+
+La bibliothèque `vorbis-java`, ainsi que la classe `VorbisEncoder` sont distribuées par Xiph.org Foundation. Les termes
+de la licence se trouvent dans le fichier `LICENSE.vorbis-java`.

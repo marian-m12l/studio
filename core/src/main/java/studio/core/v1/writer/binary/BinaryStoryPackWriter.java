@@ -6,6 +6,7 @@
 
 package studio.core.v1.writer.binary;
 
+import org.apache.commons.codec.digest.DigestUtils;
 import studio.core.v1.Constants;
 import studio.core.v1.model.*;
 import studio.core.v1.reader.binary.AssetAddr;
@@ -40,29 +41,48 @@ public class BinaryStoryPackWriter {
                 actionNodesMap.put(new SectorAddr(nextFreeOffset++), stageNode.getHomeTransition().getActionNode());
             }
         }
-        TreeMap<AssetAddr, Asset> assetsMap = new TreeMap<>();
+        TreeMap<String, AssetAddr> assetsHashes = new TreeMap<>();
+        TreeMap<AssetAddr, byte[]> assetsData = new TreeMap<>();
         for (StageNode stageNode : pack.getStageNodes()) {
             ImageAsset image = stageNode.getImage();
-            if (image != null && !assetsMap.containsValue(image)) {
-                int imageSize = image.getBitmapData().length;
-                int imageSectors = (imageSize / Constants.SECTOR_SIZE);
-                if (imageSize % Constants.SECTOR_SIZE > 0) {
-                    imageSectors++;
+            if (image != null) {
+                byte[] imageData = image.getRawData();
+                String assetHash = DigestUtils.sha1Hex(imageData);
+                if (!assetsHashes.containsKey(assetHash)) {
+                    if (!"image/bmp".equals(image.getMimeType())) {
+                        throw new IllegalArgumentException("Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
+                    }
+                    int imageSize = imageData.length;
+                    int imageSectors = (imageSize / Constants.SECTOR_SIZE);
+                    if (imageSize % Constants.SECTOR_SIZE > 0) {
+                        imageSectors++;
+                    }
+                    AssetAddr addr = new AssetAddr(nextFreeOffset, imageSectors, AssetType.IMAGE);
+                    assetsHashes.put(assetHash, addr);
+                    assetsData.put(addr, image.getRawData());
+                    nextFreeOffset += imageSectors;
                 }
-                assetsMap.put(new AssetAddr(nextFreeOffset, imageSectors, AssetType.IMAGE), image);
-                nextFreeOffset += imageSectors;
             }
         }
         for (StageNode stageNode : pack.getStageNodes()) {
             AudioAsset audio = stageNode.getAudio();
-            if (audio != null && !assetsMap.containsValue(audio)) {
-                int audioSize = audio.getWaveData().length;
-                int audioSectors = (audioSize / Constants.SECTOR_SIZE);
-                if (audioSize % Constants.SECTOR_SIZE > 0) {
-                    audioSectors++;
+            if (audio != null) {
+                byte[] audioData = audio.getRawData();
+                String assetHash = DigestUtils.sha1Hex(audioData);
+                if (!assetsHashes.containsKey(assetHash)) {
+                    if (!"audio/x-wav".equals(audio.getMimeType())) {
+                        throw new IllegalArgumentException("Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
+                    }
+                    int audioSize = audioData.length;
+                    int audioSectors = (audioSize / Constants.SECTOR_SIZE);
+                    if (audioSize % Constants.SECTOR_SIZE > 0) {
+                        audioSectors++;
+                    }
+                    AssetAddr addr = new AssetAddr(nextFreeOffset, audioSectors, AssetType.AUDIO);
+                    assetsHashes.put(assetHash, addr);
+                    assetsData.put(addr, audio.getRawData());
+                    nextFreeOffset += audioSectors;
                 }
-                assetsMap.put(new AssetAddr(nextFreeOffset, audioSectors, AssetType.AUDIO), audio);
-                nextFreeOffset += audioSectors;
             }
         }
 
@@ -79,7 +99,8 @@ public class BinaryStoryPackWriter {
                 dos.writeInt(-1);
                 dos.writeInt(-1);
             } else {
-                AssetAddr assetAddr = getKey(assetsMap, image);
+                String assetHash = DigestUtils.sha1Hex(image.getRawData());
+                AssetAddr assetAddr = assetsHashes.get(assetHash);
                 dos.writeInt(assetAddr.getOffset());
                 dos.writeInt(assetAddr.getSize());
             }
@@ -90,7 +111,8 @@ public class BinaryStoryPackWriter {
                 dos.writeInt(-1);
                 dos.writeInt(-1);
             } else {
-                AssetAddr assetAddr = getKey(assetsMap, audio);
+                String assetHash = DigestUtils.sha1Hex(audio.getRawData());
+                AssetAddr assetAddr = assetsHashes.get(assetHash);
                 dos.writeInt(assetAddr.getOffset());
                 dos.writeInt(assetAddr.getSize());
             }
@@ -154,7 +176,7 @@ public class BinaryStoryPackWriter {
         }
 
         // Write assets (images / audio)
-        for (Map.Entry<AssetAddr, Asset> assetEntry: assetsMap.entrySet()) {
+        for (Map.Entry<AssetAddr, byte[]> assetEntry: assetsData.entrySet()) {
             // First sector to write
             AssetAddr assetAddr = assetEntry.getKey();
             // Skip to the beginning of the sector, if needed
@@ -164,21 +186,11 @@ public class BinaryStoryPackWriter {
             }
 
             // Asset to write
-            Asset asset = assetEntry.getValue();
+            byte[] assetBytes = assetEntry.getValue();
             // Write all bytes
             int overflow = 0;
-            switch (assetAddr.getType()) {
-                case AUDIO:
-                    AudioAsset audioAsset = (AudioAsset) asset;
-                    dos.write(audioAsset.getWaveData(), 0, audioAsset.getWaveData().length);
-                    overflow = audioAsset.getWaveData().length % Constants.SECTOR_SIZE;
-                    break;
-                case IMAGE:
-                    ImageAsset imageAsset= (ImageAsset) asset;
-                    dos.write(imageAsset.getBitmapData(), 0, imageAsset.getBitmapData().length);
-                    overflow = imageAsset.getBitmapData().length % Constants.SECTOR_SIZE;
-                    break;
-            }
+            dos.write(assetBytes, 0, assetBytes.length);
+            overflow = assetBytes.length % Constants.SECTOR_SIZE;
 
             // Skip to end of sector
             if (overflow > 0) {

@@ -40,7 +40,7 @@ export function readFromArchive(file) {
                     let thumb = archive.file('thumbnail.png');
                     if (thumb) {
                         thumb.async('base64').then(base64Thumb => {
-                            resolve('data:image/png;base64,' + base64Thumb);
+                            resolve(dataUrlPrefix('thumbnail.png') + base64Thumb);
                         });
                     } else {
                         resolve(null);
@@ -61,7 +61,7 @@ export function readFromArchive(file) {
                         let imagePromise = new Promise((resolve, reject) => {
                             if (node.image) {
                                 archive.file('assets/'+node.image).async('base64').then(base64Asset => {
-                                    resolve('data:image/bmp;base64,' + base64Asset);
+                                    resolve(dataUrlPrefix(node.image) + base64Asset);
                                 });
                             } else {
                                 resolve(null);
@@ -70,7 +70,7 @@ export function readFromArchive(file) {
                         let audioPromise = new Promise((resolve, reject) => {
                             if (node.audio) {
                                 archive.file('assets/'+node.audio).async('base64').then(base64Asset => {
-                                    resolve('data:sound/x-wav;base64,' + base64Asset);
+                                    resolve(dataUrlPrefix(node.audio) + base64Asset);
                                 });
                             } else {
                                 resolve(null);
@@ -160,6 +160,28 @@ export function readFromArchive(file) {
             console.log("Error reading " + file.name + ": " + e.message)
         });
 
+}
+
+function dataUrlPrefix(assetFileName) {
+    let extension = assetFileName.substring(assetFileName.lastIndexOf('.')).toLowerCase();
+    switch (extension) {
+        case '.bmp':
+            return 'data:image/bmp;base64,';
+        case '.png':
+            return 'data:image/png;base64,';
+        case '.jpg':
+        case '.jpeg':
+            return 'data:image/jpeg;base64,';
+        case '.wav':
+            return 'data:audio/x-wav;base64,';
+        case '.mp3':
+            return 'data:audio/mpeg;base64,';
+        case '.ogg':
+        case '.oga':
+            return 'data:audio/ogg;base64,';
+        default:
+            return 'data:application/octet-stream;base64,';
+    }
 }
 
 

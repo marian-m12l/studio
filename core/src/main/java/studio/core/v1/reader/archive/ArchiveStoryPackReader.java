@@ -138,13 +138,13 @@ public class ArchiveStoryPackReader {
                         squareOne = stageNode;
                     }
 
-                    if (node.get("image") != null) {
+                    if (node.get("image") != null && !node.get("image").isJsonNull()) {
                         String imageAssetName = node.get("image").getAsString();
                         List<StageNode> atsn = assetToStageNodes.getOrDefault(imageAssetName, new ArrayList<>());
                         atsn.add(stageNode);
                         assetToStageNodes.put(imageAssetName, atsn);
                     }
-                    if (node.get("audio") != null) {
+                    if (node.get("audio") != null && !node.get("audio").isJsonNull()) {
                         String audioAssetName = node.get("audio").getAsString();
                         List<StageNode> atsn = assetToStageNodes.getOrDefault(audioAssetName, new ArrayList<>());
                         atsn.add(stageNode);
@@ -179,18 +179,35 @@ public class ArchiveStoryPackReader {
         for (Map.Entry<String, byte[]> assetEntry : assets.entrySet()) {
             String assetName = assetEntry.getKey();
             int dotIndex = assetName.lastIndexOf(".");
-            String extension = assetName.substring(dotIndex+1);
+            String extension = assetName.substring(dotIndex).toLowerCase();
 
             // Stage nodes explicitly reference their assets' filenames
             List<StageNode> stageNodesReferencingAsset = assetToStageNodes.get(assetName);
             if (stageNodesReferencingAsset != null && !stageNodesReferencingAsset.isEmpty()) {
                 for (StageNode stageNode : stageNodesReferencingAsset) {
-                    if (extension.equalsIgnoreCase("bmp")) {
-                        stageNode.setImage(new ImageAsset(assetEntry.getValue()));
-                    } else if (extension.equalsIgnoreCase("wav")) {
-                        stageNode.setAudio(new AudioAsset(assetEntry.getValue()));
-                    } else {
-                        // Unsupported asset
+                    switch (extension.toLowerCase()) {
+                        case ".bmp":
+                            stageNode.setImage(new ImageAsset("image/bmp", assetEntry.getValue()));
+                            break;
+                        case ".png":
+                            stageNode.setImage(new ImageAsset("image/png", assetEntry.getValue()));
+                            break;
+                        case ".jpg":
+                        case ".jpeg":
+                            stageNode.setImage(new ImageAsset("image/jpeg", assetEntry.getValue()));
+                            break;
+                        case ".wav":
+                            stageNode.setAudio(new AudioAsset("audio/x-wav", assetEntry.getValue()));
+                            break;
+                        case ".mp3":
+                            stageNode.setAudio(new AudioAsset("audio/mpeg", assetEntry.getValue()));
+                            break;
+                        case ".ogg":
+                        case ".oga":
+                            stageNode.setAudio(new AudioAsset("audio/ogg", assetEntry.getValue()));
+                            break;
+                        default:
+                            // Unsupported asset
                     }
                 }
             }

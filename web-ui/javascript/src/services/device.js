@@ -15,11 +15,11 @@ export const fetchDevicePacks = () => {
         .then(response => response.json());
 };
 
-export const addFromLibrary = (path) => {
+export const addFromLibrary = (uuid, path) => {
     return fetch('http://localhost:8080/api/device/addFromLibrary', {
         method: "POST",
         headers: { "Content-Type" : "application/json" },
-        body: JSON.stringify({path})
+        body: JSON.stringify({uuid, path})
     })
         .then(response => response.json());
 };

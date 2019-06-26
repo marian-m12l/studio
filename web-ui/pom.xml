@@ -49,6 +49,10 @@
             <groupId>com.google.code.gson</groupId>
             <artifactId>gson</artifactId>
         </dependency>
+        <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
         <!-- Story Teller dependencies (some must be copied manually to ../lunii/libs folder -->
         <dependency>
             <groupId>org.usb4java</groupId>
@@ -192,7 +196,7 @@
                         </goals>
                         <configuration>
                             <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                            <excludeScope>system</excludeScope>
+                            <excludeGroupIds>com.lunii</excludeGroupIds>
                         </configuration>
                     </execution>
                 </executions>
@@ -219,15 +223,18 @@
                 </configuration>
             </plugin>
 
-            <!-- Run the app with `mvn exec:java` -->
+            <!-- Run the app with `mvn exec:exec` -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
                 <version>1.6.0</version>
                 <configuration>
-                    <classpathScope>compile</classpathScope>
-                    <mainClass>io.vertx.core.Launcher</mainClass>
+                    <executable>java</executable>
                     <arguments>
+                        <argument>-cp</argument>
+                        <argument>${project.build.directory}/classes:${project.build.directory}/lib/*:${system.libs}/*</argument>
+                        <argument>-Denv=dev</argument>
+                        <argument>io.vertx.core.Launcher</argument>
                         <argument>run</argument>
                         <argument>${vertx.main.verticle}</argument>
                     </arguments>

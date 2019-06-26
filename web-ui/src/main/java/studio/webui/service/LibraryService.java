@@ -14,6 +14,7 @@ import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.reader.archive.ArchiveStoryPackReader;
 import studio.core.v1.reader.binary.BinaryStoryPackReader;
+import studio.core.v1.utils.PackAssetsCompression;
 import studio.core.v1.writer.binary.BinaryStoryPackWriter;
 
 import java.io.File;
@@ -39,9 +40,7 @@ public class LibraryService {
 
     public LibraryService(DatabaseMetadataService databaseMetadataService) {
         this.databaseMetadataService = databaseMetadataService;
-    }
 
-    public Optional<JsonObject> libraryInfos() {
         // Create the local library folder if needed
         File libraryFolder = new File(libraryPath());
         if (!libraryFolder.exists() || !libraryFolder.isDirectory()) {
@@ -50,12 +49,14 @@ public class LibraryService {
             } catch (IOException e) {
                 LOGGER.error("Failed to initialize local library", e);
                 e.printStackTrace();
-                return Optional.empty();
+                throw new IllegalStateException("Failed to initialize local library");
             }
         }
-        return Optional.of(new JsonObject()
-                .put("path", libraryPath())
-        );
+    }
+
+    public JsonObject libraryInfos() {
+        return new JsonObject()
+                .put("path", libraryPath());
     }
 
     public JsonArray packs() {
@@ -83,7 +84,7 @@ public class LibraryService {
         }
     }
 
-    public Optional<File> getPackFile(String packPath) {
+    public Optional<File> getBinaryPackFile(String packPath) {
         // Archive format packs must first be converted to binary format
         if (packPath.endsWith(".zip")) {
             try {
@@ -97,10 +98,17 @@ public class LibraryService {
                 StoryPack storyPack = packReader.read(fis);
                 fis.close();
 
+                // Uncompress pack assets
+                StoryPack uncompressedPack = storyPack;
+                if (PackAssetsCompression.hasCompressedAssets(storyPack)) {
+                    LOGGER.warn("Uncompressing pack assets");
+                    uncompressedPack = PackAssetsCompression.withUncompressedAssets(storyPack);
+                }
+
                 LOGGER.warn("Writing binary format pack");
                 BinaryStoryPackWriter packWriter = new BinaryStoryPackWriter();
                 FileOutputStream fos = new FileOutputStream(tmp);
-                packWriter.write(storyPack, fos);
+                packWriter.write(uncompressedPack, fos);
                 fos.close();
 
                 return Optional.of(tmp);

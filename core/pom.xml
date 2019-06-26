@@ -33,6 +33,29 @@
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.googlecode.soundlibs</groupId>
+            <artifactId>vorbisspi</artifactId>
+            <version>1.0.3.3</version>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.soundlibs</groupId>
+            <artifactId>mp3spi</artifactId>
+            <version>1.9.5.4</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>junit</groupId>
+                    <artifactId>junit</artifactId>
+                </exclusion>
+            </exclusions>
+        </dependency>
+        <dependency>
+            <groupId>org.xiph</groupId>
+            <artifactId>vorbis-java</artifactId>
+            <version>1.0.0-beta</version>
+            <scope>system</scope>
+            <systemPath>${project.basedir}/../libs/vorbis-java-1.0.0-beta.jar</systemPath>
+        </dependency>
     </dependencies>
 
 </project>
