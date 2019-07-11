@@ -19,7 +19,8 @@
     "local": {
       "title": "BIBLIOTHÈQUE LOCALE",
       "path": "Chemin :",
-      "empty": "Aucun pack d'histoires dans la bibliothèque."
+      "empty": "Aucun pack d'histoires dans la bibliothèque.",
+      "editPack": "Ouvrir ce pack d'histoires dans l'éditeur"
     },
     "official": "Officiel"
   },
@@ -72,7 +73,10 @@
       "adding": "Ajout du pack à la bibliothèque...",
       "added": "Pack ajouté à la bibliothèque.",
       "addingFailed": "Échec de l'ajout du pack à la bibliothèque.",
-      "refreshingFailed": "Échec du rafraîchissement de la bibliothèque."
+      "refreshingFailed": "Échec du rafraîchissement de la bibliothèque.",
+      "downloading": "Téléchargement du pack d'histoires depuis la bibliothèque...",
+      "downloaded": "Pack d'histoires téléchargé.",
+      "downloadingFailed": "Échec du téléchargement du pack d'histoires depuis la bibliothèque."
     },
     "device": {
       "monitoring": {

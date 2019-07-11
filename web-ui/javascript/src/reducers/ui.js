@@ -7,16 +7,18 @@
 import React from "react";
 
 const initialState = {
-    diagram: null
+    shown: null
 };
 
-const editor = (state = initialState, action) => {
+const ui = (state = initialState, action) => {
     switch (action.type) {
-        case 'SET_EDITOR_DIAGRAM':
-            return { ...state, diagram: action.diagram };
+        case 'SHOW_LIBRARY':
+            return { ...state, shown: 'library' };
+        case 'SHOW_EDITOR':
+            return { ...state, shown: 'editor' };
         default:
             return state
     }
 };
 
-export default editor;
+export default ui;

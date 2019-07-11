@@ -10,6 +10,7 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.commons.io.IOUtils;
+import studio.core.v1.Constants;
 import studio.core.v1.model.*;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 
@@ -27,7 +28,7 @@ public class ArchiveStoryPackReader {
         ZipInputStream zis = new ZipInputStream(inputStream);
 
         // Pack metadata model
-        StoryPackMetadata metadata = new StoryPackMetadata();
+        StoryPackMetadata metadata = new StoryPackMetadata(Constants.PACK_FORMAT_ARCHIVE);
 
 
         ZipEntry entry;

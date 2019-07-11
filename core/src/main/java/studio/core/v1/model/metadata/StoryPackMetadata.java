@@ -8,6 +8,7 @@ package studio.core.v1.model.metadata;
 
 public class StoryPackMetadata {
 
+    private String format;
     private String uuid;
     private short version;
     private String title;
@@ -18,13 +19,26 @@ public class StoryPackMetadata {
     public StoryPackMetadata() {
     }
 
-    public StoryPackMetadata(String uuid, short version, String title, String description, byte[] thumbnail, Integer sectorSize) {
+    public StoryPackMetadata(String format) {
+        this.format = format;
+    }
+
+    public StoryPackMetadata(String format, String uuid, short version, String title, String description, byte[] thumbnail, Integer sectorSize) {
+        this.format = format;
         this.uuid = uuid;
         this.version = version;
         this.title = title;
         this.description = description;
         this.thumbnail = thumbnail;
         this.sectorSize = sectorSize;
+    }
+
+    public String getFormat() {
+        return format;
+    }
+
+    public void setFormat(String format) {
+        this.format = format;
     }
 
     public String getUuid() {

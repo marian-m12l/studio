@@ -14,3 +14,11 @@ export const fetchLibraryPacks = () => {
     return fetch('http://localhost:8080/api/library/packs')
         .then(response => response.json());
 };
+
+export const downloadFromLibrary = async (uuid, path) => {
+    return await fetch('http://localhost:8080/api/library/download', {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({uuid, path})
+    });
+};

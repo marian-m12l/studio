@@ -69,6 +69,10 @@ public class MainVerticle extends AbstractVerticle {
                         HttpHeaders.CONTENT_TYPE.toString(),
                         "x-requested-with"
                 ))
+                .exposedHeaders(Set.of(
+                        HttpHeaders.CONTENT_LENGTH.toString(),
+                        HttpHeaders.CONTENT_TYPE.toString()
+                ))
         );
 
         // Bridge event-bus to client-side app

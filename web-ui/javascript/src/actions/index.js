@@ -7,7 +7,8 @@
 import { toast } from 'react-toastify';
 
 import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice, addToLibrary} from '../services/device';
-import {fetchLibraryInfos, fetchLibraryPacks} from '../services/library';
+import {fetchLibraryInfos, fetchLibraryPacks, downloadFromLibrary} from '../services/library';
+import {readFromArchive} from "../utils/reader";
 
 
 export const actionLoadLibrary = (t) => {
@@ -196,6 +197,62 @@ export const actionRefreshLibrary = (t) => {
     }
 };
 
+export const actionDownloadFromLibrary = (uuid, path, t) => {
+    return dispatch => {
+        let toastId = toast(t('toasts.library.downloading'), { autoClose: false });
+        return downloadFromLibrary(uuid, path)
+            .then(async resp => {
+                const reader = resp.body.getReader();
+                const contentLength = +resp.headers.get('Content-Length');
+                console.log(contentLength);
+                // Read chunks and monitor progress
+                let receivedLength = 0;
+                let chunks = [];
+                while (true) {
+                    const {done, value} = await reader.read();
+                    if (done) {
+                        break;
+                    }
+                    chunks.push(value);
+                    receivedLength += value.length;
+                    let progress = (receivedLength / contentLength);
+                    console.log(`Received ${receivedLength} of ${contentLength}: ${progress}`);
+                    toast.update(toastId, {progress: progress, autoClose: false});
+                }
+                let blob = new Blob(chunks);
+                toast.update(toastId, {
+                    progress: null,
+                    type: toast.TYPE.SUCCESS,
+                    render: t('toasts.library.downloaded'),
+                    autoClose: 5000
+                });
+                return blob;
+            })
+            .catch(e => {
+                console.error('failed to download pack from library', e);
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.library.downloadingFailed'), autoClose: 5000 });
+            });
+    }
+};
+
+export const actionLoadPackInEditor = (packData, t) => {
+    return dispatch => {
+        let toastId = toast(t('toasts.editor.loading'), { autoClose: false });
+        readFromArchive(packData)
+            .then(loadedModel => {
+                toast.update(toastId, { type: toast.TYPE.SUCCESS, render: t('toasts.editor.loaded'), autoClose: 5000});
+                // Set loaded model in editor
+                dispatch(setEditorDiagram(loadedModel));
+                // Show editor
+                dispatch(showEditor());
+            })
+            .catch(e => {
+                console.error('failed to load story pack', e);
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.editor.loadingFailed'), autoClose: 5000 });
+            });
+    }
+};
+
 export const devicePlugged = (metadata) => ({
     type: 'DEVICE_PLUGGED',
     metadata
@@ -236,4 +293,12 @@ export const setViewerAction = (action) => ({
 export const setEditorDiagram = (diagram) => ({
     type: 'SET_EDITOR_DIAGRAM',
     diagram
+});
+
+export const showLibrary = () => ({
+    type: 'SHOW_LIBRARY'
+});
+
+export const showEditor = () => ({
+    type: 'SHOW_EDITOR'
 });

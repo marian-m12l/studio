@@ -16,7 +16,15 @@ import PackEditor from './components/diagram/PackEditor';
 import PackLibrary from './components/PackLibrary';
 import EditorPackViewer from "./components/viewer/EditorPackViewer";
 import {sample} from "./utils/sample";
-import {actionCheckDevice, actionDevicePlugged, deviceUnplugged, actionLoadLibrary, setEditorDiagram} from "./actions";
+import {
+    actionCheckDevice,
+    actionDevicePlugged,
+    deviceUnplugged,
+    actionLoadLibrary,
+    setEditorDiagram,
+    showLibrary,
+    showEditor
+} from "./actions";
 
 import './App.css';
 
@@ -27,7 +35,7 @@ class App extends React.Component {
         super(props);
         this.state = {
             eventBus: null,
-            shown: 'library',
+            shown: null,
             viewer: null
         };
     }
@@ -66,25 +74,24 @@ class App extends React.Component {
 
             // Load sample diagram in editor
             this.props.setEditorDiagram(sample());
+
+            this.props.dispatchShowLibrary();
         });
     }
 
     componentWillReceiveProps(nextProps, nextContext) {
         this.setState({
+            shown: nextProps.ui.shown,
             viewer: nextProps.viewer.show ? <EditorPackViewer/> : null
         });
     }
 
-    showEditor = () => {
-        this.setState({
-            shown: 'editor'
-        });
+    showLibrary = () => {
+        this.props.dispatchShowLibrary();
     };
 
-    showLibrary = () => {
-        this.setState({
-            shown: 'library'
-        });
+    showEditor = () => {
+        this.props.dispatchShowEditor();
     };
 
     render() {
@@ -116,6 +123,7 @@ class App extends React.Component {
 }
 
 const mapStateToProps = (state, ownProps) => ({
+    ui: state.ui,
     viewer: state.viewer
 });
 
@@ -124,7 +132,9 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     onDevicePlugged: (metadata) => dispatch(actionDevicePlugged(metadata, ownProps.t)),
     onDeviceUnplugged: () => dispatch(deviceUnplugged()),
     loadLibrary: () => dispatch(actionLoadLibrary(ownProps.t)),
-    setEditorDiagram: (diagram) => dispatch(setEditorDiagram(diagram))
+    setEditorDiagram: (diagram) => dispatch(setEditorDiagram(diagram)),
+    dispatchShowLibrary: () => dispatch(showLibrary()),
+    dispatchShowEditor: () => dispatch(showEditor())
 });
 
 export default withTranslation()(

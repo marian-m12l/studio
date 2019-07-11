@@ -19,7 +19,8 @@
     "local": {
       "title": "LOCAL LIBRARY",
       "path": "Path:",
-      "empty": "No story packs in library, yet."
+      "empty": "No story packs in library, yet.",
+      "editPack": "Open this story pack in editor"
     },
     "official": "Official"
   },
@@ -72,7 +73,10 @@
       "adding": "Adding pack to local library...",
       "added": "Pack added to library.",
       "addingFailed": "Failed to add pack to library.",
-      "refreshingFailed": "Failed to refresh library."
+      "refreshingFailed": "Failed to refresh library.",
+      "downloading": "Downloading pack from library...",
+      "downloaded": "Pack downloaded from library.",
+      "downloadingFailed": "Failed to download pack from library."
     },
     "device": {
       "monitoring": {

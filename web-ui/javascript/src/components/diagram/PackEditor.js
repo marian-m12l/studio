@@ -17,10 +17,9 @@ import PackDiagramModel from "./models/PackDiagramModel";
 import StageNodeModel from "./models/StageNodeModel";
 import PackDiagramWidget from "./widgets/PackDiagramWidget";
 import {writeToArchive} from "../../utils/writer";
-import {readFromArchive} from "../../utils/reader";
+import {actionLoadPackInEditor, setEditorDiagram} from "../../actions";
 
 import './PackEditor.css';
-import {setEditorDiagram} from "../../actions";
 
 
 class PackEditor extends React.Component {
@@ -115,17 +114,7 @@ class PackEditor extends React.Component {
     };
 
     loadPack = (file) => {
-        const { t } = this.props;
-        let toastId = toast(t('toasts.editor.loading'), { autoClose: false });
-        readFromArchive(file)
-            .then(loadedModel => {
-                toast.update(toastId, { type: toast.TYPE.SUCCESS, render: t('toasts.editor.loaded'), autoClose: 5000});
-                this.props.setEditorDiagram(loadedModel);
-            })
-            .catch(e => {
-                console.error('failed to load story pack', e);
-                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.editor.loadingFailed'), autoClose: 5000 });
-            });
+        this.props.loadPackInEditor(file);
     };
 
     render() {
@@ -149,7 +138,8 @@ const mapStateToProps = (state, ownProps) => ({
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-    setEditorDiagram: (diagram) => dispatch(setEditorDiagram(diagram))
+    setEditorDiagram: (diagram) => dispatch(setEditorDiagram(diagram)),
+    loadPackInEditor: (packData) => dispatch(actionLoadPackInEditor(packData, ownProps.t))
 });
 
 export default withTranslation()(

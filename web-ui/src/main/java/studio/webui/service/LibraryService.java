@@ -84,6 +84,10 @@ public class LibraryService {
         }
     }
 
+    public Optional<File> getRawPackFile(String packPath) {
+        return Optional.of(new File(libraryPath() + packPath));
+    }
+
     public Optional<File> getBinaryPackFile(String packPath) {
         // Archive format packs must first be converted to binary format
         if (packPath.endsWith(".zip")) {
@@ -118,7 +122,7 @@ public class LibraryService {
                 return Optional.empty();
             }
         } else {
-            return Optional.of(new File(libraryPath() + packPath));
+            return getRawPackFile(packPath);
         }
     }
 
@@ -164,6 +168,7 @@ public class LibraryService {
 
     private JsonObject getPackMetadata(StoryPackMetadata packMetadata, String path) {
         JsonObject json = new JsonObject()
+                .put("format", packMetadata.getFormat())
                 .put("uuid", packMetadata.getUuid())
                 .put("version", packMetadata.getVersion())
                 .put("path", path);

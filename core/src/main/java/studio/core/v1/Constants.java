@@ -78,4 +78,7 @@ public class Constants {
             (byte) 0x62, (byte) 0x45, (byte) 0xBF, (byte) 0x53, (byte) 0x2C, (byte) 0x7C, (byte) 0x4C, (byte) 0xE5,
             (byte) 0x8B, (byte) 0x44, (byte) 0xC3, (byte) 0x1A, (byte) 0xC7, (byte) 0x83, (byte) 0x5E, (byte) 0x1D
     };
+
+    public static final String PACK_FORMAT_ARCHIVE = "archive";
+    public static final String PACK_FORMAT_BINARY = "binary";
 }
