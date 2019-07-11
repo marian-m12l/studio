@@ -16,6 +16,7 @@ import studio.core.v1.reader.archive.ArchiveStoryPackReader;
 import studio.core.v1.reader.binary.BinaryStoryPackReader;
 import studio.core.v1.utils.PackAssetsCompression;
 import studio.core.v1.writer.binary.BinaryStoryPackWriter;
+import studio.webui.model.DatabasePackMetadata;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -65,6 +66,27 @@ public class LibraryService {
         if (!libraryFolder.exists() || !libraryFolder.isDirectory()) {
             return new JsonArray();
         } else {
+            // First, refresh unofficial database with metadata from archive packs
+            try (Stream<Path> paths = Files.walk(Paths.get(libraryPath()))) {
+                paths
+                        .filter(Files::isRegularFile)
+                        .filter(path -> path.toString().endsWith(".zip"))
+                        .forEach(path -> this.readPackFile(path).ifPresent(
+                                meta -> databaseMetadataService.refreshUnofficialMetadata(
+                                        new DatabasePackMetadata(
+                                                meta.getUuid(),
+                                                meta.getTitle(),
+                                                meta.getDescription(),
+                                                Optional.ofNullable(meta.getThumbnail()).map(thumb -> "data:image/png;base64," + Base64.getEncoder().encodeToString(thumb)).orElse(null),
+                                                false
+                                        )
+                                )
+                        ));
+            } catch (IOException e) {
+                LOGGER.error("Failed to read packs from local library", e);
+                throw new RuntimeException(e);
+            }
+
             // List pack files in library folder
             try (Stream<Path> paths = Files.walk(Paths.get(libraryPath()))) {
                 return new JsonArray(
