@@ -33,6 +33,9 @@ public class ImageConversion {
         BufferedImage inputImage = ImageIO.read(new ByteArrayInputStream(data));
         ByteArrayOutputStream output = new ByteArrayOutputStream();
         ImageIO.write(inputImage, format, output);
+        if (output.size() == 0) {
+            throw new IOException("Failed to convert image");
+        }
         return output.toByteArray();
     }
 }
