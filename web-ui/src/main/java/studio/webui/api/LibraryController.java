@@ -9,6 +9,7 @@ package studio.webui.api;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
@@ -36,7 +37,7 @@ public class LibraryController {
                     .end(Json.encode(libraryPacks));
         });
 
-        // Local library packs list
+        // Local library pack download
         router.post("/download").handler(ctx -> {
             String uuid = ctx.getBodyAsJson().getString("uuid");
             String packPath = ctx.getBodyAsJson().getString("path");
@@ -50,6 +51,21 @@ public class LibraryController {
                                 ctx.fail(500);
                             }
                     );
+        });
+
+        // Local library pack upload
+        router.post("/upload").handler(ctx -> {
+            String uuid = ctx.request().getFormAttribute("uuid");
+            String packPath = ctx.request().getFormAttribute("path");
+            boolean added = libraryService.addPackFile(packPath, ctx.fileUploads().iterator().next().uploadedFileName());
+            if (added) {
+                ctx.response()
+                        .putHeader("content-type", "application/json")
+                        .end(Json.encode(new JsonObject().put("success", true)));
+            } else {
+                LOGGER.error("Pack was not added to library");
+                ctx.fail(500);
+            }
         });
 
         return router;

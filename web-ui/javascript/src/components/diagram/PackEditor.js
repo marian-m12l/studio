@@ -16,8 +16,13 @@ import ActionNodeFactory from "./factories/ActionNodeFactory";
 import PackDiagramModel from "./models/PackDiagramModel";
 import StageNodeModel from "./models/StageNodeModel";
 import PackDiagramWidget from "./widgets/PackDiagramWidget";
+import Modal from "../Modal";
 import {writeToArchive} from "../../utils/writer";
-import {actionLoadPackInEditor, setEditorDiagram} from "../../actions";
+import {
+    actionLoadPackInEditor,
+    actionUploadToLibrary,
+    setEditorDiagram
+} from "../../actions";
 
 import './PackEditor.css';
 
@@ -38,7 +43,8 @@ class PackEditor extends React.Component {
 
         this.state = {
             engine,
-            diagram: null
+            diagram: null,
+            showSaveConfirmDialog: false
         };
     }
 
@@ -64,6 +70,40 @@ class PackEditor extends React.Component {
         }
     }
 
+    savePackToLibrary = () => {
+        // Pack path is either stored (when open from library) or generated
+        let uuid = Object.values(this.state.engine.diagramModel.nodes).filter(node => node.getType() === 'stage')[0].uuid;
+        let path = this.props.editor.libraryPath || this.state.engine.diagramModel.title.replace(' ', '_') + '-' + uuid + '-v' + this.state.engine.diagramModel.version + '.zip';
+        // Confirmation dialog if pack already in library
+        if (this.props.library.packs.filter(pack => pack.path === path).length > 0) {
+            this.showSaveConfirmDialog();
+        } else {
+            this.doSavePackToLibrary();
+        }
+    };
+
+    doSavePackToLibrary = () => {
+        const { t } = this.props;
+        // Pack path is either stored (when open from library) or generated
+        let uuid = Object.values(this.state.engine.diagramModel.nodes).filter(node => node.getType() === 'stage')[0].uuid;
+        let path = this.props.editor.libraryPath || this.state.engine.diagramModel.title.replace(' ', '_') + '-' + uuid + '-v' + this.state.engine.diagramModel.version + '.zip';
+        // Show toast
+        let toastId = toast(t('toasts.editor.saving'), { autoClose: false });
+        writeToArchive(this.state.engine.diagramModel)
+            .then(blob => {
+                this.props.uploadPackToLibrary(uuid, path, blob)
+                    .then(() => toast.update(toastId, { type: toast.TYPE.SUCCESS, render: t('toasts.editor.saved'), autoClose: 5000}));
+            })
+            .catch(e => {
+                console.error('failed to save story pack to library', e);
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.editor.savingFailed'), autoClose: 5000 });
+            })
+            .finally(() => {
+                // Always hide confirmation dialog
+                this.dismissSaveConfirmDialog();
+            });
+    };
+
     clear = () => {
         let model = new PackDiagramModel();
 
@@ -79,12 +119,12 @@ class PackEditor extends React.Component {
         this.props.setEditorDiagram(model);
     };
 
-    savePack = () => {
+    exportPack = () => {
         const { t } = this.props;
-        let toastId = toast(t('toasts.editor.saving'), { autoClose: false });
+        let toastId = toast(t('toasts.editor.exporting'), { autoClose: false });
         writeToArchive(this.state.engine.diagramModel)
             .then(blob => {
-                toast.update(toastId, { type: toast.TYPE.SUCCESS, render: t('toasts.editor.saved'), autoClose: 5000});
+                toast.update(toastId, { type: toast.TYPE.SUCCESS, render: t('toasts.editor.exported'), autoClose: 5000});
                 var a = document.getElementById('download');
                 a.href = URL.createObjectURL(blob);
                 a.download = this.state.engine.diagramModel.title + '.zip';
@@ -92,39 +132,58 @@ class PackEditor extends React.Component {
                 URL.revokeObjectURL(a.href);
             })
             .catch(e => {
-                console.error('failed to save story pack', e);
-                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.editor.savingFailed'), autoClose: 5000 });
+                console.error('failed to export story pack', e);
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.editor.exportingFailed'), autoClose: 5000 });
             });
     };
 
-    showFileSelector = () => {
+    showImportFileSelector = () => {
         document.getElementById('upload').click();
     };
 
-    packFileSelected = (event) => {
+    packImportFileSelected = (event) => {
         const { t } = this.props;
         let file = event.target.files[0];
-        console.log('Selected file name = ' + file.name);
+        console.log('Selected import file name = ' + file.name);
         if (file.type !== 'application/zip') {
             toast.error(t('toasts.editor.loadingWrongType'));
             return;
         }
 
-        this.loadPack(file);
+        this.importPack(file);
     };
 
-    loadPack = (file) => {
+    importPack = (file) => {
         this.props.loadPackInEditor(file);
+    };
+
+    showSaveConfirmDialog = () => {
+        this.setState({showSaveConfirmDialog: true});
+    };
+
+    dismissSaveConfirmDialog = () => {
+        this.setState({showSaveConfirmDialog: false});
     };
 
     render() {
         const { t } = this.props;
         return (
             <div className="custom-pack-editor">
+                {this.state.showSaveConfirmDialog &&
+                <Modal id="confirm-library-pack-overwrite"
+                       title={t('dialogs.editor.save.title')}
+                       content={<p>{t('dialogs.editor.save.content')}</p>}
+                       buttons={[
+                           { label: t('dialogs.shared.no'), onClick: this.dismissSaveConfirmDialog},
+                           { label: t('dialogs.shared.yes'), onClick: this.doSavePackToLibrary}
+                       ]}
+                       onClose={this.dismissSaveConfirmDialog}
+                />}
                 <a id="download" style={{visibility: 'hidden', position: 'absolute'}} />
-                <input type="file" id="upload" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.packFileSelected} />
-                <span title={t('editor.actions.load')} className="btn btn-default glyphicon glyphicon-folder-open" onClick={this.showFileSelector}/>
-                <span title={t('editor.actions.save')} className="btn btn-default glyphicon glyphicon-floppy-disk" onClick={this.savePack}/>
+                <span title={t('editor.actions.save')} className="btn btn-default glyphicon glyphicon-floppy-disk" onClick={this.savePackToLibrary}/>
+                <input type="file" id="upload" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.packImportFileSelected} />
+                <span title={t('editor.actions.import')} className="btn btn-default glyphicon glyphicon-import" onClick={this.showImportFileSelector}/>
+                <span title={t('editor.actions.export')} className="btn btn-default glyphicon glyphicon-export" onClick={this.exportPack}/>
                 <span title={t('editor.actions.clear')} className="btn btn-default glyphicon glyphicon-trash" onClick={this.clear}/>
 
                 <PackDiagramWidget diagramEngine={this.state.engine}/>
@@ -134,12 +193,14 @@ class PackEditor extends React.Component {
 }
 
 const mapStateToProps = (state, ownProps) => ({
-    editor: state.editor
+    editor: state.editor,
+    library: state.library
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
     setEditorDiagram: (diagram) => dispatch(setEditorDiagram(diagram)),
-    loadPackInEditor: (packData) => dispatch(actionLoadPackInEditor(packData, ownProps.t))
+    loadPackInEditor: (packData) => dispatch(actionLoadPackInEditor(packData, null, ownProps.t)),
+    uploadPackToLibrary: (uuid, path, packData) => dispatch(actionUploadToLibrary(uuid, path, packData, ownProps.t))
 });
 
 export default withTranslation()(

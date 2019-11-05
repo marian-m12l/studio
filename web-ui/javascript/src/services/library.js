@@ -22,3 +22,22 @@ export const downloadFromLibrary = async (uuid, path) => {
         body: JSON.stringify({uuid, path})
     });
 };
+
+export const uploadToLibrary = async (uuid, path, packData, progressHandler) => {
+    return new Promise((resolve, reject) => {
+        let xhr = new XMLHttpRequest();
+        if (xhr.upload) {
+            xhr.upload.onprogress = progressHandler;
+        }
+        xhr.onload = () => {
+            console.log('xhr upload complete: ' + JSON.parse(xhr.responseText));
+            resolve(JSON.parse(xhr.responseText));
+        };
+        xhr.open('post', 'http://localhost:8080/api/library/upload', true);
+        let formData = new FormData();
+        formData.append("uuid", uuid);
+        formData.append("path", path);
+        formData.append("pack", packData);
+        xhr.send(formData);
+    });
+};

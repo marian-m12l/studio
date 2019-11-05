@@ -27,8 +27,9 @@
 
   "editor": {
     "actions": {
-      "load": "Charger un pack",
-      "save": "Enregistrer le pack",
+      "save": "Enregistrer le pack dans la bibliothèque",
+      "import": "Importer un pack",
+      "export": "Exporter le pack",
       "clear": "Réinitialiser"
     },
     "metadata": {
@@ -76,7 +77,10 @@
       "refreshingFailed": "Échec du rafraîchissement de la bibliothèque.",
       "downloading": "Téléchargement du pack d'histoires depuis la bibliothèque...",
       "downloaded": "Pack d'histoires téléchargé.",
-      "downloadingFailed": "Échec du téléchargement du pack d'histoires depuis la bibliothèque."
+      "downloadingFailed": "Échec du téléchargement du pack d'histoires depuis la bibliothèque.",
+      "uploading": "Téléversement du pack vers la bibliothèque...",
+      "uploaded": "Pack d'histoire téléversé.",
+      "uploadingFailed": "Échec du téléversement du pack d'histoires vers la bibliothèque."
     },
     "device": {
       "monitoring": {
@@ -100,9 +104,12 @@
       "removingFailed": "Échec du retrait du pack de l'appareil."
     },
     "editor": {
-      "saving": "Enregistrement du pack d'histoires...",
-      "saved": "Pack d'histoires enregistré.",
-      "savingFailed": "Échec de l'enregistrement du pack d'histoires.",
+      "saving": "Enregistrement du pack d'histoires dans la bibliothèque...",
+      "saved": "Pack d'histoires enregistré dans la bibliothèque.",
+      "savingFailed": "Échec de l'enregistrement du pack d'histoires dans la bibliothèque.",
+      "exporting": "Export du pack d'histoire...",
+      "exported": "Pack d'histoires exporté.",
+      "exportingFailed": "Échec de l'export du pack d'histoires.",
       "loadingWrongType": "Le fichier du pack d'histoires doit être au format archive ZIP.",
       "loading": "Chargement du pack d'histoires...",
       "loaded": "Pack d'histoires chargé.",
@@ -117,6 +124,19 @@
       "missingOkAction": "Il manque le nœud d'action pour la transition OK.",
       "missingOkStage": "Il manque le nœud de scène pour la transition OK.",
       "missingHomeStage": "Il manque le nœud de scène pour la transition MAISON."
+    }
+  },
+
+  "dialogs": {
+    "shared": {
+      "yes": "Oui",
+      "no": "Non"
+    },
+    "editor": {
+      "save": {
+        "title": "Le pack d'histoires existe déjà dans la bibliothèque",
+        "content": "Écraser le pack d'histoires dans la bibliothèque?"
+      }
     }
   }
 

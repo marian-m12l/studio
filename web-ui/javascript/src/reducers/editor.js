@@ -7,13 +7,14 @@
 import React from "react";
 
 const initialState = {
-    diagram: null
+    diagram: null,
+    libraryPath: null
 };
 
 const editor = (state = initialState, action) => {
     switch (action.type) {
         case 'SET_EDITOR_DIAGRAM':
-            return { ...state, diagram: action.diagram };
+            return { ...state, diagram: action.diagram, libraryPath: (action.libraryPath || null) };
         default:
             return state
     }

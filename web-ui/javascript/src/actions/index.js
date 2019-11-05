@@ -7,7 +7,7 @@
 import { toast } from 'react-toastify';
 
 import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice, addToLibrary} from '../services/device';
-import {fetchLibraryInfos, fetchLibraryPacks, downloadFromLibrary} from '../services/library';
+import {fetchLibraryInfos, fetchLibraryPacks, downloadFromLibrary, uploadToLibrary} from '../services/library';
 import {readFromArchive} from "../utils/reader";
 
 
@@ -204,7 +204,6 @@ export const actionDownloadFromLibrary = (uuid, path, t) => {
             .then(async resp => {
                 const reader = resp.body.getReader();
                 const contentLength = +resp.headers.get('Content-Length');
-                console.log(contentLength);
                 // Read chunks and monitor progress
                 let receivedLength = 0;
                 let chunks = [];
@@ -235,20 +234,52 @@ export const actionDownloadFromLibrary = (uuid, path, t) => {
     }
 };
 
-export const actionLoadPackInEditor = (packData, t) => {
+export const actionLoadPackInEditor = (packData, libraryPath, t) => {
     return dispatch => {
         let toastId = toast(t('toasts.editor.loading'), { autoClose: false });
         readFromArchive(packData)
             .then(loadedModel => {
                 toast.update(toastId, { type: toast.TYPE.SUCCESS, render: t('toasts.editor.loaded'), autoClose: 5000});
                 // Set loaded model in editor
-                dispatch(setEditorDiagram(loadedModel));
+                dispatch(setEditorDiagram(loadedModel, libraryPath));
                 // Show editor
                 dispatch(showEditor());
             })
             .catch(e => {
                 console.error('failed to load story pack', e);
                 toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.editor.loadingFailed'), autoClose: 5000 });
+            });
+    }
+};
+
+export const actionUploadToLibrary = (uuid, path, packData, t) => {
+    return dispatch => {
+        let toastId = toast(t('toasts.library.uploading'), { autoClose: false });
+        return uploadToLibrary(uuid, path, packData,
+            progressEvent => {
+                if (progressEvent.lengthComputable) {
+                    let progress = (progressEvent.loaded / progressEvent.total);
+                    console.log(`Uploaded ${progressEvent.loaded} of ${progressEvent.total}: ${progress}`);
+                    toast.update(toastId, {progress: progress, autoClose: false});
+                }
+            })
+            .then(resp => {
+                if (resp.success) {
+                    toast.update(toastId, {
+                        progress: null,
+                        type: toast.TYPE.SUCCESS,
+                        render: t('toasts.library.uploaded'),
+                        autoClose: 5000
+                    });
+                    // Refresh device metadata and packs list
+                    dispatch(actionRefreshLibrary(t));
+                } else {
+                    toast.update(toastId, {type: toast.TYPE.ERROR, render: t('toasts.device.uploadingFailed'), autoClose: 5000});
+                }
+            })
+            .catch(e => {
+                console.error('failed to upload pack to library', e);
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.library.uploadingFailed'), autoClose: 5000 });
             });
     }
 };
@@ -290,9 +321,10 @@ export const setViewerAction = (action) => ({
     action
 });
 
-export const setEditorDiagram = (diagram) => ({
+export const setEditorDiagram = (diagram, libraryPath = null) => ({
     type: 'SET_EDITOR_DIAGRAM',
-    diagram
+    diagram,
+    libraryPath
 });
 
 export const showLibrary = () => ({

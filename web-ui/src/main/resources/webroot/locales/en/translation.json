@@ -27,8 +27,9 @@
 
   "editor": {
     "actions": {
-      "load": "Load pack",
-      "save": "Save pack",
+      "save": "Save pack to library",
+      "import": "Import pack",
+      "export": "Export pack",
       "clear": "Clear pack"
     },
     "metadata": {
@@ -76,7 +77,10 @@
       "refreshingFailed": "Failed to refresh library.",
       "downloading": "Downloading pack from library...",
       "downloaded": "Pack downloaded from library.",
-      "downloadingFailed": "Failed to download pack from library."
+      "downloadingFailed": "Failed to download pack from library.",
+      "uploading": "Uploading pack to library...",
+      "uploaded": "Pack uploaded to library.",
+      "uploadingFailed": "Failed to upload pack to library."
     },
     "device": {
       "monitoring": {
@@ -100,9 +104,12 @@
       "removingFailed": "Failed to remove pack from device."
     },
     "editor": {
-      "saving": "Saving story pack...",
-      "saved": "Saved story pack.",
-      "savingFailed": "Failed to save story pack.",
+      "saving": "Saving story pack to library...",
+      "saved": "Saved story pack to library.",
+      "savingFailed": "Failed to save story pack to library.",
+      "exporting": "Exporting story pack...",
+      "exported": "Exported story pack.",
+      "exportingFailed": "Failed to export story pack.",
       "loadingWrongType": "Story pack file must be in ZIP archive format.",
       "loading": "Loading story pack...",
       "loaded": "Loaded story pack.",
@@ -117,6 +124,19 @@
       "missingOkAction": "Missing action node for OK transition.",
       "missingOkStage": "Missing stage node for OK transition.",
       "missingHomeStage": "Missing stage node for HOME transition."
+    }
+  },
+
+  "dialogs": {
+    "shared": {
+      "yes": "Yes",
+      "no": "No"
+    },
+    "editor": {
+      "save": {
+        "title": "Pack already exists in library",
+        "content": "Overwrite the existing pack in library?"
+      }
     }
   }
 

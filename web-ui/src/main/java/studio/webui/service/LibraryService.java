@@ -10,6 +10,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import org.apache.commons.io.FileUtils;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.reader.archive.ArchiveStoryPackReader;
@@ -145,6 +146,26 @@ public class LibraryService {
             }
         } else {
             return getRawPackFile(packPath);
+        }
+    }
+
+    public boolean addPackFile(String destPath, String uploadedFilePath) {
+        try {
+            // Copy temporary file to local library
+            File src = new File(uploadedFilePath);
+            File dest = new File(libraryPath() + destPath);
+            if (dest.exists()) {
+                boolean deleted = dest.delete();
+                // Handle failure
+                if (!deleted) {
+                    return false;
+                }
+            }
+            FileUtils.moveFile(src, dest);
+            return true;
+        } catch (IOException e) {
+            LOGGER.error("Failed to add pack to local library", e);
+            throw new RuntimeException(e);
         }
     }
 

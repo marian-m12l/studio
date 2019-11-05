@@ -83,9 +83,9 @@ class PackLibrary extends React.Component {
         return () => {
             // First, download pack file from library
             this.props.downloadPackFromLibrary(pack.uuid, pack.path)
-                .then(pack => {
+                .then(packFile => {
                     // Next, load pack into editor
-                    this.props.loadPackInEditor(pack);
+                    this.props.loadPackInEditor(packFile, pack.path);
                 });
         }
     };
@@ -144,7 +144,7 @@ class PackLibrary extends React.Component {
                         {this.state.library.packs.length === 0 && <div className="empty">{t('library.local.empty')}</div>}
                         {this.state.library.packs.length > 0 && <div className="pack-grid">
                             {this.state.library.packs.map(pack =>
-                                <div key={pack.uuid}
+                                <div key={pack.path}
                                      draggable={true}
                                      onDragStart={event => {
                                          event.dataTransfer.setData("local-library-pack", JSON.stringify(pack));
@@ -154,9 +154,9 @@ class PackLibrary extends React.Component {
                                         {pack.official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
                                     </div>
                                     <div>
-                                        <span>{pack.title || pack.uuid}</span>
+                                        <span>{pack.title || pack.uuid}</span>&nbsp;
                                         {pack.format === 'archive' && <a href="#" onClick={this.onEditLibraryPack(pack)}>
-                                            &nbsp;<span className="glyphicon glyphicon-cog"
+                                            <span className="glyphicon glyphicon-cog"
                                                   title={t('library.local.editPack')} />
                                         </a>}
                                     </div>
@@ -182,7 +182,7 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     removeFromDevice: (uuid) => dispatch(actionRemoveFromDevice(uuid, ownProps.t)),
     addToLibrary: (uuid, context) => dispatch(actionAddToLibrary(uuid, context, ownProps.t)),
     downloadPackFromLibrary: (uuid, path) => dispatch(actionDownloadFromLibrary(uuid, path, ownProps.t)),
-    loadPackInEditor: (packData) => dispatch(actionLoadPackInEditor(packData, ownProps.t))
+    loadPackInEditor: (packData, libraryPath) => dispatch(actionLoadPackInEditor(packData, libraryPath, ownProps.t))
 });
 
 export default withTranslation()(
