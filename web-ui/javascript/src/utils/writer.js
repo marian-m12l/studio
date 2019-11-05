@@ -123,6 +123,7 @@ function extensionFromDataUrl(dataUrl) {
         case 'audio/mpeg':
             return '.mp3';
         case 'audio/ogg':
+        case 'video/ogg':
             return '.ogg';
         default:
             return '';
