@@ -8,6 +8,7 @@ import { toast } from 'react-toastify';
 
 import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice, addToLibrary} from '../services/device';
 import {fetchLibraryInfos, fetchLibraryPacks, downloadFromLibrary, uploadToLibrary} from '../services/library';
+import {sortPacks} from "../utils/packs";
 import {readFromArchive} from "../utils/reader";
 
 
@@ -38,7 +39,7 @@ export const actionLoadLibrary = (t) => {
 export const setLibrary = (metadata, packs) => ({
     type: 'SET_LIBRARY',
     metadata,
-    packs
+    packs: sortPacks(packs)
 });
 
 
@@ -295,7 +296,7 @@ export const deviceUnplugged = () => ({
 
 export const setDevicePacks = (packs) => ({
     type: 'SET_DEVICE_PACKS',
-    packs
+    packs: sortPacks(packs)
 });
 
 export const showViewer = () => ({

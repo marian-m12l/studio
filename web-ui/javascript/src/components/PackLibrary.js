@@ -90,6 +90,10 @@ class PackLibrary extends React.Component {
         }
     };
 
+    isPackDraggable = (pack) => {
+        return !pack.official;
+    };
+
     render() {
         const { t } = this.props;
         let storagePercentage = null;
@@ -118,7 +122,8 @@ class PackLibrary extends React.Component {
                         {this.state.device.packs.length > 0 && <div className="pack-grid">
                             {this.state.device.packs.map(pack =>
                                 <div key={pack.uuid}
-                                     draggable={true}
+                                     draggable={this.isPackDraggable(pack)}
+                                     className={this.isPackDraggable(pack) ? 'pack-draggable' : 'pack-not-draggable'}
                                      onDragStart={event => {
                                          event.dataTransfer.setData("device-pack", JSON.stringify(pack));
                                      }}>
@@ -145,7 +150,8 @@ class PackLibrary extends React.Component {
                         {this.state.library.packs.length > 0 && <div className="pack-grid">
                             {this.state.library.packs.map(pack =>
                                 <div key={pack.path}
-                                     draggable={true}
+                                     draggable={this.isPackDraggable(pack)}
+                                     className={this.isPackDraggable(pack) ? 'pack-draggable' : 'pack-not-draggable'}
                                      onDragStart={event => {
                                          event.dataTransfer.setData("local-library-pack", JSON.stringify(pack));
                                      }}>

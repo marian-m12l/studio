@@ -51,6 +51,19 @@
     padding: 10px;
 }
 
+.pack-grid .pack-draggable {
+    cursor: move;
+    cursor: grab;
+}
+
+.pack-grid .pack-draggable:active {
+    cursor: grabbing;
+}
+
+.pack-grid .pack-not-draggable {
+    cursor: not-allowed;
+}
+
 .pack-grid .pack-thumb {
     position: relative;
     margin: auto;
