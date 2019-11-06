@@ -52,11 +52,15 @@ public class DatabaseMetadataService {
                     .findFirst();
             if (maybePackKey.isPresent()) {
                 com.google.gson.JsonObject packMetadata = officialRoot.getAsJsonObject(maybePackKey.get());
+                // FIXME Handle multiple locales
+                JsonObject localesAvailable = packMetadata.getAsJsonObject("locales_available");
+                String locale = localesAvailable.keySet().contains("fr_FR") ? "fr_FR" : localesAvailable.keySet().stream().findFirst().get();
+                JsonObject localizedInfos = packMetadata.getAsJsonObject("localized_infos").getAsJsonObject(locale);
                 return Optional.of(new DatabasePackMetadata(
                         uuid,
-                        packMetadata.get("title").getAsString(),
-                        packMetadata.get("description").getAsString(),
-                        THUMBNAILS_STORAGE_ROOT + packMetadata.getAsJsonObject("image").get("image_url").getAsString(),
+                        localizedInfos.get("title").getAsString(),
+                        localizedInfos.get("description").getAsString(),
+                        THUMBNAILS_STORAGE_ROOT + localizedInfos.getAsJsonObject("image").get("image_url").getAsString(),
                         true
                 ));
             } else {
