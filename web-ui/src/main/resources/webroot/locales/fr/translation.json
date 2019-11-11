@@ -20,6 +20,7 @@
       "title": "BIBLIOTHÈQUE LOCALE",
       "path": "Chemin :",
       "empty": "Aucun pack d'histoires dans la bibliothèque.",
+      "convertPack": "Convertir ce pack d'histoires au format archive (éditable)",
       "editPack": "Ouvrir ce pack d'histoires dans l'éditeur"
     },
     "official": "Officiel"
@@ -79,8 +80,11 @@
       "downloaded": "Pack d'histoires téléchargé.",
       "downloadingFailed": "Échec du téléchargement du pack d'histoires depuis la bibliothèque.",
       "uploading": "Téléversement du pack vers la bibliothèque...",
-      "uploaded": "Pack d'histoire téléversé.",
-      "uploadingFailed": "Échec du téléversement du pack d'histoires vers la bibliothèque."
+      "uploaded": "Pack d'histoires téléversé.",
+      "uploadingFailed": "Échec du téléversement du pack d'histoires vers la bibliothèque.",
+      "converting": "Conversion du pack dans la bibliothèque...",
+      "converted": "Pack d'histoires converti.",
+      "convertingFailed": "Échec de la conversion du pack d'histoires dans la bibliothèque."
     },
     "device": {
       "monitoring": {
@@ -107,7 +111,7 @@
       "saving": "Enregistrement du pack d'histoires dans la bibliothèque...",
       "saved": "Pack d'histoires enregistré dans la bibliothèque.",
       "savingFailed": "Échec de l'enregistrement du pack d'histoires dans la bibliothèque.",
-      "exporting": "Export du pack d'histoire...",
+      "exporting": "Export du pack d'histoires...",
       "exported": "Pack d'histoires exporté.",
       "exportingFailed": "Échec de l'export du pack d'histoires.",
       "loadingWrongType": "Le fichier du pack d'histoires doit être au format archive ZIP.",

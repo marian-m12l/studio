@@ -7,7 +7,7 @@
 import { toast } from 'react-toastify';
 
 import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice, addToLibrary} from '../services/device';
-import {fetchLibraryInfos, fetchLibraryPacks, downloadFromLibrary, uploadToLibrary} from '../services/library';
+import {fetchLibraryInfos, fetchLibraryPacks, downloadFromLibrary, uploadToLibrary, convertInLibrary} from '../services/library';
 import {sortPacks} from "../utils/packs";
 import {readFromArchive} from "../utils/reader";
 
@@ -281,6 +281,31 @@ export const actionUploadToLibrary = (uuid, path, packData, t) => {
             .catch(e => {
                 console.error('failed to upload pack to library', e);
                 toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.library.uploadingFailed'), autoClose: 5000 });
+            });
+    }
+};
+
+export const actionConvertInLibrary = (uuid, path, t) => {
+    return dispatch => {
+        let toastId = toast(t('toasts.library.converting'), { autoClose: false });
+        return convertInLibrary(uuid, path)
+            .then(resp => {
+                if (resp.success) {
+                    toast.update(toastId, {
+                        progress: null,
+                        type: toast.TYPE.SUCCESS,
+                        render: t('toasts.library.converted'),
+                        autoClose: 5000
+                    });
+                    // Refresh device metadata and packs list
+                    dispatch(actionRefreshLibrary(t));
+                } else {
+                    toast.update(toastId, {type: toast.TYPE.ERROR, render: t('toasts.device.convertingFailed'), autoClose: 5000});
+                }
+            })
+            .catch(e => {
+                console.error('failed to convert pack in library', e);
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.library.convertingFailed'), autoClose: 5000 });
             });
     }
 };

@@ -41,3 +41,12 @@ export const uploadToLibrary = async (uuid, path, packData, progressHandler) => 
         xhr.send(formData);
     });
 };
+
+export const convertInLibrary = async (uuid, path) => {
+    return await fetch('http://localhost:8080/api/library/convert', {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({uuid, path})
+    })
+        .then(response => response.json());
+};

@@ -6,6 +6,7 @@
 
 package studio.webui.api;
 
+import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
@@ -14,6 +15,10 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import studio.webui.service.LibraryService;
+
+import java.io.File;
+import java.util.Timer;
+import java.util.TimerTask;
 
 public class LibraryController {
 
@@ -66,6 +71,44 @@ public class LibraryController {
                 LOGGER.error("Pack was not added to library");
                 ctx.fail(500);
             }
+        });
+
+        // Local library pack convert to archive
+        router.post("/convert").handler(ctx -> {
+            String uuid = ctx.getBodyAsJson().getString("uuid");
+            String packPath = ctx.getBodyAsJson().getString("path");
+            // First, get the pack file, potentially converted from binary format to archive format
+            // Perform conversion/compression asynchronously
+            Future<File> futureConvertedPack = Future.future();
+            Timer timer = new Timer();
+            timer.schedule(new TimerTask() {
+                @Override
+                public void run() {
+                    libraryService.getArchivePackFile(packPath)
+                            .ifPresentOrElse(
+                                    packFile -> futureConvertedPack.tryComplete(packFile),
+                                    () -> futureConvertedPack.tryFail("Failed to read or convert pack"));
+                    futureConvertedPack.tryComplete();
+                }
+            }, 1000);
+
+            futureConvertedPack.setHandler(maybeConvertedPack -> {
+                if (maybeConvertedPack.succeeded()) {
+                    // Then, add converted pack to library
+                    boolean added = libraryService.addPackFile(packPath + ".zip", maybeConvertedPack.result().getAbsolutePath());
+                    if (added) {
+                        ctx.response()
+                                .putHeader("content-type", "application/json")
+                                .end(Json.encode(new JsonObject().put("success", true)));
+                    } else {
+                        LOGGER.error("Converted pack was not added to library");
+                        ctx.fail(500);
+                    }
+                } else {
+                    LOGGER.error("Failed to read or convert pack");
+                    ctx.fail(500);
+                }
+            });
         });
 
         return router;

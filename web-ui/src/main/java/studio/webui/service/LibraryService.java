@@ -16,6 +16,7 @@ import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.reader.archive.ArchiveStoryPackReader;
 import studio.core.v1.reader.binary.BinaryStoryPackReader;
 import studio.core.v1.utils.PackAssetsCompression;
+import studio.core.v1.writer.archive.ArchiveStoryPackWriter;
 import studio.core.v1.writer.binary.BinaryStoryPackWriter;
 import studio.webui.model.DatabasePackMetadata;
 
@@ -146,6 +147,42 @@ public class LibraryService {
             }
         } else {
             return getRawPackFile(packPath);
+        }
+    }
+
+    public Optional<File> getArchivePackFile(String packPath) {
+        // Binary format packs must first be converted to archive format
+        if (packPath.endsWith(".zip")) {
+            return getRawPackFile(packPath);
+        } else {
+            try {
+                File tmp = File.createTempFile(packPath, ".zip");
+
+                LOGGER.warn("Pack is in binary format. Converting to archive format and storing in temporary file: " + tmp.getAbsolutePath());
+
+                LOGGER.warn("Reading binary format pack");
+                BinaryStoryPackReader packReader = new BinaryStoryPackReader();
+                FileInputStream fis = new FileInputStream(libraryPath() + packPath);
+                StoryPack storyPack = packReader.read(fis);
+                fis.close();
+
+                // Compress pack assets
+                StoryPack compressedPack = storyPack;
+                LOGGER.warn("Compressing pack assets");
+                compressedPack = PackAssetsCompression.withCompressedAssets(storyPack);
+
+                LOGGER.warn("Writing archive format pack");
+                ArchiveStoryPackWriter packWriter = new ArchiveStoryPackWriter();
+                FileOutputStream fos = new FileOutputStream(tmp);
+                packWriter.write(compressedPack, fos);
+                fos.close();
+
+                return Optional.of(tmp);
+            } catch (IOException e) {
+                LOGGER.error("Failed to convert binary format pack to archive format");
+                e.printStackTrace();
+                return Optional.empty();
+            }
         }
     }
 

@@ -111,7 +111,7 @@ class App extends React.Component {
                         </div>
                         <div className="controls">
                             <span title={t('header.buttons.library')} className={`btn glyphicon glyphicon-film ${this.state.shown === 'library' && 'active'}`} onClick={this.showLibrary}/>
-                            <span title={t('header.buttons.editor')} className={`btn glyphicon glyphicon-wrench ${this.state.shown === 'editor' && 'active'}`} onClick={this.showEditor}/>
+                            <span title={t('header.buttons.editor')} className={`btn glyphicon glyphicon-edit ${this.state.shown === 'editor' && 'active'}`} onClick={this.showEditor}/>
                         </div>
                     </header>
                     {this.state.shown === 'library' && <PackLibrary/>}

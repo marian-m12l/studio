@@ -20,6 +20,7 @@
       "title": "LOCAL LIBRARY",
       "path": "Path:",
       "empty": "No story packs in library, yet.",
+      "convertPack": "Convert this story pack to (editable) archive format",
       "editPack": "Open this story pack in editor"
     },
     "official": "Official"
@@ -80,7 +81,10 @@
       "downloadingFailed": "Failed to download pack from library.",
       "uploading": "Uploading pack to library...",
       "uploaded": "Pack uploaded to library.",
-      "uploadingFailed": "Failed to upload pack to library."
+      "uploadingFailed": "Failed to upload pack to library.",
+      "converting": "Converting pack in library...",
+      "converted": "Pack converted in library.",
+      "convertingFailed": "Failed to convert pack in library."
     },
     "device": {
       "monitoring": {

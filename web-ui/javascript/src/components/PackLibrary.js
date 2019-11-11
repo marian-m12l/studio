@@ -13,7 +13,8 @@ import {
     actionRemoveFromDevice,
     actionAddToLibrary,
     actionDownloadFromLibrary,
-    actionLoadPackInEditor
+    actionLoadPackInEditor,
+    actionConvertInLibrary
 } from "../actions";
 import {AppContext} from "../AppContext";
 
@@ -77,6 +78,13 @@ class PackLibrary extends React.Component {
         var data = JSON.parse(packData);
         // Transfer pack and show progress
         this.props.addToLibrary(data.uuid, this.context);
+    };
+
+    onConvertLibraryPack = (pack) => {
+        return () => {
+            // Pack is converted into archive format and added to library
+            this.props.convertPackInLibrary(pack.uuid, pack.path);
+        }
     };
 
     onEditLibraryPack = (pack) => {
@@ -161,8 +169,12 @@ class PackLibrary extends React.Component {
                                     </div>
                                     <div>
                                         <span>{pack.title || pack.uuid}</span>&nbsp;
-                                        {pack.format === 'archive' && <a href="#" onClick={this.onEditLibraryPack(pack)}>
+                                        {pack.format === 'binary' && <a href="#" onClick={this.onConvertLibraryPack(pack)}>
                                             <span className="glyphicon glyphicon-cog"
+                                                  title={t('library.local.convertPack')} />
+                                        </a>}
+                                        {pack.format === 'archive' && <a href="#" onClick={this.onEditLibraryPack(pack)}>
+                                            <span className="glyphicon glyphicon-edit"
                                                   title={t('library.local.editPack')} />
                                         </a>}
                                     </div>
@@ -188,7 +200,8 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     removeFromDevice: (uuid) => dispatch(actionRemoveFromDevice(uuid, ownProps.t)),
     addToLibrary: (uuid, context) => dispatch(actionAddToLibrary(uuid, context, ownProps.t)),
     downloadPackFromLibrary: (uuid, path) => dispatch(actionDownloadFromLibrary(uuid, path, ownProps.t)),
-    loadPackInEditor: (packData, libraryPath) => dispatch(actionLoadPackInEditor(packData, libraryPath, ownProps.t))
+    loadPackInEditor: (packData, libraryPath) => dispatch(actionLoadPackInEditor(packData, libraryPath, ownProps.t)),
+    convertPackInLibrary: (uuid, path) => dispatch(actionConvertInLibrary(uuid, path, ownProps.t))
 });
 
 export default withTranslation()(
