@@ -97,6 +97,30 @@ A pack is composed of a few metadata and the diagram describing the various step
 * Stage nodes are used to display an image and/or play a sound
 * Action nodes are used to transition from one stage to the next, and to manage the available options
 
+The editor supports several file formats for audio and image assets.
+
+##### Images
+
+Image files may use the following formats (formats marked with asterisks are automatically converted when transferring
+to the device) :
+* PNG\*\*
+* JPEG\*\*
+* BMP (24-bits)
+
+Image dimensions must be 320x240. Images may use colors, even though some colors may not render accurately due to
+the screen being behind the plastic cover. Bear in mind that the color of the cover may change, as seen with the
+recently released Christmas edition.
+
+##### Audio
+
+Audio files may use the following formats (formats marked with asterisks are automatically converted when transferring
+to the device) :
+* MP3\*\*
+* OGG/Vorbis \*\*
+* WAVE (signed 16-bits, mono, 32000 Hz)
+
+MP3 and OGG files are expected to be sampled at 44000Hz.
+
 
 LICENSE
 -------

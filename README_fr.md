@@ -99,6 +99,30 @@ Un pack est composé de quelques métadonnées et du diagramme décrivant les di
 * Les nœuds de scène permettent d'afficher une image et/ou de jouer un son
 * Les nœuds d'action permettent de passer d'une scène à la suivante, et de gérer les options disponibles
 
+L'éditeur supporte plusieurs formats de fichiers pour l'audio et les images.
+
+##### Images
+
+Les fichiers image peuvent utiliser les formats suivants (les formats marqués d'astérisques sont automatiquement
+convertis lors du transfert vers l'appareil) :
+* PNG\*\*
+* JPEG\*\*
+* BMP (24-bits)
+
+Les dimensions doivent être 320x240. Les images peuvent être en couleurs, bien que certaines couleurs ne seront
+certainement pas affichées fidèlement par l'écran situé derrière le boîtier en plastique. Gardez à l'esprit que la
+couleur du boîtier peut changer, comme c'est le cas pour la récente édition de Noël.
+
+##### Audio
+
+Les fichiers audio peuvent utiliser les formats suivants (les formats marqués d'astérisques sont automatiquement
+convertis lors du transfert vers l'appareil) :
+* MP3\*\*
+* OGG/Vorbis \*\*
+* WAVE (16-bits signés, mono, 32000 Hz)
+
+Les fichiers MP3 et OGG doivent, eux, être échantillonnés à 44000Hz.
+
 
 LICENCE
 -------
