@@ -125,7 +125,7 @@ class StageNodeWidget extends React.Component {
     editAudio = (file) => {
         const { t } = this.props;
         console.log(file.type);
-        if (['audio/x-wav', 'audio/mpeg', 'audio/ogg', 'video/ogg'].indexOf(file.type) === -1) {
+        if (['audio/wav', 'audio/x-wav', 'audio/mp3', 'audio/mpeg', 'audio/ogg', 'video/ogg'].indexOf(file.type) === -1) {
             toast.error(t('toasts.editor.audioAssetWrongType'));
             return;
         }
