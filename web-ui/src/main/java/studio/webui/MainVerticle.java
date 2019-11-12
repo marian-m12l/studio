@@ -59,7 +59,7 @@ public class MainVerticle extends AbstractVerticle {
         Router router = Router.router(vertx);
 
         // Handle cross-origin calls
-        router.route().handler(CorsHandler.create("http://localhost:3000")
+        router.route().handler(CorsHandler.create("http://localhost:.*")
                 .allowedMethods(Set.of(
                         HttpMethod.GET,
                         HttpMethod.POST
