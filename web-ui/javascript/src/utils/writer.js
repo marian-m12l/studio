@@ -118,8 +118,10 @@ function extensionFromDataUrl(dataUrl) {
             return '.png';
         case 'image/jpeg':
             return '.jpg';
+        case 'audio/wav':
         case 'audio/x-wav':
             return '.wav';
+        case 'audio/mp3':
         case 'audio/mpeg':
             return '.mp3';
         case 'audio/ogg':
