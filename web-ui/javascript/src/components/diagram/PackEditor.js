@@ -145,7 +145,8 @@ class PackEditor extends React.Component {
         const { t } = this.props;
         let file = event.target.files[0];
         console.log('Selected import file name = ' + file.name);
-        if (file.type !== 'application/zip') {
+        console.log(file.type);
+        if (['application/zip', 'application/x-zip-compressed'].indexOf(file.type) === -1) {
             toast.error(t('toasts.editor.loadingWrongType'));
             return;
         }
