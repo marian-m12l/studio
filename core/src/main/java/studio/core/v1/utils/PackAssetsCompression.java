@@ -112,7 +112,7 @@ public class PackAssetsCompression {
                             case "audio/ogg":
                                 audioData = AudioConversion.oggToWave(audioData);
                                 break;
-                            case "audio/mp3":
+                            case "audio/mpeg":
                                 audioData = AudioConversion.mp3ToWave(audioData);
                                 break;
                         }
