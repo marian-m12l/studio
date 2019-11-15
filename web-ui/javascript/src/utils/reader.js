@@ -66,7 +66,7 @@ export function readFromArchive(file) {
                             } else {
                                 resolve(null);
                             }
-                        }).then(image => stageNode.image = image);
+                        }).then(image => stageNode.setImage(image));
                         let audioPromise = new Promise((resolve, reject) => {
                             if (node.audio) {
                                 archive.file('assets/'+node.audio).async('base64').then(base64Asset => {
@@ -75,7 +75,7 @@ export function readFromArchive(file) {
                             } else {
                                 resolve(null);
                             }
-                        }).then(audio => stageNode.audio = audio);
+                        }).then(audio => stageNode.setAudio(audio));
 
                         // Will have to wait for asset promises
                         assetsPromises.push(imagePromise);

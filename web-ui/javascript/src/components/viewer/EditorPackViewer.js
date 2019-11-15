@@ -35,15 +35,15 @@ class EditorPackViewer extends React.Component {
     setViewer = (props) => {
         this.setState({
             viewer: <PackViewer
-                image={props.viewer.stage.image}
-                audio={props.viewer.stage.audio}
+                image={props.viewer.stage.getImage()}
+                audio={props.viewer.stage.getAudio()}
                 wheelClickedLeft={this.onWheelLeft}
                 wheelClickedRight={this.onWheelRight}
                 homeClicked={this.onHome}
                 pauseClicked={this.onPause}
                 okClicked={this.onOk}
                 closeClicked={() => { this.onClose(); props.hideViewer(); }}
-                controls={props.viewer.stage.controls}
+                controls={props.viewer.stage.getControls()}
             />
         });
     };
@@ -51,18 +51,12 @@ class EditorPackViewer extends React.Component {
     onWheelLeft = () => {
         const { t } = this.props;
         if (this.props.viewer.action.node) {
-            let nextIndex = this.props.viewer.action.index === 0 ? (this.props.viewer.action.node.optionsOut.length - 1) : (this.props.viewer.action.index - 1);
-            let optionLinks = Object.values(this.props.viewer.action.node.optionsOut[nextIndex].getLinks());
-            if (optionLinks.length !== 1) {
-                toast.error(t('toasts.viewer.missingPrevStage'));
+            const [stage, action] = this.props.viewer.action.node.onWheelLeft(this.props.viewer.action.index, this.props.viewer.diagram);
+            if (stage && action) {
+                this.props.setViewerStage(stage);
+                this.props.setViewerAction(action);
             } else {
-                let nextChoice = optionLinks[0].getTargetPort().getParent();
-
-                this.props.setViewerStage(nextChoice);
-                this.props.setViewerAction({
-                    node: this.props.viewer.action.node,
-                    index: nextIndex
-                });
+                toast.error(t('toasts.viewer.missingPrev'));
             }
         }
     };
@@ -70,79 +64,35 @@ class EditorPackViewer extends React.Component {
     onWheelRight = () => {
         const { t } = this.props;
         if (this.props.viewer.action.node) {
-            let nextIndex = (this.props.viewer.action.index + 1) % this.props.viewer.action.node.optionsOut.length;
-            let optionLinks = Object.values(this.props.viewer.action.node.optionsOut[nextIndex].getLinks());
-            if (optionLinks.length !== 1) {
-                toast.error(t('toasts.viewer.missingNextStage'));
+            const [stage, action] = this.props.viewer.action.node.onWheelRight(this.props.viewer.action.index, this.props.viewer.diagram);
+            if (stage && action) {
+                this.props.setViewerStage(stage);
+                this.props.setViewerAction(action);
             } else {
-                let nextChoice = optionLinks[0].getTargetPort().getParent();
-
-                this.props.setViewerStage(nextChoice);
-                this.props.setViewerAction({
-                    node: this.props.viewer.action.node,
-                    index: nextIndex
-                });
+                toast.error(t('toasts.viewer.missingNext'));
             }
         }
     };
 
     onOk = () => {
         const { t } = this.props;
-        if (this.props.viewer.stage.okPort) {
-            let okLinks = Object.values(this.props.viewer.stage.okPort.getLinks());
-            if (okLinks.length !== 1) {
-                toast.error(t('toasts.viewer.missingOkAction'));
-            } else {
-                let okTargetPort = okLinks[0].getTargetPort();
-                let okTargetActionNode = okTargetPort.getParent();
-                let targetIndex = (okTargetPort === okTargetActionNode.randomOptionIn) ? Math.floor(Math.random() * okTargetActionNode.optionsOut.length) : okTargetActionNode.optionsIn.indexOf(okTargetPort);
-                let optionLinks = Object.values(okTargetActionNode.optionsOut[targetIndex].getLinks());
-                if (optionLinks.length !== 1) {
-                    toast.error(t('toasts.viewer.missingOkStage'));
-                } else {
-                    let nextNode = optionLinks[0].getTargetPort().getParent();
-
-                    this.props.setViewerStage(nextNode);
-                    this.props.setViewerAction({
-                        node: okTargetActionNode,
-                        index: targetIndex
-                    });
-                }
-            }
+        const [stage, action] = this.props.viewer.stage.onOk(this.props.viewer.diagram);
+        if (stage && action) {
+            this.props.setViewerStage(stage);
+            this.props.setViewerAction(action);
+        } else {
+            toast.error(t('toasts.viewer.missingOk'));
         }
     };
 
     onHome = () => {
         const { t } = this.props;
-        if (this.props.viewer.stage.homePort) {
-            let homeLinks = Object.values(this.props.viewer.stage.homePort.getLinks());
-            if (homeLinks.length !== 1) {
-                // Back to main (pack selection) stage node
-                let mainNode = Object.values(this.props.viewer.diagram.nodes)
-                    .filter(node => node.getType() === 'stage')
-                    .filter(node => node.squareOne)[0];
-                this.props.setViewerStage(mainNode);
-                this.props.setViewerAction({
-                    node: null,
-                    index: null
-                });
-            } else {
-                let homeTargetPort = homeLinks[0].getTargetPort();
-                let homeTargetActionNode = homeTargetPort.getParent();
-                let targetIndex = (homeTargetPort === homeTargetActionNode.randomOptionIn) ? Math.floor(Math.random() * homeTargetActionNode.optionsOut.length) : homeTargetActionNode.optionsIn.indexOf(homeTargetPort);
-                let optionLinks = Object.values(homeTargetActionNode.optionsOut[targetIndex].getLinks());
-                if (optionLinks.length !== 1) {
-                    toast.error(t('toasts.viewer.missingHomeStage'));
-                } else {
-                    let nextNode = optionLinks[0].getTargetPort().getParent();
-
-                    this.props.setViewerStage(nextNode);
-                    this.props.setViewerAction({
-                        node: homeTargetActionNode,
-                        index: targetIndex
-                    });
-                }
-            }
+        const [stage, action] = this.props.viewer.stage.onHome(this.props.viewer.diagram);
+        if (stage && action) {
+            this.props.setViewerStage(stage);
+            this.props.setViewerAction(action);
+        } else {
+            toast.error(t('toasts.viewer.missingHome'));
         }
     };
 

@@ -16,7 +16,7 @@ const EditableHeader = ({node, beingEdited, onToggleEdit, onChange}) => {
             {node.fromPort && <SRD.DefaultPortLabel model={node.fromPort} />}
             <span className='name'>
                 {/* Capture keyUp event to prevent node removal when pressing backspace of delete */}
-                {beingEdited ? <input type="text" value={node.name} onChange={onChange} onKeyUp={e => e.stopPropagation()} /> : <strong>{node.name}</strong>}
+                {beingEdited ? <input type="text" value={node.getName()} onChange={onChange} onKeyUp={e => e.stopPropagation()} /> : <strong>{node.getName()}</strong>}
             </span>
             <span className={'btn btn-xs glyphicon glyphicon-pencil' + (beingEdited ? ' active' : '')}
                   title={t('editor.diagram.editTitle')}

@@ -17,60 +17,8 @@ export async function writeToArchive(diagramModel) {
     // Keep track of written assets
     let written = [];
 
-    let stageNodesPromises = Object.values(diagramModel.nodes)
-        .filter(node => node.getType() === 'stage')
-        .map(async node => {
-            // Store assets as separate files in archive
-            let imageFile = null;
-            if (node.image) {
-                let hash = await hashDataUrl(node.image);
-                imageFile = hash + extensionFromDataUrl(node.image);
-                if (written.indexOf(imageFile) === -1) {
-                    zipAssets.file(imageFile, node.image.substring(node.image.indexOf(',') + 1), {base64: true});
-                    written.push(imageFile);
-                }
-            }
-            let audioFile = null;
-            if (node.audio) {
-                let hash = await hashDataUrl(node.audio);
-                audioFile = hash + extensionFromDataUrl(node.audio);
-                if (written.indexOf(audioFile) === -1) {
-                    zipAssets.file(audioFile, node.audio.substring(node.audio.indexOf(',')+1), {base64: true});
-                    written.push(audioFile);
-                }
-            }
-            let okTarget = (node.okPort && node.okPort.getLinks() && Object.values(node.okPort.getLinks()).length > 0) ? Object.values(node.okPort.getLinks())[0].getTargetPort() : null;
-            let homeTarget = (node.homePort && node.homePort.getLinks() && Object.values(node.homePort.getLinks()).length > 0) ? Object.values(node.homePort.getLinks())[0].getTargetPort() : null;
-            let stage = {
-                uuid: node.uuid,
-                name: node.name,
-                position: {
-                    x: node.x,
-                    y: node.y
-                },
-                image: imageFile,
-                audio: audioFile,
-                okTransition: okTarget
-                    ? {
-                        actionNode: okTarget.getParent().getID(),   // Action nodes referenced by "technical" id
-                        optionIndex: (okTarget === okTarget.getParent().randomOptionIn) ? -1 : okTarget.getParent().optionsIn.indexOf(okTarget)
-                    }
-                    : null,
-                homeTransition: homeTarget
-                    ? {
-                        actionNode: homeTarget.getParent().getID(),    // Action nodes referenced by "technical" id
-                        optionIndex: (homeTarget === homeTarget.getParent().randomOptionIn) ? -1 : homeTarget.getParent().optionsIn.indexOf(homeTarget)
-                    }
-                    : null,
-                controlSettings: node.controls
-            };
-            if (node.squareOne) {
-                stage.squareOne = true;
-            }
-            return stage;
-        });
-    let stageNodes = await Promise.all(stageNodesPromises);
 
+    // Actual action nodes
     let actionNodes = Object.values(diagramModel.nodes)
         .filter(node => node.getType() === 'action')
         .map(node => {
@@ -89,6 +37,217 @@ export async function writeToArchive(diagramModel) {
                     })   // Stage nodes referenced by "business" uuid
             };
         });
+    // Virtual action nodes for 'menu' nodes: 1 for the question and 1 for the options
+    actionNodes = actionNodes.concat(
+        Object.values(diagramModel.nodes)
+            .filter(node => node.getType() === 'menu')
+            .flatMap(node => {
+                // Action node for the question
+                let questionActionNode = {
+                    id: menuNodeQuestionActionUuid(node),
+                    type: node.getType()+".questionaction",
+                    groupId: node.getUuid(),
+                    name: node.getName()+".questionaction",
+                    position: {
+                        x: node.x,
+                        y: node.y
+                    },
+                    options: [menuNodeQuestionStageUuid(node)]
+                };
+                // Action node for the options
+                let optionsActionNode = {
+                    id: menuNodeOptionsActionUuid(node),
+                    type: node.getType()+".optionsaction",
+                    groupId: node.getUuid(),
+                    name: node.getName()+".optionsaction",
+                    options: node.optionsStages
+                        .map((optionStage, idx) => menuNodeOptionStageUuid(node, idx))
+                };
+                return [questionActionNode, optionsActionNode];
+            })
+    );
+    // Virtual action nodes for 'story' nodes: 1 for each story
+    actionNodes = actionNodes.concat(
+        Object.values(diagramModel.nodes)
+            .filter(node => node.getType() === 'story')
+            .map((node, idx) => {
+                return {
+                    id: storyNodeActionUuid(node),
+                    type: node.getType()+".storyaction",
+                    groupId: node.getUuid(),
+                    name: node.getName()+".storyaction",
+                    position: {
+                        x: node.x,
+                        y: node.y
+                    },
+                    options: [node.getUuid()]   // Story stage node
+                };
+            })
+    );
+
+
+    // Actual stage nodes, including 'cover' nodes and 'story' stage nodes
+    let stageNodesPromises = Object.values(diagramModel.nodes)
+        .filter(node => node.getType() === 'stage' || node.getType() === 'cover' || node.getType() === 'story')
+        .map(async node => {
+            // Store assets as separate files in archive
+            let imageFile = null;
+            if (node.getImage()) {
+                let hash = await hashDataUrl(node.getImage());
+                imageFile = hash + extensionFromDataUrl(node.getImage());
+                if (written.indexOf(imageFile) === -1) {
+                    zipAssets.file(imageFile, node.getImage().substring(node.getImage().indexOf(',') + 1), {base64: true});
+                    written.push(imageFile);
+                }
+            }
+            let audioFile = null;
+            if (node.getAudio()) {
+                let hash = await hashDataUrl(node.getAudio());
+                audioFile = hash + extensionFromDataUrl(node.getAudio());
+                if (written.indexOf(audioFile) === -1) {
+                    zipAssets.file(audioFile, node.getAudio().substring(node.getAudio().indexOf(',')+1), {base64: true});
+                    written.push(audioFile);
+                }
+            }
+            let okTarget = null;
+            let homeTarget = null;
+            if (node.getType() === 'story') {
+                // Story nodes redirect to the first useful node after pack selection // TODO unless specified otherwise (i.e. ok port has a link)
+                let coverNode = Object.values(diagramModel.nodes)
+                    .filter(node => node.squareOne)[0];
+                okTarget = (coverNode.okPort && coverNode.okPort.getLinks() && Object.values(coverNode.okPort.getLinks()).length > 0) ? Object.values(coverNode.okPort.getLinks())[0].getTargetPort() : null;
+                homeTarget = (coverNode.okPort && coverNode.okPort.getLinks() && Object.values(coverNode.okPort.getLinks()).length > 0) ? Object.values(coverNode.okPort.getLinks())[0].getTargetPort() : null;
+            } else {
+                // Other stage nodes either follow the ports' links
+                okTarget = (node.okPort && node.okPort.getLinks() && Object.values(node.okPort.getLinks()).length > 0) ? Object.values(node.okPort.getLinks())[0].getTargetPort() : null;
+                homeTarget = (node.homePort && node.homePort.getLinks() && Object.values(node.homePort.getLinks()).length > 0) ? Object.values(node.homePort.getLinks())[0].getTargetPort() : null;
+            }
+            let stage = {
+                uuid: node.getUuid(),
+                type: node.getType(),
+                name: node.getName(),
+                position: node.getType() === 'story'
+                    ? null      // Story stage node is not positioned
+                    : {
+                        x: node.x,
+                        y: node.y
+                    },
+                image: imageFile,
+                audio: audioFile,
+                okTransition: buildTransitionObject(okTarget),
+                homeTransition: buildTransitionObject(homeTarget),
+                controlSettings: node.getControls()
+            };
+            if (node.squareOne) {
+                stage.squareOne = true;
+            }
+            if (node.getType() === 'story') {
+                stage.groupId = node.getUuid();
+            }
+            return stage;
+        });
+    // Virtual stage nodes for 'menu' nodes: 1 for the question and 1 for each option
+    stageNodesPromises = stageNodesPromises.concat(
+        Object.values(diagramModel.nodes)
+            .filter(node => node.getType() === 'menu')
+            .map(async node => {
+                // Store assets as separate files in archive
+                let questionAudioFile = null;
+                if (node.getQuestionAudio()) {
+                    let hash = await hashDataUrl(node.getQuestionAudio());
+                    questionAudioFile = hash + extensionFromDataUrl(node.getQuestionAudio());
+                    if (written.indexOf(questionAudioFile) === -1) {
+                        zipAssets.file(questionAudioFile, node.getQuestionAudio().substring(node.getQuestionAudio().indexOf(',')+1), {base64: true});
+                        written.push(questionAudioFile);
+                    }
+                }
+                // Stage node for the question
+                let questionStageNode = {
+                    uuid: menuNodeQuestionStageUuid(node),
+                    type: node.type+".questionstage",
+                    groupId: node.getUuid(),
+                    name: node.getName()+".questionstage",  // TODO node.getQuestionName() ?
+                    image: null,
+                    audio: questionAudioFile,
+                    okTransition: { // OK transitions to the default option's virtual action node   // TODO default option depends on policy: 0th, nth or random (-1)
+                        actionNode: menuNodeOptionsActionUuid(node),
+                        optionIndex: 0
+                    },
+                    homeTransition: null,
+                    controlSettings: node.questionStage.controls
+                };
+                // For each option
+                let optionStageNodes = node.optionsStages.map(async (os,idx) => {
+                    // Store assets as separate files in archive
+                    let imageFile = null;
+                    if (os.image) {
+                        let hash = await hashDataUrl(os.image);
+                        imageFile = hash + extensionFromDataUrl(os.image);
+                        if (written.indexOf(imageFile) === -1) {
+                            zipAssets.file(imageFile, os.image.substring(os.image.indexOf(',') + 1), {base64: true});
+                            written.push(imageFile);
+                        }
+                    }
+                    let audioFile = null;
+                    if (os.audio) {
+                        let hash = await hashDataUrl(os.audio);
+                        audioFile = hash + extensionFromDataUrl(os.audio);
+                        if (written.indexOf(audioFile) === -1) {
+                            zipAssets.file(audioFile, os.audio.substring(os.audio.indexOf(',')+1), {base64: true});
+                            written.push(audioFile);
+                        }
+                    }
+                    // OK transition follows the 'menu' node's output ports
+                    let okTarget = (node.optionsOut[idx] && node.optionsOut[idx].getLinks() && Object.values(node.optionsOut[idx].getLinks()).length > 0) ? Object.values(node.optionsOut[idx].getLinks())[0].getTargetPort() : null;
+                    // Home transition goes back to the incoming node or to the pack selection
+                    let homeTarget = null;
+                    let fromLinks = Object.values(node.fromPort.getLinks());
+                    if (fromLinks.length !== 1) {
+                        // TODO If we cannot determine the incoming node, use default behaviour of going back to pack selection
+                        // TODO Add link constraint to limit fromPort to only 1 parent ???
+                        homeTarget = null;
+                    } else {
+                        let incomingNodeSource = fromLinks[0].getSourcePort();
+                        let incomingNode = incomingNodeSource.getParent();
+                        if (incomingNode.squareOne) {
+                            // If incoming node is pack selection, there is no action node to point to, just use default behaviour of going back to pack selection
+                            homeTarget = null;
+                        } else if (incomingNode.getType() === 'stage') {
+                            // Handle incoming node of type stage: lookup for the incoming action and index
+                            let prevIncomingLinks = incomingNode.fromPort.getLinks();
+                            if (prevIncomingLinks.length !== 1) {
+                                // TODO If we cannot determine the incoming action node, use default behaviour of going back to pack selection
+                                homeTarget = null;
+                            } else {
+                                let prevIncomingPort = prevIncomingLinks[0].getSourcePort();
+                                let prevAction = prevIncomingPort.getParent();
+                                homeTarget = {
+                                    actionNode: prevAction.getUuid(),
+                                    optionIndex: prevAction.optionsOut.indexOf(prevIncomingPort)
+                                };
+                            }
+                        } else {
+                            homeTarget = buildTransitionObject(incomingNodeSource);
+                        }
+                    }
+                    return {
+                        uuid: menuNodeOptionStageUuid(node, idx),
+                        type: node.type+".optionstage",
+                        groupId: node.getUuid(),
+                        name: node.getName()+".optionstage."+idx,   // TODO node.getOptionName(idx) ?
+                        image: imageFile,
+                        audio: audioFile,
+                        okTransition: buildTransitionObject(okTarget),
+                        homeTransition: homeTarget,
+                        controlSettings: os.controls
+                    };
+                });
+                return [questionStageNode].concat(await Promise.all(optionStageNodes));
+            })
+    );
+    // Wait for all assets and virtual stage nodes, then flatten the array
+    let stageNodes = await Promise.all(stageNodesPromises);
+    stageNodes = stageNodes.flat(1);
 
     if (diagramModel.thumbnail) {
         zip.file('thumbnail.png', diagramModel.thumbnail.substring(diagramModel.thumbnail.indexOf(',')+1), {base64: true});
@@ -129,5 +288,54 @@ function extensionFromDataUrl(dataUrl) {
             return '.ogg';
         default:
             return '';
+    }
+}
+
+function alterUuid(uuid, lastSixBytes) {
+    return uuid.substring(0, uuid.length-12) + lastSixBytes;
+}
+
+function menuNodeQuestionActionUuid(node) {
+    return alterUuid(node.getUuid(), "111111111111");
+}
+
+function menuNodeQuestionStageUuid(node) {
+    return alterUuid(node.getUuid(), "222222222222");
+}
+
+function menuNodeOptionsActionUuid(node) {
+    return alterUuid(node.getUuid(), "333333333333");
+}
+
+function menuNodeOptionStageUuid(node, optionIndex) {
+    return alterUuid(node.getUuid(), "44444444" + optionIndex.toString().padStart(4, '0'));
+}
+
+function storyNodeActionUuid(node) {
+    return alterUuid(node.getUuid(), "555555555555");
+}
+
+function buildTransitionObject(targetPort) {
+    if (targetPort === null) {
+        return null;
+    }
+    switch (targetPort.getParent().getType()) {
+        case 'action':  // Actual action node
+            return {
+                actionNode: targetPort.getParent().getID(),   // Action nodes referenced by "technical" id
+                optionIndex: (targetPort === targetPort.getParent().randomOptionIn) ? -1 : targetPort.getParent().optionsIn.indexOf(targetPort)
+            };
+        case 'story':   // Virtual action node for 'story' node
+            return {
+                actionNode: storyNodeActionUuid(targetPort.getParent()),
+                optionIndex: 0
+            };
+        case 'menu':    // Virtual action node for 'menu' node
+            return {
+                actionNode: menuNodeQuestionActionUuid(targetPort.getParent()),
+                optionIndex: 0
+            };
+        default:
+            return null;
     }
 }

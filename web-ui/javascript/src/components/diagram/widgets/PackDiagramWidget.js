@@ -12,6 +12,9 @@ import {withTranslation} from "react-i18next";
 
 import StageNodeModel from "../models/StageNodeModel";
 import ActionNodeModel from "../models/ActionNodeModel";
+import CoverNodeModel from "../models/CoverNodeModel";
+import MenuNodeModel from "../models/MenuNodeModel";
+import StoryNodeModel from "../models/StoryNodeModel";
 import TrayWidget from "./TrayWidget";
 import TrayItemWidget from "./TrayItemWidget";
 
@@ -60,6 +63,7 @@ class PackDiagramWidget extends React.Component {
 
     onDropNode = (event) => {
         event.preventDefault();
+        const { t } = this.props;
         let nodeData = event.dataTransfer.getData("storm-diagram-node");
         if (!nodeData) {
             // Ignore missing node data
@@ -67,10 +71,32 @@ class PackDiagramWidget extends React.Component {
         }
         var data = JSON.parse(nodeData);
         var node = null;
-        if (data.type === "stage") {
-            node = new StageNodeModel("Stage node");
-        } else {
-            node = new ActionNodeModel("Action node");
+        switch (data.type) {
+            case "stage":
+                node = new StageNodeModel("Stage node");
+                break;
+            case "action":
+                node = new ActionNodeModel("Action node");
+                break;
+            case "cover":
+                // Make sure there is only one cover node per diagram
+                let coverNode = Object.values(this.props.diagramEngine.getDiagramModel().nodes)
+                    .filter(node => node.squareOne)[0];
+                if (coverNode) {
+                    toast.error(t('toasts.editor.tooManyEntryPoints'));
+                    return;
+                }
+                node = new CoverNodeModel("Cover node");
+                break;
+            case "menu":
+                // Two options by default
+                node = new MenuNodeModel("Menu node");
+                node.addOption();
+                node.addOption();
+                break;
+            case "story":
+                node = new StoryNodeModel("Story node");
+                break;
         }
         var points = this.props.diagramEngine.getRelativeMousePoint(event);
         node.setPosition(points.x, points.y);
@@ -97,6 +123,10 @@ class PackDiagramWidget extends React.Component {
             <div className="content">
                 {/* Node tray */}
                 <TrayWidget>
+                    <TrayItemWidget model={{ type: "cover" }} name={t('editor.tray.cover')} color="#36b3aa" />
+                    <TrayItemWidget model={{ type: "menu" }} name={t('editor.tray.menu')} color="#b55ba8" />
+                    <TrayItemWidget model={{ type: "story" }} name={t('editor.tray.story')} color="#ebcb42" />
+                    <hr />
                     <TrayItemWidget model={{ type: "stage" }} name={t('editor.tray.stage')} color="#919e3d" />
                     <TrayItemWidget model={{ type: "action" }} name={t('editor.tray.action')} color="#9e7a34" />
                 </TrayWidget>
