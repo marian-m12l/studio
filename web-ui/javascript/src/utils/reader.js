@@ -9,6 +9,9 @@ import JSZip from 'jszip';
 
 import StageNodeModel from "../components/diagram/models/StageNodeModel";
 import ActionNodeModel from "../components/diagram/models/ActionNodeModel";
+import CoverNodeModel from "../components/diagram/models/CoverNodeModel";
+import MenuNodeModel from "../components/diagram/models/MenuNodeModel";
+import StoryNodeModel from "../components/diagram/models/StoryNodeModel";
 import PackDiagramModel from "../components/diagram/models/PackDiagramModel";
 
 
@@ -25,17 +28,7 @@ export function readFromArchive(file) {
 
                 let links = [];
 
-                let actionNodes = new Map(
-                    json.actionNodes.map(node => {
-                        // Build action node
-                        var actionNode = new ActionNodeModel(node.name);
-                        if (node.position) {
-                            actionNode.setPosition(node.position.x, node.position.y);
-                        }
-                        return [node.id, actionNode];
-                    })
-                );
-
+                // Async load thumbnail file
                 let thumbnailPromise = new Promise((resolve, reject) => {
                     let thumb = archive.file('thumbnail.png');
                     if (thumb) {
@@ -51,8 +44,153 @@ export function readFromArchive(file) {
                     thumbnailPromise
                 ];
 
+
+                // First, load nodes ignoring transitions
+
+                // Actual action nodes
+                let actionNodes = new Map(
+                    json.actionNodes.filter(node => (node.type || 'action') === 'action').map(node => {
+                        // Build action node
+                        var actionNode = new ActionNodeModel(node.name);
+                        if (node.position) {
+                            actionNode.setPosition(node.position.x, node.position.y);
+                        }
+                        return [node.id, actionNode];
+                    })
+                );
+
+                // Group 'virtual' action and stage nodes
+                let virtualNodes = json.actionNodes.filter(node => (node.type || 'action') !== 'action')
+                    .concat(json.stageNodes.filter(node => (node.type || 'stage') !== 'stage'))
+                    .reduce(
+                        (acc, node) => {
+                            if (!acc[node.groupId]) {
+                                acc[node.groupId] = [];
+                            }
+                            acc[node.groupId].push(node);
+                            return acc;
+                        },
+                        {}
+                    );
+                console.log(virtualNodes);
+
+                // Build simplified nodes from 'virtual' nodes
+                let simplifiedNodes = new Map(
+                    Object.values(virtualNodes).map(group => {
+                        // Story node
+                        if (group[0].type.startsWith('story')) {
+                            let storyVirtualStage = group.find(node => node.type === 'story');
+                            let storyVirtualAction = group.find(node => node.type === 'story.storyaction');
+                            let storyNode = new StoryNodeModel(storyVirtualStage.name, storyVirtualStage.groupId);
+                            // Async load from asset files
+                            let audioPromise = new Promise((resolve, reject) => {
+                                if (storyVirtualStage.audio) {
+                                    archive.file('assets/' + storyVirtualStage.audio).async('base64').then(base64Asset => {
+                                        resolve(dataUrlPrefix(storyVirtualStage.audio) + base64Asset);
+                                    });
+                                } else {
+                                    resolve(null);
+                                }
+                            }).then(audio => storyNode.setAudio(audio));
+                            // Will have to wait for asset promises
+                            assetsPromises.push(audioPromise);
+                            if (storyVirtualAction.position) {
+                                storyNode.setPosition(storyVirtualAction.position.x, storyVirtualAction.position.y);
+                            }
+                            return [storyVirtualAction.id, storyNode];
+                        }
+                        // Menu node
+                        else if (group[0].type.startsWith('menu')) {
+                            let menuQuestionVirtualStage = group.find(node => node.type === 'menu.questionstage');
+                            let menuQuestionVirtualAction = group.find(node => node.type === 'menu.questionaction');
+                            let menuNode = new MenuNodeModel(menuQuestionVirtualStage.name, menuQuestionVirtualStage.groupId);
+                            // Async load from asset files
+                            let audioPromise = new Promise((resolve, reject) => {
+                                if (menuQuestionVirtualStage.audio) {
+                                    archive.file('assets/' + menuQuestionVirtualStage.audio).async('base64').then(base64Asset => {
+                                        resolve(dataUrlPrefix(menuQuestionVirtualStage.audio) + base64Asset);
+                                    });
+                                } else {
+                                    resolve(null);
+                                }
+                            }).then(audio => menuNode.setQuestionAudio(audio));
+                            // Will have to wait for asset promises
+                            assetsPromises.push(audioPromise);
+                            // Options
+                            group.filter(node => node.type === 'menu.optionstage').forEach((optionVirtualStage, idx) => {
+                                menuNode.addOption();
+                                menuNode.setOptionName(0, optionVirtualStage.name);
+                                // Async load from asset files
+                                let imagePromise = new Promise((resolve, reject) => {
+                                    if (optionVirtualStage.image) {
+                                        archive.file('assets/' + optionVirtualStage.image).async('base64').then(base64Asset => {
+                                            resolve(dataUrlPrefix(optionVirtualStage.image) + base64Asset);
+                                        });
+                                    } else {
+                                        resolve(null);
+                                    }
+                                }).then(image => menuNode.setOptionImage(idx, image));
+                                let audioPromise = new Promise((resolve, reject) => {
+                                    if (optionVirtualStage.audio) {
+                                        archive.file('assets/' + optionVirtualStage.audio).async('base64').then(base64Asset => {
+                                            resolve(dataUrlPrefix(optionVirtualStage.audio) + base64Asset);
+                                        });
+                                    } else {
+                                        resolve(null);
+                                    }
+                                }).then(audio => menuNode.setOptionAudio(idx, audio));
+                                // Will have to wait for asset promises
+                                assetsPromises.push(imagePromise);
+                                assetsPromises.push(audioPromise);
+                            });
+                            if (menuQuestionVirtualAction.position) {
+                                menuNode.setPosition(menuQuestionVirtualAction.position.x, menuQuestionVirtualAction.position.y);
+                            }
+                            // TODO Default option policy (-1, 0, n)
+                            return [menuQuestionVirtualAction.id, menuNode];
+                        }
+                        // Cover node (TODO make sure there is only one start node !)
+                        else if (group[0].type.startsWith('cover')) {
+                            let coverNode = new CoverNodeModel(group[0].name, group[0].uuid)
+                            // Async load from asset files
+                            let imagePromise = new Promise((resolve, reject) => {
+                                if (group[0].image) {
+                                    archive.file('assets/' + group[0].image).async('base64').then(base64Asset => {
+                                        resolve(dataUrlPrefix(group[0].image) + base64Asset);
+                                    });
+                                } else {
+                                    resolve(null);
+                                }
+                            }).then(image => coverNode.setImage(image));
+                            let audioPromise = new Promise((resolve, reject) => {
+                                if (group[0].audio) {
+                                    archive.file('assets/' + group[0].audio).async('base64').then(base64Asset => {
+                                        resolve(dataUrlPrefix(group[0].audio) + base64Asset);
+                                    });
+                                } else {
+                                    resolve(null);
+                                }
+                            }).then(audio => coverNode.setAudio(audio));
+                            // Will have to wait for asset promises
+                            assetsPromises.push(imagePromise);
+                            assetsPromises.push(audioPromise);
+                            if (group[0].position) {
+                                coverNode.setPosition(group[0].position.x, group[0].position.y);
+                            }
+                            return [coverNode.uuid, coverNode];
+                        }
+                        else {
+                            // TODO error
+                            console.log('UNKNOWN SIMPLIFIED NODES GROUP: %o', group);
+                            return [null, null];
+                        }
+                    })
+                );
+                console.log(simplifiedNodes);
+
+                // Actual stage nodes
                 let stageNodes = new Map(
-                    json.stageNodes.map(node => {
+                    json.stageNodes.filter(node => (node.type || 'stage') === 'stage').map(node => {
                         // Build stage node
                         var stageNode = new StageNodeModel(node.name, node.uuid);
                         // Square one
@@ -86,28 +224,6 @@ export function readFromArchive(file) {
                         stageNode.setControl('home', node.controlSettings.home);
                         stageNode.setControl('pause', node.controlSettings.pause);
                         stageNode.setControl('autoplay', node.controlSettings.autoplay);
-                        if (node.okTransition) {
-                            let actionNode = actionNodes.get(node.okTransition.actionNode);
-                            while (actionNode.optionsIn.length <= node.okTransition.optionIndex) {
-                                actionNode.addOption();
-                            }
-                            let optionPort = actionNode.optionsIn[node.okTransition.optionIndex];
-                            if (node.okTransition.optionIndex === -1) {
-                                optionPort = actionNode.randomOptionIn;
-                            }
-                            links.push(stageNode.okPort.link(optionPort));
-                        }
-                        if (node.homeTransition) {
-                            let actionNode = actionNodes.get(node.homeTransition.actionNode);
-                            while (actionNode.optionsIn.length <= node.homeTransition.optionIndex) {
-                                actionNode.addOption();
-                            }
-                            let optionPort = actionNode.optionsIn[node.homeTransition.optionIndex];
-                            if (node.homeTransition.optionIndex === -1) {
-                                optionPort = actionNode.randomOptionIn;
-                            }
-                            links.push(stageNode.homePort.link(optionPort))
-                        }
                         if (node.position) {
                             stageNode.setPosition(node.position.x, node.position.y);
                         }
@@ -115,8 +231,11 @@ export function readFromArchive(file) {
                     })
                 );
 
-                // Add options links from action nodes to stage nodes
-                json.actionNodes.forEach(node => {
+
+                // Then, add links / transitions between nodes
+
+                // Add options links from actual action nodes to actual stage nodes
+                json.actionNodes.filter(node => (node.type || 'action') === 'action').forEach(node => {
                     var actionNode = actionNodes.get(node.id);
                     node.options.forEach((opt, idx) => {
                         while (actionNode.optionsOut.length <= idx) {
@@ -129,16 +248,60 @@ export function readFromArchive(file) {
                     });
                 });
 
+                // Add links from actual stage nodes to actual action nodes or simplified nodes
+                json.stageNodes.filter(node => (node.type || 'stage') === 'stage').forEach(node => {
+                    var stageNode = stageNodes.get(node.uuid);
+                    if (node.okTransition) {
+                        links.push(stageNode.okPort.link(getTransitionTargetNode(node.okTransition, actionNodes, simplifiedNodes)));
+                    }
+                    if (node.homeTransition) {
+                        links.push(stageNode.homePort.link(getTransitionTargetNode(node.okTransition, actionNodes, simplifiedNodes)))
+                    }
+                });
+
+                // Add links from simplified nodes
+                Object.values(virtualNodes).forEach(group => {
+                    // Story node: TODO support custom OK transition
+                    if (group[0].type.startsWith('story')) {
+                        let storyVirtualStage = group.find(node => node.type === 'story');
+                        let storyVirtualAction = group.find(node => node.type === 'story.storyaction');
+                        let storyNode = simplifiedNodes.get(storyVirtualAction.id);
+                    }
+                    // Menu node: options transitions
+                    else if (group[0].type.startsWith('menu')) {
+                        let menuQuestionVirtualAction = group.find(node => node.type === 'menu.questionaction');
+                        let menuNode = simplifiedNodes.get(menuQuestionVirtualAction.id);
+                        // Options transitions
+                        group.filter(node => node.type === 'menu.optionstage').forEach((optionVirtualStage, idx) => {
+                            if (optionVirtualStage.okTransition) {
+                                links.push(menuNode.optionsOut[idx].link(getTransitionTargetNode(optionVirtualStage.okTransition, actionNodes, simplifiedNodes)));
+                            }
+                        });
+                    }
+                    // Cover node: OK transition
+                    else if (group[0].type.startsWith('cover')) {
+                        let coverNode = simplifiedNodes.get(group[0].uuid);
+                        links.push(coverNode.okPort.link(getTransitionTargetNode(group[0].okTransition, actionNodes, simplifiedNodes)));
+                    }
+                    else {
+                        // TODO error
+                        console.log('UNKNOWN SIMPLIFIED NODES GROUP: %o', group);
+                    }
+                });
+
 
                 // Wait for asset promises
                 return Promise.all(assetsPromises)
                     .then(assets => {
                         stageNodes.forEach(node => loadedModel.addNode(node));
                         actionNodes.forEach(node => loadedModel.addNode(node));
+                        simplifiedNodes.forEach(node => loadedModel.addNode(node));
                         links.forEach(link => loadedModel.addLink(link));
 
                         // Auto distribute nodes if positions are missing
-                        let missingPositions = json.actionNodes.concat(json.stageNodes)
+                        let missingPositions = json.actionNodes
+                            .filter(node => (node.type || 'action') === 'action' || (node.type || 'action') === 'menu.questionaction' || (node.type || 'action') === 'story.storyaction')
+                            .concat(json.stageNodes.filter(node => (node.type || 'stage') === 'stage' || (node.type || 'stage') === 'cover'))
                             .filter(node =>
                                 typeof node.position === 'undefined' || node.position == null || (node.position.x === 0 && node.position.y === 0)
                             ).length > 0;
@@ -181,6 +344,25 @@ function dataUrlPrefix(assetFileName) {
             return 'data:audio/ogg;base64,';
         default:
             return 'data:application/octet-stream;base64,';
+    }
+}
+
+function getTransitionTargetNode(transition, actionNodes, simplifiedNodes) {
+    // Try to find an actual action node
+    let actionNode = actionNodes.get(transition.actionNode)
+    if (actionNode) {
+        while (actionNode.optionsIn.length <= transition.optionIndex) {
+            actionNode.addOption();
+        }
+        let optionPort = actionNode.optionsIn[transition.optionIndex];
+        if (transition.optionIndex === -1) {
+            optionPort = actionNode.randomOptionIn;
+        }
+        return optionPort;
+    }
+    // Otherwise, target must be a simplified node
+    else {
+        return simplifiedNodes.get(transition.actionNode).fromPort;
     }
 }
 
