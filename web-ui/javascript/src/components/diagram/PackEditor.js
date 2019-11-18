@@ -39,6 +39,7 @@ class PackEditor extends React.Component {
         engine.installDefaultFactories();
 
         let updateCanvas = () => {
+            engine.repaintCanvas();
             this.forceUpdate();
         };
         engine.registerNodeFactory(new StageNodeFactory(updateCanvas));
@@ -72,7 +73,7 @@ class PackEditor extends React.Component {
             this.setState({
                 engine,
                 diagram: nextProps.editor.diagram
-            });
+            }, () => this.state.engine.repaintCanvas());
         }
     }
 

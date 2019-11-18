@@ -82,6 +82,9 @@ export function readFromArchive(file) {
                             let storyVirtualStage = group.find(node => node.type === 'story');
                             let storyVirtualAction = group.find(node => node.type === 'story.storyaction');
                             let storyNode = new StoryNodeModel(storyVirtualStage.name, storyVirtualStage.groupId);
+                            if (storyVirtualStage.controlSettings.home === false) {
+                                storyNode.setDisableHome(true);
+                            }
                             // Async load from asset files
                             let audioPromise = new Promise((resolve, reject) => {
                                 if (storyVirtualStage.audio) {
@@ -261,11 +264,29 @@ export function readFromArchive(file) {
 
                 // Add links from simplified nodes
                 Object.values(virtualNodes).forEach(group => {
-                    // Story node: TODO support custom OK transition
+                    // Story node
                     if (group[0].type.startsWith('story')) {
                         let storyVirtualStage = group.find(node => node.type === 'story');
                         let storyVirtualAction = group.find(node => node.type === 'story.storyaction');
                         let storyNode = simplifiedNodes.get(storyVirtualAction.id);
+                        // Add 'ok' and 'home' transitions if they do not point to the 'first useful node' (default behaviour)
+                        let coverNode = json.stageNodes.filter(node => node.squareOne)
+                            .concat(Object.values(virtualNodes).filter(grp => grp[0].type.startsWith('cover')).map(grp => grp[0]))
+                            [0];
+                        let firstUsefulNodeUuid = coverNode.okTransition.actionNode;
+                        if (storyVirtualStage.okTransition.actionNode !== firstUsefulNodeUuid) {
+                            // Enable custom OK transition to create OK port
+                            storyNode.setCustomOkTransition(true);
+                            // Create link
+                            links.push(storyNode.okPort.link(getTransitionTargetNode(storyVirtualStage.okTransition, actionNodes, simplifiedNodes)));
+                        }
+                        if (storyVirtualStage.homeTransition.actionNode !== firstUsefulNodeUuid) {
+                            // Enable custom Home transition to create Home port
+                            storyNode.setCustomHomeTransition(true);
+                            // Create link
+                            links.push(storyNode.homePort.link(getTransitionTargetNode(storyVirtualStage.homeTransition, actionNodes, simplifiedNodes)));
+                        }
+                        simplifiedNodes.set(storyVirtualAction.id, storyNode);
                     }
                     // Menu node: options transitions
                     else if (group[0].type.startsWith('menu')) {
@@ -281,7 +302,9 @@ export function readFromArchive(file) {
                     // Cover node: OK transition
                     else if (group[0].type.startsWith('cover')) {
                         let coverNode = simplifiedNodes.get(group[0].uuid);
-                        links.push(coverNode.okPort.link(getTransitionTargetNode(group[0].okTransition, actionNodes, simplifiedNodes)));
+                        if (group[0].okTransition) {
+                            links.push(coverNode.okPort.link(getTransitionTargetNode(group[0].okTransition, actionNodes, simplifiedNodes)));
+                        }
                     }
                     else {
                         // TODO error
@@ -349,7 +372,7 @@ function dataUrlPrefix(assetFileName) {
 
 function getTransitionTargetNode(transition, actionNodes, simplifiedNodes) {
     // Try to find an actual action node
-    let actionNode = actionNodes.get(transition.actionNode)
+    let actionNode = actionNodes.get(transition.actionNode);
     if (actionNode) {
         while (actionNode.optionsIn.length <= transition.optionIndex) {
             actionNode.addOption();

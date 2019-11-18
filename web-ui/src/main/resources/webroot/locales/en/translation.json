@@ -63,6 +63,13 @@
       },
       "action": {
         "options": "Options:"
+      },
+      "story": {
+        "options": {
+          "customok": "Customize OK transition",
+          "customhome": "Customize HOME transition",
+          "disablehome": "Disable HOME button"
+        }
       }
     }
   },

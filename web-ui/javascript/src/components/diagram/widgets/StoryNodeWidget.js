@@ -21,6 +21,24 @@ class StoryNodeWidget extends React.Component {
         super(props);
     }
 
+    toggleCustomOkTransition = () => {
+        this.props.node.setCustomOkTransition(!this.props.node.customOkTransition);
+        this.props.updateCanvas();
+        this.forceUpdate();
+    };
+
+    toggleCustomHomeTransition = () => {
+        this.props.node.setCustomHomeTransition(!this.props.node.customHomeTransition);
+        this.props.updateCanvas();
+        this.forceUpdate();
+    };
+
+    toggleDisableHome = () => {
+        this.props.node.setDisableHome(!this.props.node.disableHome);
+        this.props.updateCanvas();
+        this.forceUpdate();
+    };
+
     getDroppedFile = (event) => {
         let file = null;
         if (event.dataTransfer.items) {
@@ -121,7 +139,22 @@ class StoryNodeWidget extends React.Component {
                                     <span className="dropzone glyphicon glyphicon-eye-open"/>
                                 </div>}
                             </div>
+                            <hr/>
+                            <div className="options">
+                                <span title={t('editor.diagram.story.options.customok')} className={'btn btn-xs glyphicon glyphicon-ok' + (this.props.node.customOkTransition ? ' active' : '')} onClick={this.toggleCustomOkTransition}/>
+                                {!this.props.node.disableHome &&<span title={t('editor.diagram.story.options.customhome')} className={'btn btn-xs glyphicon glyphicon-home' + (this.props.node.customHomeTransition ? ' active' : '')} onClick={this.toggleCustomHomeTransition}/>}
+                                <span title={t('editor.diagram.story.options.disablehome')} className={'btn btn-xs glyphicon glyphicon-home' + (this.props.node.disableHome ? ' active' : '')}
+                                      style={{textDecorationLine: 'line-through', textDecorationColor: 'red', textDecorationStyle: 'double', textDecorationThickness: '3px'}} onClick={this.toggleDisableHome}/>
+                            </div>
                         </div>
+                        {(this.props.node.okPort || this.props.node.homePort) && <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, writingMode: 'vertical-lr', textOrientation: 'upright', backgroundColor: 'lightblue'}}>
+                            <div className='ports'>
+                                <div className='out'>
+                                    {this.props.node.okPort && <SRD.DefaultPortLabel model={this.props.node.okPort}/>}
+                                    {this.props.node.homePort && <SRD.DefaultPortLabel model={this.props.node.homePort}/>}
+                                </div>
+                            </div>
+                        </div>}
                     </div>
                 </div>
             </div>

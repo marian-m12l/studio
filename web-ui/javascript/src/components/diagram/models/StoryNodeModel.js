@@ -12,6 +12,9 @@ class StoryNodeModel extends StageNodeModel {
     constructor(name = 'Story title', uuid) {
         super(name, uuid);
         this.type = 'story';
+        this.customOkTransition = false;
+        this.customHomeTransition = false;
+        this.disableHome = false;
         this.setControl('home', true);
         this.setControl('pause', true);
         this.setControl('autoplay', true);
@@ -22,13 +25,61 @@ class StoryNodeModel extends StageNodeModel {
         this.homePort = null;
     }
 
+    setCustomOkTransition(isEnabled) {
+        this.customOkTransition = isEnabled;
+        if (isEnabled) {
+            // Creates 'ok' port
+            this.setControl('autoplay', true);
+        } else if (this.okPort) {
+            // Remove any attached link
+            Object.values(this.okPort.getLinks())
+                .map(link => link.remove());
+            // Remove 'ok' port if necessary
+            this.removePort(this.okPort);
+            this.okPort = null;
+        }
+    }
+
+    setCustomHomeTransition(isEnabled) {
+        this.customHomeTransition = isEnabled;
+        if (isEnabled) {
+            // Creates 'home' port
+            this.setControl('home', true);
+        } else if (this.homePort) {
+            // Remove any attached link
+            Object.values(this.homePort.getLinks())
+                .map(link => link.remove());
+            // Remove 'home' port if necessary
+            this.removePort(this.homePort);
+            this.homePort = null;
+        }
+    }
+
+    setDisableHome(disableHome) {
+        this.disableHome = disableHome;
+        // Removes 'home' port and links, or creates 'home' port
+        this.setControl('home', !disableHome);
+        if (disableHome) {
+            this.setCustomHomeTransition(false);
+        }
+    }
+
     onOk(diagram) {
-        // TODO Support override of 'ok' port
-        return this.goToFirstUsefulNode(diagram);
+        // 'ok' behaviour may be overridden
+        if (this.customOkTransition) {
+            return super.onOk(diagram);
+        } else {
+            return this.goToFirstUsefulNode(diagram);
+        }
     }
 
     onHome(diagram) {
-        return this.goToFirstUsefulNode(diagram);
+        // 'home' behaviour may be overridden
+        if (this.customHomeTransition) {
+            return super.onHome(diagram);
+        } else {
+            return this.goToFirstUsefulNode(diagram);
+        }
     }
 
     goToFirstUsefulNode(diagram) {

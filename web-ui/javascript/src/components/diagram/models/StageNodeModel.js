@@ -156,22 +156,8 @@ class StageNodeModel extends SRD.NodeModel {
             ];
         } else {
             let homeTargetPort = homeLinks[0].getTargetPort();
-            let homeTargetActionNode = homeTargetPort.getParent();
-            let targetIndex = (homeTargetPort === homeTargetActionNode.randomOptionIn) ? Math.floor(Math.random() * homeTargetActionNode.optionsOut.length) : homeTargetActionNode.optionsIn.indexOf(homeTargetPort);
-            let optionLinks = Object.values(homeTargetActionNode.optionsOut[targetIndex].getLinks());
-            if (optionLinks.length !== 1) {
-                return [];
-            } else {
-                let nextNode = optionLinks[0].getTargetPort().getParent();
-
-                return [
-                    nextNode,
-                    {
-                        node: homeTargetActionNode,
-                        index: targetIndex
-                    }
-                ];
-            }
+            let homeTargetNode = homeTargetPort.getParent();
+            return homeTargetNode.onEnter(homeTargetPort, diagram);
         }
     }
 

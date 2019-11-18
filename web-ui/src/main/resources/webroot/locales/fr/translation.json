@@ -63,6 +63,13 @@
       },
       "action": {
         "options": "Options :"
+      },
+      "story": {
+        "options": {
+          "customok": "Personnaliser la transition OK",
+          "customhome": "Personnaliser la transition MAISON",
+          "disablehome": "Désactiver le bouton MAISON"
+        }
       }
     }
   },
