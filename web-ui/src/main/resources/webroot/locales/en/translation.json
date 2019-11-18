@@ -49,6 +49,7 @@
     },
     "diagram": {
       "editTitle": "Edit node title",
+      "editText": "Click to edit",
       "stage": {
         "controls": {
           "wheel": "Allow wheel selection",

@@ -35,13 +35,13 @@ class MenuNodeModel extends SRD.NodeModel {
 
     setName(name) {
         this.name = name;
-        // TODO rename substages too ?
+        this.questionStage.name = name+".questionstage";
     }
 
     addOption = () => {
         let index = this.optionsStages.length;
 
-        this.optionsStages[index] = new Stage(`${this.name}.optionsstage.${index}`);
+        this.optionsStages[index] = new Stage(`optionsstage.${index}`);
         this.optionsStages[index].controls['wheel'] = true;
         this.optionsStages[index].controls['ok'] = true;
         this.optionsStages[index].controls['home'] = true;

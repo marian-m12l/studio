@@ -122,7 +122,7 @@ export function readFromArchive(file) {
                             // Options
                             group.filter(node => node.type === 'menu.optionstage').forEach((optionVirtualStage, idx) => {
                                 menuNode.addOption();
-                                menuNode.setOptionName(0, optionVirtualStage.name);
+                                menuNode.setOptionName(idx, optionVirtualStage.name);
                                 // Async load from asset files
                                 let imagePromise = new Promise((resolve, reject) => {
                                     if (optionVirtualStage.image) {

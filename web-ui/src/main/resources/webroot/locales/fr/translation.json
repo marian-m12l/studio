@@ -49,6 +49,7 @@
     },
     "diagram": {
       "editTitle": "Éditer le titre",
+      "editText": "Cliquez pour modifier",
       "stage": {
         "controls": {
           "wheel": "Autoriser la molette de sélection",

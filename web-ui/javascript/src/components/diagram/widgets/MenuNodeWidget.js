@@ -8,11 +8,12 @@ import React from 'react';
 import PropTypes from "prop-types";
 import * as SRD from 'storm-react-diagrams';
 import {withTranslation} from "react-i18next";
+import {toast} from "react-toastify";
+import {connect} from "react-redux";
 
 import MenuNodeModel from "../models/MenuNodeModel";
-import {toast} from "react-toastify";
 import {setViewerAction, setViewerDiagram, setViewerStage, showViewer} from "../../../actions";
-import {connect} from "react-redux";
+import EditableText from "./composites/EditableText";
 
 
 class MenuNodeWidget extends React.Component {
@@ -20,6 +21,12 @@ class MenuNodeWidget extends React.Component {
     constructor(props) {
         super(props);
     }
+
+    editName = (event) => {
+        this.props.node.setName(event.target.value);
+        this.props.updateCanvas();
+        this.forceUpdate();
+    };
 
     addOption = () => {
         this.props.node.addOption();
@@ -31,6 +38,14 @@ class MenuNodeWidget extends React.Component {
         this.props.node.removeOption();
         this.props.updateCanvas();
         this.forceUpdate();
+    };
+
+    editOptionName = (idx) => {
+        return (event) => {
+            this.props.node.setOptionName(idx, event.target.value);
+            this.props.updateCanvas();
+            this.forceUpdate();
+        };
     };
 
     getDroppedFile = (event) => {
@@ -208,6 +223,8 @@ class MenuNodeWidget extends React.Component {
                     </div>
                     <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, backgroundColor: 'green'}}>
                         <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, backgroundColor: 'lightgreen'}}>
+                            <div>MENU NODE</div>
+                            <div><EditableText value={this.props.node.getName()} onChange={this.editName}/></div>
                             <p>Question ?</p>
                             <div className="assets">
                                 <input type="file" id={`audio-upload-question-${this.props.node.getUuid()}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.questionAudioFileSelected} />
@@ -229,6 +246,7 @@ class MenuNodeWidget extends React.Component {
                         <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, backgroundColor: 'lightblue'}}>
                             {this.props.node.optionsStages.map((option, idx) =>
                                 <div key={`menu-option-${idx}`} style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, backgroundColor: 'yellow'}}>
+                                    <div><EditableText value={this.props.node.getOptionName(idx)} onChange={this.editOptionName(idx)}/></div>
                                     <div className="assets">
                                         <input type="file" id={`image-upload-${this.props.node.getUuid()}-${idx}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.optionImageFileSelected(idx)} />
                                         <div className="image-asset"

@@ -168,7 +168,7 @@ export async function writeToArchive(diagramModel) {
                     uuid: menuNodeQuestionStageUuid(node),
                     type: node.type+".questionstage",
                     groupId: node.getUuid(),
-                    name: node.getName()+".questionstage",  // TODO node.getQuestionName() ?
+                    name: node.getName(),
                     image: null,
                     audio: questionAudioFile,
                     okTransition: { // OK transitions to the default option's virtual action node   // TODO default option depends on policy: 0th, nth or random (-1)
@@ -236,7 +236,7 @@ export async function writeToArchive(diagramModel) {
                         uuid: menuNodeOptionStageUuid(node, idx),
                         type: node.type+".optionstage",
                         groupId: node.getUuid(),
-                        name: node.getName()+".optionstage."+idx,   // TODO node.getOptionName(idx) ?
+                        name: node.getOptionName(idx),
                         image: imageFile,
                         audio: audioFile,
                         okTransition: buildTransitionObject(okTarget),

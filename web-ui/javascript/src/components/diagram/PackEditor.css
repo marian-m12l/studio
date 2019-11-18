@@ -209,6 +209,10 @@
     padding: 0px;
 }
 
+.storm-diagrams-canvas .editable-text {
+    cursor: text;
+}
+
 .pack-diagram-widget .content {
     display: flex;
     flex-grow: 1;

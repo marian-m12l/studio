@@ -9,10 +9,11 @@ import PropTypes from "prop-types";
 import * as SRD from 'storm-react-diagrams';
 import {withTranslation} from "react-i18next";
 import {toast} from "react-toastify";
+import {connect} from "react-redux";
 
 import CoverNodeModel from "../models/CoverNodeModel";
 import {setViewerAction, setViewerDiagram, setViewerStage, showViewer} from "../../../actions";
-import {connect} from "react-redux";
+import EditableText from "./composites/EditableText";
 
 
 class CoverNodeWidget extends React.Component {
@@ -20,6 +21,12 @@ class CoverNodeWidget extends React.Component {
     constructor(props) {
         super(props);
     }
+
+    editName = (event) => {
+        this.props.node.setName(event.target.value);
+        this.props.updateCanvas();
+        this.forceUpdate();
+    };
 
     getDroppedFile = (event) => {
         let file = null;
@@ -141,7 +148,8 @@ class CoverNodeWidget extends React.Component {
                 <div style={{display: 'flex', flexDirection: 'row', backgroundColor: 'blue'}}>
                     <div style={{display: 'flex', flexDirection: 'row', flexGrow: 1, backgroundColor: 'green'}}>
                         <div style={{flexGrow: 1, backgroundColor: 'lightgreen'}}>
-                            <span>COVER NODE</span>
+                            <div>COVER NODE</div>
+                            <div><EditableText value={this.props.node.getName()} onChange={this.editName}/></div>
                             <div className="assets">
                                 <input type="file" id={`image-upload-${this.props.node.getUuid()}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.imageFileSelected} />
                                 <div className="image-asset"

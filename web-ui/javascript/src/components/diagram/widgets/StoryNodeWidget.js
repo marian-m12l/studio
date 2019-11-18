@@ -8,11 +8,12 @@ import React from 'react';
 import PropTypes from "prop-types";
 import * as SRD from 'storm-react-diagrams';
 import {withTranslation} from "react-i18next";
+import {toast} from "react-toastify";
+import {connect} from "react-redux";
 
 import StoryNodeModel from "../models/StoryNodeModel";
-import {toast} from "react-toastify";
 import {setViewerAction, setViewerDiagram, setViewerStage, showViewer} from "../../../actions";
-import {connect} from "react-redux";
+import EditableText from "./composites/EditableText";
 
 
 class StoryNodeWidget extends React.Component {
@@ -20,6 +21,12 @@ class StoryNodeWidget extends React.Component {
     constructor(props) {
         super(props);
     }
+
+    editName = (event) => {
+        this.props.node.setName(event.target.value);
+        this.props.updateCanvas();
+        this.forceUpdate();
+    };
 
     toggleCustomOkTransition = () => {
         this.props.node.setCustomOkTransition(!this.props.node.customOkTransition);
@@ -122,7 +129,8 @@ class StoryNodeWidget extends React.Component {
                     </div>
                     <div style={{display: 'flex', flexDirection: 'row', flexGrow: 1, backgroundColor: 'green'}}>
                         <div style={{flexGrow: 1, backgroundColor: 'lightgreen'}}>
-                            <span>STORY NODE</span>
+                            <div>STORY NODE</div>
+                            <div><EditableText value={this.props.node.getName()} onChange={this.editName}/></div>
                             <div className="assets">
                                 <input type="file" id={`audio-upload-${this.props.node.getUuid()}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.audioFileSelected} />
                                 <div className="audio-asset"
