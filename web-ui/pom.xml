@@ -70,6 +70,11 @@
             <version>2.11.1</version>
         </dependency>
         <dependency>
+            <groupId>org.apache.logging.log4j</groupId>
+            <artifactId>log4j-slf4j18-impl</artifactId>
+            <version>2.12.1</version>
+        </dependency>
+        <dependency>
             <groupId>com.lunii</groupId>
             <artifactId>lunii-device-gateway</artifactId>
             <version>unknown</version>
