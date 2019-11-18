@@ -6,10 +6,11 @@
 
 package studio.webui.service;
 
-import com.lunii.device.gateway.DriverException;
-import com.lunii.device.wrapper.*;
-import com.lunii.device.wrapper.model.StoryTeller;
-import com.lunii.device.wrapper.model.StoryTellerPack;
+import com.lunii.device.gateway.raw.AbstractUsb4JavaLuniiDriver;
+import com.lunii.device.gateway.raw.Usb4JavaLuniiDevice;
+import com.lunii.device.gateway.raw.Usb4JavaLuniiDriver;
+import com.lunii.device.wrapper.raw.RawDevice;
+import com.lunii.device.wrapper.raw.handler.*;
 import com.lunii.java.util.progress.Progress;
 import com.lunii.java.util.progress.ProgressCallback;
 import io.vertx.core.eventbus.EventBus;
@@ -20,6 +21,7 @@ import io.vertx.core.logging.LoggerFactory;
 import studio.core.v1.Constants;
 
 import java.io.File;
+import java.lang.reflect.Method;
 import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -34,7 +36,8 @@ public class StoryTellerService implements IStoryTellerService {
 
     private final DatabaseMetadataService databaseMetadataService;
 
-    private StoryTellerHandler storyTellerHandler;
+    private RawDeviceHandler rawDeviceHandler;
+    private Device rawDevice;
 
 
     public StoryTellerService(EventBus eventBus, DatabaseMetadataService databaseMetadataService) {
@@ -42,45 +45,46 @@ public class StoryTellerService implements IStoryTellerService {
         this.databaseMetadataService = databaseMetadataService;
 
         LOGGER.info("Setting up story teller driver");
-        StoryTellerDriver driver = new StoryTellerDriver();
+        Usb4JavaLuniiDriver driver = new Usb4JavaLuniiDriver();
 
-        driver.addDevicePluggedListener(new StoryTellerDriver.DevicePluggedListener() {
-            public void onPlugged(StoryTellerHandler handler) {
-                if (handler == null) {
-                    LOGGER.error("Device plugged but got null handler");
+        driver.addDevicePluggedListener(new AbstractUsb4JavaLuniiDriver.DevicePluggedListener() {
+            public void onPlugged(Usb4JavaLuniiDevice device) {
+                if (device == null) {
+                    LOGGER.error("Device plugged but got null device");
                     // Send 'failure' event on bus
                     eventBus.send("storyteller.failure", null);
                 } else {
-                    LOGGER.info("Device plugged");
-                    storyTellerHandler = handler;
-                    StoryTeller storyTeller = storyTellerHandler.getStoryTeller();
-                    JsonObject eventData = new JsonObject()
-                            .put("uuid", storyTeller.getUUID())
-                            .put("serial", storyTeller.getSerialNumber())
-                            .put("firmware", Optional.ofNullable(storyTeller.getFirmwareVersion()).map(fv -> fv.getMajor() + "." + fv.getMinor()).orElse(null))
-                            .put("storage", new JsonObject()
-                                    .put("size", storyTeller.getSdCardSize())
-                                    .put("free", storyTellerHandler.getTotalFreeSpaceFromSD())
-                                    .put("taken", storyTellerHandler.getTotalTakenSpaceFromSD())
-                            )
-                            .put("error", storyTeller.isError());
-                    // Send 'plugged' event on bus
-                    eventBus.send("storyteller.plugged", eventData);
+                    try {
+                        LOGGER.info("Device plugged");
+                        rawDeviceHandler = new RawDeviceHandler(device);
+                        rawDevice = rawDeviceHandler.load();
+                        JsonObject eventData = new JsonObject()
+                                .put("uuid", rawDevice.getUuid().toString())
+                                .put("serial", rawDevice.getSerialNumber())
+                                .put("firmware", Optional.ofNullable(rawDevice.getFirmwareVersion()).map(fv -> fv.getMajor() + "." + fv.getMinor()).orElse(null))
+                                .put("storage", new JsonObject()
+                                        .put("size", rawDevice.getUsableSDCardSizeInSectors()*512L)
+                                        .put("free", rawDeviceHandler.getTotalFreeSpace())
+                                        .put("taken", rawDeviceHandler.getTotalTakenSpace())
+                                )
+                                .put("error", rawDeviceHandler.getError());
+                        // Send 'plugged' event on bus
+                        eventBus.send("storyteller.plugged", eventData);
+                    } catch (DeviceHandlerException e) {
+                        LOGGER.error("Failed to plug device", e);
+                        // Send 'failure' event on bus
+                        eventBus.send("storyteller.failure", null);
+                    }
                 }
 
             }
-            public void onPluggedFailed(DriverException driverException) {
-                LOGGER.error("Failed to plug device");
-                // Send 'failure' event on bus
-                eventBus.send("storyteller.failure", null);
-            }
         });
 
-        driver.addDeviceUnpluggedListener(new StoryTellerDriver.DeviceUnpluggedListener() {
+        driver.addDeviceUnpluggedListener(new AbstractUsb4JavaLuniiDriver.DeviceUnpluggedListener() {
             @Override
-            public void onUnplugged(StoryTellerHandler handler) {
+            public void onUnplugged(Usb4JavaLuniiDevice device) {
                 LOGGER.info("Device unplugged");
-                storyTellerHandler = null;
+                rawDeviceHandler = null;
                 // Send 'unplugged' event on bus
                 eventBus.send("storyteller.unplugged", null);
             }
@@ -88,35 +92,39 @@ public class StoryTellerService implements IStoryTellerService {
     }
 
     public Optional<JsonObject> deviceInfos() {
-        if (storyTellerHandler == null) {
+        if (rawDeviceHandler == null) {
             return Optional.empty();
         } else {
-            StoryTeller storyTeller = storyTellerHandler.getStoryTeller();
-            return Optional.of(new JsonObject()
-                    .put("uuid", storyTeller.getUUID())
-                    .put("serial", storyTeller.getSerialNumber())
-                    .put("firmware", Optional.ofNullable(storyTeller.getFirmwareVersion()).map(fv -> fv.getMajor() + "." + fv.getMinor()).orElse(null))
-                    .put("storage", new JsonObject()
-                            .put("size", storyTeller.getSdCardSize())
-                            .put("free", storyTellerHandler.getTotalFreeSpaceFromSD())
-                            .put("taken", storyTellerHandler.getTotalTakenSpaceFromSD())
-                    )
-                    .put("error", storyTeller.isError())
-            );
+            try {
+                return Optional.of(new JsonObject()
+                        .put("uuid", rawDevice.getUuid().toString())
+                        .put("serial", rawDevice.getSerialNumber())
+                        .put("firmware", Optional.ofNullable(rawDevice.getFirmwareVersion()).map(fv -> fv.getMajor() + "." + fv.getMinor()).orElse(null))
+                        .put("storage", new JsonObject()
+                                .put("size", rawDevice.getUsableSDCardSizeInSectors()*512L)
+                                .put("free", rawDeviceHandler.getTotalFreeSpace())
+                                .put("taken", rawDeviceHandler.getTotalTakenSpace())
+                        )
+                        .put("error", rawDeviceHandler.getError())
+                );
+            } catch (DeviceHandlerException e) {
+                LOGGER.error("Failed to read device infos", e);
+                throw new RuntimeException(e);
+            }
         }
     }
 
     public JsonArray packs() {
-        if (storyTellerHandler == null) {
+        if (rawDeviceHandler == null) {
             return new JsonArray();
         } else {
             try {
                 return new JsonArray(
-                        storyTellerHandler.getStoriesPacks().stream()
+                        rawDeviceHandler.readIndex().stream()
                                 .map(this::getPackMetadata)
                                 .collect(Collectors.toList())
                 );
-            } catch (DriverException | InconsistentMemoryException e) {
+            } catch (DeviceHandlerException e) {
                 LOGGER.error("Failed to read packs from device", e);
                 throw new RuntimeException(e);
             }
@@ -124,7 +132,7 @@ public class StoryTellerService implements IStoryTellerService {
     }
 
     public Optional<String> addPack(String uuid, File packFile) {
-        if (storyTellerHandler == null) {
+        if (rawDeviceHandler == null) {
             return Optional.empty();
         } else {
             String transferId = UUID.randomUUID().toString();
@@ -135,16 +143,52 @@ public class StoryTellerService implements IStoryTellerService {
                 public void run() {
                     try {
                         // Make sure the device does not already contain this pack
-                        if (storyTellerHandler.getStoriesPacks().stream().anyMatch(p -> p.getUuid().equalsIgnoreCase(uuid))) {
+                        if (rawDeviceHandler.readIndex().stream().anyMatch(p -> p.getUuid().toString().equalsIgnoreCase(uuid))) {
                             LOGGER.error("Cannot add pack to device because the device already contains this pack");
                             eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
                             return;
                         }
-                        storyTellerHandler.addStoryPack(-1, packFile, new ProgressCallback() {
+
+                        // Need to set up a virtual pack to compute the pack's start sector
+                        LOGGER.info("Computing pack start sector...");
+                        RawDevice virtualRawDevice = new RawDevice(rawDeviceHandler);
+                        Method setErrorMethod = virtualRawDevice.getClass().getDeclaredMethod("setError", boolean.class);
+                        setErrorMethod.setAccessible(true);
+                        setErrorMethod.invoke(virtualRawDevice, rawDevice.isError());
+                        Method setFirmwareVersionMethod = virtualRawDevice.getClass().getDeclaredMethod("setFirmwareVersion", FirmwareVersion.class);
+                        setFirmwareVersionMethod.setAccessible(true);
+                        setFirmwareVersionMethod.invoke(virtualRawDevice, rawDevice.getFirmwareVersion());
+                        Method setSerialNumberMethod = virtualRawDevice.getClass().getDeclaredMethod("setSerialNumber", String.class);
+                        setSerialNumberMethod.setAccessible(true);
+                        setSerialNumberMethod.invoke(virtualRawDevice, rawDevice.getSerialNumber());
+                        Method setUuidMethod = virtualRawDevice.getClass().getDeclaredMethod("setUuid", UUID.class);
+                        setUuidMethod.setAccessible(true);
+                        setUuidMethod.invoke(virtualRawDevice, rawDevice.getUuid());
+                        Method setSdCardSizeInSectorsMethod = virtualRawDevice.getClass().getDeclaredMethod("setSdCardSizeInSectors", int.class);
+                        setSdCardSizeInSectorsMethod.setAccessible(true);
+                        setSdCardSizeInSectorsMethod.invoke(virtualRawDevice, rawDevice.getSdCardSizeInSectors());
+                        Method setUsableSDCardSizeInSectorsMethod = virtualRawDevice.getClass().getDeclaredMethod("setUsableSDCardSizeInSectors", int.class);
+                        setUsableSDCardSizeInSectorsMethod.setAccessible(true);
+                        setUsableSDCardSizeInSectorsMethod.invoke(virtualRawDevice, rawDevice.getUsableSDCardSizeInSectors());
+                        Method loadVirtualContentMethod = virtualRawDevice.getClass().getDeclaredMethod("loadVirtualContent", PhysicalContent.class);
+                        loadVirtualContentMethod.setAccessible(true);
+                        loadVirtualContentMethod.invoke(virtualRawDevice, rawDevice.physicalContent);
+
+                        Method addPackMethod = virtualRawDevice.getRawVirtualContent().getClass().getDeclaredMethod("addPack", UUID.class, short.class, int.class, short.class);
+                        addPackMethod.setAccessible(true);
+                        RawVirtualPack rawVirtualPack = (RawVirtualPack) addPackMethod.invoke(virtualRawDevice.getRawVirtualContent(),
+                                UUID.fromString(uuid),
+                                (short) 1,  // Version, no need for exact value
+                                (int) Math.ceil(packFile.length()/512.0), // Pack size in sectors
+                                (short) 0   // Sampling rate, no need for exact value
+                        );
+                        LOGGER.info("Adding pack at start sector: " + rawVirtualPack.getStartSector());
+
+                        rawDeviceHandler.addStoryPack(-1, packFile, rawVirtualPack.getStartSector(), new ProgressCallback() {
                             @Override
                             public boolean onProgress(Progress progress) {
                                 // Send events on eventbus to monitor progress
-                                double p = progress.getWorkDone().doubleValue() / progress.getTotalWork().doubleValue();
+                                double p = (double) progress.getWorkDone() / (double) progress.getTotalWork();
                                 LOGGER.debug("Pack add progress... " + progress.getWorkDone() + " / " + progress.getTotalWork() + " (" + p + ")");
                                 eventBus.send("storyteller.transfer."+transferId+".progress", new JsonObject().put("progress", p));
                                 return true;
@@ -165,18 +209,18 @@ public class StoryTellerService implements IStoryTellerService {
     }
 
     public boolean deletePack(String uuid) {
-        if (storyTellerHandler == null) {
+        if (rawDeviceHandler == null) {
             return false;
         } else {
             try {
-                if (storyTellerHandler.getStoriesPacks().stream().anyMatch(p -> p.getUuid().equalsIgnoreCase(uuid))) {
-                    storyTellerHandler.deletePack(uuid);
+                if (rawDeviceHandler.readIndex().stream().anyMatch(p -> p.getUuid().toString().equalsIgnoreCase(uuid))) {
+                    rawDeviceHandler.deleteStoryPack(UUID.fromString(uuid));
                     return true;
                 } else {
                     LOGGER.error("Cannot remove pack from device because it is not on the device");
                     return false;
                 }
-            } catch (DriverException | InconsistentMemoryException | PackDoesNotExistException e) {
+            } catch (DeviceHandlerException | PackDoesNotExistException e) {
                 LOGGER.error("Failed to remove pack from device", e);
                 e.printStackTrace();
                 return false;
@@ -185,7 +229,7 @@ public class StoryTellerService implements IStoryTellerService {
     }
 
     public Optional<String> extractPack(String uuid, File destFile) {
-        if (storyTellerHandler == null) {
+        if (rawDeviceHandler == null) {
             return Optional.empty();
         } else {
             String transferId = UUID.randomUUID().toString();
@@ -195,7 +239,7 @@ public class StoryTellerService implements IStoryTellerService {
                 @Override
                 public void run() {
                     try {
-                        if (storyTellerHandler.getStoriesPacks().stream().anyMatch(p -> p.getUuid().equalsIgnoreCase(uuid))) {
+                        if (rawDeviceHandler.readIndex().stream().anyMatch(p -> p.getUuid().toString().equalsIgnoreCase(uuid))) {
                             // Check that the destination is available
                             if (destFile.exists()) {
                                 LOGGER.error("Cannot extract pack from device because the destination file already exists");
@@ -203,15 +247,15 @@ public class StoryTellerService implements IStoryTellerService {
                                 return;
                             }
 
-                            StoryTellerPack pack = storyTellerHandler.getStoriesPacks().stream()
-                                    .filter(p -> p.getUuid().equalsIgnoreCase(uuid))
+                            PhysicalPack pack = rawDeviceHandler.readIndex().stream()
+                                    .filter(p -> p.getUuid().toString().equalsIgnoreCase(uuid))
                                     .collect(Collectors.toList())
                                     .get(0);
-                            storyTellerHandler.writeToFileFromSD(Constants.PACKS_LIST_SECTOR+pack.getStartSector(), pack.getSectorSize(), destFile, new ProgressCallback() {
+                            rawDeviceHandler.writeToFileFromSD(Constants.PACKS_LIST_SECTOR+pack.getStartSector(), pack.getSectorSize(), destFile, new ProgressCallback() {
                                 @Override
                                 public boolean onProgress(Progress progress) {
                                     // Send events on eventbus to monitor progress
-                                    double p = progress.getWorkDone().doubleValue() / progress.getTotalWork().doubleValue();
+                                    double p = (double) progress.getWorkDone() / (double) progress.getTotalWork();
                                     LOGGER.debug("Pack extraction progress... " + progress.getWorkDone() + " / " + progress.getTotalWork() + " (" + p + ")");
                                     eventBus.send("storyteller.transfer."+transferId+".progress", new JsonObject().put("progress", p));
                                     return true;
@@ -235,10 +279,10 @@ public class StoryTellerService implements IStoryTellerService {
         }
     }
 
-    private JsonObject getPackMetadata(StoryTellerPack pack) {
-        return databaseMetadataService.getPackMetadata(pack.getUuid())
+    private JsonObject getPackMetadata(PhysicalPack pack) {
+        return databaseMetadataService.getPackMetadata(pack.getUuid().toString())
                 .map(metadata -> new JsonObject()
-                        .put("uuid", pack.getUuid())
+                        .put("uuid", pack.getUuid().toString())
                         .put("title", metadata.getTitle())
                         .put("description", metadata.getDescription())
                         .put("image", metadata.getThumbnail())
@@ -246,7 +290,7 @@ public class StoryTellerService implements IStoryTellerService {
                         .put("official", metadata.isOfficial())
                 )
                 .orElse(new JsonObject()
-                        .put("uuid", pack.getUuid())
+                        .put("uuid", pack.getUuid().toString())
                         .put("sectorSize", pack.getSectorSize())
                 );
     }
