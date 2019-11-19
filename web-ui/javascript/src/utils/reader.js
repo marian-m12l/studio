@@ -149,12 +149,13 @@ export function readFromArchive(file) {
                             if (menuQuestionVirtualAction.position) {
                                 menuNode.setPosition(menuQuestionVirtualAction.position.x, menuQuestionVirtualAction.position.y);
                             }
-                            // TODO Default option policy (-1, 0, n)
+                            // Default option policy
+                            menuNode.setDefaultOption(menuQuestionVirtualStage.okTransition.optionIndex);
                             return [menuQuestionVirtualAction.id, menuNode];
                         }
                         // Cover node (TODO make sure there is only one start node !)
                         else if (group[0].type.startsWith('cover')) {
-                            let coverNode = new CoverNodeModel(group[0].name, group[0].uuid)
+                            let coverNode = new CoverNodeModel(group[0].name, group[0].uuid);
                             // Async load from asset files
                             let imagePromise = new Promise((resolve, reject) => {
                                 if (group[0].image) {

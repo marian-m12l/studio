@@ -23,6 +23,8 @@ class MenuNodeModel extends SRD.NodeModel {
         // Option stages
         this.optionsStages = [];
         this.optionsOut = [];
+        // Default option
+        this.defaultOption = 0;
     }
 
     getUuid() {
@@ -50,15 +52,18 @@ class MenuNodeModel extends SRD.NodeModel {
     };
 
     removeOption = () => {
-        if (this.optionsStages.length > 0) {
+        // Keep at least one option
+        if (this.optionsStages.length > 1) {
             // Remove stages and ports from list
             let optionStage = this.optionsStages.pop();
             let optionOutPort = this.optionsOut.pop();
-            // Remove any attached link // TODO fix default option if it was just removed
+            // Remove any attached link
             Object.values(optionOutPort.getLinks())
                 .map(link => link.remove());
             // Remove actual ports
             this.removePort(optionOutPort);
+            // Make sure default option is consistent with the number of remaining options
+            this.defaultOption = Math.min(this.defaultOption, this.optionsStages.length-1);
         }
     };
 
@@ -94,9 +99,17 @@ class MenuNodeModel extends SRD.NodeModel {
         this.optionsStages[index].audio = audio;
     }
 
+    getDefaultOption() {
+        return this.defaultOption;
+    }
+
+    setDefaultOption(index) {
+        this.defaultOption = index;
+    }
+
 
     onEnter(port, diagram) {
-        let targetIndex = 0;    // TODO different policies for default option
+        let targetIndex = (this.defaultOption === -1) ? Math.floor(Math.random() * this.optionsStages.length) : this.defaultOption;
         let that = this;
         return [
             {
@@ -186,8 +199,6 @@ class MenuNodeModel extends SRD.NodeModel {
             }
         };
     }
-
-    // TODO setDefaultOption(index) ?
 
 }
 

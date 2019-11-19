@@ -171,9 +171,9 @@ export async function writeToArchive(diagramModel) {
                     name: node.getName(),
                     image: null,
                     audio: questionAudioFile,
-                    okTransition: { // OK transitions to the default option's virtual action node   // TODO default option depends on policy: 0th, nth or random (-1)
+                    okTransition: { // OK transitions to the default option's virtual action node
                         actionNode: menuNodeOptionsActionUuid(node),
-                        optionIndex: 0
+                        optionIndex: node.getDefaultOption()
                     },
                     homeTransition: null,
                     controlSettings: node.questionStage.controls

@@ -40,6 +40,14 @@ class MenuNodeWidget extends React.Component {
         this.forceUpdate();
     };
 
+    editDefaultOption = (idx) => {
+        return (event) => {
+            this.props.node.setDefaultOption(idx);
+            this.props.updateCanvas();
+            this.forceUpdate();
+        }
+    };
+
     editOptionName = (idx) => {
         return (event) => {
             this.props.node.setOptionName(idx, event.target.value);
@@ -240,14 +248,17 @@ class MenuNodeWidget extends React.Component {
                         </div>
                         <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, backgroundColor: 'pink'}}>
                             <p>Options ?</p>
-                            {this.props.node.optionsStages.length > 0 && <span className='btn btn-xs glyphicon glyphicon-minus' onClick={this.removeOption} />}
+                            {this.props.node.optionsStages.length > 1 && <span className='btn btn-xs glyphicon glyphicon-minus' onClick={this.removeOption} />}
                             <span className='btn btn-xs glyphicon glyphicon-plus' onClick={this.addOption} />
                         </div>
                         <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, backgroundColor: 'lightblue'}}>
                             {this.props.node.optionsStages.map((option, idx) =>
                                 <div key={`menu-option-${idx}`} style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, backgroundColor: 'yellow'}}>
-                                    <div><EditableText value={this.props.node.getOptionName(idx)} onChange={this.editOptionName(idx)}/></div>
-                                    <div className="assets">
+                                    <div>
+                                        <input type="radio" value={`menu-option-${idx}`} checked={this.props.node.getDefaultOption() === idx} onChange={this.editDefaultOption(idx)}/>
+                                        <EditableText value={this.props.node.getOptionName(idx)} onChange={this.editOptionName(idx)}/>
+                                    </div>
+                                    <div className="assets" style={{flexGrow: 3}}>
                                         <input type="file" id={`image-upload-${this.props.node.getUuid()}-${idx}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.optionImageFileSelected(idx)} />
                                         <div className="image-asset"
                                              title={t('editor.diagram.stage.image')}
@@ -270,6 +281,13 @@ class MenuNodeWidget extends React.Component {
                                     <SRD.DefaultPortLabel model={this.props.node.optionsOut[idx]}/>
                                 </div>
                             )}
+                            {/* Default to random option */}
+                            <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, backgroundColor: 'yellow'}}>
+                                <div>
+                                    <input type="radio" name="menu-option-random" value="menu-option-random" checked={this.props.node.getDefaultOption() === -1} onChange={this.editDefaultOption(-1)}/>
+                                    <label htmlFor="menu-option-random">Random option</label>
+                                </div>
+                            </div>
                         </div>
                         {/* Global preview of the node */}
                         {this.isPreviewable() && <div className="preview"
