@@ -8,6 +8,8 @@ import * as SRD from 'storm-react-diagrams';
 import uuidv4 from "uuid/v4";
 
 import Stage from "./core/Stage";
+import ActionPortModel from "./ActionPortModel";
+import StagePortModel from "./StagePortModel";
 
 
 class MenuNodeModel extends SRD.NodeModel {
@@ -16,7 +18,7 @@ class MenuNodeModel extends SRD.NodeModel {
         super('menu');
         this.uuid = uuid || uuidv4();
         this.name = name;
-        this.fromPort = this.addPort(new SRD.DefaultPortModel(true, SRD.Toolkit.UID(), "from"));
+        this.fromPort = this.addPort(new ActionPortModel(true, SRD.Toolkit.UID(), "from"));
         // Question stage
         this.questionStage = new Stage(name+".questionstage");
         this.questionStage.controls['autoplay'] = true;
@@ -47,7 +49,7 @@ class MenuNodeModel extends SRD.NodeModel {
         this.optionsStages[index].controls['wheel'] = true;
         this.optionsStages[index].controls['ok'] = true;
         this.optionsStages[index].controls['home'] = true;
-        this.optionsOut[index] = this.addPort(new SRD.DefaultPortModel(false, SRD.Toolkit.UID(), "Option #"+(index+1)));
+        this.optionsOut[index] = this.addPort(new StagePortModel(false, SRD.Toolkit.UID(), "Option #"+(index+1)));
         return this.optionsOut[index];
     };
 

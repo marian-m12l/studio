@@ -8,6 +8,7 @@ import * as SRD from 'storm-react-diagrams';
 import uuidv4 from 'uuid/v4';
 
 import Stage from "./core/Stage";
+import StagePortModel from "./StagePortModel";
 
 
 class StageNodeModel extends SRD.NodeModel {
@@ -18,7 +19,15 @@ class StageNodeModel extends SRD.NodeModel {
         this.squareOne = false;
         this.stage = new Stage(name);
 
-        this.fromPort = this.addPort(new SRD.DefaultPortModel(true, SRD.Toolkit.UID(), "from"));
+        this.fromPort = this.addPort(this.createIncomingPort("from"));
+    }
+
+    createIncomingPort(name) {
+        return new StagePortModel(true, SRD.Toolkit.UID(), name);
+    }
+
+    createOutgoingPort(name) {
+        return new StagePortModel(false, SRD.Toolkit.UID(), name);
     }
 
     getUuid() {
@@ -81,7 +90,7 @@ class StageNodeModel extends SRD.NodeModel {
     setOk(ok) {
         this.stage.controls.ok = ok;
         if (ok && this.okPort == null) {
-            this.okPort = this.addPort(new SRD.DefaultPortModel(false, SRD.Toolkit.UID(), "ok"));
+            this.okPort = this.addPort(this.createOutgoingPort("ok"));
         } else if (!ok && !this.stage.controls.autoplay && this.okPort != null) {
             // Remove any attached link
             Object.values(this.okPort.getLinks())
@@ -95,7 +104,7 @@ class StageNodeModel extends SRD.NodeModel {
     setHome(home) {
         this.stage.controls.home = home;
         if (home && this.homePort == null) {
-            this.homePort = this.addPort(new SRD.DefaultPortModel(false, SRD.Toolkit.UID(), "home"));
+            this.homePort = this.addPort(this.createOutgoingPort("home"));
         } else if (!home && this.homePort != null) {
             // Remove any attached link
             Object.values(this.homePort.getLinks())
@@ -109,7 +118,7 @@ class StageNodeModel extends SRD.NodeModel {
     setAutoplay(autoplay) {
         this.stage.controls.autoplay = autoplay;
         if (autoplay && this.okPort == null) {
-            this.okPort = this.addPort(new SRD.DefaultPortModel(false, SRD.Toolkit.UID(), "ok"));
+            this.okPort = this.addPort(this.createOutgoingPort("ok"));
         } else if (!autoplay && !this.stage.controls.ok && this.okPort != null) {
             // Remove any attached link
             Object.values(this.okPort.getLinks())

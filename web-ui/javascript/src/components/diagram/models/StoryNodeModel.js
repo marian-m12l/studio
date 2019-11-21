@@ -4,7 +4,10 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+import * as SRD from "storm-react-diagrams";
+
 import StageNodeModel from "./StageNodeModel";
+import ActionPortModel from "./ActionPortModel";
 
 
 class StoryNodeModel extends StageNodeModel {
@@ -23,6 +26,11 @@ class StoryNodeModel extends StageNodeModel {
         this.removePort(this.homePort);
         this.okPort = null;
         this.homePort = null;
+    }
+
+    // Incoming node is of type 'action'
+    createIncomingPort(name) {
+        return new ActionPortModel(true, SRD.Toolkit.UID(), name);
     }
 
     setCustomOkTransition(isEnabled) {
@@ -57,9 +65,9 @@ class StoryNodeModel extends StageNodeModel {
 
     setDisableHome(disableHome) {
         this.disableHome = disableHome;
-        // Removes 'home' port and links, or creates 'home' port
-        this.setControl('home', !disableHome);
         if (disableHome) {
+            // Removes 'home' port and links
+            this.setControl('home', false);
             this.setCustomHomeTransition(false);
         }
     }

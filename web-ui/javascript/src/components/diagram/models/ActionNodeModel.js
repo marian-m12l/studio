@@ -6,6 +6,8 @@
 
 import * as SRD from 'storm-react-diagrams'
 
+import ActionPortModel from "./ActionPortModel";
+
 
 class ActionNodeModel extends SRD.NodeModel {
 
@@ -16,7 +18,7 @@ class ActionNodeModel extends SRD.NodeModel {
         this.optionsIn = [];
         this.optionsOut = [];
         // Random option
-        this.randomOptionIn = this.addPort(new SRD.DefaultPortModel(true, SRD.Toolkit.UID(), "Random option"));
+        this.randomOptionIn = this.addPort(new ActionPortModel(true, SRD.Toolkit.UID(), "Random option"));
     }
 
     getUuid() {
@@ -33,8 +35,8 @@ class ActionNodeModel extends SRD.NodeModel {
 
     addOption = () => {
         let index = this.optionsOut.length;
-        this.optionsIn[index] = this.addPort(new SRD.DefaultPortModel(true, SRD.Toolkit.UID(), "Option #"+(index+1)));
-        this.optionsOut[index] = this.addPort(new SRD.DefaultPortModel(false, SRD.Toolkit.UID(), "Option #"+(index+1)));
+        this.optionsIn[index] = this.addPort(new ActionPortModel(true, SRD.Toolkit.UID(), "Option #"+(index+1)));
+        this.optionsOut[index] = this.addPort(new ActionPortModel(false, SRD.Toolkit.UID(), "Option #"+(index+1)));
         return {
             in: this.optionsIn[index],
             out: this.optionsOut[index]
