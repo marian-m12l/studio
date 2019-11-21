@@ -14,6 +14,7 @@ import {connect} from "react-redux";
 import CoverNodeModel from "../models/CoverNodeModel";
 import {setViewerAction, setViewerDiagram, setViewerStage, showViewer} from "../../../actions";
 import EditableText from "./composites/EditableText";
+import PortWidget from "./PortWidget";
 
 
 class CoverNodeWidget extends React.Component {
@@ -176,10 +177,10 @@ class CoverNodeWidget extends React.Component {
                                 </div>}
                             </div>
                         </div>
-                        <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, writingMode: 'vertical-lr', textOrientation: 'upright', backgroundColor: 'lightblue'}}>
+                        <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, writingMode: 'vertical-lr', textOrientation: 'upright', backgroundColor: 'lightblue', position: 'relative'}}>
                             <div className='ports'>
                                 <div className='out'>
-                            {this.props.node.okPort && <SRD.DefaultPortLabel model={this.props.node.okPort}/>}
+                            {this.props.node.okPort && <PortWidget model={this.props.node.okPort} style={{position: 'absolute', right: '-10px', top: 'calc(50% - 10px)'}}/>}
                                 </div>
                             </div>
                         </div>

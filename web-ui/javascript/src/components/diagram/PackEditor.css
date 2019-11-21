@@ -95,6 +95,32 @@
     height: 15px;
     content: '\1f500';
 }
+
+.storm-diagrams-canvas .port.custom-port {
+    width: 20px;
+    height: 20px;
+    background: rgba(128, 128, 128, 0.5);
+    border-radius: 10px;
+}
+.storm-diagrams-canvas .port.custom-port:hover, .storm-diagrams-canvas .port.custom-port.selected {
+    background: #333333;
+}
+
+.storm-diagrams-canvas .port.custom-port.stage-port {
+    background: rgba(177, 222, 93, 0.8);
+    border: 2px solid #b1de5d;
+}
+.storm-diagrams-canvas .port.custom-port.stage-port:hover, .storm-diagrams-canvas .port.custom-port.stage-port.selected {
+    background: #b1de5d;
+}
+.storm-diagrams-canvas .port.custom-port.action-port {
+    background: rgba(222, 154, 84, 0.8);
+    border: 2px solid #de9a54;
+}
+.storm-diagrams-canvas .port.custom-port.action-port:hover, .storm-diagrams-canvas .port.custom-port.action-port.selected {
+    background: #de9a54;
+}
+
 .storm-diagrams-canvas .basic-node {
     background-color: #1e1e1e;
     border-radius: 5px;

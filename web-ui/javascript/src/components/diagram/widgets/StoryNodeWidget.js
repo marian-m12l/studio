@@ -14,6 +14,7 @@ import {connect} from "react-redux";
 import StoryNodeModel from "../models/StoryNodeModel";
 import {setViewerAction, setViewerDiagram, setViewerStage, showViewer} from "../../../actions";
 import EditableText from "./composites/EditableText";
+import PortWidget from "./PortWidget";
 
 
 class StoryNodeWidget extends React.Component {
@@ -124,8 +125,8 @@ class StoryNodeWidget extends React.Component {
         return (
             <div className='user-friendly-node story-node'>
                 <div style={{display: 'flex', flexDirection: 'row', backgroundColor: 'blue'}}>
-                    <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, writingMode: 'vertical-lr', textOrientation: 'upright', backgroundColor: 'red'}}>
-                        {this.props.node.fromPort && <SRD.DefaultPortLabel model={this.props.node.fromPort}/>}
+                    <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, writingMode: 'vertical-lr', textOrientation: 'upright', backgroundColor: 'red', position: 'relative'}}>
+                        {this.props.node.fromPort && <PortWidget model={this.props.node.fromPort} style={{position: 'absolute', left: '-10px', top: 'calc(50% - 10px)'}}/>}
                     </div>
                     <div style={{display: 'flex', flexDirection: 'row', flexGrow: 1, backgroundColor: 'green'}}>
                         <div style={{flexGrow: 1, backgroundColor: 'lightgreen'}}>
@@ -155,12 +156,18 @@ class StoryNodeWidget extends React.Component {
                                       style={{textDecorationLine: 'line-through', textDecorationColor: 'red', textDecorationStyle: 'double', textDecorationThickness: '3px'}} onClick={this.toggleDisableHome}/>
                             </div>
                         </div>
-                        {(this.props.node.okPort || this.props.node.homePort) && <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, writingMode: 'vertical-lr', textOrientation: 'upright', backgroundColor: 'lightblue'}}>
-                            <div className='ports'>
-                                <div className='out'>
-                                    {this.props.node.okPort && <SRD.DefaultPortLabel model={this.props.node.okPort}/>}
-                                    {this.props.node.homePort && <SRD.DefaultPortLabel model={this.props.node.homePort}/>}
-                                </div>
+                        {(this.props.node.okPort || this.props.node.homePort) && <div className='ports' style={{display: 'flex', flexDirection: 'column', flexBasis: '20px', flexGrow: 0, flexShrink: 0, backgroundColor: 'lightblue', position: 'relative'}}>
+                            <div style={{ height: '50%', display: 'flex', alignItems: 'center', justifyContent: 'right', position: 'relative', paddingLeft: '5px', paddingRight: '15px' }}>
+                                {this.props.node.okPort && /* TODO title i18n ??? */ <>
+                                    <span title={t('editor.diagram.story.options.customok')} className={'glyphicon glyphicon-ok'}/>
+                                    <PortWidget model={this.props.node.okPort} style={{position: 'absolute', right: '-10px', top: 'calc(50% - 10px)'}}/>
+                                </>}
+                            </div>
+                            <div style={{ height: '50%', display: 'flex', alignItems: 'center', justifyContent: 'right', position: 'relative', paddingLeft: '5px', paddingRight: '15px' }}>
+                                {this.props.node.homePort && /* TODO title i18n ??? */ <>
+                                    <span title={t('editor.diagram.story.options.customhome')} className={'glyphicon glyphicon-home'}/>
+                                    <PortWidget model={this.props.node.homePort} style={{position: 'absolute', right: '-10px', top: 'calc(50% - 10px)'}}/>
+                                </>}
                             </div>
                         </div>}
                     </div>

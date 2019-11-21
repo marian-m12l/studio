@@ -14,6 +14,7 @@ import {connect} from "react-redux";
 import MenuNodeModel from "../models/MenuNodeModel";
 import {setViewerAction, setViewerDiagram, setViewerStage, showViewer} from "../../../actions";
 import EditableText from "./composites/EditableText";
+import PortWidget from "./PortWidget";
 
 
 class MenuNodeWidget extends React.Component {
@@ -226,8 +227,8 @@ class MenuNodeWidget extends React.Component {
         return (
             <div className='user-friendly-node menu-node'>
                 <div style={{display: 'flex', flexDirection: 'row', backgroundColor: 'blue'}}>
-                    <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, writingMode: 'vertical-lr', textOrientation: 'upright', backgroundColor: 'red'}}>
-                        {this.props.node.fromPort && <SRD.DefaultPortLabel model={this.props.node.fromPort}/>}
+                    <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, writingMode: 'vertical-lr', textOrientation: 'upright', backgroundColor: 'red', position: 'relative'}}>
+                        {this.props.node.fromPort && <PortWidget model={this.props.node.fromPort} style={{position: 'absolute', left: '-10px', top: 'calc(50% - 10px)'}}/>}
                     </div>
                     <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, backgroundColor: 'green'}}>
                         <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, backgroundColor: 'lightgreen'}}>
@@ -253,7 +254,7 @@ class MenuNodeWidget extends React.Component {
                         </div>
                         <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, backgroundColor: 'lightblue'}}>
                             {this.props.node.optionsStages.map((option, idx) =>
-                                <div key={`menu-option-${idx}`} style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, backgroundColor: 'yellow'}}>
+                                <div key={`menu-option-${idx}`} style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, backgroundColor: 'yellow', position: 'relative'}}>
                                     <div>
                                         <input type="radio" value={`menu-option-${idx}`} checked={this.props.node.getDefaultOption() === idx} onChange={this.editDefaultOption(idx)}/>
                                         <EditableText value={this.props.node.getOptionName(idx)} onChange={this.editOptionName(idx)}/>
@@ -278,7 +279,7 @@ class MenuNodeWidget extends React.Component {
                                             {this.props.node.getOptionAudio(idx) && <span className="dropzone glyphicon glyphicon-play"/>}
                                         </div>
                                     </div>
-                                    <SRD.DefaultPortLabel model={this.props.node.optionsOut[idx]}/>
+                                    <PortWidget model={this.props.node.optionsOut[idx]} style={{position: 'absolute', right: '-10px', top: 'calc(50% - 10px)'}}/>
                                 </div>
                             )}
                             {/* Default to random option */}
