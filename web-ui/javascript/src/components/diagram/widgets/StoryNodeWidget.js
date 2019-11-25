@@ -108,33 +108,46 @@ class StoryNodeWidget extends React.Component {
         reader.readAsDataURL(file);
     };
 
-    openViewer = (e) => {
-        let viewingNode = this.props.node;
-        this.props.setViewerDiagram(this.props.diagramEngine.diagramModel);
-        this.props.setViewerStage(viewingNode);
-        this.props.setViewerAction({
-            node: null,
-            index: null
-        });
-        this.props.showViewer();
+    isPreviewable = () => {
+        return this.props.node.getAudio();
     };
 
-    // TODO Style + custom ports + I18N
+    openViewer = (e) => {
+        if (this.isPreviewable()) {
+            let viewingNode = this.props.node;
+            this.props.setViewerDiagram(this.props.diagramEngine.diagramModel);
+            this.props.setViewerStage(viewingNode);
+            this.props.setViewerAction({
+                node: null,
+                index: null
+            });
+            this.props.showViewer();
+        }
+    };
+
+    // TODO Style (advanced options)
     render() {
         const { t } = this.props;
         return (
-            <div className='user-friendly-node story-node'>
-                <div style={{display: 'flex', flexDirection: 'row', backgroundColor: 'blue'}}>
-                    <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, writingMode: 'vertical-lr', textOrientation: 'upright', backgroundColor: 'red', position: 'relative'}}>
-                        {this.props.node.fromPort && <PortWidget model={this.props.node.fromPort} style={{position: 'absolute', left: '-10px', top: 'calc(50% - 10px)'}}/>}
+            <div className="user-friendly-node story-node">
+                {this.props.node.fromPort && <PortWidget model={this.props.node.fromPort} className="from-port"/>}
+                <div className="node-header">
+                    <span className="dropzone glyphicon glyphicon-headphones" title={t('editor.tray.story')}/>
+                </div>
+                <div className="node-content">
+                    <div className="node-title">
+                        <div className="ellipsis">
+                            <EditableText value={this.props.node.getName()} onChange={this.editName}/>
+                        </div>
+                        <div className={`preview ${!this.isPreviewable() ? 'disabled' : ''}`} title={t('editor.diagram.stage.preview')} onClick={this.openViewer}>
+                            <span className="glyphicon glyphicon-eye-open"/>
+                        </div>
                     </div>
-                    <div style={{display: 'flex', flexDirection: 'row', flexGrow: 1, backgroundColor: 'green'}}>
-                        <div style={{flexGrow: 1, backgroundColor: 'lightgreen'}}>
-                            <div>STORY NODE</div>
-                            <div><EditableText value={this.props.node.getName()} onChange={this.editName}/></div>
-                            <div className="assets">
-                                <input type="file" id={`audio-upload-${this.props.node.getUuid()}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.audioFileSelected} />
-                                <div className="audio-asset"
+                    <div className="node-row">
+                        <div className="assets-and-options">
+                            <div className="asset">
+                                <input type="file" id={`audio-upload-${this.props.node.getUuid()}`} onChange={this.audioFileSelected} />
+                                <div className="dropzone-asset audio-asset"
                                      title={t('editor.diagram.stage.audio')}
                                      onClick={this.showAudioFileSelector}
                                      onDrop={this.onDropAudio}
@@ -142,13 +155,7 @@ class StoryNodeWidget extends React.Component {
                                     {!this.props.node.getAudio() && <span className="dropzone glyphicon glyphicon-music"/>}
                                     {this.props.node.getAudio() && <span className="dropzone glyphicon glyphicon-play"/>}
                                 </div>
-                                {this.props.node.getAudio() && <div className="preview"
-                                                                    title={t('editor.diagram.stage.preview')}
-                                                                    onClick={this.openViewer}>
-                                    <span className="dropzone glyphicon glyphicon-eye-open"/>
-                                </div>}
                             </div>
-                            <hr/>
                             <div className="options">
                                 <span title={t('editor.diagram.story.options.customok')} className={'btn btn-xs glyphicon glyphicon-ok' + (this.props.node.customOkTransition ? ' active' : '')} onClick={this.toggleCustomOkTransition}/>
                                 {!this.props.node.disableHome &&<span title={t('editor.diagram.story.options.customhome')} className={'btn btn-xs glyphicon glyphicon-home' + (this.props.node.customHomeTransition ? ' active' : '')} onClick={this.toggleCustomHomeTransition}/>}
@@ -156,17 +163,17 @@ class StoryNodeWidget extends React.Component {
                                       style={{textDecorationLine: 'line-through', textDecorationColor: 'red', textDecorationStyle: 'double', textDecorationThickness: '3px'}} onClick={this.toggleDisableHome}/>
                             </div>
                         </div>
-                        {(this.props.node.okPort || this.props.node.homePort) && <div className='ports' style={{display: 'flex', flexDirection: 'column', flexBasis: '20px', flexGrow: 0, flexShrink: 0, backgroundColor: 'lightblue', position: 'relative'}}>
-                            <div style={{ height: '50%', display: 'flex', alignItems: 'center', justifyContent: 'right', position: 'relative', paddingLeft: '5px', paddingRight: '15px' }}>
-                                {this.props.node.okPort && /* TODO title i18n ??? */ <>
+                        {(this.props.node.okPort || this.props.node.homePort) && <div className='ports'>
+                            <div className="output-port">
+                                {this.props.node.okPort && <>
                                     <span title={t('editor.diagram.story.options.customok')} className={'glyphicon glyphicon-ok'}/>
-                                    <PortWidget model={this.props.node.okPort} style={{position: 'absolute', right: '-10px', top: 'calc(50% - 10px)'}}/>
+                                    <PortWidget model={this.props.node.okPort} className="ok-port"/>
                                 </>}
                             </div>
-                            <div style={{ height: '50%', display: 'flex', alignItems: 'center', justifyContent: 'right', position: 'relative', paddingLeft: '5px', paddingRight: '15px' }}>
-                                {this.props.node.homePort && /* TODO title i18n ??? */ <>
+                            <div className="output-port">
+                                {this.props.node.homePort && <>
                                     <span title={t('editor.diagram.story.options.customhome')} className={'glyphicon glyphicon-home'}/>
-                                    <PortWidget model={this.props.node.homePort} style={{position: 'absolute', right: '-10px', top: 'calc(50% - 10px)'}}/>
+                                    <PortWidget model={this.props.node.homePort} className="home-port"/>
                                 </>}
                             </div>
                         </div>}

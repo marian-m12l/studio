@@ -65,6 +65,14 @@
       "action": {
         "options": "Options:"
       },
+      "menu": {
+        "question": "Question:",
+        "options": "Options:",
+        "addOption": "Add an option",
+        "removeOption": "Remove the last option",
+        "defaultOption": "Select the default option",
+        "random": "Random option"
+      },
       "story": {
         "options": {
           "customok": "Customize OK transition",

@@ -36,9 +36,11 @@ class MenuNodeWidget extends React.Component {
     };
 
     removeOption = () => {
-        this.props.node.removeOption();
-        this.props.updateCanvas();
-        this.forceUpdate();
+        if (this.props.node.optionsStages.length > 1) {
+            this.props.node.removeOption();
+            this.props.updateCanvas();
+            this.forceUpdate();
+        }
     };
 
     editDefaultOption = (idx) => {
@@ -213,31 +215,39 @@ class MenuNodeWidget extends React.Component {
     };
 
     openViewer = (e) => {
-        let viewingNode = this.props.node;
-        this.props.setViewerDiagram(this.props.diagramEngine.diagramModel);
-        let [stage, action] = viewingNode.onEnter(viewingNode.fromPort, this.props.diagramEngine.diagramModel);
-        this.props.setViewerStage(stage);
-        this.props.setViewerAction(action);
-        this.props.showViewer();
+        if (this.isPreviewable()) {
+            let viewingNode = this.props.node;
+            this.props.setViewerDiagram(this.props.diagramEngine.diagramModel);
+            let [stage, action] = viewingNode.onEnter(viewingNode.fromPort, this.props.diagramEngine.diagramModel);
+            this.props.setViewerStage(stage);
+            this.props.setViewerAction(action);
+            this.props.showViewer();
+        }
     };
 
-    // TODO Style + custom ports + I18N
     render() {
         const { t } = this.props;
         return (
-            <div className='user-friendly-node menu-node'>
-                <div style={{display: 'flex', flexDirection: 'row', backgroundColor: 'blue'}}>
-                    <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, writingMode: 'vertical-lr', textOrientation: 'upright', backgroundColor: 'red', position: 'relative'}}>
-                        {this.props.node.fromPort && <PortWidget model={this.props.node.fromPort} style={{position: 'absolute', left: '-10px', top: 'calc(50% - 10px)'}}/>}
+            <div className="user-friendly-node menu-node">
+                {this.props.node.fromPort && <PortWidget model={this.props.node.fromPort} className="from-port"/>}
+                <div className="node-header">
+                    <span className="dropzone glyphicon glyphicon-question-sign" title={t('editor.tray.menu')}/>
+                </div>
+                <div className="node-content">
+                    <div className="node-title">
+                        <div className="ellipsis">
+                            <EditableText value={this.props.node.getName()} onChange={this.editName}/>
+                        </div>
+                        <div className={`preview ${!this.isPreviewable() ? 'disabled' : ''}`} title={t('editor.diagram.stage.preview')} onClick={this.openViewer}>
+                            <span className="glyphicon glyphicon-eye-open"/>
+                        </div>
                     </div>
-                    <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, backgroundColor: 'green'}}>
-                        <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, backgroundColor: 'lightgreen'}}>
-                            <div>MENU NODE</div>
-                            <div><EditableText value={this.props.node.getName()} onChange={this.editName}/></div>
-                            <p>Question ?</p>
-                            <div className="assets">
-                                <input type="file" id={`audio-upload-question-${this.props.node.getUuid()}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.questionAudioFileSelected} />
-                                <div className="audio-asset"
+                    <div className="question-and-options">
+                        <div className="question">
+                            <p>{t('editor.diagram.menu.question')}</p>
+                            <div className="question-asset">
+                                <input type="file" id={`audio-upload-question-${this.props.node.getUuid()}`} onChange={this.questionAudioFileSelected} />
+                                <div className="dropzone-asset audio-asset"
                                      title={t('editor.diagram.stage.audio')}
                                      onClick={this.showQuestionAudioFileSelector}
                                      onDrop={this.onDropQuestionAudio}
@@ -247,55 +257,60 @@ class MenuNodeWidget extends React.Component {
                                 </div>
                             </div>
                         </div>
-                        <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, backgroundColor: 'pink'}}>
-                            <p>Options ?</p>
-                            {this.props.node.optionsStages.length > 1 && <span className='btn btn-xs glyphicon glyphicon-minus' onClick={this.removeOption} />}
-                            <span className='btn btn-xs glyphicon glyphicon-plus' onClick={this.addOption} />
-                        </div>
-                        <div style={{display: 'flex', flexDirection: 'column', flexGrow: 1, backgroundColor: 'lightblue'}}>
+                        <div className="options">
+                            <p>{t('editor.diagram.menu.options')}</p>
+                            <div>
+                                <span className={`btn btn-xs glyphicon glyphicon-minus ${this.props.node.optionsStages.length <= 1 ? 'disabled' : ''}`} onClick={this.removeOption} title={t('editor.diagram.menu.removeOption')} />
+                                <span className='btn btn-xs glyphicon glyphicon-plus' onClick={this.addOption} title={t('editor.diagram.menu.addOption')} />
+                            </div>
                             {this.props.node.optionsStages.map((option, idx) =>
-                                <div key={`menu-option-${idx}`} style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, backgroundColor: 'yellow', position: 'relative'}}>
-                                    <div>
-                                        <input type="radio" value={`menu-option-${idx}`} checked={this.props.node.getDefaultOption() === idx} onChange={this.editDefaultOption(idx)}/>
-                                        <EditableText value={this.props.node.getOptionName(idx)} onChange={this.editOptionName(idx)}/>
+                                <div key={`menu-option-${idx}`} className="option">
+                                    <div className="policy">
+                                        <input type="radio" value={`menu-option-${idx}`} checked={this.props.node.getDefaultOption() === idx} onChange={this.editDefaultOption(idx)} title={t('editor.diagram.menu.defaultOption')}/>
                                     </div>
-                                    <div className="assets" style={{flexGrow: 3}}>
-                                        <input type="file" id={`image-upload-${this.props.node.getUuid()}-${idx}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.optionImageFileSelected(idx)} />
-                                        <div className="image-asset"
-                                             title={t('editor.diagram.stage.image')}
-                                             onClick={this.showOptionImageFileSelector(idx)}
-                                             onDrop={this.onDropOptionImage(idx)}
-                                             onDragOver={event => { event.preventDefault(); }}>
-                                            {!this.props.node.getOptionImage(idx) && <span className="dropzone glyphicon glyphicon-picture"/>}
-                                            {this.props.node.getOptionImage(idx) && <img src={this.props.node.getOptionImage(idx)} className="dropzone" style={{height: '43px'}}/>}
+                                    <div className="name-and-assets">
+                                        <div className="option-name">
+                                            <EditableText value={this.props.node.getOptionName(idx)} onChange={this.editOptionName(idx)}/>
                                         </div>
-                                        <input type="file" id={`audio-upload-${this.props.node.getUuid()}-${idx}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.optionAudioFileSelected(idx)} />
-                                        <div className="audio-asset"
-                                             title={t('editor.diagram.stage.audio')}
-                                             onClick={this.showOptionAudioFileSelector(idx)}
-                                             onDrop={this.onDropOptionAudio(idx)}
-                                             onDragOver={event => { event.preventDefault(); }}>
-                                            {!this.props.node.getOptionAudio(idx) && <span className="dropzone glyphicon glyphicon-music"/>}
-                                            {this.props.node.getOptionAudio(idx) && <span className="dropzone glyphicon glyphicon-play"/>}
+                                        <div className="option-assets">
+                                            <div className="asset asset-left">
+                                                <input type="file" id={`image-upload-${this.props.node.getUuid()}-${idx}`} onChange={this.optionImageFileSelected(idx)} />
+                                                <div className="dropzone-asset image-asset"
+                                                     title={t('editor.diagram.stage.image')}
+                                                     onClick={this.showOptionImageFileSelector(idx)}
+                                                     onDrop={this.onDropOptionImage(idx)}
+                                                     onDragOver={event => { event.preventDefault(); }}>
+                                                    {!this.props.node.getOptionImage(idx) && <span className="dropzone glyphicon glyphicon-picture"/>}
+                                                    {this.props.node.getOptionImage(idx) && <img src={this.props.node.getOptionImage(idx)} className="dropzone"/>}
+                                                </div>
+                                            </div>
+                                            <div className="asset right">
+                                                <input type="file" id={`audio-upload-${this.props.node.getUuid()}-${idx}`} onChange={this.optionAudioFileSelected(idx)} />
+                                                <div className="dropzone-asset audio-asset"
+                                                     title={t('editor.diagram.stage.audio')}
+                                                     onClick={this.showOptionAudioFileSelector(idx)}
+                                                     onDrop={this.onDropOptionAudio(idx)}
+                                                     onDragOver={event => { event.preventDefault(); }}>
+                                                    {!this.props.node.getOptionAudio(idx) && <span className="dropzone glyphicon glyphicon-music"/>}
+                                                    {this.props.node.getOptionAudio(idx) && <span className="dropzone glyphicon glyphicon-play"/>}
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
-                                    <PortWidget model={this.props.node.optionsOut[idx]} style={{position: 'absolute', right: '-10px', top: 'calc(50% - 10px)'}}/>
+                                    <PortWidget model={this.props.node.optionsOut[idx]} className="option-port"/>
                                 </div>
                             )}
-                            {/* Default to random option */}
-                            <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, backgroundColor: 'yellow'}}>
-                                <div>
-                                    <input type="radio" name="menu-option-random" value="menu-option-random" checked={this.props.node.getDefaultOption() === -1} onChange={this.editDefaultOption(-1)}/>
-                                    <label htmlFor="menu-option-random">Random option</label>
+                            <div className="option">
+                                <div className="policy">
+                                    <input type="radio" name="menu-option-random" value="menu-option-random" checked={this.props.node.getDefaultOption() === -1} onChange={this.editDefaultOption(-1)} title={t('editor.diagram.menu.defaultOption')}/>
+                                </div>
+                                <div className="name-and-assets">
+                                    <div className="option-name">
+                                        <span>{t('editor.diagram.menu.random')}</span>
+                                    </div>
                                 </div>
                             </div>
                         </div>
-                        {/* Global preview of the node */}
-                        {this.isPreviewable() && <div className="preview"
-                                                  title={t('editor.diagram.stage.preview')}
-                                                  onClick={this.openViewer}>
-                            <span className="dropzone glyphicon glyphicon-eye-open"/>
-                        </div>}
                     </div>
                 </div>
             </div>

@@ -123,12 +123,12 @@ class PackDiagramWidget extends React.Component {
             <div className="content">
                 {/* Node tray */}
                 <TrayWidget>
-                    <TrayItemWidget model={{ type: "cover" }} name={t('editor.tray.cover')} color="#36b3aa" />
-                    <TrayItemWidget model={{ type: "menu" }} name={t('editor.tray.menu')} color="#b55ba8" />
-                    <TrayItemWidget model={{ type: "story" }} name={t('editor.tray.story')} color="#ebcb42" />
+                    <TrayItemWidget model={{ type: "cover" }} name={<><span className="dropzone glyphicon glyphicon-book"/> {t('editor.tray.cover')}</>} className="tray-item-cover" />
+                    <TrayItemWidget model={{ type: "menu" }} name={<><span className="dropzone glyphicon glyphicon-question-sign"/> {t('editor.tray.menu')}</>} className="tray-item-menu" />
+                    <TrayItemWidget model={{ type: "story" }} name={<><span className="dropzone glyphicon glyphicon-headphones"/> {t('editor.tray.story')}</>} className="tray-item-story" />
                     <hr />
-                    <TrayItemWidget model={{ type: "stage" }} name={t('editor.tray.stage')} color="#919e3d" />
-                    <TrayItemWidget model={{ type: "action" }} name={t('editor.tray.action')} color="#9e7a34" />
+                    <TrayItemWidget model={{ type: "stage" }} name={t('editor.tray.stage')} className="tray-item-stage" />
+                    <TrayItemWidget model={{ type: "action" }} name={t('editor.tray.action')} className="tray-item-action" />
                 </TrayWidget>
 
                 {/* Diagram */}

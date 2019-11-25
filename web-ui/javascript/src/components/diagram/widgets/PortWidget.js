@@ -25,7 +25,6 @@ class PortWidget extends React.Component {
         return () => this.setState({ selected });
     };
 
-    // TODO Style + I18N
     render() {
         const { t } = this.props;
         let classes = 'port custom-port ';
@@ -37,10 +36,11 @@ class PortWidget extends React.Component {
         if (this.state.selected) {
             classes += 'selected ';
         }
+        if (this.props.className) {
+            classes += this.props.className
+        }
         return (
             <div
-                /* TODO propagate style or class ??? */
-                style={this.props.style || {}}
                 className={classes}
                 title={this.props.model.label}
                 onMouseEnter={this.editSelected(true)}
@@ -54,7 +54,8 @@ class PortWidget extends React.Component {
 }
 
 PortWidget.propTypes = {
-    model: PropTypes.instanceOf(SRD.PortModel).isRequired
+    model: PropTypes.instanceOf(SRD.PortModel).isRequired,
+    className: PropTypes.string
 };
 
 export default PortWidget

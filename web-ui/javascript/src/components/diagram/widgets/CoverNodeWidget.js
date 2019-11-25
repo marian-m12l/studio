@@ -130,62 +130,65 @@ class CoverNodeWidget extends React.Component {
         reader.readAsDataURL(file);
     };
 
-    openViewer = (e) => {
-        let viewingNode = this.props.node;
-        this.props.setViewerDiagram(this.props.diagramEngine.diagramModel);
-        this.props.setViewerStage(viewingNode);
-        this.props.setViewerAction({
-            node: null,
-            index: null
-        });
-        this.props.showViewer();
+    isPreviewable = () => {
+        return this.props.node.getImage() || this.props.node.getAudio();
     };
 
-    // TODO Style + custom ports + I18N
+    openViewer = (e) => {
+        if (this.isPreviewable()) {
+            let viewingNode = this.props.node;
+            this.props.setViewerDiagram(this.props.diagramEngine.diagramModel);
+            this.props.setViewerStage(viewingNode);
+            this.props.setViewerAction({
+                node: null,
+                index: null
+            });
+            this.props.showViewer();
+        }
+    };
+
     render() {
         const { t } = this.props;
         return (
-            <div className='user-friendly-node cover-node'>
-                <div style={{display: 'flex', flexDirection: 'row', backgroundColor: 'blue'}}>
-                    <div style={{display: 'flex', flexDirection: 'row', flexGrow: 1, backgroundColor: 'green'}}>
-                        <div style={{flexGrow: 1, backgroundColor: 'lightgreen'}}>
-                            <div>COVER NODE</div>
-                            <div><EditableText value={this.props.node.getName()} onChange={this.editName}/></div>
-                            <div className="assets">
-                                <input type="file" id={`image-upload-${this.props.node.getUuid()}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.imageFileSelected} />
-                                <div className="image-asset"
-                                     title={t('editor.diagram.stage.image')}
-                                     onClick={this.showImageFileSelector}
-                                     onDrop={this.onDropImage}
-                                     onDragOver={event => { event.preventDefault(); }}>
-                                    {!this.props.node.getImage() && <span className="dropzone glyphicon glyphicon-picture"/>}
-                                    {this.props.node.getImage() && <img src={this.props.node.getImage()} className="dropzone" style={{height: '43px'}}/>}
-                                </div>
-                                <input type="file" id={`audio-upload-${this.props.node.getUuid()}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.audioFileSelected} />
-                                <div className="audio-asset"
-                                     title={t('editor.diagram.stage.audio')}
-                                     onClick={this.showAudioFileSelector}
-                                     onDrop={this.onDropAudio}
-                                     onDragOver={event => { event.preventDefault(); }}>
-                                    {!this.props.node.getAudio() && <span className="dropzone glyphicon glyphicon-music"/>}
-                                    {this.props.node.getAudio() && <span className="dropzone glyphicon glyphicon-play"/>}
-                                </div>
-                                {(this.props.node.getImage() || this.props.node.getAudio()) && <div className="preview"
-                                                                                                    title={t('editor.diagram.stage.preview')}
-                                                                                                    onClick={this.openViewer}>
-                                    <span className="dropzone glyphicon glyphicon-eye-open"/>
-                                </div>}
+            <div className="user-friendly-node cover-node">
+                <div className="node-header">
+                    <span className="dropzone glyphicon glyphicon-book" title={t('editor.tray.cover')}/>
+                </div>
+                <div className="node-content">
+                    <div className="node-title">
+                        <div className="ellipsis">
+                            <EditableText value={this.props.node.getName()} onChange={this.editName}/>
+                        </div>
+                        <div className={`preview ${!this.isPreviewable() ? 'disabled' : ''}`} title={t('editor.diagram.stage.preview')} onClick={this.openViewer}>
+                            <span className="glyphicon glyphicon-eye-open"/>
+                        </div>
+                    </div>
+                    <div className="assets">
+                        <div className="asset asset-left">
+                            <input type="file" id={`image-upload-${this.props.node.getUuid()}`} onChange={this.imageFileSelected} />
+                            <div className="dropzone-asset image-asset"
+                                 title={t('editor.diagram.stage.image')}
+                                 onClick={this.showImageFileSelector}
+                                 onDrop={this.onDropImage}
+                                 onDragOver={event => { event.preventDefault(); }}>
+                                {!this.props.node.getImage() && <span className="dropzone glyphicon glyphicon-picture"/>}
+                                {this.props.node.getImage() && <img src={this.props.node.getImage()} className="dropzone"/>}
                             </div>
                         </div>
-                        <div style={{flexBasis: '20px', flexGrow: 0, flexShrink: 0, writingMode: 'vertical-lr', textOrientation: 'upright', backgroundColor: 'lightblue', position: 'relative'}}>
-                            <div className='ports'>
-                                <div className='out'>
-                            {this.props.node.okPort && <PortWidget model={this.props.node.okPort} style={{position: 'absolute', right: '-10px', top: 'calc(50% - 10px)'}}/>}
-                                </div>
+                        <div className="asset right">
+                            <input type="file" id={`audio-upload-${this.props.node.getUuid()}`} onChange={this.audioFileSelected} />
+                            <div className="dropzone-asset audio-asset"
+                                 title={t('editor.diagram.stage.audio')}
+                                 onClick={this.showAudioFileSelector}
+                                 onDrop={this.onDropAudio}
+                                 onDragOver={event => { event.preventDefault(); }}>
+                                {!this.props.node.getAudio() && <span className="dropzone glyphicon glyphicon-music"/>}
+                                {this.props.node.getAudio() && <span className="dropzone glyphicon glyphicon-play"/>}
                             </div>
                         </div>
                     </div>
                 </div>
+                {this.props.node.okPort && <PortWidget model={this.props.node.okPort} className="ok-port"/>}
             </div>
         );
     }
