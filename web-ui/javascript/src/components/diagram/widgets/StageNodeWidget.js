@@ -37,6 +37,18 @@ class StageNodeWidget extends React.Component {
         this.forceUpdate();
     };
 
+    toggleSquareOne = () => {
+        const { t } = this.props;
+        // Make sure there is not already an entry point in the diagram
+        if (!this.props.node.isSquareOne() && this.props.diagramEngine.diagramModel.getEntryPoint()) {
+            toast.error(t('toasts.editor.tooManyEntryPoints'));
+            return;
+        }
+        this.props.node.setSquareOne(!this.props.node.isSquareOne());
+        this.props.updateCanvas();
+        this.forceUpdate();
+    };
+
     toggleControl = (control) => {
         return () => {
             this.props.node.toggleControl(control);
@@ -172,6 +184,7 @@ class StageNodeWidget extends React.Component {
             <div className={`basic-node stage-node ${this.props.node.squareOne && 'square-one'}`}>
                 <EditableHeader beingEdited={this.state.beingEdited} onToggleEdit={this.toggleEdit} onChange={this.editName} node={this.props.node} />
                 <div className="controls">
+                    <span title={t('editor.diagram.stage.squareone')} className={'btn btn-xs' + (this.props.node.isSquareOne() ? ' active' : '')} onClick={this.toggleSquareOne}>&#x2776;</span>
                     <span title={t('editor.diagram.stage.controls.wheel')} className={'btn btn-xs glyphicon glyphicon-resize-horizontal' + (this.props.node.getControls().wheel ? ' active' : '')} onClick={this.toggleControl('wheel')}/>
                     <span title={t('editor.diagram.stage.controls.ok')} className={'btn btn-xs glyphicon glyphicon-ok' + (this.props.node.getControls().ok ? ' active' : '')} onClick={this.toggleControl('ok')}/>
                     <span title={t('editor.diagram.stage.controls.home')} className={'btn btn-xs glyphicon glyphicon-home' + (this.props.node.getControls().home ? ' active' : '')} onClick={this.toggleControl('home')}/>

@@ -200,7 +200,7 @@
 }
 
 .storm-diagrams-canvas .basic-node.stage-node.square-one {
-    border: solid 5px #b1be5d;
+    border: solid 5px #56d3ca;
 }
 
 .storm-diagrams-canvas .basic-node.stage-node .assets {
@@ -332,14 +332,14 @@
 .storm-diagrams-canvas .user-friendly-node.cover-node {
     width: 150px;
     background-color: #26807a;
-    border: 3px solid #36b3aa;
+    border: 5px solid #56d3ca;
     color: lightgrey;
 }
 
 .storm-diagrams-canvas .user-friendly-node.cover-node .node-header {
     color: #333333;
     background-color: #36b3aa;
-    border: 3px solid #36b3aa;
+    border: 5px solid #56d3ca;
     border-bottom: none;
 }
 

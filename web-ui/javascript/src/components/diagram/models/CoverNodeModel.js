@@ -15,9 +15,6 @@ class CoverNodeModel extends StageNodeModel {
         this.setSquareOne(true);
         this.setControl('wheel', true);
         this.setControl('ok', true);
-        // Remove 'from' port
-        this.removePort(this.fromPort);
-        this.fromPort = null;
     }
 
 }

@@ -92,8 +92,7 @@ class StoryNodeModel extends StageNodeModel {
 
     goToFirstUsefulNode(diagram) {
         // The first node following pack selection (cover) node
-        let coverNode = Object.values(diagram.nodes)
-            .filter(node => node.squareOne)[0];
+        let coverNode = diagram.getEntryPoint();
         return coverNode.onOk(diagram);
     }
 

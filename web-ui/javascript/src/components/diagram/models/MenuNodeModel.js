@@ -45,7 +45,7 @@ class MenuNodeModel extends SRD.NodeModel {
     addOption = () => {
         let index = this.optionsStages.length;
 
-        this.optionsStages[index] = new Stage(`optionsstage.${index}`);
+        this.optionsStages[index] = new Stage(`Option #${index+1}`);
         this.optionsStages[index].controls['wheel'] = true;
         this.optionsStages[index].controls['ok'] = true;
         this.optionsStages[index].controls['home'] = true;
@@ -185,8 +185,7 @@ class MenuNodeModel extends SRD.NodeModel {
                 // Go back to previous node, or to pack cover
                 let fromLinks = Object.values(that.fromPort.getLinks());
                 if (fromLinks.length !== 1) {
-                    let coverNode = Object.values(d.nodes)
-                        .filter(node => node.squareOne)[0];
+                    let coverNode = d.getEntryPoint();
                     return [
                         coverNode,
                         {
@@ -196,7 +195,7 @@ class MenuNodeModel extends SRD.NodeModel {
                     ]
                 } else {
                     let previousNode = fromLinks[0].getSourcePort().getParent();
-                    return previousNode.onEnter(null, d);   // TODO should not be an action node ! add link constraints ?
+                    return previousNode.onEnter(null, d);
                 }
             }
         };

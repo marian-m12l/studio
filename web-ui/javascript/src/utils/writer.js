@@ -109,8 +109,7 @@ export async function writeToArchive(diagramModel) {
                     written.push(audioFile);
                 }
             }
-            let coverNode = Object.values(diagramModel.nodes)
-                .filter(node => node.squareOne)[0];
+            let coverNode = diagramModel.getEntryPoint();
             let firstUsefulNode = (coverNode.okPort && coverNode.okPort.getLinks() && Object.values(coverNode.okPort.getLinks()).length > 0) ? Object.values(coverNode.okPort.getLinks())[0].getTargetPort() : null;
             let okTarget = (node.okPort && node.okPort.getLinks() && Object.values(node.okPort.getLinks()).length > 0)
                 ? Object.values(node.okPort.getLinks())[0].getTargetPort()

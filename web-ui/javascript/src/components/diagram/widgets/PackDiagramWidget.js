@@ -74,15 +74,19 @@ class PackDiagramWidget extends React.Component {
         switch (data.type) {
             case "stage":
                 node = new StageNodeModel("Stage node");
+                // Make it the "square one" if there are no entry point in the diagram
+                if (!this.props.diagramEngine.getDiagramModel().getEntryPoint()) {
+                    node.setSquareOne(true);
+                }
                 break;
             case "action":
+                // One option by default
                 node = new ActionNodeModel("Action node");
+                node.addOption();
                 break;
             case "cover":
-                // Make sure there is only one cover node per diagram
-                let coverNode = Object.values(this.props.diagramEngine.getDiagramModel().nodes)
-                    .filter(node => node.squareOne)[0];
-                if (coverNode) {
+                // Make sure there is only one entry point per diagram
+                if (this.props.diagramEngine.getDiagramModel().getEntryPoint()) {
                     toast.error(t('toasts.editor.tooManyEntryPoints'));
                     return;
                 }

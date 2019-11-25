@@ -79,8 +79,7 @@ class PackEditor extends React.Component {
 
     savePackToLibrary = () => {
         // Pack path is either stored (when open from library) or generated
-        let uuid = Object.values(this.state.engine.diagramModel.nodes)
-            .filter(node => node.squareOne)[0].getUuid();
+        let uuid = this.state.engine.diagramModel.getEntryPoint().getUuid();
         let path = this.props.editor.libraryPath || this.state.engine.diagramModel.title.replace(' ', '_') + '-' + uuid + '-v' + this.state.engine.diagramModel.version + '.zip';
         // Confirmation dialog if pack already in library
         if (this.props.library.packs.filter(pack => pack.path === path).length > 0) {
@@ -93,8 +92,7 @@ class PackEditor extends React.Component {
     doSavePackToLibrary = () => {
         const { t } = this.props;
         // Pack path is either stored (when open from library) or generated
-        let uuid = Object.values(this.state.engine.diagramModel.nodes)
-            .filter(node => node.squareOne)[0].getUuid();
+        let uuid = this.state.engine.diagramModel.getEntryPoint().getUuid();
         let path = this.props.editor.libraryPath || this.state.engine.diagramModel.title.replace(' ', '_') + '-' + uuid + '-v' + this.state.engine.diagramModel.version + '.zip';
         // Show toast
         let toastId = toast(t('toasts.editor.saving'), { autoClose: false });
@@ -115,15 +113,6 @@ class PackEditor extends React.Component {
 
     clear = () => {
         let model = new PackDiagramModel();
-
-        // Set 'square one' stage node
-        let packSelectionNode = new StageNodeModel("Pack selection stage");
-        packSelectionNode.squareOne = true;
-        packSelectionNode.setControl('wheel', true);
-        packSelectionNode.setControl('ok', true);
-        packSelectionNode.setPosition(50, 200);
-
-        model.addNode(packSelectionNode);
 
         this.props.setEditorDiagram(model);
     };

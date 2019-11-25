@@ -48,7 +48,17 @@ class StageNodeModel extends SRD.NodeModel {
 
     setSquareOne(squareOne) {
         this.squareOne = squareOne;
-        // TODO Enable/disable 'from' port ?
+        if (squareOne) {
+            // Remove any attached link
+            Object.values(this.fromPort.getLinks())
+                .map(link => link.remove());
+            // Remove 'from' port
+            this.removePort(this.fromPort);
+            this.fromPort = null;
+        } else {
+            // Create 'from' port
+            this.fromPort = this.addPort(this.createIncomingPort("from"));
+        }
     }
 
     getImage() {
@@ -154,8 +164,7 @@ class StageNodeModel extends SRD.NodeModel {
         let homeLinks = Object.values(this.homePort.getLinks());
         if (homeLinks.length !== 1) {
             // Back to main (pack selection) stage node
-            let mainNode = Object.values(diagram.nodes)
-                .filter(node => node.squareOne)[0];
+            let mainNode = diagram.getEntryPoint();
             return [
                 mainNode,
                 {
