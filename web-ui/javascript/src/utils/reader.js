@@ -259,7 +259,7 @@ export function readFromArchive(file) {
                         links.push(stageNode.okPort.link(getTransitionTargetNode(node.okTransition, actionNodes, simplifiedNodes)));
                     }
                     if (node.homeTransition) {
-                        links.push(stageNode.homePort.link(getTransitionTargetNode(node.okTransition, actionNodes, simplifiedNodes)))
+                        links.push(stageNode.homePort.link(getTransitionTargetNode(node.homeTransition, actionNodes, simplifiedNodes)))
                     }
                 });
 
