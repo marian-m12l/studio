@@ -17,6 +17,11 @@ class PackDiagramModel extends SRD.DiagramModel {
         this.thumbnail = thumbnail;
     }
 
+    getEntryPoint() {
+        return Object.values(this.nodes)
+            .filter(node => node.squareOne)[0];
+    }
+
 }
 
 export default PackDiagramModel;

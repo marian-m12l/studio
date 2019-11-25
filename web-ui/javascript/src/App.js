@@ -15,7 +15,7 @@ import {AppContext} from './AppContext';
 import PackEditor from './components/diagram/PackEditor';
 import PackLibrary from './components/PackLibrary';
 import EditorPackViewer from "./components/viewer/EditorPackViewer";
-import {sample} from "./utils/sample";
+import {simplifiedSample} from "./utils/sample";
 import {
     actionCheckDevice,
     actionDevicePlugged,
@@ -73,7 +73,7 @@ class App extends React.Component {
             this.props.loadLibrary();
 
             // Load sample diagram in editor
-            this.props.setEditorDiagram(sample());
+            this.props.setEditorDiagram(simplifiedSample());
 
             this.props.dispatchShowLibrary();
         });

@@ -41,11 +41,15 @@
     },
     "tray": {
       "title": "Drag to add",
+      "cover": "Cover Node",
+      "menu": "Menu Node",
+      "story": "Story Node",
       "stage": "Stage Node",
       "action": "Action Node"
     },
     "diagram": {
       "editTitle": "Edit node title",
+      "editText": "Click to edit",
       "stage": {
         "controls": {
           "wheel": "Allow wheel selection",
@@ -60,6 +64,21 @@
       },
       "action": {
         "options": "Options:"
+      },
+      "menu": {
+        "question": "Question:",
+        "options": "Options:",
+        "addOption": "Add an option",
+        "removeOption": "Remove the last option",
+        "defaultOption": "Select the default option",
+        "random": "Random option"
+      },
+      "story": {
+        "options": {
+          "customok": "Customize OK transition",
+          "customhome": "Customize HOME transition",
+          "disablehome": "Disable HOME button"
+        }
       }
     }
   },
@@ -120,14 +139,14 @@
       "loadingFailed": "Failed to load story pack.",
       "thumbWrongType": "Thumbnail must be in PNG format.",
       "imageAssetWrongType": "Supported image asset formats are: BMP, JPEG, PNG.",
-      "audioAssetWrongType": "Supported audio asset formats are: WAV, MP3, OGG."
+      "audioAssetWrongType": "Supported audio asset formats are: WAV, MP3, OGG.",
+      "tooManyEntryPoints": "A story pack can only have one entry point."
     },
     "viewer": {
-      "missingPrevStage": "Missing stage node for previous option.",
-      "missingNextStage": "Missing stage node for next option.",
-      "missingOkAction": "Missing action node for OK transition.",
-      "missingOkStage": "Missing stage node for OK transition.",
-      "missingHomeStage": "Missing stage node for HOME transition."
+      "missingPrev": "Cannot find previous option.",
+      "missingNext": "Cannot find next option.",
+      "missingOk": "Cannot find node for OK transition.",
+      "missingHome": "Cannot find node for HOME transition."
     }
   },
 

@@ -41,11 +41,15 @@
     },
     "tray": {
       "title": "Déposez pour ajouter",
+      "cover": "Nœud départ",
+      "menu": "Nœud de menu",
+      "story": "Nœud d'histoire",
       "stage": "Nœud de scène",
       "action": "Nœud d'action"
     },
     "diagram": {
       "editTitle": "Éditer le titre",
+      "editText": "Cliquez pour modifier",
       "stage": {
         "controls": {
           "wheel": "Autoriser la molette de sélection",
@@ -60,6 +64,21 @@
       },
       "action": {
         "options": "Options :"
+      },
+      "menu": {
+        "question": "Question :",
+        "options": "Options :",
+        "addOption": "Ajouter une option",
+        "removeOption": "Retirer la dernière option",
+        "defaultOption": "Selectionnez l'option par défaut",
+        "random": "Option aléatoire"
+      },
+      "story": {
+        "options": {
+          "customok": "Personnaliser la transition OK",
+          "customhome": "Personnaliser la transition MAISON",
+          "disablehome": "Désactiver le bouton MAISON"
+        }
       }
     }
   },
@@ -120,14 +139,14 @@
       "loadingFailed": "Échec du chargement du pack d'histoires.",
       "thumbWrongType": "La miniature doit être au format PNG.",
       "imageAssetWrongType": "Les formats d'image supportés sont : BMP, JPEG, PNG.",
-      "audioAssetWrongType": "Les formats audio supportés sont : WAV, MP3, OGG."
+      "audioAssetWrongType": "Les formats audio supportés sont : WAV, MP3, OGG.",
+      "tooManyEntryPoints": "Un pack d'histoires ne peut avoir qu'un seul point d'entrée."
     },
     "viewer": {
-      "missingPrevStage": "Il manque le nœud de scène pour l'option précédente.",
-      "missingNextStage": "Il manque le nœud de scène pour l'option suivante.",
-      "missingOkAction": "Il manque le nœud d'action pour la transition OK.",
-      "missingOkStage": "Il manque le nœud de scène pour la transition OK.",
-      "missingHomeStage": "Il manque le nœud de scène pour la transition MAISON."
+      "missingPrev": "Impossible de trouver l'option précédente.",
+      "missingNext": "Impossible de trouver l'option suivante.",
+      "missingOk": "Impossible de trouver le nœud pour la transition OK.",
+      "missingHome": "Impossible de trouver le nœud pour la transition MAISON."
     }
   },
 
