@@ -127,12 +127,22 @@ class PackDiagramWidget extends React.Component {
             <div className="content">
                 {/* Node tray */}
                 <TrayWidget>
-                    <TrayItemWidget model={{ type: "cover" }} name={<><span className="dropzone glyphicon glyphicon-book"/> {t('editor.tray.cover')}</>} className="tray-item-cover" />
-                    <TrayItemWidget model={{ type: "menu" }} name={<><span className="dropzone glyphicon glyphicon-question-sign"/> {t('editor.tray.menu')}</>} className="tray-item-menu" />
-                    <TrayItemWidget model={{ type: "story" }} name={<><span className="dropzone glyphicon glyphicon-headphones"/> {t('editor.tray.story')}</>} className="tray-item-story" />
+                    <TrayItemWidget model={{ type: "cover" }} className="tray-item-cover">
+                        <span className="dropzone glyphicon glyphicon-book"/> {t('editor.tray.cover')}
+                    </TrayItemWidget>
+                    <TrayItemWidget model={{ type: "menu" }} className="tray-item-menu">
+                        <span className="dropzone glyphicon glyphicon-question-sign"/> {t('editor.tray.menu')}
+                    </TrayItemWidget>
+                    <TrayItemWidget model={{ type: "story" }} className="tray-item-story">
+                        <span className="dropzone glyphicon glyphicon-headphones"/> {t('editor.tray.story')}
+                    </TrayItemWidget>
                     <hr />
-                    <TrayItemWidget model={{ type: "stage" }} name={t('editor.tray.stage')} className="tray-item-stage" />
-                    <TrayItemWidget model={{ type: "action" }} name={t('editor.tray.action')} className="tray-item-action" />
+                    <TrayItemWidget model={{ type: "stage" }} className="tray-item-stage">
+                        {t('editor.tray.stage')}
+                    </TrayItemWidget>
+                    <TrayItemWidget model={{ type: "action" }} className="tray-item-action">
+                        {t('editor.tray.action')}
+                    </TrayItemWidget>
                 </TrayWidget>
 
                 {/* Diagram */}

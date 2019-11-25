@@ -29,7 +29,7 @@ class TrayItemWidget extends React.Component {
                 }}
                 className={classes}
             >
-                {this.props.name}
+                {this.props.children}
             </div>
         );
     }
@@ -37,7 +37,7 @@ class TrayItemWidget extends React.Component {
 }
 
 TrayItemWidget.propTypes = {
-    name: PropTypes.string.isRequired,
+    children: PropTypes.node.isRequired,
     model: PropTypes.object.isRequired,
     className: PropTypes.string
 };
