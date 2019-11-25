@@ -17,16 +17,19 @@ class TrayItemWidget extends React.Component {
 
 
     render() {
+        let classes = 'tray-item ';
+        if (this.props.className) {
+            classes += this.props.className
+        }
         return (
             <div
-                style={{borderColor: this.props.color}}
                 draggable={true}
                 onDragStart={event => {
                     event.dataTransfer.setData("storm-diagram-node", JSON.stringify(this.props.model));
                 }}
-                className="tray-item"
+                className={classes}
             >
-                {this.props.name}
+                {this.props.children}
             </div>
         );
     }
@@ -34,9 +37,9 @@ class TrayItemWidget extends React.Component {
 }
 
 TrayItemWidget.propTypes = {
-    name: PropTypes.string.isRequired,
-    color: PropTypes.string.isRequired,
-    model: PropTypes.object.isRequired
+    children: PropTypes.node.isRequired,
+    model: PropTypes.object.isRequired,
+    className: PropTypes.string
 };
 
 export default TrayItemWidget;

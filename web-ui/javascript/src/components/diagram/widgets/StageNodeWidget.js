@@ -32,7 +32,19 @@ class StageNodeWidget extends React.Component {
     };
 
     editName = (event) => {
-        this.props.node.name = event.target.value;
+        this.props.node.setName(event.target.value);
+        this.props.updateCanvas();
+        this.forceUpdate();
+    };
+
+    toggleSquareOne = () => {
+        const { t } = this.props;
+        // Make sure there is not already an entry point in the diagram
+        if (!this.props.node.isSquareOne() && this.props.diagramEngine.diagramModel.getEntryPoint()) {
+            toast.error(t('toasts.editor.tooManyEntryPoints'));
+            return;
+        }
+        this.props.node.setSquareOne(!this.props.node.isSquareOne());
         this.props.updateCanvas();
         this.forceUpdate();
     };
@@ -76,7 +88,7 @@ class StageNodeWidget extends React.Component {
     };
 
     showImageFileSelector = () => {
-        document.getElementById(`image-upload-${this.props.node.uuid}`).click();
+        document.getElementById(`image-upload-${this.props.node.getUuid()}`).click();
     };
 
     imageFileSelected = (event) => {
@@ -87,6 +99,9 @@ class StageNodeWidget extends React.Component {
 
     editImage = (file) => {
         const { t } = this.props;
+        if (!file) {
+            return;
+        }
         if (['image/bmp', 'image/jpeg', 'image/png'].indexOf(file.type) === -1) {
             toast.error(t('toasts.editor.imageAssetWrongType'));
             return;
@@ -95,7 +110,7 @@ class StageNodeWidget extends React.Component {
         let reader = new FileReader();
         let that = this;
         reader.addEventListener("load", function () {
-            that.props.node.image = reader.result;
+            that.props.node.setImage(reader.result);
             that.props.updateCanvas();
             that.forceUpdate();
         }, false);
@@ -113,7 +128,7 @@ class StageNodeWidget extends React.Component {
     };
 
     showAudioFileSelector = () => {
-        document.getElementById(`audio-upload-${this.props.node.uuid}`).click();
+        document.getElementById(`audio-upload-${this.props.node.getUuid()}`).click();
     };
 
     audioFileSelected = (event) => {
@@ -124,6 +139,9 @@ class StageNodeWidget extends React.Component {
 
     editAudio = (file) => {
         const { t } = this.props;
+        if (!file) {
+            return;
+        }
         console.log(file.type);
         if (['audio/wav', 'audio/x-wav', 'audio/mp3', 'audio/mpeg', 'audio/ogg', 'video/ogg'].indexOf(file.type) === -1) {
             toast.error(t('toasts.editor.audioAssetWrongType'));
@@ -133,7 +151,7 @@ class StageNodeWidget extends React.Component {
         let reader = new FileReader();
         let that = this;
         reader.addEventListener("load", function () {
-            that.props.node.audio = reader.result;
+            that.props.node.setAudio(reader.result);
             that.props.updateCanvas();
             that.forceUpdate();
         }, false);
@@ -151,6 +169,11 @@ class StageNodeWidget extends React.Component {
                 node: firstActionNode,
                 index: firstActionNode.optionsOut.indexOf(fromLinks[0].getSourcePort())
             });
+        } else {
+            this.props.setViewerAction({
+                node: null,
+                index: null
+            });
         }
         this.props.showViewer();
     };
@@ -161,32 +184,33 @@ class StageNodeWidget extends React.Component {
             <div className={`basic-node stage-node ${this.props.node.squareOne && 'square-one'}`}>
                 <EditableHeader beingEdited={this.state.beingEdited} onToggleEdit={this.toggleEdit} onChange={this.editName} node={this.props.node} />
                 <div className="controls">
-                    <span title={t('editor.diagram.stage.controls.wheel')} className={'btn btn-xs glyphicon glyphicon-resize-horizontal' + (this.props.node.controls.wheel ? ' active' : '')} onClick={this.toggleControl('wheel')}/>
-                    <span title={t('editor.diagram.stage.controls.ok')} className={'btn btn-xs glyphicon glyphicon-ok' + (this.props.node.controls.ok ? ' active' : '')} onClick={this.toggleControl('ok')}/>
-                    <span title={t('editor.diagram.stage.controls.home')} className={'btn btn-xs glyphicon glyphicon-home' + (this.props.node.controls.home ? ' active' : '')} onClick={this.toggleControl('home')}/>
-                    <span title={t('editor.diagram.stage.controls.pause')} className={'btn btn-xs glyphicon glyphicon-pause' + (this.props.node.controls.pause ? ' active' : '')} onClick={this.toggleControl('pause')}/>
-                    <span title={t('editor.diagram.stage.controls.autoplay')} className={'btn btn-xs glyphicon glyphicon-play' + (this.props.node.controls.autoplay ? ' active' : '')} onClick={this.toggleControl('autoplay')}/>
+                    <span title={t('editor.diagram.stage.squareone')} className={'btn btn-xs' + (this.props.node.isSquareOne() ? ' active' : '')} onClick={this.toggleSquareOne}>&#x2776;</span>
+                    <span title={t('editor.diagram.stage.controls.wheel')} className={'btn btn-xs glyphicon glyphicon-resize-horizontal' + (this.props.node.getControls().wheel ? ' active' : '')} onClick={this.toggleControl('wheel')}/>
+                    <span title={t('editor.diagram.stage.controls.ok')} className={'btn btn-xs glyphicon glyphicon-ok' + (this.props.node.getControls().ok ? ' active' : '')} onClick={this.toggleControl('ok')}/>
+                    <span title={t('editor.diagram.stage.controls.home')} className={'btn btn-xs glyphicon glyphicon-home' + (this.props.node.getControls().home ? ' active' : '')} onClick={this.toggleControl('home')}/>
+                    <span title={t('editor.diagram.stage.controls.pause')} className={'btn btn-xs glyphicon glyphicon-pause' + (this.props.node.getControls().pause ? ' active' : '')} onClick={this.toggleControl('pause')}/>
+                    <span title={t('editor.diagram.stage.controls.autoplay')} className={'btn btn-xs glyphicon glyphicon-play' + (this.props.node.getControls().autoplay ? ' active' : '')} onClick={this.toggleControl('autoplay')}/>
                 </div>
                 <div className="assets">
-                    <input type="file" id={`image-upload-${this.props.node.uuid}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.imageFileSelected} />
+                    <input type="file" id={`image-upload-${this.props.node.getUuid()}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.imageFileSelected} />
                     <div className="image-asset"
                          title={t('editor.diagram.stage.image')}
                          onClick={this.showImageFileSelector}
                          onDrop={this.onDropImage}
                          onDragOver={event => { event.preventDefault(); }}>
-                        {!this.props.node.image && <span className="dropzone glyphicon glyphicon-picture"/>}
-                        {this.props.node.image && <img src={this.props.node.image} className="dropzone" style={{height: '43px'}}/>}
+                        {!this.props.node.getImage() && <span className="dropzone glyphicon glyphicon-picture"/>}
+                        {this.props.node.getImage() && <img src={this.props.node.getImage()} className="dropzone" style={{height: '43px'}}/>}
                     </div>
-                    <input type="file" id={`audio-upload-${this.props.node.uuid}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.audioFileSelected} />
+                    <input type="file" id={`audio-upload-${this.props.node.getUuid()}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.audioFileSelected} />
                     <div className="audio-asset"
                          title={t('editor.diagram.stage.audio')}
                          onClick={this.showAudioFileSelector}
                          onDrop={this.onDropAudio}
                          onDragOver={event => { event.preventDefault(); }}>
-                        {!this.props.node.audio && <span className="dropzone glyphicon glyphicon-music"/>}
-                        {this.props.node.audio && <span className="dropzone glyphicon glyphicon-play"/>}
+                        {!this.props.node.getAudio() && <span className="dropzone glyphicon glyphicon-music"/>}
+                        {this.props.node.getAudio() && <span className="dropzone glyphicon glyphicon-play"/>}
                     </div>
-                    {(this.props.node.image || this.props.node.audio) && <div className="preview"
+                    {(this.props.node.getImage() || this.props.node.getAudio()) && <div className="preview"
                                                                               title={t('editor.diagram.stage.preview')}
                                                                               onClick={this.openViewer}>
                         <span className="dropzone glyphicon glyphicon-eye-open"/>
@@ -194,8 +218,8 @@ class StageNodeWidget extends React.Component {
                 </div>
                 <div className='ports'>
                     <div className='out'>
-                        {(this.props.node.controls.ok || this.props.node.controls.autoplay) && <SRD.DefaultPortLabel model={this.props.node.okPort}/>}
-                        {this.props.node.controls.home && <SRD.DefaultPortLabel model={this.props.node.homePort}/>}
+                        {(this.props.node.getControls().ok || this.props.node.getControls().autoplay) && <SRD.DefaultPortLabel model={this.props.node.okPort}/>}
+                        {this.props.node.getControls().home && <SRD.DefaultPortLabel model={this.props.node.homePort}/>}
                     </div>
                 </div>
             </div>

@@ -5,6 +5,8 @@
  */
 
 
+/* General diagram styling */
+
 .storm-diagrams-canvas {
     height: 100%;
     min-height: 80vh;
@@ -82,6 +84,10 @@
     stroke-dasharray: 10,2;
     animation: dash 1s linear infinite;
 }
+
+
+/* Ports */
+
 .storm-diagrams-canvas .port {
     width: 15px;
     height: 15px;
@@ -95,6 +101,37 @@
     height: 15px;
     content: '\1f500';
 }
+
+.storm-diagrams-canvas .port.custom-port {
+    width: 20px;
+    height: 20px;
+    background: rgba(128, 128, 128, 0.5);
+    border-radius: 10px;
+    transition: transform .2s;
+}
+.storm-diagrams-canvas .port.custom-port:hover, .storm-diagrams-canvas .port.custom-port.selected {
+    background: #333333;
+    transform: scale(1.2);
+}
+
+.storm-diagrams-canvas .port.custom-port.stage-port {
+    background: rgba(177, 222, 93, 0.8);
+    border: 2px solid #b1de5d;
+}
+.storm-diagrams-canvas .port.custom-port.stage-port:hover, .storm-diagrams-canvas .port.custom-port.stage-port.selected {
+    background: #b1de5d;
+}
+.storm-diagrams-canvas .port.custom-port.action-port {
+    background: rgba(222, 154, 84, 0.8);
+    border: 2px solid #de9a54;
+}
+.storm-diagrams-canvas .port.custom-port.action-port:hover, .storm-diagrams-canvas .port.custom-port.action-port.selected {
+    background: #de9a54;
+}
+
+
+/* Basic nodes */
+
 .storm-diagrams-canvas .basic-node {
     background-color: #1e1e1e;
     border-radius: 5px;
@@ -153,6 +190,9 @@
     text-align: right;
 }
 
+
+/* Stage nodes */
+
 .storm-diagrams-canvas .basic-node.stage-node {
     min-width: 20em;
     background-color: #919e3d;
@@ -160,7 +200,7 @@
 }
 
 .storm-diagrams-canvas .basic-node.stage-node.square-one {
-    border: solid 5px #b1be5d;
+    border: solid 5px #56d3ca;
 }
 
 .storm-diagrams-canvas .basic-node.stage-node .assets {
@@ -186,6 +226,9 @@
     flex-grow: 1;
 }
 
+
+/* Action nodes */
+
 .storm-diagrams-canvas .basic-node.action-node {
     min-width: 20em;
     background-color: #9e7a34;
@@ -205,9 +248,474 @@
 .storm-diagrams-canvas .basic-node input {
     color: black;
     width: 100%;
-    height: 15px;
-    padding: 0px;
+    height: 16px;
+    border: 0px;
 }
+
+
+
+/* User-friendly nodes */
+
+.storm-diagrams-canvas .editable-text {
+    cursor: text;
+}
+
+.storm-diagrams-canvas .editable-text-input {
+    color: #333333;
+}
+
+.storm-diagrams-canvas .user-friendly-node {
+    position: relative;
+    border-radius: 5px;
+}
+
+.storm-diagrams-canvas .user-friendly-node .node-header {
+    width: 80px;
+    height: 25px;
+    position: absolute;
+    left: calc(50% - 40px);
+    top: -25px;
+    border-top-left-radius: 25px;
+    border-top-right-radius: 25px;
+}
+
+.srd-node--selected .user-friendly-node .node-header {
+    border-color: #00c0ff !important;
+}
+
+.storm-diagrams-canvas .user-friendly-node .node-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.storm-diagrams-canvas .user-friendly-node .node-title {
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.storm-diagrams-canvas .user-friendly-node .node-title .ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.storm-diagrams-canvas .user-friendly-node .node-title input {
+    max-width: 140px;
+    height: 16px;
+    border: 0px;
+}
+
+.storm-diagrams-canvas .user-friendly-node .node-title .preview {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    left: calc(50% - 13px);
+    bottom: -18px;
+    text-align: center;
+    line-height: 26px;
+    border-radius: 13px;
+    cursor: pointer;
+    transition: transform .2s;
+}
+
+.storm-diagrams-canvas .user-friendly-node .node-title .preview.disabled {
+    cursor: default;
+}
+
+.storm-diagrams-canvas .user-friendly-node .node-title .preview:not(.disabled):hover {
+    transform: scale(1.2);
+}
+
+
+/* Cover nodes */
+
+.storm-diagrams-canvas .user-friendly-node.cover-node {
+    width: 150px;
+    background-color: #26807a;
+    border: 5px solid #56d3ca;
+    color: lightgrey;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-header {
+    color: #333333;
+    background-color: #36b3aa;
+    border: 5px solid #56d3ca;
+    border-bottom: none;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-title {
+    border-bottom: 2px solid #36b3aa;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-title .preview {
+    background-color: #26807a;
+    border: 2px solid #36b3aa;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-title .preview.disabled {
+    color: #999999;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+    padding-top: 20px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset {
+    flex-basis: 50%;
+    flex-grow: 0;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 5px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset.asset-left {
+    border-right: 2px dotted #36b3aa;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset input {
+    visibility: hidden;
+    position: absolute;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .dropzone-asset {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 3px dotted #333333;
+    transition: transform .2s;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .dropzone-asset:hover {
+    transform: scale(1.1);
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .image-asset {
+    font-size: 150%;
+    min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .image-asset img {
+    max-height: 38px;
+    object-fit: contain;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .audio-asset {
+    font-size: 150%;
+    min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .port.custom-port.ok-port {
+    position: absolute;
+    right: -13px;
+    top: calc(50% - 10px);
+}
+
+
+/* Menu nodes */
+
+.storm-diagrams-canvas .user-friendly-node.menu-node {
+    width: 250px;
+    background-color: #824178;
+    border: 3px solid #b55ba8;
+    color: lightgrey;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-header {
+    color: #333333;
+    background-color: #b55ba8;
+    border: 3px solid #b55ba8;
+    border-bottom: none;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-title {
+    border-bottom: 2px solid #b55ba8;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-title input {
+    max-width: 240px;
+    width: 240px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-title .preview {
+    background-color: #824178;
+    border: 2px solid #b55ba8;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-title .preview.disabled {
+    color: #999999;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+    padding-top: 20px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question {
+    flex-basis: 33%;
+    flex-grow: 0;
+    display: flex;
+    flex-direction: column;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 5px;
+    border-right: 2px dotted #b55ba8;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question p {
+    font-weight: bold;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question .question-asset .dropzone-asset {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 3px dotted #333333;
+    transition: transform .2s;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question .question-asset .dropzone-asset:hover {
+    transform: scale(1.1);
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question .question-asset input {
+    visibility: hidden;
+    position: absolute;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question .question-asset .audio-asset {
+    font-size: 150%;
+    min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options {
+    flex-basis: 67%;
+    flex-grow: 0;
+    display: flex;
+    flex-direction: column;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 5px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options p {
+    font-weight: bold;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options span.disabled {
+    color: #999999;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option {
+    display: flex;
+    flex-direction: row;
+    position: relative;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .policy {
+    flex-basis: 20px;
+    flex-grow: 0;
+    display: flex;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-name {
+    flex-basis: 20px;
+    flex-grow: 0;
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-name input {
+    max-width: 130px;
+    height: 16px;
+    border: 0px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: row;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset {
+    flex-basis: 50%;
+    flex-grow: 0;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 5px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset.asset-left {
+    border-right: 2px dotted #b55ba8;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset input {
+    visibility: hidden;
+    position: absolute;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .dropzone-asset {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 3px dotted #333333;
+    transition: transform .2s;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .dropzone-asset:hover {
+    transform: scale(1.1);
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .image-asset {
+    font-size: 150%;
+    min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .image-asset img {
+    max-height: 38px;
+    object-fit: contain;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .audio-asset {
+    font-size: 150%;
+    min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .port.custom-port.option-port {
+    position: absolute;
+    right: -18px;
+    top: calc(50% - 10px);
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .port.custom-port.from-port {
+    position: absolute;
+    left: -13px;
+    top: calc(50% - 10px);
+}
+
+
+/* Story nodes */
+
+.storm-diagrams-canvas .user-friendly-node.story-node {
+    width: 150px;
+    background-color: #b89f33;
+    border: 3px solid #ebcb42;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-header {
+    color: #333333;
+    background-color: #ebcb42;
+    border: 3px solid #ebcb42;
+    border-bottom: none;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-title {
+    border-bottom: 2px solid #ebcb42;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-title .preview {
+    background-color: #b89f33;
+    border: 2px solid #ebcb42;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-title .preview.disabled {
+    color: #666666;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options {
+    flex-grow: 1;
+    padding-top: 20px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .asset {
+    padding: 0px 5px 5px;
+    min-height: 50px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .asset input {
+    visibility: hidden;
+    position: absolute;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .asset .dropzone-asset {
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 3px dotted #333333;
+    transition: transform .2s;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .asset .dropzone-asset:hover {
+    transform: scaleX(1.05) scaleY(1.1);
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .asset .audio-asset {
+    font-size: 150%;
+    min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .options {
+    border-top: 2px solid #ebcb42;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .ports {
+    display: flex;
+    flex-direction: column;
+    flex-basis: 20px;
+    flex-grow: 0;
+    flex-shrink: 0;
+    position: relative;
+    border-left: 2px solid #ebcb42;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .ports .output-port {
+    height: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: right;
+    position: relative;
+    padding-left: 5px;
+    padding-right: 10px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .port.custom-port.from-port {
+    position: absolute;
+    left: -13px;
+    top: calc(50% - 10px);
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .port.custom-port.ok-port {
+    position: absolute;
+    right: -13px;
+    top: calc(50% - 10px);
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .port.custom-port.home-port {
+    position: absolute;
+    right: -13px;
+    top: calc(50% - 10px);
+}
+
+
+
+/* Diagram and tray */
 
 .pack-diagram-widget .content {
     display: flex;
@@ -235,4 +743,29 @@
     border-radius: 5px;
     margin-bottom: 2px;
     cursor: pointer;
+}
+
+.pack-diagram-widget .content .tray .tray-item.tray-item-cover {
+    border-color: #36b3aa;
+    background-color: #26807a;
+}
+
+.pack-diagram-widget .content .tray .tray-item.tray-item-menu {
+    border-color: #b55ba8;
+    background-color: #824178;
+}
+
+.pack-diagram-widget .content .tray .tray-item.tray-item-story {
+    border-color: #ebcb42;
+    background-color: #b89f33;
+}
+
+.pack-diagram-widget .content .tray .tray-item.tray-item-stage {
+    border-color: #919e3d;
+    background-color: black;
+}
+
+.pack-diagram-widget .content .tray .tray-item.tray-item-action {
+    border-color: #9e7a34;
+    background-color: black;
 }

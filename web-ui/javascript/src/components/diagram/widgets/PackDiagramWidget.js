@@ -12,6 +12,9 @@ import {withTranslation} from "react-i18next";
 
 import StageNodeModel from "../models/StageNodeModel";
 import ActionNodeModel from "../models/ActionNodeModel";
+import CoverNodeModel from "../models/CoverNodeModel";
+import MenuNodeModel from "../models/MenuNodeModel";
+import StoryNodeModel from "../models/StoryNodeModel";
 import TrayWidget from "./TrayWidget";
 import TrayItemWidget from "./TrayItemWidget";
 
@@ -60,6 +63,7 @@ class PackDiagramWidget extends React.Component {
 
     onDropNode = (event) => {
         event.preventDefault();
+        const { t } = this.props;
         let nodeData = event.dataTransfer.getData("storm-diagram-node");
         if (!nodeData) {
             // Ignore missing node data
@@ -67,10 +71,36 @@ class PackDiagramWidget extends React.Component {
         }
         var data = JSON.parse(nodeData);
         var node = null;
-        if (data.type === "stage") {
-            node = new StageNodeModel("Stage node");
-        } else {
-            node = new ActionNodeModel("Action node");
+        switch (data.type) {
+            case "stage":
+                node = new StageNodeModel("Stage node");
+                // Make it the "square one" if there are no entry point in the diagram
+                if (!this.props.diagramEngine.getDiagramModel().getEntryPoint()) {
+                    node.setSquareOne(true);
+                }
+                break;
+            case "action":
+                // One option by default
+                node = new ActionNodeModel("Action node");
+                node.addOption();
+                break;
+            case "cover":
+                // Make sure there is only one entry point per diagram
+                if (this.props.diagramEngine.getDiagramModel().getEntryPoint()) {
+                    toast.error(t('toasts.editor.tooManyEntryPoints'));
+                    return;
+                }
+                node = new CoverNodeModel("Cover node");
+                break;
+            case "menu":
+                // Two options by default
+                node = new MenuNodeModel("Menu node");
+                node.addOption();
+                node.addOption();
+                break;
+            case "story":
+                node = new StoryNodeModel("Story node");
+                break;
         }
         var points = this.props.diagramEngine.getRelativeMousePoint(event);
         node.setPosition(points.x, points.y);
@@ -85,11 +115,11 @@ class PackDiagramWidget extends React.Component {
 
             {/* Metadata */}
             <label htmlFor="pack-title">{t('editor.metadata.title')}</label>
-            <input id="pack-title" type="text" value={this.props.diagramEngine.getDiagramModel().title || ''} onChange={this.changeTitle}/>
+            <input id="pack-title" type="text" value={this.props.diagramEngine.getDiagramModel().title || ''} onChange={this.changeTitle} onKeyUp={e => e.stopPropagation()}/>
             <label htmlFor="pack-version">{t('editor.metadata.version')}</label>
-            <input id="pack-version" type="number" value={this.props.diagramEngine.getDiagramModel().version || ''} onChange={this.changeVersion}/>
+            <input id="pack-version" type="number" value={this.props.diagramEngine.getDiagramModel().version || ''} onChange={this.changeVersion} onKeyUp={e => e.stopPropagation()}/>
             <label htmlFor="pack-description">{t('editor.metadata.desc')}</label>
-            <textarea id="pack-description" value={this.props.diagramEngine.getDiagramModel().description || ''} style={{display: 'inline-block'}} onChange={this.changeDescription}/>
+            <textarea id="pack-description" value={this.props.diagramEngine.getDiagramModel().description || ''} style={{display: 'inline-block'}} onChange={this.changeDescription} onKeyUp={e => e.stopPropagation()}/>
             <label htmlFor="pack-thumb">{t('editor.metadata.thumb')}</label>
             <input type="file" id="pack-thumb" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.changeThumbnail} />
             <img src={this.props.diagramEngine.getDiagramModel().thumbnail || defaultImage} width="128" height="128" onClick={this.showThumbnailSelector} />
@@ -97,8 +127,22 @@ class PackDiagramWidget extends React.Component {
             <div className="content">
                 {/* Node tray */}
                 <TrayWidget>
-                    <TrayItemWidget model={{ type: "stage" }} name={t('editor.tray.stage')} color="#919e3d" />
-                    <TrayItemWidget model={{ type: "action" }} name={t('editor.tray.action')} color="#9e7a34" />
+                    <TrayItemWidget model={{ type: "cover" }} className="tray-item-cover">
+                        <span className="dropzone glyphicon glyphicon-book"/> {t('editor.tray.cover')}
+                    </TrayItemWidget>
+                    <TrayItemWidget model={{ type: "menu" }} className="tray-item-menu">
+                        <span className="dropzone glyphicon glyphicon-question-sign"/> {t('editor.tray.menu')}
+                    </TrayItemWidget>
+                    <TrayItemWidget model={{ type: "story" }} className="tray-item-story">
+                        <span className="dropzone glyphicon glyphicon-headphones"/> {t('editor.tray.story')}
+                    </TrayItemWidget>
+                    <hr />
+                    <TrayItemWidget model={{ type: "stage" }} className="tray-item-stage">
+                        {t('editor.tray.stage')}
+                    </TrayItemWidget>
+                    <TrayItemWidget model={{ type: "action" }} className="tray-item-action">
+                        {t('editor.tray.action')}
+                    </TrayItemWidget>
                 </TrayWidget>
 
                 {/* Diagram */}
