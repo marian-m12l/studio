@@ -41,9 +41,11 @@ class ActionNodeWidget extends React.Component {
     };
 
     removeOption = () => {
-        this.props.node.removeOption();
-        this.props.updateCanvas();
-        this.forceUpdate();
+        if (this.props.node.optionsIn.length > 1) {
+            this.props.node.removeOption();
+            this.props.updateCanvas();
+            this.forceUpdate();
+        }
     };
 
     render() {
@@ -53,7 +55,7 @@ class ActionNodeWidget extends React.Component {
                 <EditableHeader beingEdited={this.state.beingEdited} onToggleEdit={this.toggleEdit} onChange={this.editName} node={this.props.node} />
                 <div className='title'>
                     <span className='name'>{t('editor.diagram.action.options')}</span>
-                    {this.props.node.optionsIn.length > 0 && <span className='btn btn-xs glyphicon glyphicon-minus' onClick={this.removeOption} />}
+                    <span className={`btn btn-xs glyphicon glyphicon-minus ${this.props.node.optionsIn.length <= 1 ? 'disabled' : ''}`} onClick={this.removeOption} />
                     <span className='btn btn-xs glyphicon glyphicon-plus' onClick={this.addOption} />
                 </div>
                 <div className='ports'>
