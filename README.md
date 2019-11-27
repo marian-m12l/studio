@@ -1,3 +1,5 @@
+[![Gitter](https://badges.gitter.im/STUdio-Story-Teller-Unleashed/general.svg)](https://gitter.im/STUdio-Story-Teller-Unleashed/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
 STUdio - Story Teller Unleashed
 ===============================
 
