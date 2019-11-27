@@ -59,7 +59,9 @@
           "autoplay": "Lecture automatique"
         },
         "image": "Ressource image",
+        "resetImage": "Réinitialiser l'image",
         "audio": "Ressource audio",
+        "resetAudio": "Réinitialiser l'audio",
         "preview": "Aperçu"
       },
       "action": {
@@ -69,7 +71,8 @@
         "question": "Question :",
         "options": "Options :",
         "addOption": "Ajouter une option",
-        "removeOption": "Retirer la dernière option",
+        "removeLastOption": "Retirer la dernière option",
+        "removeOption": "Retirer cette option",
         "defaultOption": "Selectionnez l'option par défaut",
         "random": "Option aléatoire"
       },

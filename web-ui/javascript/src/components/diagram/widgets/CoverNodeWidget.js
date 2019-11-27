@@ -65,8 +65,10 @@ class CoverNodeWidget extends React.Component {
 
     imageFileSelected = (event) => {
         let file = event.target.files[0];
-        console.log('Selected file name = ' + file.name);
-        this.editImage(file);
+        if (file) {
+            console.log('Selected file name = ' + file.name);
+            this.editImage(file);
+        }
     };
 
     editImage = (file) => {
@@ -89,6 +91,14 @@ class CoverNodeWidget extends React.Component {
         reader.readAsDataURL(file);
     };
 
+    resetImage = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.props.node.setImage(null);
+        this.props.updateCanvas();
+        this.forceUpdate();
+    };
+
     onDropAudio = (event) => {
         event.preventDefault();
         if (!event.dataTransfer.items && !event.dataTransfer.files) {
@@ -105,8 +115,10 @@ class CoverNodeWidget extends React.Component {
 
     audioFileSelected = (event) => {
         let file = event.target.files[0];
-        console.log('Selected file name = ' + file.name);
-        this.editAudio(file);
+        if (file) {
+            console.log('Selected file name = ' + file.name);
+            this.editAudio(file);
+        }
     };
 
     editAudio = (file) => {
@@ -128,6 +140,14 @@ class CoverNodeWidget extends React.Component {
             that.forceUpdate();
         }, false);
         reader.readAsDataURL(file);
+    };
+
+    resetAudio = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.props.node.setAudio(null);
+        this.props.updateCanvas();
+        this.forceUpdate();
     };
 
     isPreviewable = () => {
@@ -172,7 +192,10 @@ class CoverNodeWidget extends React.Component {
                                  onDrop={this.onDropImage}
                                  onDragOver={event => { event.preventDefault(); }}>
                                 {!this.props.node.getImage() && <span className="dropzone glyphicon glyphicon-picture"/>}
-                                {this.props.node.getImage() && <img src={this.props.node.getImage()} className="dropzone"/>}
+                                {this.props.node.getImage() && <>
+                                    <div className="delete" title={t('editor.diagram.stage.resetImage')} onClick={this.resetImage}/>
+                                    <img src={this.props.node.getImage()} className="dropzone"/>
+                                </>}
                             </div>
                         </div>
                         <div className="asset right">
@@ -183,7 +206,10 @@ class CoverNodeWidget extends React.Component {
                                  onDrop={this.onDropAudio}
                                  onDragOver={event => { event.preventDefault(); }}>
                                 {!this.props.node.getAudio() && <span className="dropzone glyphicon glyphicon-music"/>}
-                                {this.props.node.getAudio() && <span className="dropzone glyphicon glyphicon-play"/>}
+                                {this.props.node.getAudio() && <>
+                                    <div className="delete" title={t('editor.diagram.stage.resetAudio')} onClick={this.resetAudio}/>
+                                    <span className="dropzone glyphicon glyphicon-play"/>
+                                </>}
                             </div>
                         </div>
                     </div>

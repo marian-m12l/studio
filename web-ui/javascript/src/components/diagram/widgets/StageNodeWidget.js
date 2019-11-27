@@ -93,8 +93,10 @@ class StageNodeWidget extends React.Component {
 
     imageFileSelected = (event) => {
         let file = event.target.files[0];
-        console.log('Selected file name = ' + file.name);
-        this.editImage(file);
+        if (file) {
+            console.log('Selected file name = ' + file.name);
+            this.editImage(file);
+        }
     };
 
     editImage = (file) => {
@@ -117,6 +119,14 @@ class StageNodeWidget extends React.Component {
         reader.readAsDataURL(file);
     };
 
+    resetImage = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.props.node.setImage(null);
+        this.props.updateCanvas();
+        this.forceUpdate();
+    };
+
     onDropAudio = (event) => {
         event.preventDefault();
         if (!event.dataTransfer.items && !event.dataTransfer.files) {
@@ -133,8 +143,10 @@ class StageNodeWidget extends React.Component {
 
     audioFileSelected = (event) => {
         let file = event.target.files[0];
-        console.log('Selected file name = ' + file.name);
-        this.editAudio(file);
+        if (file) {
+            console.log('Selected file name = ' + file.name);
+            this.editAudio(file);
+        }
     };
 
     editAudio = (file) => {
@@ -156,6 +168,14 @@ class StageNodeWidget extends React.Component {
             that.forceUpdate();
         }, false);
         reader.readAsDataURL(file);
+    };
+
+    resetAudio = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.props.node.setAudio(null);
+        this.props.updateCanvas();
+        this.forceUpdate();
     };
 
     openViewer = (e) => {
@@ -199,7 +219,10 @@ class StageNodeWidget extends React.Component {
                          onDrop={this.onDropImage}
                          onDragOver={event => { event.preventDefault(); }}>
                         {!this.props.node.getImage() && <span className="dropzone glyphicon glyphicon-picture"/>}
-                        {this.props.node.getImage() && <img src={this.props.node.getImage()} className="dropzone" style={{height: '43px'}}/>}
+                        {this.props.node.getImage() && <>
+                            <div className="delete" title={t('editor.diagram.stage.resetImage')} onClick={this.resetImage}/>
+                            <img src={this.props.node.getImage()} className="dropzone" style={{height: '43px'}}/>
+                        </>}
                     </div>
                     <input type="file" id={`audio-upload-${this.props.node.getUuid()}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.audioFileSelected} />
                     <div className="audio-asset"
@@ -208,7 +231,10 @@ class StageNodeWidget extends React.Component {
                          onDrop={this.onDropAudio}
                          onDragOver={event => { event.preventDefault(); }}>
                         {!this.props.node.getAudio() && <span className="dropzone glyphicon glyphicon-music"/>}
-                        {this.props.node.getAudio() && <span className="dropzone glyphicon glyphicon-play"/>}
+                        {this.props.node.getAudio() && <>
+                            <div className="delete" title={t('editor.diagram.stage.resetAudio')} onClick={this.resetAudio}/>
+                            <span className="dropzone glyphicon glyphicon-play"/>
+                        </>}
                     </div>
                     {(this.props.node.getImage() || this.props.node.getAudio()) && <div className="preview"
                                                                               title={t('editor.diagram.stage.preview')}
