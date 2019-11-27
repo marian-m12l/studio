@@ -59,7 +59,9 @@
           "autoplay": "Enable autoplay"
         },
         "image": "Image asset",
+        "resetImage": "Reset image asset",
         "audio": "Audio asset",
+        "resetAudio": "Reset audio asset",
         "preview": "Preview"
       },
       "action": {
@@ -69,7 +71,8 @@
         "question": "Question:",
         "options": "Options:",
         "addOption": "Add an option",
-        "removeOption": "Remove the last option",
+        "removeLastOption": "Remove the last option",
+        "removeOption": "Remove this option",
         "defaultOption": "Select the default option",
         "random": "Random option"
       },

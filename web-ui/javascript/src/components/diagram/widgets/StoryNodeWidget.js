@@ -83,8 +83,10 @@ class StoryNodeWidget extends React.Component {
 
     audioFileSelected = (event) => {
         let file = event.target.files[0];
-        console.log('Selected file name = ' + file.name);
-        this.editAudio(file);
+        if (file) {
+            console.log('Selected file name = ' + file.name);
+            this.editAudio(file);
+        }
     };
 
     editAudio = (file) => {
@@ -106,6 +108,14 @@ class StoryNodeWidget extends React.Component {
             that.forceUpdate();
         }, false);
         reader.readAsDataURL(file);
+    };
+
+    resetAudio = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.props.node.setAudio(null);
+        this.props.updateCanvas();
+        this.forceUpdate();
     };
 
     isPreviewable = () => {
@@ -153,7 +163,10 @@ class StoryNodeWidget extends React.Component {
                                      onDrop={this.onDropAudio}
                                      onDragOver={event => { event.preventDefault(); }}>
                                     {!this.props.node.getAudio() && <span className="dropzone glyphicon glyphicon-music"/>}
-                                    {this.props.node.getAudio() && <span className="dropzone glyphicon glyphicon-play"/>}
+                                    {this.props.node.getAudio() && <>
+                                        <div className="delete" title={t('editor.diagram.stage.resetAudio')} onClick={this.resetAudio}/>
+                                        <span className="dropzone glyphicon glyphicon-play"/>
+                                    </>}
                                 </div>
                             </div>
                             <div className="options">

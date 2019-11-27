@@ -53,19 +53,23 @@ class MenuNodeModel extends SRD.NodeModel {
         return this.optionsOut[index];
     };
 
-    removeOption = () => {
+    removeOption = (idx=-1) => {
         // Keep at least one option
         if (this.optionsStages.length > 1) {
             // Remove stages and ports from list
-            let optionStage = this.optionsStages.pop();
-            let optionOutPort = this.optionsOut.pop();
+            let optionStage = this.optionsStages.splice(idx, 1)[0];
+            let optionOutPort = this.optionsOut.splice(idx, 1)[0];
             // Remove any attached link
             Object.values(optionOutPort.getLinks())
                 .map(link => link.remove());
             // Remove actual ports
             this.removePort(optionOutPort);
-            // Make sure default option is consistent with the number of remaining options
-            this.defaultOption = Math.min(this.defaultOption, this.optionsStages.length-1);
+            // Make sure default option is updated and consistent with the number of remaining options
+            if (idx >= 0 && this.defaultOption > idx) {
+                this.defaultOption--;
+            } else {
+                this.defaultOption = Math.min(this.defaultOption, this.optionsStages.length - 1);
+            }
         }
     };
 

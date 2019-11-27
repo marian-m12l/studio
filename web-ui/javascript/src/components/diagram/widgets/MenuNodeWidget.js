@@ -43,6 +43,16 @@ class MenuNodeWidget extends React.Component {
         }
     };
 
+    removeSpecificOption = (idx) => {
+        return () => {
+            if (this.props.node.optionsStages.length > 1) {
+                this.props.node.removeOption(idx);
+                this.props.updateCanvas();
+                this.forceUpdate();
+            }
+        };
+    };
+
     editDefaultOption = (idx) => {
         return (event) => {
             this.props.node.setDefaultOption(idx);
@@ -95,8 +105,10 @@ class MenuNodeWidget extends React.Component {
 
     questionAudioFileSelected = (event) => {
         let file = event.target.files[0];
-        console.log('Selected file name = ' + file.name);
-        this.editQuestionAudio(file);
+        if (file) {
+            console.log('Selected file name = ' + file.name);
+            this.editQuestionAudio(file);
+        }
     };
 
     editQuestionAudio = (file) => {
@@ -120,6 +132,14 @@ class MenuNodeWidget extends React.Component {
         reader.readAsDataURL(file);
     };
 
+    resetQuestionAudio = (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        this.props.node.setQuestionAudio(null);
+        this.props.updateCanvas();
+        this.forceUpdate();
+    };
+
     onDropOptionImage = (idx) => {
         return (event) => {
             event.preventDefault();
@@ -139,8 +159,10 @@ class MenuNodeWidget extends React.Component {
     optionImageFileSelected = (idx) => {
         return (event) => {
             let file = event.target.files[0];
-            console.log('Selected file name = ' + file.name);
-            this.editOptionImage(idx, file);
+            if (file) {
+                console.log('Selected file name = ' + file.name);
+                this.editOptionImage(idx, file);
+            }
         };
     };
 
@@ -164,6 +186,16 @@ class MenuNodeWidget extends React.Component {
         reader.readAsDataURL(file);
     };
 
+    resetOptionImage = (idx) => {
+        return (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.props.node.setOptionImage(idx, null);
+            this.props.updateCanvas();
+            this.forceUpdate();
+        };
+    };
+
     onDropOptionAudio = (idx) => {
         return (event) => {
             event.preventDefault();
@@ -183,8 +215,10 @@ class MenuNodeWidget extends React.Component {
     optionAudioFileSelected = (idx) => {
         return (event) => {
             let file = event.target.files[0];
-            console.log('Selected file name = ' + file.name);
-            this.editOptionAudio(idx, file);
+            if (file) {
+                console.log('Selected file name = ' + file.name);
+                this.editOptionAudio(idx, file);
+            }
         };
     };
 
@@ -207,6 +241,16 @@ class MenuNodeWidget extends React.Component {
             that.forceUpdate();
         }, false);
         reader.readAsDataURL(file);
+    };
+
+    resetOptionAudio = (idx) => {
+        return (event) => {
+            event.preventDefault();
+            event.stopPropagation();
+            this.props.node.setOptionAudio(idx, null);
+            this.props.updateCanvas();
+            this.forceUpdate();
+        };
     };
 
     isPreviewable = () => {
@@ -253,18 +297,22 @@ class MenuNodeWidget extends React.Component {
                                      onDrop={this.onDropQuestionAudio}
                                      onDragOver={event => { event.preventDefault(); }}>
                                     {!this.props.node.getQuestionAudio() && <span className="dropzone glyphicon glyphicon-music"/>}
-                                    {this.props.node.getQuestionAudio() && <span className="dropzone glyphicon glyphicon-play"/>}
+                                    {this.props.node.getQuestionAudio() && <>
+                                        <div className="delete" title={t('editor.diagram.stage.resetAudio')} onClick={this.resetQuestionAudio}/>
+                                        <span className="dropzone glyphicon glyphicon-play"/>
+                                    </>}
                                 </div>
                             </div>
                         </div>
                         <div className="options">
                             <p>{t('editor.diagram.menu.options')}</p>
                             <div>
-                                <span className={`btn btn-xs glyphicon glyphicon-minus ${this.props.node.optionsStages.length <= 1 ? 'disabled' : ''}`} onClick={this.removeOption} title={t('editor.diagram.menu.removeOption')} />
+                                <span className={`btn btn-xs glyphicon glyphicon-minus ${this.props.node.optionsStages.length <= 1 ? 'disabled' : ''}`} onClick={this.removeOption} title={t('editor.diagram.menu.removeLastOption')} />
                                 <span className='btn btn-xs glyphicon glyphicon-plus' onClick={this.addOption} title={t('editor.diagram.menu.addOption')} />
                             </div>
                             {this.props.node.optionsStages.map((option, idx) =>
                                 <div key={`menu-option-${idx}`} className="option">
+                                    <div className={`delete ${this.props.node.optionsStages.length <= 1 ? 'disabled' : ''}`} title={t('editor.diagram.menu.removeOption')} onClick={this.removeSpecificOption(idx)}/>
                                     <div className="policy">
                                         <input type="radio" value={`menu-option-${idx}`} checked={this.props.node.getDefaultOption() === idx} onChange={this.editDefaultOption(idx)} title={t('editor.diagram.menu.defaultOption')}/>
                                     </div>
@@ -281,7 +329,10 @@ class MenuNodeWidget extends React.Component {
                                                      onDrop={this.onDropOptionImage(idx)}
                                                      onDragOver={event => { event.preventDefault(); }}>
                                                     {!this.props.node.getOptionImage(idx) && <span className="dropzone glyphicon glyphicon-picture"/>}
-                                                    {this.props.node.getOptionImage(idx) && <img src={this.props.node.getOptionImage(idx)} className="dropzone"/>}
+                                                    {this.props.node.getOptionImage(idx) && <>
+                                                        <div className="delete" title={t('editor.diagram.stage.resetImage')} onClick={this.resetOptionImage(idx)}/>
+                                                        <img src={this.props.node.getOptionImage(idx)} className="dropzone"/>
+                                                    </>}
                                                 </div>
                                             </div>
                                             <div className="asset right">
@@ -292,7 +343,10 @@ class MenuNodeWidget extends React.Component {
                                                      onDrop={this.onDropOptionAudio(idx)}
                                                      onDragOver={event => { event.preventDefault(); }}>
                                                     {!this.props.node.getOptionAudio(idx) && <span className="dropzone glyphicon glyphicon-music"/>}
-                                                    {this.props.node.getOptionAudio(idx) && <span className="dropzone glyphicon glyphicon-play"/>}
+                                                    {this.props.node.getOptionAudio(idx) && <>
+                                                        <div className="delete" title={t('editor.diagram.stage.resetAudio')} onClick={this.resetOptionAudio(idx)}/>
+                                                        <span className="dropzone glyphicon glyphicon-play"/>
+                                                    </>}
                                                 </div>
                                             </div>
                                         </div>

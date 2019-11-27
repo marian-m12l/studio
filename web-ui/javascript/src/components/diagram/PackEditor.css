@@ -85,6 +85,38 @@
     animation: dash 1s linear infinite;
 }
 
+.storm-diagrams-canvas .node .delete {
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+    background: rgba(128, 128, 128, 0.5);
+    border-radius: 7px;
+    transition: transform .2s;
+    cursor: pointer;
+    visibility: hidden;
+}
+
+.storm-diagrams-canvas .node .delete.disabled {
+    cursor: not-allowed;
+}
+
+.storm-diagrams-canvas .node .delete::before {
+    position: relative;
+    content: '\00d7';
+}
+
+.storm-diagrams-canvas .node .delete.disabled::before {
+    color: #999999;
+}
+
+.storm-diagrams-canvas .node .delete:not(.disabled):hover {
+    background: #333333;
+    transform: scale(1.2);
+}
+
 
 /* Ports */
 
@@ -204,7 +236,6 @@
 }
 
 .storm-diagrams-canvas .basic-node.stage-node .assets {
-    font-size: 300%;
     display: flex;
     flex-grow: 1;
 }
@@ -215,14 +246,33 @@
 }
 
 .storm-diagrams-canvas .basic-node.stage-node .assets .image-asset {
+    position: relative;
     flex-grow: 1;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .assets .image-asset:hover>.delete {
+    visibility: visible;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .assets .image-asset .glyphicon {
+    font-size: 300%;
 }
 
 .storm-diagrams-canvas .basic-node.stage-node .assets .audio-asset {
+    position: relative;
     flex-grow: 1;
 }
 
+.storm-diagrams-canvas .basic-node.stage-node .assets .audio-asset:hover>.delete {
+    visibility: visible;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .assets .audio-asset .glyphicon {
+    font-size: 300%;
+}
+
 .storm-diagrams-canvas .basic-node.stage-node .assets .preview {
+    font-size: 300%;
     flex-grow: 1;
 }
 
@@ -319,7 +369,7 @@
 }
 
 .storm-diagrams-canvas .user-friendly-node .node-title .preview.disabled {
-    cursor: default;
+    cursor: not-allowed;
 }
 
 .storm-diagrams-canvas .user-friendly-node .node-title .preview:not(.disabled):hover {
@@ -381,6 +431,7 @@
 }
 
 .storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .dropzone-asset {
+    position: relative;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -392,9 +443,16 @@
     transform: scale(1.1);
 }
 
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .dropzone-asset:hover>.delete {
+    visibility: visible;
+}
+
 .storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .image-asset {
-    font-size: 150%;
     min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .image-asset .glyphicon {
+    font-size: 150%;
 }
 
 .storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .image-asset img {
@@ -403,8 +461,11 @@
 }
 
 .storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .audio-asset {
-    font-size: 150%;
     min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .audio-asset .glyphicon {
+    font-size: 150%;
 }
 
 .storm-diagrams-canvas .user-friendly-node.cover-node .port.custom-port.ok-port {
@@ -471,6 +532,7 @@
 }
 
 .storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question .question-asset .dropzone-asset {
+    position: relative;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -482,14 +544,21 @@
     transform: scale(1.1);
 }
 
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question .question-asset .dropzone-asset:hover>.delete {
+    visibility: visible;
+}
+
 .storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question .question-asset input {
     visibility: hidden;
     position: absolute;
 }
 
 .storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question .question-asset .audio-asset {
-    font-size: 150%;
     min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question .question-asset .audio-asset .glyphicon {
+    font-size: 150%;
 }
 
 .storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options {
@@ -514,12 +583,21 @@
     display: flex;
     flex-direction: row;
     position: relative;
+    background-color: #b55ba8;
+    border: 1px solid #b55ba8;
+    border-radius: 5px;
+    margin-top: 2px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option:hover>.delete {
+    visibility: visible;
 }
 
 .storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .policy {
     flex-basis: 20px;
     flex-grow: 0;
     display: flex;
+    align-items: center;
 }
 
 .storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets {
@@ -557,16 +635,13 @@
     padding-bottom: 5px;
 }
 
-.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset.asset-left {
-    border-right: 2px dotted #b55ba8;
-}
-
 .storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset input {
     visibility: hidden;
     position: absolute;
 }
 
 .storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .dropzone-asset {
+    position: relative;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -578,9 +653,16 @@
     transform: scale(1.1);
 }
 
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .dropzone-asset:hover>.delete {
+    visibility: visible;
+}
+
 .storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .image-asset {
-    font-size: 150%;
     min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .image-asset .glyphicon {
+    font-size: 150%;
 }
 
 .storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .image-asset img {
@@ -589,8 +671,11 @@
 }
 
 .storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .audio-asset {
-    font-size: 150%;
     min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .audio-asset .glyphicon {
+    font-size: 150%;
 }
 
 .storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .port.custom-port.option-port {
@@ -655,6 +740,7 @@
 }
 
 .storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .asset .dropzone-asset {
+    position: relative;
     display: flex;
     flex-direction: column;
     justify-content: center;
@@ -666,9 +752,16 @@
     transform: scaleX(1.05) scaleY(1.1);
 }
 
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .asset .dropzone-asset:hover>.delete {
+    visibility: visible;
+}
+
 .storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .asset .audio-asset {
-    font-size: 150%;
     min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .asset .audio-asset .glyphicon {
+    font-size: 150%;
 }
 
 .storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .options {
