@@ -272,8 +272,7 @@ class MenuNodeWidget extends React.Component {
     render() {
         const { t } = this.props;
         return (
-            <div className="user-friendly-node menu-node">
-                {this.props.node.fromPort && <PortWidget model={this.props.node.fromPort} className="from-port"/>}
+            <div className="studio-node user-friendly-node menu-node">
                 <div className="node-header">
                     <span className="dropzone glyphicon glyphicon-question-sign" title={t('editor.tray.menu')}/>
                 </div>
@@ -367,6 +366,7 @@ class MenuNodeWidget extends React.Component {
                         </div>
                     </div>
                 </div>
+                {this.props.node.fromPort && <PortWidget model={this.props.node.fromPort} className="from-port"/>}
             </div>
         );
     }

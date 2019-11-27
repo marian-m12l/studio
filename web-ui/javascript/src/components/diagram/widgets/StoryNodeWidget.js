@@ -139,8 +139,7 @@ class StoryNodeWidget extends React.Component {
     render() {
         const { t } = this.props;
         return (
-            <div className="user-friendly-node story-node">
-                {this.props.node.fromPort && <PortWidget model={this.props.node.fromPort} className="from-port"/>}
+            <div className="studio-node user-friendly-node story-node">
                 <div className="node-header">
                     <span className="dropzone glyphicon glyphicon-headphones" title={t('editor.tray.story')}/>
                 </div>
@@ -192,6 +191,7 @@ class StoryNodeWidget extends React.Component {
                         </div>}
                     </div>
                 </div>
+                {this.props.node.fromPort && <PortWidget model={this.props.node.fromPort} className="from-port"/>}
             </div>
         );
     }

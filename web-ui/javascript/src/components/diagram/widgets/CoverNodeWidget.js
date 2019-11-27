@@ -170,7 +170,7 @@ class CoverNodeWidget extends React.Component {
     render() {
         const { t } = this.props;
         return (
-            <div className="user-friendly-node cover-node">
+            <div className="studio-node user-friendly-node cover-node">
                 <div className="node-header">
                     <span className="dropzone glyphicon glyphicon-book" title={t('editor.tray.cover')}/>
                 </div>

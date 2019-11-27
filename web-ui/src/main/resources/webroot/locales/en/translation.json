@@ -65,7 +65,11 @@
         "preview": "Preview"
       },
       "action": {
-        "options": "Options:"
+        "options": "Options:",
+        "addOption": "Add an option",
+        "removeLastOption": "Remove the last option",
+        "removeOption": "Remove this option",
+        "random": "Random option"
       },
       "menu": {
         "question": "Question:",
