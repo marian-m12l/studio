@@ -11,8 +11,9 @@ import { toast } from 'react-toastify';
 import * as SRD from 'storm-react-diagrams';
 import {withTranslation} from "react-i18next";
 
-import EditableHeader from './composites/EditableHeader';
 import StageNodeModel from "../models/StageNodeModel";
+import EditableText from "./composites/EditableText";
+import PortWidget from "./PortWidget";
 import {showViewer, setViewerDiagram, setViewerStage, setViewerAction} from "../../../actions";
 
 
@@ -20,16 +21,7 @@ class StageNodeWidget extends React.Component {
 
     constructor(props) {
         super(props);
-        this.state = {
-            beingEdited: false
-        };
     }
-
-    toggleEdit = () => {
-        this.setState({
-            beingEdited: !this.state.beingEdited
-        });
-    };
 
     editName = (event) => {
         this.props.node.setName(event.target.value);
@@ -178,76 +170,103 @@ class StageNodeWidget extends React.Component {
         this.forceUpdate();
     };
 
+    isPreviewable = () => {
+        return this.props.node.getImage() || this.props.node.getAudio();
+    };
+
     openViewer = (e) => {
-        let viewingNode = this.props.node;
-        this.props.setViewerDiagram(this.props.diagramEngine.diagramModel);
-        this.props.setViewerStage(viewingNode);
-        let fromLinks = Object.values(viewingNode.fromPort.getLinks());
-        if (fromLinks.length > 0) {
-            let firstActionNode = fromLinks[0].getSourcePort().getParent();
-            this.props.setViewerAction({
-                node: firstActionNode,
-                index: firstActionNode.optionsOut.indexOf(fromLinks[0].getSourcePort())
-            });
-        } else {
-            this.props.setViewerAction({
-                node: null,
-                index: null
-            });
+        if (this.isPreviewable()) {
+            let viewingNode = this.props.node;
+            this.props.setViewerDiagram(this.props.diagramEngine.diagramModel);
+            this.props.setViewerStage(viewingNode);
+            let fromLinks = viewingNode.fromPort ? Object.values(viewingNode.fromPort.getLinks()) : [];
+            if (fromLinks.length > 0) {
+                let firstActionNode = fromLinks[0].getSourcePort().getParent();
+                this.props.setViewerAction({
+                    node: firstActionNode,
+                    index: firstActionNode.optionsOut.indexOf(fromLinks[0].getSourcePort())
+                });
+            } else {
+                this.props.setViewerAction({
+                    node: null,
+                    index: null
+                });
+            }
+            this.props.showViewer();
         }
-        this.props.showViewer();
     };
 
     render() {
         const { t } = this.props;
         return (
-            <div className={`basic-node stage-node ${this.props.node.squareOne && 'square-one'}`}>
-                <EditableHeader beingEdited={this.state.beingEdited} onToggleEdit={this.toggleEdit} onChange={this.editName} node={this.props.node} />
-                <div className="controls">
-                    <span title={t('editor.diagram.stage.squareone')} className={'btn btn-xs' + (this.props.node.isSquareOne() ? ' active' : '')} onClick={this.toggleSquareOne}>&#x2776;</span>
-                    <span title={t('editor.diagram.stage.controls.wheel')} className={'btn btn-xs glyphicon glyphicon-resize-horizontal' + (this.props.node.getControls().wheel ? ' active' : '')} onClick={this.toggleControl('wheel')}/>
-                    <span title={t('editor.diagram.stage.controls.ok')} className={'btn btn-xs glyphicon glyphicon-ok' + (this.props.node.getControls().ok ? ' active' : '')} onClick={this.toggleControl('ok')}/>
-                    <span title={t('editor.diagram.stage.controls.home')} className={'btn btn-xs glyphicon glyphicon-home' + (this.props.node.getControls().home ? ' active' : '')} onClick={this.toggleControl('home')}/>
-                    <span title={t('editor.diagram.stage.controls.pause')} className={'btn btn-xs glyphicon glyphicon-pause' + (this.props.node.getControls().pause ? ' active' : '')} onClick={this.toggleControl('pause')}/>
-                    <span title={t('editor.diagram.stage.controls.autoplay')} className={'btn btn-xs glyphicon glyphicon-play' + (this.props.node.getControls().autoplay ? ' active' : '')} onClick={this.toggleControl('autoplay')}/>
-                </div>
-                <div className="assets">
-                    <input type="file" id={`image-upload-${this.props.node.getUuid()}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.imageFileSelected} />
-                    <div className="image-asset"
-                         title={t('editor.diagram.stage.image')}
-                         onClick={this.showImageFileSelector}
-                         onDrop={this.onDropImage}
-                         onDragOver={event => { event.preventDefault(); }}>
-                        {!this.props.node.getImage() && <span className="dropzone glyphicon glyphicon-picture"/>}
-                        {this.props.node.getImage() && <>
-                            <div className="delete" title={t('editor.diagram.stage.resetImage')} onClick={this.resetImage}/>
-                            <img src={this.props.node.getImage()} className="dropzone" style={{height: '43px'}}/>
-                        </>}
+            <div className={`studio-node basic-node stage-node ${this.props.node.squareOne && 'square-one'}`}>
+                <div className="node-content">
+                    <div className="node-title">
+                        <div className="ellipsis">
+                            <EditableText value={this.props.node.getName()} onChange={this.editName}/>
+                        </div>
+                        <div className={`preview ${!this.isPreviewable() ? 'disabled' : ''}`} title={t('editor.diagram.stage.preview')} onClick={this.openViewer}>
+                            <span className="glyphicon glyphicon-eye-open"/>
+                        </div>
                     </div>
-                    <input type="file" id={`audio-upload-${this.props.node.getUuid()}`} style={{visibility: 'hidden', position: 'absolute'}} onChange={this.audioFileSelected} />
-                    <div className="audio-asset"
-                         title={t('editor.diagram.stage.audio')}
-                         onClick={this.showAudioFileSelector}
-                         onDrop={this.onDropAudio}
-                         onDragOver={event => { event.preventDefault(); }}>
-                        {!this.props.node.getAudio() && <span className="dropzone glyphicon glyphicon-music"/>}
-                        {this.props.node.getAudio() && <>
-                            <div className="delete" title={t('editor.diagram.stage.resetAudio')} onClick={this.resetAudio}/>
-                            <span className="dropzone glyphicon glyphicon-play"/>
-                        </>}
+                    <div className="node-row">
+                        <div className="assets-and-options">
+                            <div className="assets">
+                                <div className="asset asset-left">
+                                    <input type="file" id={`image-upload-${this.props.node.getUuid()}`} onChange={this.imageFileSelected} />
+                                    <div className="dropzone-asset image-asset"
+                                         title={t('editor.diagram.stage.image')}
+                                         onClick={this.showImageFileSelector}
+                                         onDrop={this.onDropImage}
+                                         onDragOver={event => { event.preventDefault(); }}>
+                                        {!this.props.node.getImage() && <span className="dropzone glyphicon glyphicon-picture"/>}
+                                        {this.props.node.getImage() && <>
+                                            <div className="delete" title={t('editor.diagram.stage.resetImage')} onClick={this.resetImage}/>
+                                            <img src={this.props.node.getImage()} className="dropzone"/>
+                                        </>}
+                                    </div>
+                                </div>
+                                <div className="asset right">
+                                    <input type="file" id={`audio-upload-${this.props.node.getUuid()}`} onChange={this.audioFileSelected} />
+                                    <div className="dropzone-asset audio-asset"
+                                         title={t('editor.diagram.stage.audio')}
+                                         onClick={this.showAudioFileSelector}
+                                         onDrop={this.onDropAudio}
+                                         onDragOver={event => { event.preventDefault(); }}>
+                                        {!this.props.node.getAudio() && <span className="dropzone glyphicon glyphicon-music"/>}
+                                        {this.props.node.getAudio() && <>
+                                            <div className="delete" title={t('editor.diagram.stage.resetAudio')} onClick={this.resetAudio}/>
+                                            <span className="dropzone glyphicon glyphicon-play"/>
+                                        </>}
+                                    </div>
+                                </div>
+                            </div>
+                            <div className="options">
+                                <span title={t('editor.diagram.stage.squareone')} className={'btn btn-xs glyphicon square-one-toggle ' + (this.props.node.isSquareOne() ? ' active' : '')} onClick={this.toggleSquareOne}>&#x2776;</span>
+                                <span title={t('editor.diagram.stage.controls.wheel')} className={'btn btn-xs glyphicon glyphicon-resize-horizontal' + (this.props.node.getControls().wheel ? ' active' : '')} onClick={this.toggleControl('wheel')}/>
+                                <span title={t('editor.diagram.stage.controls.ok')} className={'btn btn-xs glyphicon glyphicon-ok' + (this.props.node.getControls().ok ? ' active' : '')} onClick={this.toggleControl('ok')}/>
+                                <span title={t('editor.diagram.stage.controls.home')} className={'btn btn-xs glyphicon glyphicon-home' + (this.props.node.getControls().home ? ' active' : '')} onClick={this.toggleControl('home')}/>
+                                <span title={t('editor.diagram.stage.controls.pause')} className={'btn btn-xs glyphicon glyphicon-pause' + (this.props.node.getControls().pause ? ' active' : '')} onClick={this.toggleControl('pause')}/>
+                                <span title={t('editor.diagram.stage.controls.autoplay')} className={'btn btn-xs glyphicon glyphicon-play' + (this.props.node.getControls().autoplay ? ' active' : '')} onClick={this.toggleControl('autoplay')}/>
+                            </div>
+                        </div>
+                        {(this.props.node.okPort || this.props.node.homePort) && <div className='ports'>
+                            <div className="output-port">
+                                {this.props.node.okPort && <>
+                                    <span title={t('editor.diagram.story.options.customok')} className={'glyphicon glyphicon-ok'}/>
+                                    <PortWidget model={this.props.node.okPort} className="ok-port"/>
+                                </>}
+                            </div>
+                            <div className="output-port">
+                                {this.props.node.homePort && <>
+                                    <span title={t('editor.diagram.story.options.customhome')} className={'glyphicon glyphicon-home'}/>
+                                    <PortWidget model={this.props.node.homePort} className="home-port"/>
+                                </>}
+                            </div>
+                        </div>}
                     </div>
-                    {(this.props.node.getImage() || this.props.node.getAudio()) && <div className="preview"
-                                                                              title={t('editor.diagram.stage.preview')}
-                                                                              onClick={this.openViewer}>
-                        <span className="dropzone glyphicon glyphicon-eye-open"/>
-                    </div>}
                 </div>
-                <div className='ports'>
-                    <div className='out'>
-                        {(this.props.node.getControls().ok || this.props.node.getControls().autoplay) && <SRD.DefaultPortLabel model={this.props.node.okPort}/>}
-                        {this.props.node.getControls().home && <SRD.DefaultPortLabel model={this.props.node.homePort}/>}
-                    </div>
-                </div>
+                {this.props.node.fromPort && <PortWidget model={this.props.node.fromPort} className="from-port"/>}
             </div>
         );
     }

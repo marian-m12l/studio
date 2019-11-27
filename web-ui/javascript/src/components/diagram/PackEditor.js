@@ -17,7 +17,6 @@ import CoverNodeFactory from "./factories/CoverNodeFactory";
 import MenuNodeFactory from "./factories/MenuNodeFactory";
 import StoryNodeFactory from "./factories/StoryNodeFactory";
 import PackDiagramModel from "./models/PackDiagramModel";
-import StageNodeModel from "./models/StageNodeModel";
 import PackDiagramWidget from "./widgets/PackDiagramWidget";
 import Modal from "../Modal";
 import {writeToArchive} from "../../utils/writer";
@@ -39,6 +38,7 @@ class PackEditor extends React.Component {
         engine.installDefaultFactories();
 
         let updateCanvas = () => {
+            engine.recalculatePortsVisually();
             engine.repaintCanvas();
             this.forceUpdate();
         };

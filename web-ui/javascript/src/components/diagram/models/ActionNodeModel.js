@@ -43,11 +43,11 @@ class ActionNodeModel extends SRD.NodeModel {
         };
     };
 
-    removeOption = () => {
-        if (this.optionsIn.length > 0) {
+    removeOption = (idx=-1) => {
+        if (this.optionsIn.length > 1) {
             // Remove ports from list
-            let optionInPort = this.optionsIn.pop();
-            let optionOutPort = this.optionsOut.pop();
+            let optionInPort = this.optionsIn.splice(idx, 1)[0];
+            let optionOutPort = this.optionsOut.splice(idx, 1)[0];
             // Remove any attached link
             Object.values(optionInPort.getLinks())
                 .map(link => link.remove());

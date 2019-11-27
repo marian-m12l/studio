@@ -9,8 +9,9 @@ import PropTypes from "prop-types";
 import * as SRD from 'storm-react-diagrams';
 import {withTranslation} from "react-i18next";
 
-import EditableHeader from './composites/EditableHeader';
 import ActionNodeModel from "../models/ActionNodeModel";
+import EditableText from "./composites/EditableText";
+import PortWidget from "./PortWidget";
 
 
 class ActionNodeWidget extends React.Component {
@@ -48,23 +49,43 @@ class ActionNodeWidget extends React.Component {
         }
     };
 
+    removeSpecificOption = (idx) => {
+        return () => {
+            if (this.props.node.optionsIn.length > 1) {
+                this.props.node.removeOption(idx);
+                this.forceUpdate();
+                this.props.updateCanvas();
+            }
+        };
+    };
+
     render() {
         const { t } = this.props;
         return (
-            <div className='basic-node action-node'>
-                <EditableHeader beingEdited={this.state.beingEdited} onToggleEdit={this.toggleEdit} onChange={this.editName} node={this.props.node} />
-                <div className='title'>
-                    <span className='name'>{t('editor.diagram.action.options')}</span>
-                    <span className={`btn btn-xs glyphicon glyphicon-minus ${this.props.node.optionsIn.length <= 1 ? 'disabled' : ''}`} onClick={this.removeOption} />
-                    <span className='btn btn-xs glyphicon glyphicon-plus' onClick={this.addOption} />
-                </div>
-                <div className='ports'>
-                    <div className='in'>
-                        {this.props.node.optionsIn.map(opt => <SRD.DefaultPortLabel key={opt.getID()} model={opt} />)}
-                        <SRD.DefaultPortLabel key={this.props.node.randomOptionIn.getID()} model={this.props.node.randomOptionIn} className="random" />
+            <div className='studio-node basic-node action-node'>
+                <div className="node-content">
+                    <div className="node-title">
+                        <div className="ellipsis">
+                            <EditableText value={this.props.node.getName()} onChange={this.editName}/>
+                        </div>
                     </div>
-                    <div className='out'>
-                        {this.props.node.optionsOut.map(opt => <SRD.DefaultPortLabel key={opt.getID()} model={opt} />)}
+                    <div className="options">
+                        <div>
+                            <span className={`btn btn-xs glyphicon glyphicon-minus ${this.props.node.optionsIn.length <= 1 ? 'disabled' : ''}`} onClick={this.removeOption} title={t('editor.diagram.action.removeLastOption')} />
+                            <span className='btn btn-xs glyphicon glyphicon-plus' onClick={this.addOption} title={t('editor.diagram.action.addOption')} />
+                        </div>
+                        {this.props.node.optionsIn.map((option, idx) =>
+                            <div key={`action-option-${idx}`} className="option">
+                                <div className={`delete ${this.props.node.optionsIn.length <= 1 ? 'disabled' : ''}`} title={t('editor.diagram.action.removeOption')} onClick={this.removeSpecificOption(idx)}/>
+                                {option.label}
+                                <PortWidget model={this.props.node.optionsIn[idx]} className="option-port-in"/>
+                                <PortWidget model={this.props.node.optionsOut[idx]} className="option-port-out"/>
+                            </div>
+                        )}
+                        <div className="option">
+                            {t('editor.diagram.action.random')}
+                            <PortWidget model={this.props.node.randomOptionIn} className="option-port-in option-port-random"/>
+                        </div>
                     </div>
                 </div>
             </div>
