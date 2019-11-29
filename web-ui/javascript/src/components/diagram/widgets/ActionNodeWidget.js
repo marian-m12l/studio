@@ -6,12 +6,12 @@
 
 import React from 'react';
 import PropTypes from "prop-types";
-import * as SRD from 'storm-react-diagrams';
 import {withTranslation} from "react-i18next";
+import { DiagramEngine } from '@projectstorm/react-diagrams';
 
 import ActionNodeModel from "../models/ActionNodeModel";
 import EditableText from "./composites/EditableText";
-import PortWidget from "./PortWidget";
+import StudioPortWidget from "./StudioPortWidget";
 
 
 class ActionNodeWidget extends React.Component {
@@ -78,13 +78,13 @@ class ActionNodeWidget extends React.Component {
                             <div key={`action-option-${idx}`} className="option">
                                 <div className={`delete ${this.props.node.optionsIn.length <= 1 ? 'disabled' : ''}`} title={t('editor.diagram.action.removeOption')} onClick={this.removeSpecificOption(idx)}/>
                                 {option.label}
-                                <PortWidget model={this.props.node.optionsIn[idx]} className="option-port-in"/>
-                                <PortWidget model={this.props.node.optionsOut[idx]} className="option-port-out"/>
+                                <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.optionsIn[idx]} className="option-port-in"/>
+                                <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.optionsOut[idx]} className="option-port-out"/>
                             </div>
                         )}
                         <div className="option">
                             {t('editor.diagram.action.random')}
-                            <PortWidget model={this.props.node.randomOptionIn} className="option-port-in option-port-random"/>
+                            <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.randomOptionIn} className="option-port-in option-port-random"/>
                         </div>
                     </div>
                 </div>
@@ -96,7 +96,7 @@ class ActionNodeWidget extends React.Component {
 
 ActionNodeWidget.propTypes = {
     node: PropTypes.instanceOf(ActionNodeModel).isRequired,
-    diagramEngine: PropTypes.instanceOf(SRD.DiagramEngine).isRequired,
+    diagramEngine: PropTypes.instanceOf(DiagramEngine).isRequired,
     updateCanvas: PropTypes.func.isRequired
 };
 

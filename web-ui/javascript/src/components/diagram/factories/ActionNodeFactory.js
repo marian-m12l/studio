@@ -5,25 +5,25 @@
  */
 
 import React from 'react';
-import * as SRD from 'storm-react-diagrams';
+import { AbstractReactFactory } from '@projectstorm/react-canvas-core';
 
 import ActionNodeModel from '../models/ActionNodeModel';
 import ActionNodeWidget from '../widgets/ActionNodeWidget';
 
 
 // Factory is in charge of creating a widget from a given model, and of initializing models
-class ActionNodeFactory extends SRD.AbstractNodeFactory {
+class ActionNodeFactory extends AbstractReactFactory {
 
     constructor(updateCanvas) {
         super("action");
         this.updateCanvas = updateCanvas;
     }
 
-    generateReactWidget(diagramEngine, node) {
-        return <ActionNodeWidget diagramEngine={diagramEngine} node={node} updateCanvas={this.updateCanvas} />;
+    generateReactWidget(event) {
+        return <ActionNodeWidget diagramEngine={this.engine} node={event.model} updateCanvas={this.updateCanvas} />;
     }
 
-    getNewInstance(initialConfig) {
+    generateModel(event) {
         return new ActionNodeModel();
     }
 

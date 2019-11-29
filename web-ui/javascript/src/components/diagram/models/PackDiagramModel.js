@@ -4,13 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import * as SRD from 'storm-react-diagrams'
+import { DiagramModel } from '@projectstorm/react-diagrams';
+
+import StageNodeModel from "./StageNodeModel";
+import CoverNodeModel from "./CoverNodeModel";
 
 
-class PackDiagramModel extends SRD.DiagramModel {
+class PackDiagramModel extends DiagramModel {
 
     constructor(title = 'Pack title', version = 1, description = '', thumbnail = '') {
-        super('pack');
+        super({
+            type: 'pack'
+        });
         this.title = title;
         this.version = version;
         this.description = description;
@@ -18,8 +23,8 @@ class PackDiagramModel extends SRD.DiagramModel {
     }
 
     getEntryPoint() {
-        return Object.values(this.nodes)
-            .filter(node => node.squareOne)[0];
+        return this.getNodes()
+            .filter(node => (node instanceof StageNodeModel || node instanceof CoverNodeModel) && node.isSquareOne())[0];
     }
 
 }

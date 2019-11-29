@@ -7,9 +7,8 @@
 import React from 'react';
 import {connect} from "react-redux";
 import { toast } from 'react-toastify';
-import * as SRD from 'storm-react-diagrams';
 import {withTranslation} from "react-i18next";
-import 'storm-react-diagrams/dist/style.min.css';
+import createEngine, { DefaultDiagramState } from '@projectstorm/react-diagrams';
 
 import StageNodeFactory from "./factories/StageNodeFactory";
 import ActionNodeFactory from "./factories/ActionNodeFactory";
@@ -34,19 +33,23 @@ class PackEditor extends React.Component {
     constructor(props) {
         super(props);
 
-        let engine = new SRD.DiagramEngine();
-        engine.installDefaultFactories();
+        let engine = createEngine();
+
+        // No loose links
+        const state = engine.getStateMachine().getCurrentState();
+        if (state instanceof DefaultDiagramState) {
+            state.dragNewLink.config.allowLooseLinks = false;
+        }
 
         let updateCanvas = () => {
-            engine.recalculatePortsVisually();
             engine.repaintCanvas();
             this.forceUpdate();
         };
-        engine.registerNodeFactory(new StageNodeFactory(updateCanvas));
-        engine.registerNodeFactory(new ActionNodeFactory(updateCanvas));
-        engine.registerNodeFactory(new CoverNodeFactory(updateCanvas));
-        engine.registerNodeFactory(new MenuNodeFactory(updateCanvas));
-        engine.registerNodeFactory(new StoryNodeFactory(updateCanvas));
+        engine.getNodeFactories().registerFactory(new StageNodeFactory(updateCanvas));
+        engine.getNodeFactories().registerFactory(new ActionNodeFactory(updateCanvas));
+        engine.getNodeFactories().registerFactory(new CoverNodeFactory(updateCanvas));
+        engine.getNodeFactories().registerFactory(new MenuNodeFactory(updateCanvas));
+        engine.getNodeFactories().registerFactory(new StoryNodeFactory(updateCanvas));
 
         this.state = {
             engine,
@@ -58,7 +61,7 @@ class PackEditor extends React.Component {
     componentDidMount() {
         if (this.props.editor.diagram) {
             let engine = this.state.engine;
-            engine.setDiagramModel(this.props.editor.diagram);
+            engine.setModel(this.props.editor.diagram);
             this.setState({
                 engine,
                 diagram: this.props.editor.diagram
@@ -69,7 +72,7 @@ class PackEditor extends React.Component {
     componentWillReceiveProps(nextProps, nextContext) {
         if (nextProps.editor.diagram && nextProps.editor.diagram !== this.state.diagram) {
             let engine = this.state.engine;
-            engine.setDiagramModel(nextProps.editor.diagram);
+            engine.setModel(nextProps.editor.diagram);
             this.setState({
                 engine,
                 diagram: nextProps.editor.diagram
@@ -79,8 +82,8 @@ class PackEditor extends React.Component {
 
     savePackToLibrary = () => {
         // Pack path is either stored (when open from library) or generated
-        let uuid = this.state.engine.diagramModel.getEntryPoint().getUuid();
-        let path = this.props.editor.libraryPath || this.state.engine.diagramModel.title.replace(' ', '_') + '-' + uuid + '-v' + this.state.engine.diagramModel.version + '.zip';
+        let uuid = this.state.engine.getModel().getEntryPoint().getUuid();
+        let path = this.props.editor.libraryPath || this.state.engine.getModel().title.replace(' ', '_') + '-' + uuid + '-v' + this.state.engine.getModel().version + '.zip';
         // Confirmation dialog if pack already in library
         if (this.props.library.packs.filter(pack => pack.path === path).length > 0) {
             this.showSaveConfirmDialog();
@@ -92,11 +95,11 @@ class PackEditor extends React.Component {
     doSavePackToLibrary = () => {
         const { t } = this.props;
         // Pack path is either stored (when open from library) or generated
-        let uuid = this.state.engine.diagramModel.getEntryPoint().getUuid();
-        let path = this.props.editor.libraryPath || this.state.engine.diagramModel.title.replace(' ', '_') + '-' + uuid + '-v' + this.state.engine.diagramModel.version + '.zip';
+        let uuid = this.state.engine.getModel().getEntryPoint().getUuid();
+        let path = this.props.editor.libraryPath || this.state.engine.getModel().title.replace(' ', '_') + '-' + uuid + '-v' + this.state.engine.getModel().version + '.zip';
         // Show toast
         let toastId = toast(t('toasts.editor.saving'), { autoClose: false });
-        writeToArchive(this.state.engine.diagramModel)
+        writeToArchive(this.state.engine.getModel())
             .then(blob => {
                 this.props.uploadPackToLibrary(uuid, path, blob)
                     .then(() => toast.update(toastId, { type: toast.TYPE.SUCCESS, render: t('toasts.editor.saved'), autoClose: 5000}));
@@ -120,12 +123,12 @@ class PackEditor extends React.Component {
     exportPack = () => {
         const { t } = this.props;
         let toastId = toast(t('toasts.editor.exporting'), { autoClose: false });
-        writeToArchive(this.state.engine.diagramModel)
+        writeToArchive(this.state.engine.getModel())
             .then(blob => {
                 toast.update(toastId, { type: toast.TYPE.SUCCESS, render: t('toasts.editor.exported'), autoClose: 5000});
                 var a = document.getElementById('download');
                 a.href = URL.createObjectURL(blob);
-                a.download = this.state.engine.diagramModel.title + '.zip';
+                a.download = this.state.engine.getModel().title + '.zip';
                 a.click();
                 URL.revokeObjectURL(a.href);
             })

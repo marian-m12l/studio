@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import * as SRD from 'storm-react-diagrams';
+import { NodeModel } from '@projectstorm/react-diagrams';
 import uuidv4 from "uuid/v4";
 
 import Stage from "./core/Stage";
@@ -12,15 +12,18 @@ import ActionPortModel from "./ActionPortModel";
 import StagePortModel from "./StagePortModel";
 
 
-class MenuNodeModel extends SRD.NodeModel {
+class MenuNodeModel extends NodeModel {
 
-    constructor(name = 'Menu title', uuid) {
-        super('menu');
-        this.uuid = uuid || uuidv4();
-        this.name = name;
-        this.fromPort = this.addPort(new ActionPortModel(true, SRD.Toolkit.UID(), "from"));
+    constructor(options = {}) {
+        super({
+            ...options,
+            type: 'menu'
+        });
+        this.uuid = options.uuid || uuidv4();
+        this.name = options.name || 'Menu title';
+        this.fromPort = this.addPort(new ActionPortModel("from", true));
         // Question stage
-        this.questionStage = new Stage(name+".questionstage");
+        this.questionStage = new Stage(this.name+".questionstage");
         this.questionStage.controls['autoplay'] = true;
         // Option stages
         this.optionsStages = [];
@@ -49,7 +52,7 @@ class MenuNodeModel extends SRD.NodeModel {
         this.optionsStages[index].controls['wheel'] = true;
         this.optionsStages[index].controls['ok'] = true;
         this.optionsStages[index].controls['home'] = true;
-        this.optionsOut[index] = this.addPort(new StagePortModel(false, SRD.Toolkit.UID(), "Option #"+(index+1)));
+        this.optionsOut[index] = this.addPort(new StagePortModel("Option #"+(index+1), false));
         return this.optionsOut[index];
     };
 

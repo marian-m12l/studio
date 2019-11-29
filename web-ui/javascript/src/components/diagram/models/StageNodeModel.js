@@ -4,30 +4,33 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import * as SRD from 'storm-react-diagrams';
+import { NodeModel } from '@projectstorm/react-diagrams';
 import uuidv4 from 'uuid/v4';
 
 import Stage from "./core/Stage";
 import StagePortModel from "./StagePortModel";
 
 
-class StageNodeModel extends SRD.NodeModel {
+class StageNodeModel extends NodeModel {
 
-    constructor(name = 'Stage title', uuid) {
-        super('stage');
-        this.uuid = uuid || uuidv4();
+    constructor(options = {}) {
+        super({
+            ...options,
+            type: options.type || 'stage'
+        });
+        this.uuid = options.uuid || uuidv4();
         this.squareOne = false;
-        this.stage = new Stage(name);
+        this.stage = new Stage(options.name || 'Stage title');
 
         this.fromPort = this.addPort(this.createIncomingPort("from"));
     }
 
     createIncomingPort(name) {
-        return new StagePortModel(true, SRD.Toolkit.UID(), name);
+        return new StagePortModel(name, true);
     }
 
     createOutgoingPort(name) {
-        return new StagePortModel(false, SRD.Toolkit.UID(), name);
+        return new StagePortModel(name, false);
     }
 
     getUuid() {

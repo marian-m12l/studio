@@ -51,7 +51,7 @@ export function readFromArchive(file) {
                 let actionNodes = new Map(
                     json.actionNodes.filter(node => (node.type || 'action') === 'action').map(node => {
                         // Build action node
-                        var actionNode = new ActionNodeModel(node.name);
+                        var actionNode = new ActionNodeModel({ name: node.name });
                         if (node.position) {
                             actionNode.setPosition(node.position.x, node.position.y);
                         }
@@ -81,7 +81,7 @@ export function readFromArchive(file) {
                         if (group[0].type.startsWith('story')) {
                             let storyVirtualStage = group.find(node => node.type === 'story');
                             let storyVirtualAction = group.find(node => node.type === 'story.storyaction');
-                            let storyNode = new StoryNodeModel(storyVirtualStage.name, storyVirtualStage.groupId);
+                            let storyNode = new StoryNodeModel({ name: storyVirtualStage.name, uuid: storyVirtualStage.groupId });
                             if (storyVirtualStage.controlSettings.home === false) {
                                 storyNode.setDisableHome(true);
                             }
@@ -106,7 +106,7 @@ export function readFromArchive(file) {
                         else if (group[0].type.startsWith('menu')) {
                             let menuQuestionVirtualStage = group.find(node => node.type === 'menu.questionstage');
                             let menuQuestionVirtualAction = group.find(node => node.type === 'menu.questionaction');
-                            let menuNode = new MenuNodeModel(menuQuestionVirtualStage.name, menuQuestionVirtualStage.groupId);
+                            let menuNode = new MenuNodeModel({ name: menuQuestionVirtualStage.name, uuid: menuQuestionVirtualStage.groupId });
                             // Async load from asset files
                             let audioPromise = new Promise((resolve, reject) => {
                                 if (menuQuestionVirtualStage.audio) {
@@ -155,7 +155,7 @@ export function readFromArchive(file) {
                         }
                         // Cover node (TODO make sure there is only one start node !)
                         else if (group[0].type.startsWith('cover')) {
-                            let coverNode = new CoverNodeModel(group[0].name, group[0].uuid);
+                            let coverNode = new CoverNodeModel({ name: group[0].name, uuid: group[0].uuid });
                             // Async load from asset files
                             let imagePromise = new Promise((resolve, reject) => {
                                 if (group[0].image) {
@@ -196,7 +196,7 @@ export function readFromArchive(file) {
                 let stageNodes = new Map(
                     json.stageNodes.filter(node => (node.type || 'stage') === 'stage').map(node => {
                         // Build stage node
-                        var stageNode = new StageNodeModel(node.name, node.uuid);
+                        var stageNode = new StageNodeModel({ name: node.name, uuid: node.uuid });
                         // Square one
                         stageNode.squareOne = node.squareOne || false;
                         // Async load from asset files
@@ -334,8 +334,7 @@ export function readFromArchive(file) {
                             let distributedNodes = distributeGraph(loadedModel);
                             distributedNodes.forEach(node => {
                                 let modelNode = loadedModel.getNode(node.id);
-                                modelNode.x = node.x - node.width / 2;
-                                modelNode.y = node.y - node.height / 2;
+                                modelNode.setPosition(node.x - node.width / 2, node.y - node.height / 2);
                             });
                         }
 
@@ -392,10 +391,20 @@ function getTransitionTargetNode(transition, actionNodes, simplifiedNodes) {
 
 
 
-const size = {
-    width: 220,
-    height: 160
-};
+function nodeSize(node) {
+    switch (node.getType()) {
+        case 'stage':
+            return { width: 185, height: 132 };
+        case 'action':
+            return { width: 150, height: 77 + 22*node.optionsIn.length };
+        case 'cover':
+            return { width: 150, height: 132 };
+        case 'menu':
+            return { width: 250, height: 141 + 74*node.optionsStages.length };
+        case 'story':
+            return { width: 150, height: 132 };
+    }
+}
 
 function distributeGraph(model) {
     let graph = new dagre.graphlib.Graph();
@@ -407,12 +416,12 @@ function distributeGraph(model) {
     });
     graph.setDefaultEdgeLabel(() => ({}));
 
-    Object.values(model.nodes)
+    model.getNodes()
         .forEach(node => {
-            graph.setNode(node.id, { ...size, id: node.id });
+            graph.setNode(node.getID(), { ...nodeSize(node), id: node.getID() });
         });
 
-    Object.values(model.links)
+    model.getLinks()
         .map(link => {
             return {
                 source: link.sourcePort.getNode().getID(),
