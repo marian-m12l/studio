@@ -5,25 +5,25 @@
  */
 
 import React from 'react';
-import * as SRD from 'storm-react-diagrams';
+import { AbstractReactFactory } from '@projectstorm/react-canvas-core';
 
 import MenuNodeModel from '../models/MenuNodeModel';
 import MenuNodeWidget from '../widgets/MenuNodeWidget';
 
 
 // Factory is in charge of creating a widget from a given model, and of initializing models
-class MenuNodeFactory extends SRD.AbstractNodeFactory {
+class MenuNodeFactory extends AbstractReactFactory {
 
     constructor(updateCanvas) {
         super("menu");
         this.updateCanvas = updateCanvas;
     }
 
-    generateReactWidget(diagramEngine, node) {
-        return <MenuNodeWidget diagramEngine={diagramEngine} node={node} updateCanvas={this.updateCanvas} />;
+    generateReactWidget(event) {
+        return <MenuNodeWidget diagramEngine={this.engine} node={event.model} updateCanvas={this.updateCanvas} />;
     }
 
-    getNewInstance(initialConfig) {
+    generateModel(event) {
         return new MenuNodeModel();
     }
 

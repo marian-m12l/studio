@@ -6,15 +6,15 @@
 
 import React from 'react';
 import PropTypes from "prop-types";
-import * as SRD from 'storm-react-diagrams';
 import {withTranslation} from "react-i18next";
 import {toast} from "react-toastify";
 import {connect} from "react-redux";
+import { DiagramEngine } from '@projectstorm/react-diagrams';
 
 import StoryNodeModel from "../models/StoryNodeModel";
 import {setViewerAction, setViewerDiagram, setViewerStage, showViewer} from "../../../actions";
 import EditableText from "./composites/EditableText";
-import PortWidget from "./PortWidget";
+import StudioPortWidget from "./StudioPortWidget";
 
 
 class StoryNodeWidget extends React.Component {
@@ -125,7 +125,7 @@ class StoryNodeWidget extends React.Component {
     openViewer = (e) => {
         if (this.isPreviewable()) {
             let viewingNode = this.props.node;
-            this.props.setViewerDiagram(this.props.diagramEngine.diagramModel);
+            this.props.setViewerDiagram(this.props.diagramEngine.getModel());
             this.props.setViewerStage(viewingNode);
             this.props.setViewerAction({
                 node: null,
@@ -179,19 +179,19 @@ class StoryNodeWidget extends React.Component {
                             <div className="output-port">
                                 {this.props.node.okPort && <>
                                     <span title={t('editor.diagram.story.options.customok')} className={'glyphicon glyphicon-ok'}/>
-                                    <PortWidget model={this.props.node.okPort} className="ok-port"/>
+                                    <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.okPort} className="ok-port"/>
                                 </>}
                             </div>
                             <div className="output-port">
                                 {this.props.node.homePort && <>
                                     <span title={t('editor.diagram.story.options.customhome')} className={'glyphicon glyphicon-home'}/>
-                                    <PortWidget model={this.props.node.homePort} className="home-port"/>
+                                    <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.homePort} className="home-port"/>
                                 </>}
                             </div>
                         </div>}
                     </div>
                 </div>
-                {this.props.node.fromPort && <PortWidget model={this.props.node.fromPort} className="from-port"/>}
+                {this.props.node.fromPort && <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.fromPort} className="from-port"/>}
             </div>
         );
     }
@@ -200,7 +200,7 @@ class StoryNodeWidget extends React.Component {
 
 StoryNodeWidget.propTypes = {
     node: PropTypes.instanceOf(StoryNodeModel).isRequired,
-    diagramEngine: PropTypes.instanceOf(SRD.DiagramEngine).isRequired,
+    diagramEngine: PropTypes.instanceOf(DiagramEngine).isRequired,
     updateCanvas: PropTypes.func.isRequired
 };
 

@@ -4,21 +4,24 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import * as SRD from 'storm-react-diagrams'
+import { NodeModel } from '@projectstorm/react-diagrams';
 
 import ActionPortModel from "./ActionPortModel";
 
 
-class ActionNodeModel extends SRD.NodeModel {
+class ActionNodeModel extends NodeModel {
 
-    constructor(name = 'Action title') {
-        super('action');
-        this.name = name;
+    constructor(options = {}) {
+        super({
+            ...options,
+            type: 'action'
+        });
+        this.name = options.name || 'Action title';
         // Available options
         this.optionsIn = [];
         this.optionsOut = [];
         // Random option
-        this.randomOptionIn = this.addPort(new ActionPortModel(true, SRD.Toolkit.UID(), "Random option"));
+        this.randomOptionIn = this.addPort(new ActionPortModel("Random option", true));
     }
 
     getUuid() {
@@ -35,8 +38,8 @@ class ActionNodeModel extends SRD.NodeModel {
 
     addOption = () => {
         let index = this.optionsOut.length;
-        this.optionsIn[index] = this.addPort(new ActionPortModel(true, SRD.Toolkit.UID(), "Option #"+(index+1)));
-        this.optionsOut[index] = this.addPort(new ActionPortModel(false, SRD.Toolkit.UID(), "Option #"+(index+1)));
+        this.optionsIn[index] = this.addPort(new ActionPortModel("Option #"+(index+1), true));
+        this.optionsOut[index] = this.addPort(new ActionPortModel("Option #"+(index+1), false));
         return {
             in: this.optionsIn[index],
             out: this.optionsOut[index]

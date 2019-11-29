@@ -8,12 +8,12 @@ import React from 'react';
 import PropTypes from "prop-types";
 import {connect} from "react-redux";
 import { toast } from 'react-toastify';
-import * as SRD from 'storm-react-diagrams';
 import {withTranslation} from "react-i18next";
+import { DiagramEngine } from '@projectstorm/react-diagrams';
 
 import StageNodeModel from "../models/StageNodeModel";
 import EditableText from "./composites/EditableText";
-import PortWidget from "./PortWidget";
+import StudioPortWidget from "./StudioPortWidget";
 import {showViewer, setViewerDiagram, setViewerStage, setViewerAction} from "../../../actions";
 
 
@@ -32,7 +32,7 @@ class StageNodeWidget extends React.Component {
     toggleSquareOne = () => {
         const { t } = this.props;
         // Make sure there is not already an entry point in the diagram
-        if (!this.props.node.isSquareOne() && this.props.diagramEngine.diagramModel.getEntryPoint()) {
+        if (!this.props.node.isSquareOne() && this.props.diagramEngine.getModel().getEntryPoint()) {
             toast.error(t('toasts.editor.tooManyEntryPoints'));
             return;
         }
@@ -177,7 +177,7 @@ class StageNodeWidget extends React.Component {
     openViewer = (e) => {
         if (this.isPreviewable()) {
             let viewingNode = this.props.node;
-            this.props.setViewerDiagram(this.props.diagramEngine.diagramModel);
+            this.props.setViewerDiagram(this.props.diagramEngine.getModel());
             this.props.setViewerStage(viewingNode);
             let fromLinks = viewingNode.fromPort ? Object.values(viewingNode.fromPort.getLinks()) : [];
             if (fromLinks.length > 0) {
@@ -199,7 +199,7 @@ class StageNodeWidget extends React.Component {
     render() {
         const { t } = this.props;
         return (
-            <div className={`studio-node basic-node stage-node ${this.props.node.squareOne && 'square-one'}`}>
+            <div className={`studio-node basic-node stage-node ${this.props.node.isSquareOne() && 'square-one'}`}>
                 <div className="node-content">
                     <div className="node-title">
                         <div className="ellipsis">
@@ -254,19 +254,19 @@ class StageNodeWidget extends React.Component {
                             <div className="output-port">
                                 {this.props.node.okPort && <>
                                     <span title={t('editor.diagram.story.options.customok')} className={'glyphicon glyphicon-ok'}/>
-                                    <PortWidget model={this.props.node.okPort} className="ok-port"/>
+                                    <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.okPort} className="ok-port"/>
                                 </>}
                             </div>
                             <div className="output-port">
                                 {this.props.node.homePort && <>
                                     <span title={t('editor.diagram.story.options.customhome')} className={'glyphicon glyphicon-home'}/>
-                                    <PortWidget model={this.props.node.homePort} className="home-port"/>
+                                    <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.homePort} className="home-port"/>
                                 </>}
                             </div>
                         </div>}
                     </div>
                 </div>
-                {this.props.node.fromPort && <PortWidget model={this.props.node.fromPort} className="from-port"/>}
+                {this.props.node.fromPort && <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.fromPort} className="from-port"/>}
             </div>
         );
     }
@@ -275,7 +275,7 @@ class StageNodeWidget extends React.Component {
 
 StageNodeWidget.propTypes = {
     node: PropTypes.instanceOf(StageNodeModel).isRequired,
-    diagramEngine: PropTypes.instanceOf(SRD.DiagramEngine).isRequired,
+    diagramEngine: PropTypes.instanceOf(DiagramEngine).isRequired,
     updateCanvas: PropTypes.func.isRequired
 };
 

@@ -5,25 +5,25 @@
  */
 
 import React from 'react';
-import * as SRD from 'storm-react-diagrams';
+import { AbstractReactFactory } from '@projectstorm/react-canvas-core';
 
 import CoverNodeModel from '../models/CoverNodeModel';
 import CoverNodeWidget from '../widgets/CoverNodeWidget';
 
 
 // Factory is in charge of creating a widget from a given model, and of initializing models
-class CoverNodeFactory extends SRD.AbstractNodeFactory {
+class CoverNodeFactory extends AbstractReactFactory {
 
     constructor(updateCanvas) {
         super("cover");
         this.updateCanvas = updateCanvas;
     }
 
-    generateReactWidget(diagramEngine, node) {
-        return <CoverNodeWidget diagramEngine={diagramEngine} node={node} updateCanvas={this.updateCanvas} />;
+    generateReactWidget(event) {
+        return <CoverNodeWidget diagramEngine={this.engine} node={event.model} updateCanvas={this.updateCanvas} />;
     }
 
-    getNewInstance(initialConfig) {
+    generateModel(event) {
         return new CoverNodeModel();
     }
 

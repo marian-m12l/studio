@@ -19,15 +19,15 @@ export async function writeToArchive(diagramModel) {
 
 
     // Actual action nodes
-    let actionNodes = Object.values(diagramModel.nodes)
+    let actionNodes = diagramModel.getNodes()
         .filter(node => node.getType() === 'action')
         .map(node => {
             return {
                 id: node.getID(),
-                name: node.name,
+                name: node.getName(),
                 position: {
-                    x: node.x,
-                    y: node.y
+                    x: node.getX(),
+                    y: node.getY()
                 },
                 options: node.optionsOut
                     .map(optionPort => {
@@ -39,7 +39,7 @@ export async function writeToArchive(diagramModel) {
         });
     // Virtual action nodes for 'menu' nodes: 1 for the question and 1 for the options
     actionNodes = actionNodes.concat(
-        Object.values(diagramModel.nodes)
+        diagramModel.getNodes()
             .filter(node => node.getType() === 'menu')
             .flatMap(node => {
                 // Action node for the question
@@ -49,8 +49,8 @@ export async function writeToArchive(diagramModel) {
                     groupId: node.getUuid(),
                     name: node.getName()+".questionaction",
                     position: {
-                        x: node.x,
-                        y: node.y
+                        x: node.getX(),
+                        y: node.getY()
                     },
                     options: [menuNodeQuestionStageUuid(node)]
                 };
@@ -68,7 +68,7 @@ export async function writeToArchive(diagramModel) {
     );
     // Virtual action nodes for 'story' nodes: 1 for each story
     actionNodes = actionNodes.concat(
-        Object.values(diagramModel.nodes)
+        diagramModel.getNodes()
             .filter(node => node.getType() === 'story')
             .map((node, idx) => {
                 return {
@@ -77,8 +77,8 @@ export async function writeToArchive(diagramModel) {
                     groupId: node.getUuid(),
                     name: node.getName()+".storyaction",
                     position: {
-                        x: node.x,
-                        y: node.y
+                        x: node.getX(),
+                        y: node.getY()
                     },
                     options: [node.getUuid()]   // Story stage node
                 };
@@ -87,7 +87,7 @@ export async function writeToArchive(diagramModel) {
 
 
     // Actual stage nodes, including 'cover' nodes and 'story' stage nodes
-    let stageNodesPromises = Object.values(diagramModel.nodes)
+    let stageNodesPromises = diagramModel.getNodes()
         .filter(node => node.getType() === 'stage' || node.getType() === 'cover' || node.getType() === 'story')
         .map(async node => {
             // Store assets as separate files in archive
@@ -130,8 +130,8 @@ export async function writeToArchive(diagramModel) {
                 position: node.getType() === 'story'
                     ? null      // Story stage node is not positioned
                     : {
-                        x: node.x,
-                        y: node.y
+                        x: node.getX(),
+                        y: node.getY()
                     },
                 image: imageFile,
                 audio: audioFile,
@@ -139,7 +139,7 @@ export async function writeToArchive(diagramModel) {
                 homeTransition: buildTransitionObject(homeTarget),
                 controlSettings: node.getControls()
             };
-            if (node.squareOne) {
+            if (node.isSquareOne()) {
                 stage.squareOne = true;
             }
             if (node.getType() === 'story') {
@@ -149,7 +149,7 @@ export async function writeToArchive(diagramModel) {
         });
     // Virtual stage nodes for 'menu' nodes: 1 for the question and 1 for each option
     stageNodesPromises = stageNodesPromises.concat(
-        Object.values(diagramModel.nodes)
+        diagramModel.getNodes()
             .filter(node => node.getType() === 'menu')
             .map(async node => {
                 // Store assets as separate files in archive
@@ -165,7 +165,7 @@ export async function writeToArchive(diagramModel) {
                 // Stage node for the question
                 let questionStageNode = {
                     uuid: menuNodeQuestionStageUuid(node),
-                    type: node.type+".questionstage",
+                    type: node.getType()+".questionstage",
                     groupId: node.getUuid(),
                     name: node.getName(),
                     image: null,
@@ -233,7 +233,7 @@ export async function writeToArchive(diagramModel) {
                     }
                     return {
                         uuid: menuNodeOptionStageUuid(node, idx),
-                        type: node.type+".optionstage",
+                        type: node.getType()+".optionstage",
                         groupId: node.getUuid(),
                         name: node.getOptionName(idx),
                         image: imageFile,

@@ -6,15 +6,15 @@
 
 import React from 'react';
 import PropTypes from "prop-types";
-import * as SRD from 'storm-react-diagrams';
 import {withTranslation} from "react-i18next";
 import {toast} from "react-toastify";
 import {connect} from "react-redux";
+import { DiagramEngine } from '@projectstorm/react-diagrams';
 
 import MenuNodeModel from "../models/MenuNodeModel";
 import {setViewerAction, setViewerDiagram, setViewerStage, showViewer} from "../../../actions";
 import EditableText from "./composites/EditableText";
-import PortWidget from "./PortWidget";
+import StudioPortWidget from "./StudioPortWidget";
 
 
 class MenuNodeWidget extends React.Component {
@@ -261,8 +261,8 @@ class MenuNodeWidget extends React.Component {
     openViewer = (e) => {
         if (this.isPreviewable()) {
             let viewingNode = this.props.node;
-            this.props.setViewerDiagram(this.props.diagramEngine.diagramModel);
-            let [stage, action] = viewingNode.onEnter(viewingNode.fromPort, this.props.diagramEngine.diagramModel);
+            this.props.setViewerDiagram(this.props.diagramEngine.getModel());
+            let [stage, action] = viewingNode.onEnter(viewingNode.fromPort, this.props.diagramEngine.getModel());
             this.props.setViewerStage(stage);
             this.props.setViewerAction(action);
             this.props.showViewer();
@@ -350,7 +350,7 @@ class MenuNodeWidget extends React.Component {
                                             </div>
                                         </div>
                                     </div>
-                                    <PortWidget model={this.props.node.optionsOut[idx]} className="option-port"/>
+                                    <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.optionsOut[idx]} className="option-port"/>
                                 </div>
                             )}
                             <div className="option">
@@ -366,7 +366,7 @@ class MenuNodeWidget extends React.Component {
                         </div>
                     </div>
                 </div>
-                {this.props.node.fromPort && <PortWidget model={this.props.node.fromPort} className="from-port"/>}
+                {this.props.node.fromPort && <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.fromPort} className="from-port"/>}
             </div>
         );
     }
@@ -375,7 +375,7 @@ class MenuNodeWidget extends React.Component {
 
 MenuNodeWidget.propTypes = {
     node: PropTypes.instanceOf(MenuNodeModel).isRequired,
-    diagramEngine: PropTypes.instanceOf(SRD.DiagramEngine).isRequired,
+    diagramEngine: PropTypes.instanceOf(DiagramEngine).isRequired,
     updateCanvas: PropTypes.func.isRequired
 };
 
