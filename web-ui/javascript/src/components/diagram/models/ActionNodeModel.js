@@ -24,10 +24,6 @@ class ActionNodeModel extends NodeModel {
         this.randomOptionIn = this.addPort(new ActionPortModel("Random option", true));
     }
 
-    getUuid() {
-        return this.uuid;
-    }
-
     getName() {
         return this.name;
     }
@@ -36,7 +32,7 @@ class ActionNodeModel extends NodeModel {
         this.name = name;
     }
 
-    addOption = () => {
+    addOption() {
         let index = this.optionsOut.length;
         this.optionsIn[index] = this.addPort(new ActionPortModel("Option #"+(index+1), true));
         this.optionsOut[index] = this.addPort(new ActionPortModel("Option #"+(index+1), false));
@@ -46,7 +42,7 @@ class ActionNodeModel extends NodeModel {
         };
     };
 
-    removeOption = (idx=-1) => {
+    removeOption(idx=-1) {
         if (this.optionsIn.length > 1) {
             // Remove ports from list
             let optionInPort = this.optionsIn.splice(idx, 1)[0];
@@ -114,6 +110,13 @@ class ActionNodeModel extends NodeModel {
                 }
             ];
         }
+    }
+
+    doClone(lookupTable = {}, clone) {
+        super.doClone(lookupTable, clone);
+        clone.optionsIn = this.optionsIn.map(optionInPort => optionInPort.clone(lookupTable));
+        clone.randomOptionIn = this.randomOptionIn.clone(lookupTable);
+        clone.optionsOut = this.optionsOut.map(optionOutPort => optionOutPort.clone(lookupTable));
     }
 
 }

@@ -45,7 +45,7 @@ class MenuNodeModel extends NodeModel {
         this.questionStage.name = name+".questionstage";
     }
 
-    addOption = () => {
+    addOption() {
         let index = this.optionsStages.length;
 
         this.optionsStages[index] = new Stage(`Option #${index+1}`);
@@ -56,7 +56,7 @@ class MenuNodeModel extends NodeModel {
         return this.optionsOut[index];
     };
 
-    removeOption = (idx=-1) => {
+    removeOption(idx=-1) {
         // Keep at least one option
         if (this.optionsStages.length > 1) {
             // Remove stages and ports from list
@@ -206,6 +206,15 @@ class MenuNodeModel extends NodeModel {
                 }
             }
         };
+    }
+
+    doClone(lookupTable = {}, clone) {
+        super.doClone(lookupTable, clone);
+        clone.uuid = uuidv4();
+        clone.fromPort = this.fromPort.clone(lookupTable);
+        clone.questionStage = this.questionStage.clone();
+        clone.optionsStages = this.optionsStages.map(optionStage => optionStage.clone());
+        clone.optionsOut = this.optionsOut.map(optionOutPort => optionOutPort.clone(lookupTable));
     }
 
 }

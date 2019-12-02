@@ -47,8 +47,11 @@
       "stage": "Nœud de scène",
       "action": "Nœud d'action"
     },
+    "tools": {
+      "zoom": "Afficher le diagramme entier",
+      "clone": "Dupliquer la sélection"
+    },
     "diagram": {
-      "editTitle": "Éditer le titre",
       "editText": "Cliquez pour modifier",
       "stage": {
         "controls": {
@@ -147,7 +150,8 @@
       "thumbWrongType": "La miniature doit être au format PNG.",
       "imageAssetWrongType": "Les formats d'image supportés sont : BMP, JPEG, PNG.",
       "audioAssetWrongType": "Les formats audio supportés sont : WAV, MP3, OGG.",
-      "tooManyEntryPoints": "Un pack d'histoires ne peut avoir qu'un seul point d'entrée."
+      "tooManyEntryPoints": "Un pack d'histoires ne peut avoir qu'un seul point d'entrée.",
+      "cannotCloneCoverNode": "Le nœud départ ne peut pas être dupliqué."
     },
     "viewer": {
       "missingPrev": "Impossible de trouver l'option précédente.",

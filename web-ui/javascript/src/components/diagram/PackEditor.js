@@ -17,6 +17,7 @@ import MenuNodeFactory from "./factories/MenuNodeFactory";
 import StoryNodeFactory from "./factories/StoryNodeFactory";
 import PackDiagramModel from "./models/PackDiagramModel";
 import PackDiagramWidget from "./widgets/PackDiagramWidget";
+import FixedZoomCanvasAction from "./actions/FixedZoomCanvasAction";
 import Modal from "../Modal";
 import {writeToArchive} from "../../utils/writer";
 import {
@@ -33,7 +34,9 @@ class PackEditor extends React.Component {
     constructor(props) {
         super(props);
 
-        let engine = createEngine();
+        let engine = createEngine({registerDefaultZoomCanvasAction: false});
+
+        engine.getActionEventBus().registerAction(new FixedZoomCanvasAction());
 
         // No loose links
         const state = engine.getStateMachine().getCurrentState();
@@ -43,7 +46,6 @@ class PackEditor extends React.Component {
 
         let updateCanvas = () => {
             engine.repaintCanvas();
-            this.forceUpdate();
         };
         engine.getNodeFactories().registerFactory(new StageNodeFactory(updateCanvas));
         engine.getNodeFactories().registerFactory(new ActionNodeFactory(updateCanvas));

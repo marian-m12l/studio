@@ -18,16 +18,7 @@ class ActionNodeWidget extends React.Component {
 
     constructor(props) {
         super(props);
-        this.state = {
-            beingEdited: false
-        };
     }
-
-    toggleEdit = () => {
-        this.setState({
-            beingEdited: !this.state.beingEdited
-        });
-    };
 
     editName = (event) => {
         this.props.node.setName(event.target.value);
@@ -62,11 +53,11 @@ class ActionNodeWidget extends React.Component {
     render() {
         const { t } = this.props;
         return (
-            <div className='studio-node basic-node action-node'>
+            <div className={`studio-node basic-node action-node ${this.props.selected && 'selected'}`}>
                 <div className="node-content">
                     <div className="node-title">
                         <div className="ellipsis">
-                            <EditableText value={this.props.node.getName()} onChange={this.editName}/>
+                            <EditableText value={this.props.node.getName()} onChange={this.editName} engine={this.props.diagramEngine}/>
                         </div>
                     </div>
                     <div className="options">
@@ -97,7 +88,8 @@ class ActionNodeWidget extends React.Component {
 ActionNodeWidget.propTypes = {
     node: PropTypes.instanceOf(ActionNodeModel).isRequired,
     diagramEngine: PropTypes.instanceOf(DiagramEngine).isRequired,
-    updateCanvas: PropTypes.func.isRequired
+    updateCanvas: PropTypes.func.isRequired,
+    selected: PropTypes.bool.isRequired
 };
 
 export default withTranslation()(ActionNodeWidget);

@@ -170,14 +170,14 @@ class CoverNodeWidget extends React.Component {
     render() {
         const { t } = this.props;
         return (
-            <div className="studio-node user-friendly-node cover-node">
+            <div className={`studio-node user-friendly-node cover-node ${this.props.selected && 'selected'}`}>
                 <div className="node-header">
                     <span className="dropzone glyphicon glyphicon-book" title={t('editor.tray.cover')}/>
                 </div>
                 <div className="node-content">
                     <div className="node-title">
                         <div className="ellipsis">
-                            <EditableText value={this.props.node.getName()} onChange={this.editName}/>
+                            <EditableText value={this.props.node.getName()} onChange={this.editName} engine={this.props.diagramEngine}/>
                         </div>
                         <div className={`preview ${!this.isPreviewable() ? 'disabled' : ''}`} title={t('editor.diagram.stage.preview')} onClick={this.openViewer}>
                             <span className="glyphicon glyphicon-eye-open"/>
@@ -224,7 +224,8 @@ class CoverNodeWidget extends React.Component {
 CoverNodeWidget.propTypes = {
     node: PropTypes.instanceOf(CoverNodeModel).isRequired,
     diagramEngine: PropTypes.instanceOf(DiagramEngine).isRequired,
-    updateCanvas: PropTypes.func.isRequired
+    updateCanvas: PropTypes.func.isRequired,
+    selected: PropTypes.bool.isRequired
 };
 
 const mapStateToProps = (state, ownProps) => ({
