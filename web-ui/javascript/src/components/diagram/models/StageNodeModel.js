@@ -182,6 +182,22 @@ class StageNodeModel extends NodeModel {
         }
     }
 
+    doClone(lookupTable = {}, clone) {
+        super.doClone(lookupTable, clone);
+        clone.uuid = uuidv4();
+        clone.squareOne = false;    // Cannot duplicate a square one node
+        clone.stage = this.stage.clone();
+        if (this.fromPort) {
+            clone.fromPort = this.fromPort.clone(lookupTable);
+        }
+        if (this.okPort) {
+            clone.okPort = this.okPort.clone(lookupTable);
+        }
+        if (this.homePort) {
+            clone.homePort = this.homePort.clone(lookupTable);
+        }
+    }
+
 }
 
 export default StageNodeModel;

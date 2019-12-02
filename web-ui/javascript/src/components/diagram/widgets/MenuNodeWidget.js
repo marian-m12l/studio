@@ -272,14 +272,14 @@ class MenuNodeWidget extends React.Component {
     render() {
         const { t } = this.props;
         return (
-            <div className="studio-node user-friendly-node menu-node">
+            <div className={`studio-node user-friendly-node menu-node ${this.props.selected && 'selected'}`}>
                 <div className="node-header">
                     <span className="dropzone glyphicon glyphicon-question-sign" title={t('editor.tray.menu')}/>
                 </div>
                 <div className="node-content">
                     <div className="node-title">
                         <div className="ellipsis">
-                            <EditableText value={this.props.node.getName()} onChange={this.editName}/>
+                            <EditableText value={this.props.node.getName()} onChange={this.editName} engine={this.props.diagramEngine}/>
                         </div>
                         <div className={`preview ${!this.isPreviewable() ? 'disabled' : ''}`} title={t('editor.diagram.stage.preview')} onClick={this.openViewer}>
                             <span className="glyphicon glyphicon-eye-open"/>
@@ -317,7 +317,7 @@ class MenuNodeWidget extends React.Component {
                                     </div>
                                     <div className="name-and-assets">
                                         <div className="option-name">
-                                            <EditableText value={this.props.node.getOptionName(idx)} onChange={this.editOptionName(idx)}/>
+                                            <EditableText value={this.props.node.getOptionName(idx)} onChange={this.editOptionName(idx)} engine={this.props.diagramEngine}/>
                                         </div>
                                         <div className="option-assets">
                                             <div className="asset asset-left">
@@ -376,7 +376,8 @@ class MenuNodeWidget extends React.Component {
 MenuNodeWidget.propTypes = {
     node: PropTypes.instanceOf(MenuNodeModel).isRequired,
     diagramEngine: PropTypes.instanceOf(DiagramEngine).isRequired,
-    updateCanvas: PropTypes.func.isRequired
+    updateCanvas: PropTypes.func.isRequired,
+    selected: PropTypes.bool.isRequired
 };
 
 const mapStateToProps = (state, ownProps) => ({

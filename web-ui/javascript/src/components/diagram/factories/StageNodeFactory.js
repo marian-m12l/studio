@@ -20,7 +20,10 @@ class StageNodeFactory extends AbstractReactFactory {
     }
 
     generateReactWidget(event) {
-        return <StageNodeWidget diagramEngine={this.engine} node={event.model} updateCanvas={this.updateCanvas} />;
+        return <StageNodeWidget diagramEngine={this.engine}
+                                node={event.model}
+                                selected={event.model.isSelected() || false}
+                                updateCanvas={this.updateCanvas} />;
     }
 
     generateModel(event) {

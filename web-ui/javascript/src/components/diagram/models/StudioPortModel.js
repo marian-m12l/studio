@@ -33,6 +33,11 @@ class StudioPortModel extends PortModel {
         return new DefaultLinkModel();
     }
 
+    doClone(lookupTable = {}, clone) {
+        super.doClone(lookupTable, clone);
+        clone.options.name = 'studio-port-' + StudioPortModel.counter++;
+    }
+
 }
 
 export default StudioPortModel;

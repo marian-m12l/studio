@@ -20,7 +20,10 @@ class MenuNodeFactory extends AbstractReactFactory {
     }
 
     generateReactWidget(event) {
-        return <MenuNodeWidget diagramEngine={this.engine} node={event.model} updateCanvas={this.updateCanvas} />;
+        return <MenuNodeWidget diagramEngine={this.engine}
+                               node={event.model}
+                               selected={event.model.isSelected() || false}
+                               updateCanvas={this.updateCanvas} />;
     }
 
     generateModel(event) {

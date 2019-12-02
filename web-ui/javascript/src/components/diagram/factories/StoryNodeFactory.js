@@ -20,7 +20,10 @@ class StoryNodeFactory extends AbstractReactFactory {
     }
 
     generateReactWidget(event) {
-        return <StoryNodeWidget diagramEngine={this.engine} node={event.model} updateCanvas={this.updateCanvas} />;
+        return <StoryNodeWidget diagramEngine={this.engine}
+                                node={event.model}
+                                selected={event.model.isSelected() || false}
+                                updateCanvas={this.updateCanvas} />;
     }
 
     generateModel(event) {

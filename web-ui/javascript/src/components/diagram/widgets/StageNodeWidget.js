@@ -199,11 +199,11 @@ class StageNodeWidget extends React.Component {
     render() {
         const { t } = this.props;
         return (
-            <div className={`studio-node basic-node stage-node ${this.props.node.isSquareOne() && 'square-one'}`}>
+            <div className={`studio-node basic-node stage-node ${this.props.selected && 'selected'} ${this.props.node.isSquareOne() && 'square-one'}`}>
                 <div className="node-content">
                     <div className="node-title">
                         <div className="ellipsis">
-                            <EditableText value={this.props.node.getName()} onChange={this.editName}/>
+                            <EditableText value={this.props.node.getName()} onChange={this.editName} engine={this.props.diagramEngine}/>
                         </div>
                         <div className={`preview ${!this.isPreviewable() ? 'disabled' : ''}`} title={t('editor.diagram.stage.preview')} onClick={this.openViewer}>
                             <span className="glyphicon glyphicon-eye-open"/>
@@ -276,7 +276,8 @@ class StageNodeWidget extends React.Component {
 StageNodeWidget.propTypes = {
     node: PropTypes.instanceOf(StageNodeModel).isRequired,
     diagramEngine: PropTypes.instanceOf(DiagramEngine).isRequired,
-    updateCanvas: PropTypes.func.isRequired
+    updateCanvas: PropTypes.func.isRequired,
+    selected: PropTypes.bool.isRequired
 };
 
 const mapStateToProps = (state, ownProps) => ({
