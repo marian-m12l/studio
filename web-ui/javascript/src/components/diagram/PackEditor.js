@@ -15,6 +15,8 @@ import ActionNodeFactory from "./factories/ActionNodeFactory";
 import CoverNodeFactory from "./factories/CoverNodeFactory";
 import MenuNodeFactory from "./factories/MenuNodeFactory";
 import StoryNodeFactory from "./factories/StoryNodeFactory";
+import StudioLinkFactory from "./factories/StudioLinkFactory";
+import StudioLinkLayerFactory from "./factories/StudioLinkLayerFactory";
 import PackDiagramModel from "./models/PackDiagramModel";
 import PackDiagramWidget from "./widgets/PackDiagramWidget";
 import FixedZoomCanvasAction from "./actions/FixedZoomCanvasAction";
@@ -47,11 +49,14 @@ class PackEditor extends React.Component {
         let updateCanvas = () => {
             engine.repaintCanvas();
         };
+        engine.getLayerFactories().deregisterFactory('diagram-links');
+        engine.getLayerFactories().registerFactory(new StudioLinkLayerFactory());
         engine.getNodeFactories().registerFactory(new StageNodeFactory(updateCanvas));
         engine.getNodeFactories().registerFactory(new ActionNodeFactory(updateCanvas));
         engine.getNodeFactories().registerFactory(new CoverNodeFactory(updateCanvas));
         engine.getNodeFactories().registerFactory(new MenuNodeFactory(updateCanvas));
         engine.getNodeFactories().registerFactory(new StoryNodeFactory(updateCanvas));
+        engine.getLinkFactories().registerFactory(new StudioLinkFactory());
 
         this.state = {
             engine,

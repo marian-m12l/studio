@@ -5,7 +5,8 @@
  */
 
 import { PortModel, PortModelAlignment } from '@projectstorm/react-diagrams';
-import { DefaultLinkModel } from '@projectstorm/react-diagrams-defaults';
+
+import StudioLinkModel from "./StudioLinkModel";
 
 
 class StudioPortModel extends PortModel {
@@ -30,7 +31,7 @@ class StudioPortModel extends PortModel {
     }
 
     createLinkModel() {
-        return new DefaultLinkModel();
+        return new StudioLinkModel(this.inbound);
     }
 
     doClone(lookupTable = {}, clone) {
