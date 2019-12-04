@@ -6,15 +6,15 @@
 
 import React from 'react';
 import PropTypes from "prop-types";
-import * as SRD from 'storm-react-diagrams';
 import {withTranslation} from "react-i18next";
 import {toast} from "react-toastify";
 import {connect} from "react-redux";
+import { DiagramEngine } from '@projectstorm/react-diagrams';
 
 import CoverNodeModel from "../models/CoverNodeModel";
 import {setViewerAction, setViewerDiagram, setViewerStage, showViewer} from "../../../actions";
 import EditableText from "./composites/EditableText";
-import PortWidget from "./PortWidget";
+import StudioPortWidget from "./StudioPortWidget";
 
 
 class CoverNodeWidget extends React.Component {
@@ -157,7 +157,7 @@ class CoverNodeWidget extends React.Component {
     openViewer = (e) => {
         if (this.isPreviewable()) {
             let viewingNode = this.props.node;
-            this.props.setViewerDiagram(this.props.diagramEngine.diagramModel);
+            this.props.setViewerDiagram(this.props.diagramEngine.getModel());
             this.props.setViewerStage(viewingNode);
             this.props.setViewerAction({
                 node: null,
@@ -170,14 +170,14 @@ class CoverNodeWidget extends React.Component {
     render() {
         const { t } = this.props;
         return (
-            <div className="studio-node user-friendly-node cover-node">
+            <div className={`studio-node user-friendly-node cover-node ${this.props.selected && 'selected'}`}>
                 <div className="node-header">
                     <span className="dropzone glyphicon glyphicon-book" title={t('editor.tray.cover')}/>
                 </div>
                 <div className="node-content">
                     <div className="node-title">
                         <div className="ellipsis">
-                            <EditableText value={this.props.node.getName()} onChange={this.editName}/>
+                            <EditableText value={this.props.node.getName()} onChange={this.editName} engine={this.props.diagramEngine}/>
                         </div>
                         <div className={`preview ${!this.isPreviewable() ? 'disabled' : ''}`} title={t('editor.diagram.stage.preview')} onClick={this.openViewer}>
                             <span className="glyphicon glyphicon-eye-open"/>
@@ -214,7 +214,7 @@ class CoverNodeWidget extends React.Component {
                         </div>
                     </div>
                 </div>
-                {this.props.node.okPort && <PortWidget model={this.props.node.okPort} className="ok-port"/>}
+                {this.props.node.okPort && <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.okPort} className="ok-port"/>}
             </div>
         );
     }
@@ -223,8 +223,9 @@ class CoverNodeWidget extends React.Component {
 
 CoverNodeWidget.propTypes = {
     node: PropTypes.instanceOf(CoverNodeModel).isRequired,
-    diagramEngine: PropTypes.instanceOf(SRD.DiagramEngine).isRequired,
-    updateCanvas: PropTypes.func.isRequired
+    diagramEngine: PropTypes.instanceOf(DiagramEngine).isRequired,
+    updateCanvas: PropTypes.func.isRequired,
+    selected: PropTypes.bool.isRequired
 };
 
 const mapStateToProps = (state, ownProps) => ({

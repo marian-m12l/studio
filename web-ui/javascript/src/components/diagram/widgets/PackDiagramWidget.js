@@ -6,9 +6,10 @@
 
 import React from 'react';
 import PropTypes from "prop-types";
-import * as SRD from 'storm-react-diagrams';
 import {toast} from "react-toastify";
 import {withTranslation} from "react-i18next";
+import { DiagramEngine, NodeModel, LinkModel } from '@projectstorm/react-diagrams';
+import { CanvasWidget } from '@projectstorm/react-canvas-core';
 
 import StageNodeModel from "../models/StageNodeModel";
 import ActionNodeModel from "../models/ActionNodeModel";
@@ -25,19 +26,32 @@ class PackDiagramWidget extends React.Component {
         super(props);
     }
 
+    getDiagramModel = () => {
+        return (this.props.diagramEngine.getModel() || {});
+    };
+
     changeTitle = (e) => {
-        this.props.diagramEngine.getDiagramModel().title = e.target.value;
+        this.props.diagramEngine.getModel().title = e.target.value;
         this.forceUpdate();
     };
 
     changeVersion = (e) => {
-        this.props.diagramEngine.getDiagramModel().version = e.target.value;
+        this.props.diagramEngine.getModel().version = e.target.value;
         this.forceUpdate();
     };
 
     changeDescription = (e) => {
-        this.props.diagramEngine.getDiagramModel().description = e.target.value;
+        this.props.diagramEngine.getModel().description = e.target.value;
         this.forceUpdate();
+    };
+
+    onInputFocus = (e) => {
+        // Lock model when typing text to avoid deletion of selection
+        this.props.diagramEngine.getModel().setLocked(true);
+    };
+
+    onInputBlur = (e) => {
+        this.props.diagramEngine.getModel().setLocked(false);
     };
 
     showThumbnailSelector = () => {
@@ -47,6 +61,9 @@ class PackDiagramWidget extends React.Component {
     changeThumbnail = (event) => {
         const { t } = this.props;
         let file = event.target.files[0];
+        if (!file) {
+            return;
+        }
         if (file.type !== 'image/png') {
             toast.error(t('toasts.editor.thumbWrongType'));
             return;
@@ -55,7 +72,7 @@ class PackDiagramWidget extends React.Component {
         let that = this;
         reader.addEventListener("load", () => {
             console.log(reader.result);
-            that.props.diagramEngine.getDiagramModel().thumbnail = reader.result;
+            that.props.diagramEngine.getModel().thumbnail = reader.result;
             that.forceUpdate();
         }, false);
         reader.readAsDataURL(file);
@@ -73,38 +90,87 @@ class PackDiagramWidget extends React.Component {
         var node = null;
         switch (data.type) {
             case "stage":
-                node = new StageNodeModel("Stage node");
+                node = new StageNodeModel({ name: "Stage node" });
                 // Make it the "square one" if there are no entry point in the diagram
-                if (!this.props.diagramEngine.getDiagramModel().getEntryPoint()) {
+                if (!this.props.diagramEngine.getModel().getEntryPoint()) {
                     node.setSquareOne(true);
                 }
                 break;
             case "action":
                 // One option by default
-                node = new ActionNodeModel("Action node");
+                node = new ActionNodeModel({ name: "Action node" });
                 node.addOption();
                 break;
             case "cover":
                 // Make sure there is only one entry point per diagram
-                if (this.props.diagramEngine.getDiagramModel().getEntryPoint()) {
+                if (this.props.diagramEngine.getModel().getEntryPoint()) {
                     toast.error(t('toasts.editor.tooManyEntryPoints'));
                     return;
                 }
-                node = new CoverNodeModel("Cover node");
+                node = new CoverNodeModel({ name: "Cover node" });
                 break;
             case "menu":
                 // Two options by default
-                node = new MenuNodeModel("Menu node");
+                node = new MenuNodeModel({ name: "Menu node" });
                 node.addOption();
                 node.addOption();
                 break;
             case "story":
-                node = new StoryNodeModel("Story node");
+                node = new StoryNodeModel({ name: "Story node" });
                 break;
         }
         var points = this.props.diagramEngine.getRelativeMousePoint(event);
         node.setPosition(points.x, points.y);
-        this.props.diagramEngine.getDiagramModel().addNode(node);
+        this.props.diagramEngine.getModel().addNode(node);
+        this.forceUpdate();
+    };
+
+    zoomToFit = () => {
+        this.props.diagramEngine.zoomToFit();
+    };
+
+    cloneSelection = () => {
+        const { t } = this.props;
+        let engine = this.props.diagramEngine;
+        let offset = { x: 100, y: 100 };
+        let model = engine.getModel();
+
+        // Cannot clone the cover node
+        if (model.getSelectedEntities().find(item => item instanceof CoverNodeModel)) {
+            toast.error(t('toasts.editor.cannotCloneCoverNode'));
+            return;
+        }
+
+        let itemMap = {};
+
+        // First, clone all nodes (and their ports)
+        model.getSelectedEntities().filter(item => item instanceof NodeModel).forEach(item => {
+            let newItem = item.clone(itemMap);
+
+            // Unselect old items and select new items
+            item.setSelected(false);
+            newItem.setSelected(true);
+
+            // Offset the nodes slightly
+                newItem.setPosition(newItem.getX() + offset.x, newItem.getY() + offset.y);
+                model.addNode(newItem);
+        });
+
+        // Next, clone links (because ports are automatically renamed when cloned, links must be cloned afterwards to avoid corrupting ports map on node models)
+        model.getSelectedEntities().filter(item => item instanceof LinkModel).forEach(item => {
+            let newItem = item.clone(itemMap);
+
+            // Unselect old items and select new items
+            item.setSelected(false);
+            newItem.setSelected(true);
+
+            // Offset the link points
+            newItem.getPoints().forEach(p => {
+                p.setPosition(p.getX() + offset.x, p.getY() + offset.y);
+            });
+            model.addLink(newItem);
+        });
+
         this.forceUpdate();
     };
 
@@ -115,14 +181,14 @@ class PackDiagramWidget extends React.Component {
 
             {/* Metadata */}
             <label htmlFor="pack-title">{t('editor.metadata.title')}</label>
-            <input id="pack-title" type="text" value={this.props.diagramEngine.getDiagramModel().title || ''} onChange={this.changeTitle} onKeyUp={e => e.stopPropagation()}/>
+            <input id="pack-title" type="text" value={this.getDiagramModel().title || ''} onChange={this.changeTitle} onFocus={this.onInputFocus} onBlur={this.onInputBlur}/>
             <label htmlFor="pack-version">{t('editor.metadata.version')}</label>
-            <input id="pack-version" type="number" value={this.props.diagramEngine.getDiagramModel().version || ''} onChange={this.changeVersion} onKeyUp={e => e.stopPropagation()}/>
+            <input id="pack-version" type="number" value={this.getDiagramModel().version || ''} onChange={this.changeVersion} onFocus={this.onInputFocus} onBlur={this.onInputBlur}/>
             <label htmlFor="pack-description">{t('editor.metadata.desc')}</label>
-            <textarea id="pack-description" value={this.props.diagramEngine.getDiagramModel().description || ''} style={{display: 'inline-block'}} onChange={this.changeDescription} onKeyUp={e => e.stopPropagation()}/>
+            <textarea id="pack-description" value={this.getDiagramModel().description || ''} style={{display: 'inline-block'}} onChange={this.changeDescription} onFocus={this.onInputFocus} onBlur={this.onInputBlur}/>
             <label htmlFor="pack-thumb">{t('editor.metadata.thumb')}</label>
             <input type="file" id="pack-thumb" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.changeThumbnail} />
-            <img src={this.props.diagramEngine.getDiagramModel().thumbnail || defaultImage} width="128" height="128" onClick={this.showThumbnailSelector} />
+            <img src={this.getDiagramModel().thumbnail || defaultImage} width="128" height="128" onClick={this.showThumbnailSelector} />
 
             <div className="content">
                 {/* Node tray */}
@@ -146,11 +212,16 @@ class PackDiagramWidget extends React.Component {
                 </TrayWidget>
 
                 {/* Diagram */}
-                <div className="diagram-drop-zone"
+                {this.props.diagramEngine.getModel() && <div className="diagram-drop-zone"
                      onDrop={this.onDropNode}
                      onDragOver={event => { event.preventDefault(); }}>
-                    <SRD.DiagramWidget className="storm-diagrams-canvas" diagramEngine={this.props.diagramEngine}/>
-                </div>
+                    <CanvasWidget className="storm-diagrams-canvas" engine={this.props.diagramEngine}/>
+                    {/* Tools */}
+                    <div className="toolbelt">
+                        <div className="tool"><span title={t('editor.tools.zoom')} className="btn btn-default glyphicon glyphicon-fullscreen" onClick={this.zoomToFit}/></div>
+                        <div className="tool"><span title={t('editor.tools.clone')} className="btn btn-default glyphicon glyphicon-duplicate" onClick={this.cloneSelection}/></div>
+                    </div>
+                </div>}
             </div>
 
         </div>);
@@ -159,7 +230,7 @@ class PackDiagramWidget extends React.Component {
 }
 
 PackDiagramWidget.propTypes = {
-    diagramEngine: PropTypes.instanceOf(SRD.DiagramEngine).isRequired
+    diagramEngine: PropTypes.instanceOf(DiagramEngine).isRequired
 };
 
 export default withTranslation()(PackDiagramWidget);
