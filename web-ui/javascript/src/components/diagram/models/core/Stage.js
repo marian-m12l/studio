@@ -19,6 +19,12 @@ class Stage {
         };
     }
 
+    clone() {
+        let clone = Object.assign(Object.create(Object.getPrototypeOf(this)), this);
+        clone.controls = Object.assign({}, this.controls);
+        return clone;
+    };
+
 }
 
 export default Stage;

@@ -6,28 +6,19 @@
 
 import React from 'react';
 import PropTypes from "prop-types";
-import * as SRD from 'storm-react-diagrams';
 import {withTranslation} from "react-i18next";
+import { DiagramEngine } from '@projectstorm/react-diagrams';
 
 import ActionNodeModel from "../models/ActionNodeModel";
 import EditableText from "./composites/EditableText";
-import PortWidget from "./PortWidget";
+import StudioPortWidget from "./StudioPortWidget";
 
 
 class ActionNodeWidget extends React.Component {
 
     constructor(props) {
         super(props);
-        this.state = {
-            beingEdited: false
-        };
     }
-
-    toggleEdit = () => {
-        this.setState({
-            beingEdited: !this.state.beingEdited
-        });
-    };
 
     editName = (event) => {
         this.props.node.setName(event.target.value);
@@ -62,11 +53,11 @@ class ActionNodeWidget extends React.Component {
     render() {
         const { t } = this.props;
         return (
-            <div className='studio-node basic-node action-node'>
+            <div className={`studio-node basic-node action-node ${this.props.selected && 'selected'}`}>
                 <div className="node-content">
                     <div className="node-title">
                         <div className="ellipsis">
-                            <EditableText value={this.props.node.getName()} onChange={this.editName}/>
+                            <EditableText value={this.props.node.getName()} onChange={this.editName} engine={this.props.diagramEngine}/>
                         </div>
                     </div>
                     <div className="options">
@@ -78,13 +69,13 @@ class ActionNodeWidget extends React.Component {
                             <div key={`action-option-${idx}`} className="option">
                                 <div className={`delete ${this.props.node.optionsIn.length <= 1 ? 'disabled' : ''}`} title={t('editor.diagram.action.removeOption')} onClick={this.removeSpecificOption(idx)}/>
                                 {option.label}
-                                <PortWidget model={this.props.node.optionsIn[idx]} className="option-port-in"/>
-                                <PortWidget model={this.props.node.optionsOut[idx]} className="option-port-out"/>
+                                <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.optionsIn[idx]} className="option-port-in"/>
+                                <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.optionsOut[idx]} className="option-port-out"/>
                             </div>
                         )}
                         <div className="option">
                             {t('editor.diagram.action.random')}
-                            <PortWidget model={this.props.node.randomOptionIn} className="option-port-in option-port-random"/>
+                            <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.randomOptionIn} className="option-port-in option-port-random"/>
                         </div>
                     </div>
                 </div>
@@ -96,8 +87,9 @@ class ActionNodeWidget extends React.Component {
 
 ActionNodeWidget.propTypes = {
     node: PropTypes.instanceOf(ActionNodeModel).isRequired,
-    diagramEngine: PropTypes.instanceOf(SRD.DiagramEngine).isRequired,
-    updateCanvas: PropTypes.func.isRequired
+    diagramEngine: PropTypes.instanceOf(DiagramEngine).isRequired,
+    updateCanvas: PropTypes.func.isRequired,
+    selected: PropTypes.bool.isRequired
 };
 
 export default withTranslation()(ActionNodeWidget);

@@ -8,18 +8,24 @@ import React from 'react';
 import { useTranslation } from 'react-i18next';
 
 
-const EditableText = ({value, onChange}) => {
+const EditableText = ({value, onChange, engine}) => {
 
     const [beingEdited, setBeingEdited] = React.useState(false);
 
     const onClick = (e) => setBeingEdited(true);
     const onKeyUp = (e) => {
-        e.stopPropagation();
         if (e.key === 'Enter' || e.key === 'Escape') {
             setBeingEdited(false);
         }
     };
-    const onBlur = (e) => setBeingEdited(false);
+    const onFocus = (e) => {
+        // Lock model when typing text to avoid deletion of selection
+        engine.getModel().setLocked(true);
+    };
+    const onBlur = (e) => {
+        engine.getModel().setLocked(false);
+        setBeingEdited(false);
+    };
 
     const { t } = useTranslation();
 
@@ -30,6 +36,7 @@ const EditableText = ({value, onChange}) => {
                  value={value}
                  onChange={onChange}
                  onKeyUp={onKeyUp}
+                 onFocus={onFocus}
                  onBlur={onBlur} />
         : <span title={t('editor.diagram.editText')}
                 className={'editable-text'}

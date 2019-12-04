@@ -6,15 +6,15 @@
 
 import React from 'react';
 import PropTypes from "prop-types";
-import * as SRD from 'storm-react-diagrams';
 import {withTranslation} from "react-i18next";
 import {toast} from "react-toastify";
 import {connect} from "react-redux";
+import { DiagramEngine } from '@projectstorm/react-diagrams';
 
 import MenuNodeModel from "../models/MenuNodeModel";
 import {setViewerAction, setViewerDiagram, setViewerStage, showViewer} from "../../../actions";
 import EditableText from "./composites/EditableText";
-import PortWidget from "./PortWidget";
+import StudioPortWidget from "./StudioPortWidget";
 
 
 class MenuNodeWidget extends React.Component {
@@ -261,8 +261,8 @@ class MenuNodeWidget extends React.Component {
     openViewer = (e) => {
         if (this.isPreviewable()) {
             let viewingNode = this.props.node;
-            this.props.setViewerDiagram(this.props.diagramEngine.diagramModel);
-            let [stage, action] = viewingNode.onEnter(viewingNode.fromPort, this.props.diagramEngine.diagramModel);
+            this.props.setViewerDiagram(this.props.diagramEngine.getModel());
+            let [stage, action] = viewingNode.onEnter(viewingNode.fromPort, this.props.diagramEngine.getModel());
             this.props.setViewerStage(stage);
             this.props.setViewerAction(action);
             this.props.showViewer();
@@ -272,14 +272,14 @@ class MenuNodeWidget extends React.Component {
     render() {
         const { t } = this.props;
         return (
-            <div className="studio-node user-friendly-node menu-node">
+            <div className={`studio-node user-friendly-node menu-node ${this.props.selected && 'selected'}`}>
                 <div className="node-header">
                     <span className="dropzone glyphicon glyphicon-question-sign" title={t('editor.tray.menu')}/>
                 </div>
                 <div className="node-content">
                     <div className="node-title">
                         <div className="ellipsis">
-                            <EditableText value={this.props.node.getName()} onChange={this.editName}/>
+                            <EditableText value={this.props.node.getName()} onChange={this.editName} engine={this.props.diagramEngine}/>
                         </div>
                         <div className={`preview ${!this.isPreviewable() ? 'disabled' : ''}`} title={t('editor.diagram.stage.preview')} onClick={this.openViewer}>
                             <span className="glyphicon glyphicon-eye-open"/>
@@ -317,7 +317,7 @@ class MenuNodeWidget extends React.Component {
                                     </div>
                                     <div className="name-and-assets">
                                         <div className="option-name">
-                                            <EditableText value={this.props.node.getOptionName(idx)} onChange={this.editOptionName(idx)}/>
+                                            <EditableText value={this.props.node.getOptionName(idx)} onChange={this.editOptionName(idx)} engine={this.props.diagramEngine}/>
                                         </div>
                                         <div className="option-assets">
                                             <div className="asset asset-left">
@@ -350,7 +350,7 @@ class MenuNodeWidget extends React.Component {
                                             </div>
                                         </div>
                                     </div>
-                                    <PortWidget model={this.props.node.optionsOut[idx]} className="option-port"/>
+                                    <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.optionsOut[idx]} className="option-port"/>
                                 </div>
                             )}
                             <div className="option">
@@ -366,7 +366,7 @@ class MenuNodeWidget extends React.Component {
                         </div>
                     </div>
                 </div>
-                {this.props.node.fromPort && <PortWidget model={this.props.node.fromPort} className="from-port"/>}
+                {this.props.node.fromPort && <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.fromPort} className="from-port"/>}
             </div>
         );
     }
@@ -375,8 +375,9 @@ class MenuNodeWidget extends React.Component {
 
 MenuNodeWidget.propTypes = {
     node: PropTypes.instanceOf(MenuNodeModel).isRequired,
-    diagramEngine: PropTypes.instanceOf(SRD.DiagramEngine).isRequired,
-    updateCanvas: PropTypes.func.isRequired
+    diagramEngine: PropTypes.instanceOf(DiagramEngine).isRequired,
+    updateCanvas: PropTypes.func.isRequired,
+    selected: PropTypes.bool.isRequired
 };
 
 const mapStateToProps = (state, ownProps) => ({

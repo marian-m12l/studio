@@ -4,17 +4,18 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import * as SRD from "storm-react-diagrams";
-
 import StageNodeModel from "./StageNodeModel";
 import ActionPortModel from "./ActionPortModel";
 
 
 class StoryNodeModel extends StageNodeModel {
 
-    constructor(name = 'Story title', uuid) {
-        super(name, uuid);
-        this.type = 'story';
+    constructor(options = {}) {
+        super({
+            ...options,
+            type: 'story',
+            name: options.name || 'Story title'
+        });
         this.customOkTransition = false;
         this.customHomeTransition = false;
         this.disableHome = false;
@@ -30,7 +31,7 @@ class StoryNodeModel extends StageNodeModel {
 
     // Incoming node is of type 'action'
     createIncomingPort(name) {
-        return new ActionPortModel(true, SRD.Toolkit.UID(), name);
+        return new ActionPortModel(name, true);
     }
 
     setCustomOkTransition(isEnabled) {

@@ -9,9 +9,12 @@ import StageNodeModel from "./StageNodeModel";
 
 class CoverNodeModel extends StageNodeModel {
 
-    constructor(name = 'Cover title', uuid) {
-        super(name, uuid);
-        this.type = 'cover';
+    constructor(options = {}) {
+        super({
+            ...options,
+            type: 'cover',
+            name: options.name || 'Cover title'
+        });
         this.setSquareOne(true);
         this.setControl('wheel', true);
         this.setControl('ok', true);

@@ -4,30 +4,33 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import * as SRD from 'storm-react-diagrams';
+import { NodeModel } from '@projectstorm/react-diagrams';
 import uuidv4 from 'uuid/v4';
 
 import Stage from "./core/Stage";
 import StagePortModel from "./StagePortModel";
 
 
-class StageNodeModel extends SRD.NodeModel {
+class StageNodeModel extends NodeModel {
 
-    constructor(name = 'Stage title', uuid) {
-        super('stage');
-        this.uuid = uuid || uuidv4();
+    constructor(options = {}) {
+        super({
+            ...options,
+            type: options.type || 'stage'
+        });
+        this.uuid = options.uuid || uuidv4();
         this.squareOne = false;
-        this.stage = new Stage(name);
+        this.stage = new Stage(options.name || 'Stage title');
 
         this.fromPort = this.addPort(this.createIncomingPort("from"));
     }
 
     createIncomingPort(name) {
-        return new StagePortModel(true, SRD.Toolkit.UID(), name);
+        return new StagePortModel(name, true);
     }
 
     createOutgoingPort(name) {
-        return new StagePortModel(false, SRD.Toolkit.UID(), name);
+        return new StagePortModel(name, false);
     }
 
     getUuid() {
@@ -176,6 +179,22 @@ class StageNodeModel extends SRD.NodeModel {
             let homeTargetPort = homeLinks[0].getTargetPort();
             let homeTargetNode = homeTargetPort.getParent();
             return homeTargetNode.onEnter(homeTargetPort, diagram);
+        }
+    }
+
+    doClone(lookupTable = {}, clone) {
+        super.doClone(lookupTable, clone);
+        clone.uuid = uuidv4();
+        clone.squareOne = false;    // Cannot duplicate a square one node
+        clone.stage = this.stage.clone();
+        if (this.fromPort) {
+            clone.fromPort = this.fromPort.clone(lookupTable);
+        }
+        if (this.okPort) {
+            clone.okPort = this.okPort.clone(lookupTable);
+        }
+        if (this.homePort) {
+            clone.homePort = this.homePort.clone(lookupTable);
         }
     }
 

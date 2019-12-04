@@ -47,8 +47,11 @@
       "stage": "Stage Node",
       "action": "Action Node"
     },
+    "tools": {
+      "zoom": "Zoom to fit",
+      "clone": "Duplicate selection"
+    },
     "diagram": {
-      "editTitle": "Edit node title",
       "editText": "Click to edit",
       "stage": {
         "controls": {
@@ -147,7 +150,8 @@
       "thumbWrongType": "Thumbnail must be in PNG format.",
       "imageAssetWrongType": "Supported image asset formats are: BMP, JPEG, PNG.",
       "audioAssetWrongType": "Supported audio asset formats are: WAV, MP3, OGG.",
-      "tooManyEntryPoints": "A story pack can only have one entry point."
+      "tooManyEntryPoints": "A story pack can only have one entry point.",
+      "cannotCloneCoverNode": "The cover node cannot be duplicated."
     },
     "viewer": {
       "missingPrev": "Cannot find previous option.",

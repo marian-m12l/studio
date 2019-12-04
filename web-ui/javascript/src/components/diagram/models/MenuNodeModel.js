@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import * as SRD from 'storm-react-diagrams';
+import { NodeModel } from '@projectstorm/react-diagrams';
 import uuidv4 from "uuid/v4";
 
 import Stage from "./core/Stage";
@@ -12,15 +12,18 @@ import ActionPortModel from "./ActionPortModel";
 import StagePortModel from "./StagePortModel";
 
 
-class MenuNodeModel extends SRD.NodeModel {
+class MenuNodeModel extends NodeModel {
 
-    constructor(name = 'Menu title', uuid) {
-        super('menu');
-        this.uuid = uuid || uuidv4();
-        this.name = name;
-        this.fromPort = this.addPort(new ActionPortModel(true, SRD.Toolkit.UID(), "from"));
+    constructor(options = {}) {
+        super({
+            ...options,
+            type: 'menu'
+        });
+        this.uuid = options.uuid || uuidv4();
+        this.name = options.name || 'Menu title';
+        this.fromPort = this.addPort(new ActionPortModel("from", true));
         // Question stage
-        this.questionStage = new Stage(name+".questionstage");
+        this.questionStage = new Stage(this.name+".questionstage");
         this.questionStage.controls['autoplay'] = true;
         // Option stages
         this.optionsStages = [];
@@ -42,18 +45,18 @@ class MenuNodeModel extends SRD.NodeModel {
         this.questionStage.name = name+".questionstage";
     }
 
-    addOption = () => {
+    addOption() {
         let index = this.optionsStages.length;
 
         this.optionsStages[index] = new Stage(`Option #${index+1}`);
         this.optionsStages[index].controls['wheel'] = true;
         this.optionsStages[index].controls['ok'] = true;
         this.optionsStages[index].controls['home'] = true;
-        this.optionsOut[index] = this.addPort(new StagePortModel(false, SRD.Toolkit.UID(), "Option #"+(index+1)));
+        this.optionsOut[index] = this.addPort(new StagePortModel("Option #"+(index+1), false));
         return this.optionsOut[index];
     };
 
-    removeOption = (idx=-1) => {
+    removeOption(idx=-1) {
         // Keep at least one option
         if (this.optionsStages.length > 1) {
             // Remove stages and ports from list
@@ -203,6 +206,15 @@ class MenuNodeModel extends SRD.NodeModel {
                 }
             }
         };
+    }
+
+    doClone(lookupTable = {}, clone) {
+        super.doClone(lookupTable, clone);
+        clone.uuid = uuidv4();
+        clone.fromPort = this.fromPort.clone(lookupTable);
+        clone.questionStage = this.questionStage.clone();
+        clone.optionsStages = this.optionsStages.map(optionStage => optionStage.clone());
+        clone.optionsOut = this.optionsOut.map(optionOutPort => optionOutPort.clone(lookupTable));
     }
 
 }
