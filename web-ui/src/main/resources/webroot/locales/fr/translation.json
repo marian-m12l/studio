@@ -49,7 +49,10 @@
     },
     "tools": {
       "zoom": "Afficher le diagramme entier",
-      "clone": "Dupliquer la sélection"
+      "clone": "Dupliquer la sélection",
+      "filterLayers": "Filtrer les calques",
+      "displayForwardWorkflow": "Flux vers l'avant",
+      "displayReturningWorkflow": "Flux retour"
     },
     "diagram": {
       "editText": "Cliquez pour modifier",

@@ -49,7 +49,10 @@
     },
     "tools": {
       "zoom": "Zoom to fit",
-      "clone": "Duplicate selection"
+      "clone": "Duplicate selection",
+      "filterLayers": "Filter layers",
+      "displayForwardWorkflow": "Forward workflow",
+      "displayReturningWorkflow": "Returning workflow"
     },
     "diagram": {
       "editText": "Click to edit",

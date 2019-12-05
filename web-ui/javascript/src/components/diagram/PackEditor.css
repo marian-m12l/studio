@@ -74,14 +74,31 @@
         stroke-dashoffset: 0;
     }
 }
-.storm-diagrams-canvas path {
+.storm-diagrams-canvas .studio-link path {
+    stroke: #a0a0a0 !important;
     fill: none;
     pointer-events: all;
 }
-.storm-diagrams-canvas path.selected {
+.storm-diagrams-canvas .studio-link path.selected {
     stroke: #00c0ff !important;
     stroke-dasharray: 10,2;
     animation: dash 1s linear infinite;
+}
+.storm-diagrams-canvas .studio-link.returning-workflow path {
+    stroke: #606060 !important;
+    stroke-dasharray: 10, 10;
+}
+.storm-diagrams-canvas .studio-link.returning-workflow path.selected {
+    stroke: #00c0ff !important;
+    stroke-dasharray: 10, 10;
+    animation: dash 1s linear infinite;
+}
+.storm-diagrams-canvas.hide-forward-workflow .studio-link:not(.returning-workflow),
+.storm-diagrams-canvas.hide-returning-workflow .studio-link.returning-workflow {
+    display: none;
+}
+.storm-diagrams-canvas .arrowhead {
+    fill: #808080;
 }
 
 /* Delete button */
@@ -887,10 +904,35 @@
     position: absolute;
     top: 10px;
     right: 10px;
+    text-align: right;
 }
 
 .pack-diagram-widget .content .diagram-drop-zone .toolbelt .tool {
     margin-bottom: 2px;
+}
+
+.pack-diagram-widget .content .diagram-drop-zone .toolbelt .tool.layers {
+    background-color: grey;
+    width: auto;
+    max-width: 40px;
+    height: auto;
+    max-height: 34px;
+    overflow: hidden;
+    transition: max-width 300ms, max-height 300ms;
+}
+
+.pack-diagram-widget .content .diagram-drop-zone .toolbelt .tool.layers:hover {
+    max-width: 240px;
+    max-height: 200px;
+}
+
+.pack-diagram-widget .content .diagram-drop-zone .toolbelt .tool.layers .glyphicon-filter {
+    width: 100%;
+}
+
+.pack-diagram-widget .content .diagram-drop-zone .toolbelt .tool.layers ul {
+    list-style-type: none;
+    padding-left: 0;
 }
 
 .pack-diagram-widget .content .tray {

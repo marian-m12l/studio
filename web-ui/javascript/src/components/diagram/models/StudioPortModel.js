@@ -31,6 +31,9 @@ class StudioPortModel extends PortModel {
     }
 
     createLinkModel() {
+        if (!this.inbound && Object.keys(this.getLinks()).length === 1) {
+            return null;
+        }
         return new StudioLinkModel(this.inbound);
     }
 

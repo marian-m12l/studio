@@ -145,7 +145,9 @@ class StudioLinkWidget extends React.Component {
             }
         }
 
-        return <g data-default-link-test={this.props.link.getOptions().testName}>{paths}</g>;
+        const isReturnWorkflow = (!this.props.link.inversed && this.props.link.getSourcePort() && this.props.link.getSourcePort().isHome) || (this.props.link.inversed && this.props.link.getTargetPort() && this.props.link.getTargetPort().isHome);
+
+        return <g className={`studio-link ${isReturnWorkflow ? 'returning-workflow' : ''}`} data-default-link-test={this.props.link.getOptions().testName}>{paths}</g>;
     }
 
 }

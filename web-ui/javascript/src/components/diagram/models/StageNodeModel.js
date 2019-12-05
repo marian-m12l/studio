@@ -29,8 +29,8 @@ class StageNodeModel extends NodeModel {
         return new StagePortModel(name, true);
     }
 
-    createOutgoingPort(name) {
-        return new StagePortModel(name, false);
+    createOutgoingPort(name, isHome=false) {
+        return new StagePortModel(name, false, isHome);
     }
 
     getUuid() {
@@ -117,7 +117,7 @@ class StageNodeModel extends NodeModel {
     setHome(home) {
         this.stage.controls.home = home;
         if (home && this.homePort == null) {
-            this.homePort = this.addPort(this.createOutgoingPort("home"));
+            this.homePort = this.addPort(this.createOutgoingPort("home", true));
         } else if (!home && this.homePort != null) {
             // Remove any attached link
             Object.values(this.homePort.getLinks())
