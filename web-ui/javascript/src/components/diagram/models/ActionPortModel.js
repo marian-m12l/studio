@@ -20,7 +20,7 @@ class ActionPortModel extends StudioPortModel {
             && this.inbound !== port.inbound            // Make sure an outgoing port is linked to an incoming port
             && this.getParent() !== port.getParent()    // The source and target nodes of a link should not be on the same node
             && (                                        // Outgoing ports have a maximum of one link
-                (this.inbound && Object.keys(port.getLinks()).length <= 1)
+                (this.inbound && Object.keys(port.getLinks()).length < 1)
                 || (!this.inbound && Object.keys(this.getLinks()).length <= 1)
             )
         );

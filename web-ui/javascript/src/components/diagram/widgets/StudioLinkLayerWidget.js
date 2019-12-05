@@ -27,8 +27,7 @@ class StudioLinkLayerWidget extends React.Component {
                             markerWidth="5"
                             markerHeight="5"
                             orient="auto">
-                        <polygon points="0,0 10,5 0,10"
-                                 style={{fill: 'rgb(100, 100, 100)'}}>
+                        <polygon points="0,0 10,5 0,10" className="arrowhead">
                         </polygon>
                     </marker>
                     <marker id="arrowhead-start"
@@ -39,8 +38,7 @@ class StudioLinkLayerWidget extends React.Component {
                             markerWidth="5"
                             markerHeight="5"
                             orient="auto">
-                        <polygon points="10,0 0,5 10,10"
-                                 style={{fill: 'rgb(100, 100, 100)'}}>
+                        <polygon points="10,0 0,5 10,10" className="arrowhead">
                         </polygon>
                     </marker>
                 </defs>
