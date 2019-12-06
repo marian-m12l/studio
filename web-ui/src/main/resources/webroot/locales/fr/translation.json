@@ -64,6 +64,7 @@
           "pause": "Autoriser le bouton PAUSE",
           "autoplay": "Lecture automatique"
         },
+        "squareone": "Nœud de départ",
         "image": "Ressource image",
         "resetImage": "Réinitialiser l'image",
         "audio": "Ressource audio",

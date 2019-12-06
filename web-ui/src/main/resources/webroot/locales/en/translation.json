@@ -64,6 +64,7 @@
           "pause": "Allow PAUSE button",
           "autoplay": "Enable autoplay"
         },
+        "squareone": "Start node",
         "image": "Image asset",
         "resetImage": "Reset image asset",
         "audio": "Audio asset",
