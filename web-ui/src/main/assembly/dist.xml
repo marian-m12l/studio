@@ -34,8 +34,9 @@
             <outputDirectory></outputDirectory>
             <includes>
                 <include>${project.build.finalName}.jar</include>
-                <include>studio.sh</include>
-                <include>studio.bat</include>
+                <include>studio-linux.sh</include>
+                <include>studio-macos.sh</include>
+                <include>studio-windows.bat</include>
             </includes>
         </fileSet>
     </fileSets>
