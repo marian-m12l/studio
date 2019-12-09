@@ -103,16 +103,18 @@
             <resource>
                 <directory>src/main/resources</directory>
                 <excludes>
-                    <exclude>studio.sh</exclude>
-                    <exclude>studio.bat</exclude>
+                    <exclude>studio-linux.sh</exclude>
+                    <exclude>studio-macos.sh</exclude>
+                    <exclude>studio-windows.bat</exclude>
                 </excludes>
             </resource>
             <!-- resource processing with a different output directory for scripts -->
             <resource>
                 <directory>src/main/resources</directory>
                 <includes>
-                    <include>studio.sh</include>
-                    <include>studio.bat</include>
+                    <include>studio-linux.sh</include>
+                    <include>studio-macos.sh</include>
+                    <include>studio-windows.bat</include>
                 </includes>
                 <!-- relative to target/classes -->
                 <targetPath>..</targetPath>

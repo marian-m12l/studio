@@ -74,7 +74,7 @@ Your must first build the application or download a distribution archive ([check
 
 To start the application: 
 * Unzip the distribution archive
-* Run the launcher script: either `studio.sh` or `studio.bat` depending on your platform. You may need to make them executable first.
+* Run the launcher script: either `studio-linux.sh`, `studio-macos.sh` or `studio-windows.bat` depending on your platform. You may need to make them executable first.
 If run in a terminal, it should display some logs, ending with `INFOS: Succeeded in deploying verticle`.
 * Open a browser and type the url `http://localhost:8080` to load the web UI.
 

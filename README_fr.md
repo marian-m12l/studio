@@ -76,7 +76,7 @@ Vous devez d'abord contruire l'application ou télécharger une archive de distr
 
 Pour démarrer l'application :
 * Décompressez l'archive de distribution
-* Exécutez le script de lancement : `studio.sh` ou `studio.bat` selon votre plate-forme. Vous devrez probablement rendre ce fichier exécutable d'abord.
+* Exécutez le script de lancement : `studio-linux.sh`, `studio-macos.sh` ou `studio-windows.bat` selon votre plate-forme. Vous devrez probablement rendre ce fichier exécutable d'abord.
 Si la commande est exécutée dans un terminale, des logs devraient s'afficher, en se terminant par `INFOS: Succeeded in deploying verticle`.
 * Ouvrez un navigateur et saisissez l'url `http://localhost:8080` pour charger l'interface web.
 
