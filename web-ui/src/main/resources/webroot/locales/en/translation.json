@@ -36,6 +36,7 @@
     "metadata": {
       "title": "Title:",
       "version": "Version:",
+      "filename": "Filename:",
       "desc": "Description:",
       "thumb": "Thumbnail:"
     },
@@ -174,6 +175,10 @@
       "save": {
         "title": "Pack already exists in library",
         "content": "Overwrite the existing pack in library?"
+      },
+      "filenameSuggestion": {
+        "title": "Pack filename may be updated",
+        "content": "Generate a new pack filename?"
       }
     }
   }

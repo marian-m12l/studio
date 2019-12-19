@@ -36,6 +36,7 @@
     "metadata": {
       "title": "Titre :",
       "version": "Version :",
+      "filename": "Nom de fichier :",
       "desc": "Description :",
       "thumb": "Miniature :"
     },
@@ -174,6 +175,10 @@
       "save": {
         "title": "Le pack d'histoires existe déjà dans la bibliothèque",
         "content": "Écraser le pack d'histoires dans la bibliothèque?"
+      },
+      "filenameSuggestion": {
+        "title": "Le nom de fichier peut être mis à jour",
+        "content": "Générer un nouveau nom de fichier pour ce pack d'histoires?"
       }
     }
   }

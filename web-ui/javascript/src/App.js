@@ -27,6 +27,7 @@ import {
 } from "./actions";
 
 import './App.css';
+import {generateFilename} from "./utils/packs";
 
 
 class App extends React.Component {
@@ -73,7 +74,8 @@ class App extends React.Component {
             this.props.loadLibrary();
 
             // Load sample diagram in editor
-            this.props.setEditorDiagram(simplifiedSample());
+            let model = simplifiedSample();
+            this.props.setEditorDiagram(model, generateFilename(model));
 
             this.props.dispatchShowLibrary();
         });
@@ -132,7 +134,7 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     onDevicePlugged: (metadata) => dispatch(actionDevicePlugged(metadata, ownProps.t)),
     onDeviceUnplugged: () => dispatch(deviceUnplugged()),
     loadLibrary: () => dispatch(actionLoadLibrary(ownProps.t)),
-    setEditorDiagram: (diagram) => dispatch(setEditorDiagram(diagram)),
+    setEditorDiagram: (diagram, filename) => dispatch(setEditorDiagram(diagram, filename)),
     dispatchShowLibrary: () => dispatch(showLibrary()),
     dispatchShowEditor: () => dispatch(showEditor())
 });

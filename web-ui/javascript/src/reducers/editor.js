@@ -8,13 +8,15 @@ import React from "react";
 
 const initialState = {
     diagram: null,
-    libraryPath: null
+    filename: ''
 };
 
 const editor = (state = initialState, action) => {
     switch (action.type) {
         case 'SET_EDITOR_DIAGRAM':
-            return { ...state, diagram: action.diagram, libraryPath: (action.libraryPath || null) };
+            return { ...state, diagram: action.diagram, filename: (action.filename || '') };
+        case 'SET_EDITOR_FILENAME':
+            return { ...state, filename: (action.filename || '') };
         default:
             return state
     }
