@@ -21,6 +21,7 @@ import PackDiagramModel from "./models/PackDiagramModel";
 import PackDiagramWidget from "./widgets/PackDiagramWidget";
 import FixedZoomCanvasAction from "./actions/FixedZoomCanvasAction";
 import Modal from "../Modal";
+import {generateFilename} from "../../utils/packs";
 import {writeToArchive} from "../../utils/writer";
 import {
     actionLoadPackInEditor,
@@ -90,7 +91,7 @@ class PackEditor extends React.Component {
     savePackToLibrary = () => {
         // Pack path is either stored (when open from library) or generated
         let uuid = this.state.engine.getModel().getEntryPoint().getUuid();
-        let path = this.props.editor.libraryPath || this.state.engine.getModel().title.replace(' ', '_') + '-' + uuid + '-v' + this.state.engine.getModel().version + '.zip';
+        let path = this.props.editor.filename || generateFilename(this.state.engine.getModel());
         // Confirmation dialog if pack already in library
         if (this.props.library.packs.filter(pack => pack.path === path).length > 0) {
             this.showSaveConfirmDialog();
@@ -103,7 +104,7 @@ class PackEditor extends React.Component {
         const { t } = this.props;
         // Pack path is either stored (when open from library) or generated
         let uuid = this.state.engine.getModel().getEntryPoint().getUuid();
-        let path = this.props.editor.libraryPath || this.state.engine.getModel().title.replace(' ', '_') + '-' + uuid + '-v' + this.state.engine.getModel().version + '.zip';
+        let path = this.props.editor.filename || generateFilename(this.state.engine.getModel());
         // Show toast
         let toastId = toast(t('toasts.editor.saving'), { autoClose: false });
         writeToArchive(this.state.engine.getModel())
@@ -135,7 +136,7 @@ class PackEditor extends React.Component {
                 toast.update(toastId, { type: toast.TYPE.SUCCESS, render: t('toasts.editor.exported'), autoClose: 5000});
                 var a = document.getElementById('download');
                 a.href = URL.createObjectURL(blob);
-                a.download = this.state.engine.getModel().title + '.zip';
+                a.download = this.props.editor.filename || generateFilename(this.state.engine.getModel());
                 a.click();
                 URL.revokeObjectURL(a.href);
             })
@@ -163,7 +164,7 @@ class PackEditor extends React.Component {
     };
 
     importPack = (file) => {
-        this.props.loadPackInEditor(file);
+        this.props.loadPackInEditor(file, file.name);
     };
 
     showSaveConfirmDialog = () => {
@@ -208,7 +209,7 @@ const mapStateToProps = (state, ownProps) => ({
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
     setEditorDiagram: (diagram) => dispatch(setEditorDiagram(diagram)),
-    loadPackInEditor: (packData) => dispatch(actionLoadPackInEditor(packData, null, ownProps.t)),
+    loadPackInEditor: (packData, filename) => dispatch(actionLoadPackInEditor(packData, filename, ownProps.t)),
     uploadPackToLibrary: (uuid, path, packData) => dispatch(actionUploadToLibrary(uuid, path, packData, ownProps.t))
 });
 

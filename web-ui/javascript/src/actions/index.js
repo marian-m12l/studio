@@ -235,14 +235,14 @@ export const actionDownloadFromLibrary = (uuid, path, t) => {
     }
 };
 
-export const actionLoadPackInEditor = (packData, libraryPath, t) => {
+export const actionLoadPackInEditor = (packData, filename, t) => {
     return dispatch => {
         let toastId = toast(t('toasts.editor.loading'), { autoClose: false });
         readFromArchive(packData)
             .then(loadedModel => {
                 toast.update(toastId, { type: toast.TYPE.SUCCESS, render: t('toasts.editor.loaded'), autoClose: 5000});
                 // Set loaded model in editor
-                dispatch(setEditorDiagram(loadedModel, libraryPath));
+                dispatch(setEditorDiagram(loadedModel, filename));
                 // Show editor
                 dispatch(showEditor());
             })
@@ -347,10 +347,15 @@ export const setViewerAction = (action) => ({
     action
 });
 
-export const setEditorDiagram = (diagram, libraryPath = null) => ({
+export const setEditorDiagram = (diagram, filename = null) => ({
     type: 'SET_EDITOR_DIAGRAM',
     diagram,
-    libraryPath
+    filename
+});
+
+export const setEditorFilename = (filename = null) => ({
+    type: 'SET_EDITOR_FILENAME',
+    filename
 });
 
 export const showLibrary = () => ({

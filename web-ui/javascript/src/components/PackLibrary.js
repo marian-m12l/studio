@@ -200,7 +200,7 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     removeFromDevice: (uuid) => dispatch(actionRemoveFromDevice(uuid, ownProps.t)),
     addToLibrary: (uuid, context) => dispatch(actionAddToLibrary(uuid, context, ownProps.t)),
     downloadPackFromLibrary: (uuid, path) => dispatch(actionDownloadFromLibrary(uuid, path, ownProps.t)),
-    loadPackInEditor: (packData, libraryPath) => dispatch(actionLoadPackInEditor(packData, libraryPath, ownProps.t)),
+    loadPackInEditor: (packData, filename) => dispatch(actionLoadPackInEditor(packData, filename, ownProps.t)),
     convertPackInLibrary: (uuid, path) => dispatch(actionConvertInLibrary(uuid, path, ownProps.t))
 });
 
