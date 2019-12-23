@@ -14,14 +14,17 @@
       "uuid": "UUID :",
       "serial": "Numéro de série :",
       "firmware": "Version firmware :",
-      "empty": "Aucun pack d'histoires dans l'appareil."
+      "empty": "Aucun pack d'histoires dans l'appareil.",
+      "removePack": "Supprimer ce pack d'histoires de l'appareil"
     },
     "local": {
       "title": "BIBLIOTHÈQUE LOCALE",
       "path": "Chemin :",
       "empty": "Aucun pack d'histoires dans la bibliothèque.",
       "convertPack": "Convertir ce pack d'histoires au format archive (éditable)",
-      "editPack": "Ouvrir ce pack d'histoires dans l'éditeur"
+      "editPack": "Ouvrir ce pack d'histoires dans l'éditeur",
+      "removePack": "Supprimer ce pack d'histoires de la bibliothèque",
+      "addPack": "Ajouter un pack d'histoires à la bibliothèque"
     },
     "official": "Officiel"
   },
@@ -37,6 +40,7 @@
       "title": "Titre :",
       "version": "Version :",
       "filename": "Nom de fichier :",
+      "uuid": "UUID :",
       "desc": "Description :",
       "thumb": "Miniature :"
     },
@@ -118,7 +122,11 @@
       "uploadingFailed": "Échec du téléversement du pack d'histoires vers la bibliothèque.",
       "converting": "Conversion du pack dans la bibliothèque...",
       "converted": "Pack d'histoires converti.",
-      "convertingFailed": "Échec de la conversion du pack d'histoires dans la bibliothèque."
+      "convertingFailed": "Échec de la conversion du pack d'histoires dans la bibliothèque.",
+      "removing": "Retrait du pack de la bibliothèque...",
+      "removed": "Pack retiré de la bibliothèque.",
+      "removingFailed": "Échec du retrait du pack de la bibliothèque.",
+      "packFileWrongType": "Le fichier du pack d'histoires doit être au format archive ZIP ou au format binaire (extension .pack)."
     },
     "device": {
       "monitoring": {
@@ -174,11 +182,22 @@
     "editor": {
       "save": {
         "title": "Le pack d'histoires existe déjà dans la bibliothèque",
-        "content": "Écraser le pack d'histoires dans la bibliothèque?"
+        "content": "Écraser le pack d'histoires dans la bibliothèque ?"
       },
       "filenameSuggestion": {
         "title": "Le nom de fichier peut être mis à jour",
-        "content": "Générer un nouveau nom de fichier pour ce pack d'histoires?"
+        "content": "Générer un nouveau nom de fichier pour ce pack d'histoires ?",
+        "line2": "(L'identifiant UUID sera également renouvelé)"
+      }
+    },
+    "library": {
+      "removeFromDevice": {
+        "title": "Confirmer la suppression",
+        "content": "Supprimer le pack d'histoires de l'appareil ?"
+      },
+      "removeFromLibrary": {
+        "title": "Confirmer la suppression",
+        "content": "Supprimer le pack d'histoires de la bibliothèque ?"
       }
     }
   }

@@ -14,14 +14,17 @@
       "uuid": "UUID:",
       "serial": "Serial number:",
       "firmware": "Firmware version:",
-      "empty": "No story packs in device, yet."
+      "empty": "No story packs in device, yet.",
+      "removePack": "Remove this story pack from device"
     },
     "local": {
       "title": "LOCAL LIBRARY",
       "path": "Path:",
       "empty": "No story packs in library, yet.",
       "convertPack": "Convert this story pack to (editable) archive format",
-      "editPack": "Open this story pack in editor"
+      "editPack": "Open this story pack in editor",
+      "removePack": "Remove this story pack from library",
+      "addPack": "Add a story pack to the library"
     },
     "official": "Official"
   },
@@ -37,6 +40,7 @@
       "title": "Title:",
       "version": "Version:",
       "filename": "Filename:",
+      "uuid": "UUID:",
       "desc": "Description:",
       "thumb": "Thumbnail:"
     },
@@ -118,7 +122,11 @@
       "uploadingFailed": "Failed to upload pack to library.",
       "converting": "Converting pack in library...",
       "converted": "Pack converted in library.",
-      "convertingFailed": "Failed to convert pack in library."
+      "convertingFailed": "Failed to convert pack in library.",
+      "removing": "Removing pack from library...",
+      "removed": "Pack removed from library.",
+      "removingFailed": "Failed to remove pack from library.",
+      "packFileWrongType": "Story pack file must be in ZIP archive format or binary pack format (.pack extension)."
     },
     "device": {
       "monitoring": {
@@ -178,7 +186,18 @@
       },
       "filenameSuggestion": {
         "title": "Pack filename may be updated",
-        "content": "Generate a new pack filename?"
+        "content": "Generate a new pack filename?",
+        "line2": "(UUID will also be renewed)"
+      }
+    },
+    "library": {
+      "removeFromDevice": {
+        "title": "Confirm removal",
+        "content": "Remove pack from device?"
+      },
+      "removeFromLibrary": {
+        "title": "Confirm removal",
+        "content": "Remove pack from library?"
       }
     }
   }
