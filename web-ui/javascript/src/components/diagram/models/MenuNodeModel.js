@@ -36,6 +36,10 @@ class MenuNodeModel extends NodeModel {
         return this.uuid;
     }
 
+    renewUuid() {
+        this.uuid = uuidv4();
+    }
+
     getName() {
         return this.name;
     }
