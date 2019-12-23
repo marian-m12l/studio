@@ -7,7 +7,7 @@
 import { toast } from 'react-toastify';
 
 import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice, addToLibrary} from '../services/device';
-import {fetchLibraryInfos, fetchLibraryPacks, downloadFromLibrary, uploadToLibrary, convertInLibrary} from '../services/library';
+import {fetchLibraryInfos, fetchLibraryPacks, downloadFromLibrary, uploadToLibrary, convertInLibrary, removeFromLibrary} from '../services/library';
 import {sortPacks} from "../utils/packs";
 import {readFromArchive} from "../utils/reader";
 
@@ -306,6 +306,26 @@ export const actionConvertInLibrary = (uuid, path, t) => {
             .catch(e => {
                 console.error('failed to convert pack in library', e);
                 toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.library.convertingFailed'), autoClose: 5000 });
+            });
+    }
+};
+
+export const actionRemoveFromLibrary = (path, t) => {
+    return dispatch => {
+        let toastId = toast(t('toasts.library.removing'), { autoClose: false });
+        return removeFromLibrary(path)
+            .then(resp => {
+                if (resp.success) {
+                    toast.update(toastId, {type: toast.TYPE.SUCCESS, render: t('toasts.library.removed'), autoClose: 5000});
+                    // Refresh library metadata and packs list
+                    dispatch(actionRefreshLibrary(t));
+                } else {
+                    toast.update(toastId, {type: toast.TYPE.ERROR, render: t('toasts.library.removingFailed'), autoClose: 5000});
+                }
+            })
+            .catch(e => {
+                console.error('failed to remove pack from library', e);
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.library.removingFailed'), autoClose: 5000 });
             });
     }
 };

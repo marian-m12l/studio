@@ -206,6 +206,28 @@ public class LibraryService {
         }
     }
 
+    public boolean deletePack(String packPath) {
+        File libraryFolder = new File(libraryPath());
+        if (!libraryFolder.exists() || !libraryFolder.isDirectory()) {
+            return false;
+        } else {
+            try {
+                File packFile = new File(libraryPath() + packPath);
+                if (packFile.exists()) {
+                    FileUtils.forceDelete(packFile);
+                    return true;
+                } else {
+                    LOGGER.error("Cannot remove pack from library because it is not in the folder");
+                    return false;
+                }
+            } catch (IOException e) {
+                LOGGER.error("Failed to remove pack from library", e);
+                e.printStackTrace();
+                return false;
+            }
+        }
+    }
+
     public String libraryPath() {
         // Path may be overridden by system property `studio.library`
         return System.getProperty(LOCAL_LIBRARY_PROP, System.getProperty("user.home") + LOCAL_LIBRARY_PATH);

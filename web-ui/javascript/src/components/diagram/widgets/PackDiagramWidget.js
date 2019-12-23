@@ -243,7 +243,10 @@ class PackDiagramWidget extends React.Component {
             {this.state.showFilenameSuggestionDialog &&
             <Modal id="suggest-pack-filename"
                    title={t('dialogs.editor.filenameSuggestion.title')}
-                   content={<p>{t('dialogs.editor.filenameSuggestion.content')}</p>}
+                   content={<>
+                       <p>{t('dialogs.editor.filenameSuggestion.content')}</p>
+                       <p>{t('dialogs.editor.filenameSuggestion.line2')}</p>
+                    </>}
                    buttons={[
                        { label: t('dialogs.shared.no'), onClick: this.dismissFilenameSuggestionDialog},
                        { label: t('dialogs.shared.yes'), onClick: this.useSuggestedFilename}
@@ -252,17 +255,35 @@ class PackDiagramWidget extends React.Component {
             />}
 
             {/* Metadata */}
-            <label htmlFor="pack-title">{t('editor.metadata.title')}</label>
-            <input id="pack-title" type="text" value={this.getDiagramModel().title || ''} onChange={this.changeTitle} onFocus={this.onInputFocus} onBlur={this.checkFilename}/>
-            <label htmlFor="pack-version">{t('editor.metadata.version')}</label>
-            <input id="pack-version" type="number" value={this.getDiagramModel().version || ''} onChange={this.changeVersion} onFocus={this.onInputFocus} onBlur={this.checkFilename}/>
-            <label htmlFor="pack-filename">{t('editor.metadata.filename')}</label>
-            <input id="pack-filename" type="text" value={this.props.editor.filename || ''} onChange={this.changeFilename} onFocus={this.onInputFocus} onBlur={this.onInputBlur}/>
-            <label htmlFor="pack-description">{t('editor.metadata.desc')}</label>
-            <textarea id="pack-description" value={this.getDiagramModel().description || ''} style={{display: 'inline-block'}} onChange={this.changeDescription} onFocus={this.onInputFocus} onBlur={this.onInputBlur}/>
-            <label htmlFor="pack-thumb">{t('editor.metadata.thumb')}</label>
-            <input type="file" id="pack-thumb" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.changeThumbnail} />
-            <img src={this.getDiagramModel().thumbnail || defaultImage} width="128" height="128" onClick={this.showThumbnailSelector} />
+            <div className="metadata">
+                <div className="metadata-section vertical">
+                    <div>
+                        <label htmlFor="pack-title">{t('editor.metadata.title')}</label>
+                        <input id="pack-title" type="text" value={this.getDiagramModel().title || ''} onChange={this.changeTitle} onFocus={this.onInputFocus} onBlur={this.checkFilename}/>
+                    </div>
+                    <div>
+                        <label htmlFor="pack-version">{t('editor.metadata.version')}</label>
+                        <input id="pack-version" type="number" value={this.getDiagramModel().version || ''} onChange={this.changeVersion} onFocus={this.onInputFocus} onBlur={this.checkFilename}/>
+                    </div>
+                    <div>
+                        <label htmlFor="pack-filename">{t('editor.metadata.filename')}</label>
+                        <input id="pack-filename" type="text" value={this.props.editor.filename || ''} onChange={this.changeFilename} onFocus={this.onInputFocus} onBlur={this.onInputBlur}/>
+                    </div>
+                    <div>
+                        <label>{t('editor.metadata.uuid')}</label>
+                        <span>{this.props.diagramEngine.getModel() && this.props.diagramEngine.getModel().getEntryPoint() && this.props.diagramEngine.getModel().getEntryPoint().getUuid()}</span>
+                    </div>
+                </div>
+                <div className="metadata-section">
+                    <label htmlFor="pack-description">{t('editor.metadata.desc')}</label>
+                    <textarea id="pack-description" value={this.getDiagramModel().description || ''} style={{display: 'inline-block'}} onChange={this.changeDescription} onFocus={this.onInputFocus} onBlur={this.onInputBlur}/>
+                </div>
+                <div className="metadata-section right">
+                    <label htmlFor="pack-thumb">{t('editor.metadata.thumb')}</label>
+                    <input type="file" id="pack-thumb" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.changeThumbnail} />
+                    <img src={this.getDiagramModel().thumbnail || defaultImage} width="120" height="120" onClick={this.showThumbnailSelector} />
+                </div>
+            </div>
 
             <div className="content">
                 {/* Node tray */}

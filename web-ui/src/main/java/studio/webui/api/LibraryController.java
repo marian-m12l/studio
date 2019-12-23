@@ -111,6 +111,20 @@ public class LibraryController {
             });
         });
 
+        // Remove pack from device
+        router.post("/remove").handler(ctx -> {
+            String packPath = ctx.getBodyAsJson().getString("path");
+            boolean removed = libraryService.deletePack(packPath);
+            if (removed) {
+                ctx.response()
+                        .putHeader("content-type", "application/json")
+                        .end(Json.encode(new JsonObject().put("success", true)));
+            } else {
+                LOGGER.error("Pack was not removed from library");
+                ctx.fail(500);
+            }
+        });
+
         return router;
     }
 }

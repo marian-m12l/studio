@@ -977,3 +977,56 @@
     border-color: #9e7a34;
     background-color: #6e5524;
 }
+
+
+/* Metadata */
+
+.custom-pack-editor {
+    background-color: #aaaaaa;
+}
+
+.custom-pack-editor .metadata {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding-top: 5px;
+}
+
+.custom-pack-editor .metadata .metadata-section {
+    flex: 1;
+    height: 121px;
+}
+
+.custom-pack-editor .metadata .metadata-section.vertical {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.custom-pack-editor .metadata .metadata-section.right {
+    text-align: left;
+}
+
+.custom-pack-editor .metadata .metadata-section div {
+    flex: 1;
+}
+
+.custom-pack-editor .metadata label {
+    padding-right: 3px;
+}
+
+.custom-pack-editor .metadata input, .custom-pack-editor .metadata span {
+    width: 280px;
+    vertical-align: top;
+    display: inline-block;
+}
+
+.custom-pack-editor .metadata textarea {
+    width: 350px;
+    height: 100px;
+    vertical-align: top;
+}
+
+.custom-pack-editor .metadata img {
+    vertical-align: top;
+}
