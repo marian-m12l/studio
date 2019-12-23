@@ -137,6 +137,7 @@ class PackLibrary extends React.Component {
                                      }}>
                                     <div className="pack-thumb">
                                         <img src={pack.image || defaultImage} width="128" height="128" draggable={false} />
+                                        <div className="pack-version"><span>{`v${pack.version}`}</span></div>
                                         {pack.official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
                                     </div>
                                     <div><span>{pack.title || pack.uuid}</span> <a href="#" onClick={this.onRemovePackFromDevice(pack.uuid)}>&times;</a></div>
@@ -165,6 +166,7 @@ class PackLibrary extends React.Component {
                                      }}>
                                     <div className="pack-thumb">
                                         <img src={pack.image || defaultImage} width="128" height="128" draggable={false} />
+                                        <div className="pack-version"><span>{`v${pack.version}`}</span></div>
                                         {pack.official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
                                     </div>
                                     <div>
