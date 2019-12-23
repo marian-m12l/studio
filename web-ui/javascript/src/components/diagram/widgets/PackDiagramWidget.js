@@ -20,7 +20,7 @@ import StoryNodeModel from "../models/StoryNodeModel";
 import TrayWidget from "./TrayWidget";
 import TrayItemWidget from "./TrayItemWidget";
 import Modal from "../../Modal";
-import {setEditorFilename} from "../../../actions";
+import {setEditorDiagram, setEditorFilename} from "../../../actions";
 import {generateFilename} from "../../../utils/packs";
 
 
@@ -78,7 +78,10 @@ class PackDiagramWidget extends React.Component {
     };
 
     useSuggestedFilename = () => {
-        this.props.setEditorFilename(generateFilename(this.props.diagramEngine.getModel()));
+        // Renew pack/entry-point uuid (this is used as the key in metadata database)
+        let diagram = this.props.diagramEngine.getModel();
+        diagram.getEntryPoint().renewUuid();
+        this.props.setEditorDiagram(diagram, generateFilename(diagram));
         this.dismissFilenameSuggestionDialog();
     };
 
@@ -322,7 +325,8 @@ const mapStateToProps = (state, ownProps) => ({
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-    setEditorFilename: (filename) => dispatch(setEditorFilename(filename))
+    setEditorFilename: (filename) => dispatch(setEditorFilename(filename)),
+    setEditorDiagram: (diagram, filename) => dispatch(setEditorDiagram(diagram, filename))
 });
 
 export default withTranslation()(
