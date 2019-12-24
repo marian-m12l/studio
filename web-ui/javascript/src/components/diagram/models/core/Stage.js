@@ -25,6 +25,22 @@ class Stage {
         return clone;
     };
 
+    deserialize(data) {
+        this.name = data.name;
+        this.image = data.image;
+        this.audio = data.audio;
+        this.controls = data.controls;
+    }
+
+    serialize() {
+        return {
+            name: this.name,
+            image: this.image,
+            audio: this.audio,
+            controls: this.controls
+        };
+    }
+
 }
 
 export default Stage;

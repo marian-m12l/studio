@@ -202,6 +202,28 @@ class StageNodeModel extends NodeModel {
         }
     }
 
+    deserialize(event) {
+        super.deserialize(event);
+        this.uuid = event.data.uuid;
+        this.squareOne = event.data.squareOne;
+        this.stage = (new Stage).deserialize(event.data.stage);
+        this.fromPort = event.data.fromPort ? this.getPortFromID(event.data.fromPort) : null;
+        this.okPort = event.data.okPort ? this.getPortFromID(event.data.okPort) : null;
+        this.homePort = event.data.homePort ? this.getPortFromID(event.data.homePort) : null;
+    }
+
+    serialize() {
+        return {
+            ...super.serialize(),
+            uuid: this.uuid,
+            squareOne: this.squareOne,
+            stage: this.stage.serialize(),
+            fromPort: this.fromPort ? this.fromPort.getID() : null,
+            okPort: this.okPort ? this.okPort.getID() : null,
+            homePort: this.homePort ? this.homePort.getID() : null
+        };
+    }
+
 }
 
 export default StageNodeModel;

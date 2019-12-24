@@ -17,6 +17,8 @@ import MenuNodeFactory from "./factories/MenuNodeFactory";
 import StoryNodeFactory from "./factories/StoryNodeFactory";
 import StudioLinkFactory from "./factories/StudioLinkFactory";
 import StudioLinkLayerFactory from "./factories/StudioLinkLayerFactory";
+import ActionPortFactory from "./factories/ActionPortFactory";
+import StagePortFactory from "./factories/StagePortFactory";
 import PackDiagramModel from "./models/PackDiagramModel";
 import PackDiagramWidget from "./widgets/PackDiagramWidget";
 import FixedZoomCanvasAction from "./actions/FixedZoomCanvasAction";
@@ -58,6 +60,8 @@ class PackEditor extends React.Component {
         engine.getNodeFactories().registerFactory(new MenuNodeFactory(updateCanvas));
         engine.getNodeFactories().registerFactory(new StoryNodeFactory(updateCanvas));
         engine.getLinkFactories().registerFactory(new StudioLinkFactory());
+        engine.getPortFactories().registerFactory(new StagePortFactory());
+        engine.getPortFactories().registerFactory(new ActionPortFactory());
 
         this.state = {
             engine,

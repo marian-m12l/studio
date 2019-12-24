@@ -42,6 +42,20 @@ class StudioPortModel extends PortModel {
         clone.options.name = 'studio-port-' + StudioPortModel.counter++;
     }
 
+    deserialize(event) {
+        super.deserialize(event);
+        this.inbound = event.data.inbound;
+        this.label = event.data.label;
+    }
+
+    serialize() {
+        return {
+            ...super.serialize(),
+            inbound: this.inbound,
+            label: this.label
+        };
+    }
+
 }
 
 export default StudioPortModel;
