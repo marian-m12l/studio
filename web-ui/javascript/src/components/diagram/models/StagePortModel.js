@@ -27,6 +27,18 @@ class StagePortModel extends StudioPortModel {
         );
     }
 
+    deserialize(event) {
+        super.deserialize(event);
+        this.isHome = event.data.isHome;
+    }
+
+    serialize() {
+        return {
+            ...super.serialize(),
+            isHome: this.isHome
+        };
+    }
+
 }
 
 export default StagePortModel;

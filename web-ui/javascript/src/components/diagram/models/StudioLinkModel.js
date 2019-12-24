@@ -16,6 +16,18 @@ class StudioLinkModel extends DefaultLinkModel {
         this.inversed = inversed;
     }
 
+    deserialize(event) {
+        super.deserialize(event);
+        this.inversed = event.data.inversed;
+    }
+
+    serialize() {
+        return {
+            ...super.serialize(),
+            inversed: this.inversed
+        };
+    }
+
 }
 
 export default StudioLinkModel;

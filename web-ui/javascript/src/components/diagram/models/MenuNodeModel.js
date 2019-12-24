@@ -221,6 +221,29 @@ class MenuNodeModel extends NodeModel {
         clone.optionsOut = this.optionsOut.map(optionOutPort => optionOutPort.clone(lookupTable));
     }
 
+    deserialize(event) {
+        super.deserialize(event);
+        this.uuid = event.data.uuid;
+        this.name = event.data.name;
+        this.fromPort = this.getPortFromID(event.data.fromPort);
+        this.questionStage = (new Stage()).deserialize(event.data.questionStage);
+        this.optionsStages = event.data.optionsStages.map(os => (new Stage()).deserialize(os));
+        this.optionsOut = event.data.optionsOut.map(id => this.getPortFromID(id));
+        this.defaultOption = event.data.defaultOption;
+    }
+
+    serialize() {
+        return {
+            ...super.serialize(),
+            uuid: this.uuid,
+            fromPort: this.fromPort.getID(),
+            questionStage: this.questionStage.serialize(),
+            optionsStages: this.optionsStages.map(os => os.serialize()),
+            optionsOut: this.optionsOut.map(port => port.getID()),
+            defaultOption: this.defaultOption
+        };
+    }
+
 }
 
 export default MenuNodeModel;

@@ -97,6 +97,22 @@ class StoryNodeModel extends StageNodeModel {
         return coverNode.onOk(diagram);
     }
 
+    deserialize(event) {
+        super.deserialize(event);
+        this.customOkTransition = event.data.customOkTransition;
+        this.customHomeTransition = event.data.customHomeTransition;
+        this.disableHome = event.data.disableHome;
+    }
+
+    serialize() {
+        return {
+            ...super.serialize(),
+            customOkTransition: this.customOkTransition,
+            customHomeTransition: this.customHomeTransition,
+            disableHome: this.disableHome
+        };
+    }
+
 }
 
 export default StoryNodeModel;

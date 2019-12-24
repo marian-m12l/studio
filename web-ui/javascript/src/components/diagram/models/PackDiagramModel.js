@@ -27,6 +27,24 @@ class PackDiagramModel extends DiagramModel {
             .filter(node => (node instanceof StageNodeModel || node instanceof CoverNodeModel) && node.isSquareOne())[0];
     }
 
+    deserialize(event) {
+        super.deserialize(event);
+        this.title = event.data.title;
+        this.version = event.data.version;
+        this.description = event.data.description;
+        this.thumbnail = event.data.thumbnail;
+    }
+
+    serialize() {
+        return {
+            ...super.serialize(),
+            title: this.title,
+            version: this.version,
+            description: this.description,
+            thumbnail: this.thumbnail
+        };
+    }
+
 }
 
 export default PackDiagramModel;

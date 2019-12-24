@@ -119,6 +119,24 @@ class ActionNodeModel extends NodeModel {
         clone.optionsOut = this.optionsOut.map(optionOutPort => optionOutPort.clone(lookupTable));
     }
 
+    deserialize(event) {
+        super.deserialize(event);
+        this.name = event.data.name;
+        this.optionsIn = event.data.optionsIn.map(id => this.getPortFromID(id));
+        this.optionsOut = event.data.optionsOut.map(id => this.getPortFromID(id));
+        this.randomOptionIn = this.getPortFromID(event.data.randomOptionIn);
+    }
+
+    serialize() {
+        return {
+            ...super.serialize(),
+            name: this.name,
+            optionsIn: this.optionsIn.map(port => port.getID()),
+            optionsOut: this.optionsOut.map(port => port.getID()),
+            randomOptionIn: this.randomOptionIn.getID()
+        };
+    }
+
 }
 
 export default ActionNodeModel;
