@@ -18,5 +18,5 @@ export function sortPacks(packs) {
 }
 
 export function generateFilename(model) {
-    return model.title.replace(/ /, '_') + '-' + model.getEntryPoint().getUuid() + '-v' + model.version + '.zip';
+    return model.title.replace(/ /g, '_') + '-' + model.getEntryPoint().getUuid() + '-v' + model.version + '.zip';
 }
