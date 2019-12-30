@@ -85,7 +85,12 @@ public class MainVerticle extends AbstractVerticle {
         router.route().handler(StaticHandler.create().setCachingEnabled(false));
 
         // Error handler
-        router.route().failureHandler(ErrorHandler.create(true));
+        ErrorHandler errorHandler = ErrorHandler.create(true);
+        router.route().failureHandler(ctx -> {
+            Throwable failure = ctx.failure();
+            LOGGER.error("Exception thrown", failure);
+            errorHandler.handle(ctx);
+        });
 
         vertx.createHttpServer().requestHandler(router).listen(8080);
     }
