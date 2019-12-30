@@ -25,10 +25,10 @@ USAGE
 ### Prerequisite
 
 To run the application:
-* JRE 10+
+* JRE 11+
 
 To build the application:
-* JDK 10+
+* JDK 11+
 * Maven 3+
 
 #### Luniistore\* software

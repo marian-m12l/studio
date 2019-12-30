@@ -25,11 +25,11 @@ UTILISATION
 ### Prérequis
 
 Pour exécuter l'application :
-* JRE 10+
+* JRE 11+
 
 Pour construire l'application :
 * Git
-* JDK 10+
+* JDK 11+
 * Maven 3+
 
 #### Logiciel Luniistore\*
