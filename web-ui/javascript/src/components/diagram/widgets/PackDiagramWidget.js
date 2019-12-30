@@ -62,7 +62,7 @@ class PackDiagramWidget extends React.Component {
     };
 
     changeVersion = (e) => {
-        this.props.diagramEngine.getModel().version = e.target.value;
+        this.props.diagramEngine.getModel().version = parseInt(e.target.value);
         this.forceUpdate();
     };
 
