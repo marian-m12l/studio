@@ -31,7 +31,7 @@ public class DeviceController {
         Router router = Router.router(vertx);
 
         // Plugged device metadata
-        router.get("/infos").handler(ctx -> {
+        router.get("/infos").blockingHandler(ctx -> {
             Optional<JsonObject> maybeDeviceInfos = storyTellerService.deviceInfos();
             maybeDeviceInfos.ifPresentOrElse(
                     deviceInfos -> ctx.response()
@@ -44,7 +44,7 @@ public class DeviceController {
         });
 
         // Plugged device packs list
-        router.get("/packs").handler(ctx -> {
+        router.get("/packs").blockingHandler(ctx -> {
             JsonArray devicePacks = storyTellerService.packs();
             ctx.response()
                     .putHeader("content-type", "application/json")
@@ -52,7 +52,7 @@ public class DeviceController {
         });
 
         // Add pack from library to device
-        router.post("/addFromLibrary").handler(ctx -> {
+        router.post("/addFromLibrary").blockingHandler(ctx -> {
             String uuid = ctx.getBodyAsJson().getString("uuid");
             String packPath = ctx.getBodyAsJson().getString("path");
             // First, get the pack file, potentially converted from archive format to pack format
@@ -93,7 +93,7 @@ public class DeviceController {
         });
 
         // Remove pack from device
-        router.post("/removeFromDevice").handler(ctx -> {
+        router.post("/removeFromDevice").blockingHandler(ctx -> {
             String uuid = ctx.getBodyAsJson().getString("uuid");
             boolean removed = storyTellerService.deletePack(uuid);
             if (removed) {
@@ -107,7 +107,7 @@ public class DeviceController {
         });
 
         // Add pack from device to library
-        router.post("/addToLibrary").handler(ctx -> {
+        router.post("/addToLibrary").blockingHandler(ctx -> {
             String uuid = ctx.getBodyAsJson().getString("uuid");
             // Transfer pack file to library file
             String path = libraryService.libraryPath() + uuid + ".pack";
