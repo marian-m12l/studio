@@ -85,7 +85,7 @@ Si la commande est exécutée dans un terminale, des logs devraient s'afficher, 
 L'interface web est composée de deux écrans :
 
 * La bibliothèque d'histoires, qui permet de gérer la bibliothèque locale et de transférer de / vers la Fabrique à Histoire\* 
-* L'éditeur d'histoire, opur pour créer ou modifier un pack d'histoire
+* L'éditeur d'histoire, pour créer ou modifier un pack d'histoire
 
 #### Bibliothèque d'histoires
 
