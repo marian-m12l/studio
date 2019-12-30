@@ -30,11 +30,15 @@ public class ArchiveStoryPackReader {
         // Pack metadata model
         StoryPackMetadata metadata = new StoryPackMetadata(Constants.PACK_FORMAT_ARCHIVE);
 
+        boolean hasStoryJsonEntry = false;
+
 
         ZipEntry entry;
         while((entry = zis.getNextEntry()) != null) {
             // Story descriptor file: story.json
             if (!entry.isDirectory() && entry.getName().equalsIgnoreCase("story.json")) {
+                hasStoryJsonEntry = true;
+
                 JsonParser parser = new JsonParser();
                 JsonObject root = parser.parse(new InputStreamReader(zis)).getAsJsonObject();
 
@@ -63,7 +67,7 @@ public class ArchiveStoryPackReader {
 
         zis.close();
 
-        return metadata;
+        return hasStoryJsonEntry ? metadata : null;
     }
 
     public StoryPack read(InputStream inputStream) throws IOException {

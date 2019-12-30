@@ -240,7 +240,7 @@ public class LibraryService {
             try (FileInputStream fis = new FileInputStream(path.toFile())) {
                 LOGGER.debug("Reading archive pack metadata.");
                 ArchiveStoryPackReader packReader = new ArchiveStoryPackReader();
-                return Optional.of(packReader.readMetadata(fis));
+                return Optional.ofNullable(packReader.readMetadata(fis));
             } catch (IOException e) {
                 LOGGER.error("Failed to read archive-format pack " + path.toString() + " from local library", e);
                 e.printStackTrace();
