@@ -28,14 +28,14 @@ public class LibraryController {
         Router router = Router.router(vertx);
 
         // Local library device metadata
-        router.get("/infos").handler(ctx -> {
+        router.get("/infos").blockingHandler(ctx -> {
             ctx.response()
                     .putHeader("content-type", "application/json")
                     .end(Json.encode(libraryService.libraryInfos()));
         });
 
         // Local library packs list
-        router.get("/packs").handler(ctx -> {
+        router.get("/packs").blockingHandler(ctx -> {
             JsonArray libraryPacks = libraryService.packs();
             ctx.response()
                     .putHeader("content-type", "application/json")
@@ -43,7 +43,7 @@ public class LibraryController {
         });
 
         // Local library pack download
-        router.post("/download").handler(ctx -> {
+        router.post("/download").blockingHandler(ctx -> {
             String uuid = ctx.getBodyAsJson().getString("uuid");
             String packPath = ctx.getBodyAsJson().getString("path");
             libraryService.getRawPackFile(packPath)
@@ -59,7 +59,7 @@ public class LibraryController {
         });
 
         // Local library pack upload
-        router.post("/upload").handler(ctx -> {
+        router.post("/upload").blockingHandler(ctx -> {
             String uuid = ctx.request().getFormAttribute("uuid");
             String packPath = ctx.request().getFormAttribute("path");
             boolean added = libraryService.addPackFile(packPath, ctx.fileUploads().iterator().next().uploadedFileName());
@@ -74,7 +74,7 @@ public class LibraryController {
         });
 
         // Local library pack convert to archive
-        router.post("/convert").handler(ctx -> {
+        router.post("/convert").blockingHandler(ctx -> {
             String uuid = ctx.getBodyAsJson().getString("uuid");
             String packPath = ctx.getBodyAsJson().getString("path");
             // First, get the pack file, potentially converted from binary format to archive format
@@ -112,7 +112,7 @@ public class LibraryController {
         });
 
         // Remove pack from device
-        router.post("/remove").handler(ctx -> {
+        router.post("/remove").blockingHandler(ctx -> {
             String packPath = ctx.getBodyAsJson().getString("path");
             boolean removed = libraryService.deletePack(packPath);
             if (removed) {
