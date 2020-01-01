@@ -341,7 +341,7 @@ export const actionLoadEvergreen = (t) => {
                 toast.update(toastId,{ render: t('toasts.evergreen.fetching') });
                 return fetchEvergreenLatestRelease()
                     .then(latest => {
-                        if (Date.parse(latest.published_at) > Date.parse(infos.timestamp)) {
+                        if (latest.name !== infos.version && Date.parse(latest.published_at) > Date.parse(infos.timestamp)) {
                             toast.update(toastId, { type: toast.TYPE.SUCCESS, render: <><p>{t('toasts.evergreen.fetched.newRelease.label')}</p><p><a href={latest.html_url}>{t('toasts.evergreen.fetched.newRelease.link', { version: latest.name })}</a></p></> });
                         } else {
                             toast.update(toastId, { type: toast.TYPE.INFO, render: t('toasts.evergreen.fetched.upToDate', { version: infos.version }), autoClose: 5000 });
