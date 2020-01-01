@@ -4,10 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+import React from 'react';
 import { toast } from 'react-toastify';
 
 import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice, addToLibrary} from '../services/device';
 import {fetchLibraryInfos, fetchLibraryPacks, downloadFromLibrary, uploadToLibrary, convertInLibrary, removeFromLibrary} from '../services/library';
+import {fetchEvergreenInfos, fetchEvergreenLatestRelease} from '../services/evergreen';
 import {sortPacks} from "../utils/packs";
 import {readFromArchive} from "../utils/reader";
 
@@ -329,6 +331,33 @@ export const actionRemoveFromLibrary = (path, t) => {
             });
     }
 };
+export const actionLoadEvergreen = (t) => {
+    return dispatch => {
+        let toastId = toast(t('toasts.evergreen.loading'), { autoClose: false });
+        return fetchEvergreenInfos()
+            .then(infos => {
+                dispatch(setApplicationVersion(infos.version));
+                console.log("fetching latest release...");
+                toast.update(toastId,{ render: t('toasts.evergreen.fetching') });
+                return fetchEvergreenLatestRelease()
+                    .then(latest => {
+                        if (Date.parse(latest.published_at) > Date.parse(infos.timestamp)) {
+                            toast.update(toastId, { type: toast.TYPE.SUCCESS, render: <><p>{t('toasts.evergreen.fetched.newRelease.label')}</p><p><a href={latest.html_url}>{t('toasts.evergreen.fetched.newRelease.link', { version: latest.name })}</a></p></> });
+                        } else {
+                            toast.update(toastId, { type: toast.TYPE.INFO, render: t('toasts.evergreen.fetched.upToDate', { version: infos.version }), autoClose: 5000 });
+                        }
+                    })
+                    .catch(e => {
+                        console.error('failed to fetch latest release', e);
+                        toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.evergreen.fetchingFailed'), autoClose: 5000 });
+                    });
+            })
+            .catch(e => {
+                console.error('failed to fetch current version', e);
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.evergreen.loadingFailed'), autoClose: 5000 });
+            });
+    }
+};
 
 export const devicePlugged = (metadata) => ({
     type: 'DEVICE_PLUGGED',
@@ -384,4 +413,9 @@ export const showLibrary = () => ({
 
 export const showEditor = () => ({
     type: 'SHOW_EDITOR'
+});
+
+export const setApplicationVersion = (version) => ({
+    type: 'SET_APPLICATION_VERSION',
+    version
 });

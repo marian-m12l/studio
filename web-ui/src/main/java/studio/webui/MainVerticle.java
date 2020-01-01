@@ -21,11 +21,9 @@ import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
 import studio.webui.api.DeviceController;
+import studio.webui.api.EvergreenController;
 import studio.webui.api.LibraryController;
-import studio.webui.service.IStoryTellerService;
-import studio.webui.service.LibraryService;
-import studio.webui.service.DatabaseMetadataService;
-import studio.webui.service.StoryTellerService;
+import studio.webui.service.*;
 import studio.webui.service.mock.MockStoryTellerService;
 
 import java.util.Set;
@@ -36,6 +34,7 @@ public class MainVerticle extends AbstractVerticle {
 
     private DatabaseMetadataService databaseMetadataService;
     private LibraryService libraryService;
+    private EvergreenService evergreenService;
     private IStoryTellerService storyTellerService;
 
     @Override
@@ -46,6 +45,9 @@ public class MainVerticle extends AbstractVerticle {
 
         // Service that manages local library
         libraryService = new LibraryService(databaseMetadataService);
+
+        // Service that manages updates
+        evergreenService = new EvergreenService(vertx);
 
         // Service that manages link with the story teller device
         if (isDevMode()) {
@@ -120,6 +122,9 @@ public class MainVerticle extends AbstractVerticle {
 
         // Library services
         router.mountSubRouter("/library", LibraryController.apiRouter(vertx, libraryService));
+
+        // Evergreen services
+        router.mountSubRouter("/evergreen", EvergreenController.apiRouter(vertx, evergreenService));
 
         return router;
     }

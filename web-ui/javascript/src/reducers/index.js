@@ -7,6 +7,7 @@
 import { combineReducers } from 'redux';
 import device from './device';
 import editor from './editor';
+import evergreen from './evergreen';
 import library from './library';
 import ui from './ui';
 import viewer from './viewer';
@@ -15,6 +16,7 @@ import viewer from './viewer';
 export default combineReducers({
     device,
     editor,
+    evergreen,
     library,
     ui,
     viewer
