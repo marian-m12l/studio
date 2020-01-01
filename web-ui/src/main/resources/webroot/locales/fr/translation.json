@@ -171,6 +171,19 @@
       "missingNext": "Impossible de trouver l'option suivante.",
       "missingOk": "Impossible de trouver le nœud pour la transition OK.",
       "missingHome": "Impossible de trouver le nœud pour la transition MAISON."
+    },
+    "evergreen": {
+      "loading": "Chargement de la version actuelle...",
+      "fetching": "Récupération de la dernière version...",
+      "fetched": {
+        "upToDate": "L'application est à jour (version {{version}}).",
+        "newRelease": {
+          "label": "Une nouvelle version est disponible : ",
+          "link": "Voir la version {{version}} sur GitHub"
+        }
+      },
+      "loadingFailed": "Échec du chargement de la version actuelle.",
+      "fetchingFailed": "Échec de la récupération de la dernière version."
     }
   },
 

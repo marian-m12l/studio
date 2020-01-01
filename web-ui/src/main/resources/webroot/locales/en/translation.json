@@ -171,6 +171,19 @@
       "missingNext": "Cannot find next option.",
       "missingOk": "Cannot find node for OK transition.",
       "missingHome": "Cannot find node for HOME transition."
+    },
+    "evergreen": {
+      "loading": "Loading current version...",
+      "fetching": "Fetching latest release...",
+      "fetched": {
+        "upToDate": "The application is up to date (version {{version}}).",
+        "newRelease": {
+          "label": "A new release is available: ",
+          "link": "View version {{version}} on GitHub"
+        }
+      },
+      "loadingFailed": "Failed to load current version.",
+      "fetchingFailed": "Failed to fetch latest release."
     }
   },
 

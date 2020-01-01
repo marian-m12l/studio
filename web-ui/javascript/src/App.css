@@ -33,6 +33,11 @@
     flex-grow: 1;
 }
 
+.App-header .welcome .version {
+    font-size: 50%;
+    font-weight: lighter;
+}
+
 .App-header .controls .btn {
     font-size: 100%;
 }

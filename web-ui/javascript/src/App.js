@@ -23,7 +23,8 @@ import {
     actionLoadLibrary,
     setEditorDiagram,
     showLibrary,
-    showEditor
+    showEditor,
+    actionLoadEvergreen
 } from "./actions";
 
 import './App.css';
@@ -73,6 +74,9 @@ class App extends React.Component {
             // Load library on startup
             this.props.loadLibrary();
 
+            // Load evergeen infos on startup
+            this.props.loadEvergreen();
+
             // Load sample diagram in editor
             let model = simplifiedSample();
             this.props.setEditorDiagram(model, generateFilename(model));
@@ -110,6 +114,7 @@ class App extends React.Component {
                         </div>
                         <div  className="welcome">
                             {t('header.welcome')}
+                            {this.props.evergreen.version && <span className="version"> ({this.props.evergreen.version})</span>}
                         </div>
                         <div className="controls">
                             <span title={t('header.buttons.library')} className={`btn glyphicon glyphicon-film ${this.state.shown === 'library' && 'active'}`} onClick={this.showLibrary}/>
@@ -125,6 +130,7 @@ class App extends React.Component {
 }
 
 const mapStateToProps = (state, ownProps) => ({
+    evergreen: state.evergreen,
     ui: state.ui,
     viewer: state.viewer
 });
@@ -136,7 +142,8 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     loadLibrary: () => dispatch(actionLoadLibrary(ownProps.t)),
     setEditorDiagram: (diagram, filename) => dispatch(setEditorDiagram(diagram, filename)),
     dispatchShowLibrary: () => dispatch(showLibrary()),
-    dispatchShowEditor: () => dispatch(showEditor())
+    dispatchShowEditor: () => dispatch(showEditor()),
+    loadEvergreen: () => dispatch(actionLoadEvergreen(ownProps.t))
 });
 
 export default withTranslation()(
