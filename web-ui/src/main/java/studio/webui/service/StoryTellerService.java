@@ -19,6 +19,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import studio.core.v1.Constants;
+import studio.metadata.DatabaseMetadataService;
 
 import java.io.File;
 import java.lang.reflect.Method;

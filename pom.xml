@@ -17,7 +17,9 @@
     <packaging>pom</packaging>
 
     <modules>
+        <module>agent</module>
         <module>core</module>
+        <module>metadata</module>
         <module>web-ui</module>
     </modules>
 

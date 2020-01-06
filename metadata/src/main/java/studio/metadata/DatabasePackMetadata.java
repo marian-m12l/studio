@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package studio.webui.model;
+package studio.metadata;
 
 public class DatabasePackMetadata {
 
