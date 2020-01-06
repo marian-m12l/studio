@@ -20,9 +20,11 @@ import io.vertx.ext.web.handler.ErrorHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
+import studio.metadata.DatabaseMetadataService;
 import studio.webui.api.DeviceController;
 import studio.webui.api.EvergreenController;
 import studio.webui.api.LibraryController;
+import studio.webui.logger.VertxPluggableLogger;
 import studio.webui.service.*;
 import studio.webui.service.mock.MockStoryTellerService;
 
@@ -41,7 +43,7 @@ public class MainVerticle extends AbstractVerticle {
     public void start() {
 
         // Service that manages pack metadata
-        databaseMetadataService = new DatabaseMetadataService();
+        databaseMetadataService = new DatabaseMetadataService(new VertxPluggableLogger(DatabaseMetadataService.class.getName()), true);
 
         // Service that manages local library
         libraryService = new LibraryService(databaseMetadataService);

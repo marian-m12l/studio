@@ -16,6 +16,7 @@
             <useProjectArtifact>false</useProjectArtifact>
             <outputDirectory>lib</outputDirectory>
             <unpack>false</unpack>
+            <scope>compile</scope>
         </dependencySet>
         <dependencySet>
             <useProjectArtifact>false</useProjectArtifact>
@@ -26,6 +27,15 @@
                 <exclude>com.lunii:*</exclude>
             </excludes>
         </dependencySet>
+        <dependencySet>
+            <useProjectArtifact>false</useProjectArtifact>
+            <outputDirectory>agent</outputDirectory>
+            <unpack>false</unpack>
+            <includes>
+                <include>studio:studio-agent:jar:jar-with-dependencies</include>
+                <include>studio:studio-metadata:jar:jar-with-dependencies</include>
+            </includes>
+        </dependencySet>
     </dependencySets>
 
     <fileSets>
@@ -34,10 +44,17 @@
             <outputDirectory></outputDirectory>
             <includes>
                 <include>${project.build.finalName}.jar</include>
+            </includes>
+        </fileSet>
+        <fileSet>
+            <directory>${project.build.directory}</directory>
+            <outputDirectory></outputDirectory>
+            <includes>
                 <include>studio-linux.sh</include>
                 <include>studio-macos.sh</include>
                 <include>studio-windows.bat</include>
             </includes>
+            <fileMode>0755</fileMode>
         </fileSet>
     </fileSets>
 

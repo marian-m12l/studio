@@ -124,6 +124,22 @@ to the device) :
 
 MP3 and OGG files are expected to be sampled at 44000Hz.
 
+### [Experimental] Seeing unofficial metadata in Luniistore\* application
+
+This **experimental** feature allows the official Luniistore\* application to display correct(-ish) metadata for
+unofficial story packs stored on the device.
+
+To enable it, locate the configuration file `Luniistore.cfg`:
+  * On Linux, in `/opt/Luniistore/app`
+  * On Windows, in `%ProgramFiles%\Luniistore\app`
+
+Then add this line under the `[JVMOptions]` section (replace `$DOT_STUDIO` with the actual path)(use forward slashes
+even on Windows):
+
+```
+-javaagent:$DOT_STUDIO/agent/studio-agent.jar
+```
+
 
 LICENSE
 -------

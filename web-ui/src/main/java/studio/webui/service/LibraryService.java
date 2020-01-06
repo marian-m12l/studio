@@ -18,7 +18,8 @@ import studio.core.v1.reader.binary.BinaryStoryPackReader;
 import studio.core.v1.utils.PackAssetsCompression;
 import studio.core.v1.writer.archive.ArchiveStoryPackWriter;
 import studio.core.v1.writer.binary.BinaryStoryPackWriter;
-import studio.webui.model.DatabasePackMetadata;
+import studio.metadata.DatabaseMetadataService;
+import studio.metadata.DatabasePackMetadata;
 
 import java.io.File;
 import java.io.FileInputStream;

@@ -14,7 +14,7 @@ import io.vertx.core.logging.LoggerFactory;
 import org.apache.commons.io.FileUtils;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.reader.binary.BinaryStoryPackReader;
-import studio.webui.service.DatabaseMetadataService;
+import studio.metadata.DatabaseMetadataService;
 import studio.webui.service.IStoryTellerService;
 
 import java.io.File;

@@ -1,0 +1,4 @@
+Premain-Class: studio.agent.StudioAgent
+Can-Redefine-Classes: true
+Can-Retransform-Classes: true
+Can-Set-Native-Method-Prefix: true
