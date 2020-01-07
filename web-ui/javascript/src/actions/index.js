@@ -7,7 +7,7 @@
 import React from 'react';
 import { toast } from 'react-toastify';
 
-import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice, addToLibrary} from '../services/device';
+import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice, reorderPacks, addToLibrary} from '../services/device';
 import {fetchLibraryInfos, fetchLibraryPacks, downloadFromLibrary, uploadToLibrary, convertInLibrary, removeFromLibrary} from '../services/library';
 import {fetchEvergreenInfos, fetchEvergreenLatestRelease} from '../services/evergreen';
 import {sortPacks} from "../utils/packs";
@@ -149,6 +149,26 @@ export const actionRemoveFromDevice = (uuid, t) => {
             .catch(e => {
                 console.error('failed to remove pack from device', e);
                 toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.device.removingFailed'), autoClose: 5000 });
+            });
+    }
+};
+
+export const actionReorderOnDevice = (uuids, t) => {
+    return dispatch => {
+        let toastId = toast(t('toasts.device.reordering'), { autoClose: false });
+        return reorderPacks(uuids)
+            .then(resp => {
+                if (resp.success) {
+                    toast.update(toastId, {type: toast.TYPE.SUCCESS, render: t('toasts.device.reordered'), autoClose: 5000});
+                    // Refresh device metadata and packs list
+                    dispatch(actionRefreshDevice(t));
+                } else {
+                    toast.update(toastId, {type: toast.TYPE.ERROR, render: t('toasts.device.reorderingFailed'), autoClose: 5000});
+                }
+            })
+            .catch(e => {
+                console.error('failed to reorder packs on device', e);
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.device.reorderingFailed'), autoClose: 5000 });
             });
     }
 };
@@ -331,6 +351,7 @@ export const actionRemoveFromLibrary = (path, t) => {
             });
     }
 };
+
 export const actionLoadEvergreen = (t) => {
     return dispatch => {
         let toastId = toast(t('toasts.evergreen.loading'), { autoClose: false });

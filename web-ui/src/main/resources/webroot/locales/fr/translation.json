@@ -147,7 +147,10 @@
       "addingFailed": "Échec de l'ajout du pack à l'appareil.",
       "removing": "Retrait du pack de l'appareil...",
       "removed": "Pack retiré de l'appareil.",
-      "removingFailed": "Échec du retrait du pack de l'appareil."
+      "removingFailed": "Échec du retrait du pack de l'appareil.",
+      "reordering": "Réorganisation des packs de l'appareil...",
+      "reordered": "Packs réorganisés sur l'appareil.",
+      "reorderingFailed": "Échec de la réorganisation des packs de l'appareil."
     },
     "editor": {
       "saving": "Enregistrement du pack d'histoires dans la bibliothèque...",

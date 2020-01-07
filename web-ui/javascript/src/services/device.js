@@ -33,6 +33,15 @@ export const removeFromDevice = (uuid) => {
         .then(response => response.json());
 };
 
+export const reorderPacks = (uuids) => {
+    return fetch('http://localhost:8080/api/device/reorder', {
+        method: "POST",
+        headers: { "Content-Type" : "application/json" },
+        body: JSON.stringify({uuids})
+    })
+        .then(response => response.json());
+};
+
 export const addToLibrary = (uuid) => {
     return fetch('http://localhost:8080/api/device/addToLibrary', {
         method: "POST",

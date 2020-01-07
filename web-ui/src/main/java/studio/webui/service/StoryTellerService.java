@@ -23,10 +23,7 @@ import studio.metadata.DatabaseMetadataService;
 
 import java.io.File;
 import java.lang.reflect.Method;
-import java.util.Optional;
-import java.util.Timer;
-import java.util.TimerTask;
-import java.util.UUID;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class StoryTellerService implements IStoryTellerService {
@@ -226,6 +223,19 @@ public class StoryTellerService implements IStoryTellerService {
                 e.printStackTrace();
                 return false;
             }
+        }
+    }
+
+    public boolean reorderPacks(List<String> uuids) {
+        try {
+            List<PhysicalPack> physicalPacks = new ArrayList(rawDeviceHandler.readIndex());
+            physicalPacks.sort(Comparator.comparingInt((o) -> uuids.indexOf(o.getUuid().toString())));
+            rawDeviceHandler.writeStoryPacksIndex(physicalPacks);
+            return true;
+        } catch (Exception e) {
+            LOGGER.error("Failed to reorder packs on device", e);
+            e.printStackTrace();
+            return false;
         }
     }
 

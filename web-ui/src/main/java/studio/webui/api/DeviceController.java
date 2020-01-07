@@ -18,6 +18,7 @@ import studio.webui.service.IStoryTellerService;
 import studio.webui.service.LibraryService;
 
 import java.io.File;
+import java.util.List;
 import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
@@ -102,6 +103,20 @@ public class DeviceController {
                         .end(Json.encode(new JsonObject().put("success", true)));
             } else {
                 LOGGER.error("Pack was not removed from device");
+                ctx.fail(500);
+            }
+        });
+
+        // Reorder packs on device
+        router.post("/reorder").blockingHandler(ctx -> {
+            List<String> uuids = ctx.getBodyAsJson().getJsonArray("uuids").getList();
+            boolean reordered = storyTellerService.reorderPacks(uuids);
+            if (reordered) {
+                ctx.response()
+                        .putHeader("content-type", "application/json")
+                        .end(Json.encode(new JsonObject().put("success", true)));
+            } else {
+                LOGGER.error("Failed to reorder packs on device");
                 ctx.fail(500);
             }
         });
