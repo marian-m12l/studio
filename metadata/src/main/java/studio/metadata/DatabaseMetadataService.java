@@ -10,9 +10,7 @@ import com.google.gson.*;
 import studio.metadata.logger.PluggableLogger;
 
 import java.io.*;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
+import java.util.*;
 
 public class DatabaseMetadataService {
 
@@ -23,9 +21,28 @@ public class DatabaseMetadataService {
     public static final String UNOFFICIAL_DB_JSON_PATH = "/.studio/db/unofficial.json";
 
     private final PluggableLogger logger;
+    private final Map<String, JsonObject> cachedOfficialDatabase;
 
-    public DatabaseMetadataService(PluggableLogger pluggableLogger, boolean cleanOnStartup) {
+    public DatabaseMetadataService(PluggableLogger pluggableLogger, boolean isAgent) {
         this.logger = pluggableLogger;
+        // Read and cache official database
+        cachedOfficialDatabase = new HashMap<>();
+        if (!isAgent) {
+            try {
+                logger.debug("Reading and caching official metadata database");
+                // Read official metadata database file (path may be overridden by system property `studio.db.official`)
+                String databasePath = System.getProperty(OFFICIAL_DB_PROP, System.getProperty("user.home") + OFFICIAL_DB_JSON_PATH);
+                JsonObject officialRoot = new JsonParser().parse(new FileReader(databasePath)).getAsJsonObject();
+                // Go through all packs
+                officialRoot.keySet().forEach(key -> {
+                    JsonObject packMetadata = officialRoot.getAsJsonObject(key);
+                    String uuid = packMetadata.get("uuid").getAsString();
+                    cachedOfficialDatabase.put(uuid, packMetadata);
+                });
+            } catch (FileNotFoundException e) {
+                logger.error("Missing official metadata database file", e);
+            }
+        }
         // Initialize empty unofficial database if needed
         String databasePath = System.getProperty(UNOFFICIAL_DB_PROP, System.getProperty("user.home") + UNOFFICIAL_DB_JSON_PATH);
         File unofficialDatabase = new File(databasePath);
@@ -38,7 +55,7 @@ public class DatabaseMetadataService {
                 logger.error("Failed to initialize unofficial metadata database", e);
                 throw new IllegalStateException("Failed to initialize unofficial metadata database");
             }
-        } else if (cleanOnStartup) {
+        } else if (!isAgent) {
             // Otherwise clear unofficial database from official packs metadata
             this.cleanUnofficialDatabase();
         }
@@ -54,51 +71,25 @@ public class DatabaseMetadataService {
     }
 
     public Optional<DatabasePackMetadata> getOfficialMetadata(String uuid) {
-        try {
-            logger.debug("Fetching metadata from official database for pack: " + uuid);
-            // Fetch from official metadata database file (path may be overridden by system property `studio.db.official`)
-            String databasePath = System.getProperty(OFFICIAL_DB_PROP, System.getProperty("user.home") + OFFICIAL_DB_JSON_PATH);
-            JsonObject officialRoot = new JsonParser().parse(new FileReader(databasePath)).getAsJsonObject();
-            Optional<String> maybePackKey = officialRoot.keySet().stream()
-                    .filter(key -> officialRoot.getAsJsonObject(key).get("uuid").getAsString().equalsIgnoreCase(uuid))
-                    .findFirst();
-            return maybePackKey.map(packKey -> {
-                JsonObject packMetadata = officialRoot.getAsJsonObject(packKey);
-                // FIXME Handle multiple locales
-                JsonObject localesAvailable = packMetadata.getAsJsonObject("locales_available");
-                String locale = localesAvailable.keySet().contains("fr_FR") ? "fr_FR" : localesAvailable.keySet().stream().findFirst().get();
-                JsonObject localizedInfos = packMetadata.getAsJsonObject("localized_infos").getAsJsonObject(locale);
-                return new DatabasePackMetadata(
-                        uuid,
-                        localizedInfos.get("title").getAsString(),
-                        localizedInfos.get("description").getAsString(),
-                        THUMBNAILS_STORAGE_ROOT + localizedInfos.getAsJsonObject("image").get("image_url").getAsString(),
-                        true
-                );
-            });
-        } catch (FileNotFoundException e) {
-            logger.error("Missing official metadata database file", e);
-        }
-
-        // Missing metadata
-        return Optional.empty();
+        logger.debug("Fetching metadata from official database for pack: " + uuid);
+        return Optional.ofNullable(cachedOfficialDatabase.get(uuid)).map(packMetadata -> {
+            // FIXME Handle multiple locales
+            JsonObject localesAvailable = packMetadata.getAsJsonObject("locales_available");
+            String locale = localesAvailable.keySet().contains("fr_FR") ? "fr_FR" : localesAvailable.keySet().stream().findFirst().get();
+            JsonObject localizedInfos = packMetadata.getAsJsonObject("localized_infos").getAsJsonObject(locale);
+            return new DatabasePackMetadata(
+                    uuid,
+                    localizedInfos.get("title").getAsString(),
+                    localizedInfos.get("description").getAsString(),
+                    THUMBNAILS_STORAGE_ROOT + localizedInfos.getAsJsonObject("image").get("image_url").getAsString(),
+                    true
+            );
+        });
     }
 
     public boolean isOfficialPack(String uuid) {
-        try {
-            logger.debug("Looking in official database for pack: " + uuid);
-            // Look for uuid in official metadata database file
-            String databasePath = System.getProperty(OFFICIAL_DB_PROP, System.getProperty("user.home") + OFFICIAL_DB_JSON_PATH);
-            JsonObject officialRoot = new JsonParser().parse(new FileReader(databasePath)).getAsJsonObject();
-            Optional<String> maybePackKey = officialRoot.keySet().stream()
-                    .filter(key -> officialRoot.getAsJsonObject(key).get("uuid").getAsString().equalsIgnoreCase(uuid))
-                    .findFirst();
-            return maybePackKey.isPresent();
-        } catch (FileNotFoundException e) {
-            logger.error("Missing official metadata database file", e);
-        }
-
-        return false;
+        logger.debug("Looking in official database for pack: " + uuid);
+        return cachedOfficialDatabase.containsKey(uuid);
     }
 
     public Optional<DatabasePackMetadata> getUnofficialMetadata(String uuid) {

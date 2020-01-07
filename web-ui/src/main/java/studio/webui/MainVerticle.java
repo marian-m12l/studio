@@ -43,7 +43,7 @@ public class MainVerticle extends AbstractVerticle {
     public void start() {
 
         // Service that manages pack metadata
-        databaseMetadataService = new DatabaseMetadataService(new VertxPluggableLogger(DatabaseMetadataService.class.getName()), true);
+        databaseMetadataService = new DatabaseMetadataService(new VertxPluggableLogger(DatabaseMetadataService.class.getName()), false);
 
         // Service that manages local library
         libraryService = new LibraryService(databaseMetadataService);

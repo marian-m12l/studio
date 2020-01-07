@@ -78,7 +78,7 @@ public class OfficialDatabaseAdvice {
 
                         // Try and update official database
                         logger.info("Fetched metadata, updating local database");
-                        DatabaseMetadataService databaseMetadataService = new DatabaseMetadataService(new JavaUtilPluggableLogger(DatabaseMetadataService.class.getName()), false);
+                        DatabaseMetadataService databaseMetadataService = new DatabaseMetadataService(new JavaUtilPluggableLogger(DatabaseMetadataService.class.getName()), true);
                         databaseMetadataService.replaceOfficialDatabase(response);
                     } else {
                         logger.log(Level.SEVERE, "Failed to fetch metadata database. Status code: " + statusCode);
