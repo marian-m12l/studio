@@ -126,12 +126,13 @@ convertis lors du transfert vers l'appareil) :
 
 Les fichiers MP3 et OGG doivent, eux, être échantillonnés à 44000Hz.
 
-### [Expérimental] Voir les métadonnées non-officielles dans le Luniistore\*
+### [Expérimental] Voir les métadonnées non-officielles dans le Luniistore\* / Charger la base de données officielle des métadonnées depuis le Luniistore\*
 
-Cette fonctionnalité **expérimentale** permet à l'application officielle Luniistore\* d'afficher des métadonnées
-(partiellement) correctes pour les packs d'histoires non-officiels stockés dans l'appareil.
+Ces fonctionnalités **expérimentales** permettent :
+  * d'afficher des métadonnées (partiellement) correctes pour les packs d'histoires non-officiels (stockés dans l'appareil) dans l'application officielle Luniistore\*.
+  * de charger / rafraîchir automatiquement la base de données officielle des métadonnées lorsque le Luniistore\* est exécuté.
 
-Pour l'activer, localisez le fichier de configuration `Luniistore.cfg` :
+Pour activer ces fonctionnalités, localisez le fichier de configuration `Luniistore.cfg` :
   * Sur Linux, dans le dossier `/opt/Luniistore/app`
   * Sur Windows, dans le dossier `%ProgramFiles%\Luniistore\app`
   
