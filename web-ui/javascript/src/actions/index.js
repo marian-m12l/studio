@@ -370,7 +370,7 @@ export const deviceUnplugged = () => ({
 
 export const setDevicePacks = (packs) => ({
     type: 'SET_DEVICE_PACKS',
-    packs: sortPacks(packs)
+    packs: packs
 });
 
 export const showViewer = () => ({
