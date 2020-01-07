@@ -124,12 +124,13 @@ to the device) :
 
 MP3 and OGG files are expected to be sampled at 44000Hz.
 
-### [Experimental] Seeing unofficial metadata in Luniistore\* application
+### [Experimental] Seeing unofficial metadata in Luniistore\* application / Loading official database from Luniistore\* application
 
-This **experimental** feature allows the official Luniistore\* application to display correct(-ish) metadata for
-unofficial story packs stored on the device.
+These **experimental** features allow:
+* to display correct(-ish) metadata for unofficial story packs (stored on the device) in the official Luniistore\* application.
+* to automatically load / refresh the official metadata database when running the official Luniistore\* application.
 
-To enable it, locate the configuration file `Luniistore.cfg`:
+To enable these features, locate the configuration file `Luniistore.cfg`:
   * On Linux, in `/opt/Luniistore/app`
   * On Windows, in `%ProgramFiles%\Luniistore\app`
 

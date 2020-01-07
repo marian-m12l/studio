@@ -125,6 +125,16 @@ public class DatabaseMetadataService {
         return Optional.empty();
     }
 
+    public void replaceOfficialDatabase(JsonObject json) {
+        // Update official database
+        try {
+            String databasePath = System.getProperty(OFFICIAL_DB_PROP, System.getProperty("user.home") + OFFICIAL_DB_JSON_PATH);
+            writeDatabaseFile(databasePath, json);
+        } catch (IOException e) {
+            logger.error("Failed to update official metadata database file", e);
+        }
+    }
+
     public void refreshUnofficialMetadata(DatabasePackMetadata meta) {
         // Refresh unofficial database only if the pack isn't an official one
         if (this.getOfficialMetadata(meta.getUuid()).isPresent()) {
@@ -151,13 +161,7 @@ public class DatabaseMetadataService {
             unofficialRoot.add(meta.getUuid(), value);
 
             // Write database file
-            Gson gson = new GsonBuilder()
-                    .setPrettyPrinting()
-                    .create();
-            String jsonString = gson.toJson(unofficialRoot);
-            FileWriter fileWriter = new FileWriter(databasePath);
-            fileWriter.write(jsonString);
-            fileWriter.close();
+            writeDatabaseFile(databasePath, unofficialRoot);
         } catch (FileNotFoundException e) {
             logger.error("Missing unofficial metadata database file", e);
         } catch (IOException e) {
@@ -182,18 +186,22 @@ public class DatabaseMetadataService {
             }
 
             // Write database file
-            Gson gson = new GsonBuilder()
-                    .setPrettyPrinting()
-                    .create();
-            String jsonString = gson.toJson(unofficialRoot);
-            FileWriter fileWriter = new FileWriter(databasePath);
-            fileWriter.write(jsonString);
-            fileWriter.close();
+            writeDatabaseFile(databasePath, unofficialRoot);
         } catch (FileNotFoundException e) {
             logger.error("Missing unofficial metadata database file", e);
         } catch (IOException e) {
             logger.error("Failed to clean unofficial metadata database file", e);
         }
+    }
+
+    private void writeDatabaseFile(String databasePath, JsonObject json) throws IOException {
+        Gson gson = new GsonBuilder()
+                .setPrettyPrinting()
+                .create();
+        String jsonString = gson.toJson(json);
+        FileWriter fileWriter = new FileWriter(databasePath);
+        fileWriter.write(jsonString);
+        fileWriter.close();
     }
 
 }
