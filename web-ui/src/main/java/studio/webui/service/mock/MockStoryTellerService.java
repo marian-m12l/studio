@@ -204,6 +204,11 @@ public class MockStoryTellerService implements IStoryTellerService {
         }
     }
 
+    public boolean reorderPacks(List<String> uuids) {
+        // Not supported
+        return false;
+    }
+
     public Optional<String> extractPack(String uuid, File destFile) {
         // Check that mocked device folder exists
         File deviceFolder = new File(devicePath());

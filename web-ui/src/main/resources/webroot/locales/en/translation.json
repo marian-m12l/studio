@@ -147,7 +147,10 @@
       "addingFailed": "Failed to add pack to device.",
       "removing": "Removing pack from device...",
       "removed": "Pack removed from device.",
-      "removingFailed": "Failed to remove pack from device."
+      "removingFailed": "Failed to remove pack from device.",
+      "reordering": "Reordering packs on device...",
+      "reordered": "Packs reordered on device.",
+      "reorderingFailed": "Failed to reorder packs on device."
     },
     "editor": {
       "saving": "Saving story pack to library...",

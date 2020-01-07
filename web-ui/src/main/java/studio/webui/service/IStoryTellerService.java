@@ -10,6 +10,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import java.io.File;
+import java.util.List;
 import java.util.Optional;
 
 public interface IStoryTellerService {
@@ -22,6 +23,8 @@ public interface IStoryTellerService {
     Optional<String> addPack(String uuid, File packFile);
 
     boolean deletePack(String uuid);
+
+    boolean reorderPacks(List<String> uuids);
 
     Optional<String> extractPack(String uuid, File destFile);
 }

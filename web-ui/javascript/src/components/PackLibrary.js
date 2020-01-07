@@ -12,6 +12,7 @@ import {toast} from "react-toastify";
 import {
     actionAddFromLibrary,
     actionRemoveFromDevice,
+    actionReorderOnDevice,
     actionAddToLibrary,
     actionDownloadFromLibrary,
     actionLoadPackInEditor,
@@ -41,7 +42,8 @@ class PackLibrary extends React.Component {
             showRemoveFromLibraryConfirmDialog: false,
             removingFromLibrary: null,
             showRemoveFromDeviceConfirmDialog: false,
-            removingFromDevice: null
+            removingFromDevice: null,
+            reordering: null
         };
     }
 
@@ -128,8 +130,12 @@ class PackLibrary extends React.Component {
             return;
         }
         var data = JSON.parse(packData);
-        // Transfer pack and show progress
-        this.props.addToLibrary(data.uuid, this.context);
+        // Ignore official packs from device (draggable only for device reordering)
+        var droppedPack = this.state.device.packs.find(p => p.uuid === data.uuid);
+        if (this.isPackDraggable(droppedPack)) {
+            // Transfer pack and show progress
+            this.props.addToLibrary(data.uuid, this.context);
+        }
     };
 
     showAddFileSelector = () => {
@@ -249,12 +255,41 @@ class PackLibrary extends React.Component {
                          onDragOver={event => { event.preventDefault(); }}>
                         {this.state.device.packs.length === 0 && <div className="empty">{t('library.device.empty')}</div>}
                         {this.state.device.packs.length > 0 && <div className="pack-grid">
-                            {this.state.device.packs.map(pack =>
+                            {this.state.device.packs.map((pack,idx) =>
                                 <div key={pack.uuid}
-                                     draggable={this.isPackDraggable(pack)}
+                                     draggable={true}
                                      className={this.isPackDraggable(pack) ? 'pack-draggable' : 'pack-not-draggable'}
                                      onDragStart={event => {
                                          event.dataTransfer.setData("device-pack", JSON.stringify(pack));
+                                         this.setState({reordering: pack});
+                                     }}
+                                     onDragEnter={event => {
+                                         let data = this.state.reordering;
+                                         if (data && data.uuid !== pack.uuid) {
+                                             let reordered = this.state.device.packs;
+                                             let draggedIndex = reordered.findIndex(p => p.uuid === data.uuid);
+                                             if (draggedIndex < idx) {
+                                                 // Going down, place dragged item right after the dragged-over pack
+                                                 reordered.splice(idx + 1, 0, reordered[draggedIndex]);
+                                                 reordered.splice(draggedIndex, 1);
+                                             }
+                                             if (draggedIndex > idx) {
+                                                 // Going up, place dragged item right before the dragged-over pack
+                                                 reordered.splice(idx, 0, reordered[draggedIndex]);
+                                                 reordered.splice(++draggedIndex, 1);
+                                             }
+                                             this.setState({
+                                                 device: {
+                                                     ...this.state.device,
+                                                     packs: reordered
+                                                 }
+                                             });
+                                         }
+                                     }}
+                                     onDragEnd={event => {
+                                         let uuids = this.state.device.packs.map(p => p.uuid);
+                                         this.props.reorderOnDevice(uuids);
+                                         this.setState({reordering: null});
                                      }}>
                                     <div className="pack-thumb">
                                         <img src={pack.image || defaultImage} width="128" height="128" draggable={false} />
@@ -333,6 +368,7 @@ const mapStateToProps = (state, ownProps) => ({
 const mapDispatchToProps = (dispatch, ownProps) => ({
     addFromLibrary: (uuid, path, context) => dispatch(actionAddFromLibrary(uuid, path, context, ownProps.t)),
     removeFromDevice: (uuid) => dispatch(actionRemoveFromDevice(uuid, ownProps.t)),
+    reorderOnDevice: (uuids) => dispatch(actionReorderOnDevice(uuids, ownProps.t)),
     addToLibrary: (uuid, context) => dispatch(actionAddToLibrary(uuid, context, ownProps.t)),
     downloadPackFromLibrary: (uuid, path) => dispatch(actionDownloadFromLibrary(uuid, path, ownProps.t)),
     loadPackInEditor: (packData, filename) => dispatch(actionLoadPackInEditor(packData, filename, ownProps.t)),
