@@ -37,7 +37,7 @@ public class UnofficialMetadataAdvice {
             String uuid = url.substring(url.indexOf("pack_uuid=") + 10);
             try {
                 // Try and get metadata from unofficial database
-                DatabaseMetadataService databaseMetadataService = new DatabaseMetadataService(new JavaUtilPluggableLogger(DatabaseMetadataService.class.getName()), false);
+                DatabaseMetadataService databaseMetadataService = new DatabaseMetadataService(new JavaUtilPluggableLogger(DatabaseMetadataService.class.getName()), true);
                 Optional<DatabasePackMetadata> packMetadata = databaseMetadataService.getUnofficialMetadata(uuid);
                 if (packMetadata.isPresent()) {
                     logger.info("Unofficial database contains metadata for fetched pack with uuid: " + uuid);
