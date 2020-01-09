@@ -88,7 +88,7 @@ public class DeviceController {
                             );
                 } else {
                     LOGGER.error("Failed to read or convert pack");
-                    ctx.fail(500);
+                    ctx.fail(500, maybeConvertedPack.cause());
                 }
             });
         });

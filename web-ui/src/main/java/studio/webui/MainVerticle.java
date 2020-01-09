@@ -24,6 +24,7 @@ import studio.metadata.DatabaseMetadataService;
 import studio.webui.api.DeviceController;
 import studio.webui.api.EvergreenController;
 import studio.webui.api.LibraryController;
+import studio.webui.api.WatchdogController;
 import studio.webui.logger.VertxPluggableLogger;
 import studio.webui.service.*;
 import studio.webui.service.mock.MockStoryTellerService;
@@ -38,6 +39,7 @@ public class MainVerticle extends AbstractVerticle {
     private LibraryService libraryService;
     private EvergreenService evergreenService;
     private IStoryTellerService storyTellerService;
+    private WatchdogService watchdogService;
 
     @Override
     public void start() {
@@ -58,6 +60,9 @@ public class MainVerticle extends AbstractVerticle {
         } else {
             storyTellerService = new StoryTellerService(vertx.eventBus(), databaseMetadataService);
         }
+
+        // Service that monitors Luniistore updates
+        watchdogService = new WatchdogService(vertx);
 
 
         Router router = Router.router(vertx);
@@ -127,6 +132,9 @@ public class MainVerticle extends AbstractVerticle {
 
         // Evergreen services
         router.mountSubRouter("/evergreen", EvergreenController.apiRouter(vertx, evergreenService));
+
+        // Watchdog services
+        router.mountSubRouter("/watchdog", WatchdogController.apiRouter(vertx, watchdogService));
 
         return router;
     }
