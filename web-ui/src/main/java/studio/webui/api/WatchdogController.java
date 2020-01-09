@@ -11,18 +11,18 @@ import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
-import studio.webui.service.EvergreenService;
+import studio.webui.service.WatchdogService;
 
-public class EvergreenController {
+public class WatchdogController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(EvergreenController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(WatchdogController.class);
     
-    public static Router apiRouter(Vertx vertx, EvergreenService evergreenService) {
+    public static Router apiRouter(Vertx vertx, WatchdogService watchdogService) {
         Router router = Router.router(vertx);
 
-        // Current version
-        router.get("/infos").blockingHandler(ctx -> {
-            evergreenService.infos().setHandler(maybeJson -> {
+        // Supported versions
+        router.get("/supported").blockingHandler(ctx -> {
+            watchdogService.supported().setHandler(maybeJson -> {
                 if (maybeJson.succeeded()) {
                     ctx.response()
                             .putHeader("content-type", "application/json")
@@ -34,9 +34,9 @@ public class EvergreenController {
             });
         });
 
-        // Latest release
+        // Latest versions
         router.get("/latest").blockingHandler(ctx -> {
-            evergreenService.latest().setHandler(maybeJson -> {
+            watchdogService.latest().setHandler(maybeJson -> {
                 if (maybeJson.succeeded()) {
                     ctx.response()
                             .putHeader("content-type", "application/json")

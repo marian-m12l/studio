@@ -187,6 +187,16 @@
       },
       "loadingFailed": "Failed to load current version.",
       "fetchingFailed": "Failed to fetch latest release."
+    },
+    "watchdog": {
+      "loading": "Loading supported Luniistore version...",
+      "fetching": "Fetching latest Luniistore version...",
+      "fetched": {
+        "supported": "Luniistore version is supported.",
+        "unsupported": "Luniistore application has had updates since the last supported version. You may observe errors."
+      },
+      "loadingFailed": "Failed to load supported Luniistore version.",
+      "fetchingFailed": "Failed to fetch latest Luniistore version."
     }
   },
 

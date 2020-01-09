@@ -10,6 +10,7 @@ import { toast } from 'react-toastify';
 import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice, reorderPacks, addToLibrary} from '../services/device';
 import {fetchLibraryInfos, fetchLibraryPacks, downloadFromLibrary, uploadToLibrary, convertInLibrary, removeFromLibrary} from '../services/library';
 import {fetchEvergreenInfos, fetchEvergreenLatestRelease} from '../services/evergreen';
+import {fetchWatchdogSupported, fetchWatchdogLatest} from '../services/watchdog';
 import {sortPacks} from "../utils/packs";
 import {readFromArchive} from "../utils/reader";
 
@@ -376,6 +377,36 @@ export const actionLoadEvergreen = (t) => {
             .catch(e => {
                 console.error('failed to fetch current version', e);
                 toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.evergreen.loadingFailed'), autoClose: 5000 });
+            });
+    }
+};
+
+export const actionLoadWatchdog = (t) => {
+    return dispatch => {
+        let toastId = toast(t('toasts.watchdog.loading'), { autoClose: false });
+        return fetchWatchdogSupported()
+            .then(supported => {
+                console.log("fetching latest Luniistore infos...");
+                toast.update(toastId,{ render: t('toasts.watchdog.fetching') });
+                return fetchWatchdogLatest()
+                    .then(latest => {
+                        if (supported.launcherChecksum === latest.launcherChecksum
+                            && supported.manifestTimestamp === latest.manifestTimestamp
+                            && supported.appVersionMajor === latest.appVersionMajor
+                            && supported.appVersionMinor === latest.appVersionMinor) {
+                            toast.update(toastId, { type: toast.TYPE.SUCCESS, render: t('toasts.watchdog.fetched.supported'), autoClose: 5000 });
+                        } else {
+                            toast.update(toastId, { type: toast.TYPE.WARNING, render: t('toasts.watchdog.fetched.unsupported') });
+                        }
+                    })
+                    .catch(e => {
+                        console.error('failed to fetch latest Luniistore infos', e);
+                        toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.watchdog.fetchingFailed'), autoClose: 5000 });
+                    });
+            })
+            .catch(e => {
+                console.error('failed to fetch supported Luniistore version', e);
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.watchdog.loadingFailed'), autoClose: 5000 });
             });
     }
 };

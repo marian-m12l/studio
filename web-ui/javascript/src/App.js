@@ -24,7 +24,8 @@ import {
     setEditorDiagram,
     showLibrary,
     showEditor,
-    actionLoadEvergreen
+    actionLoadEvergreen,
+    actionLoadWatchdog
 } from "./actions";
 
 import './App.css';
@@ -76,6 +77,9 @@ class App extends React.Component {
 
             // Load evergeen infos on startup
             this.props.loadEvergreen();
+
+            // Load watchdog infos on startup
+            this.props.loadWatchdog();
 
             // Load sample diagram in editor
             let model = simplifiedSample();
@@ -143,7 +147,8 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     setEditorDiagram: (diagram, filename) => dispatch(setEditorDiagram(diagram, filename)),
     dispatchShowLibrary: () => dispatch(showLibrary()),
     dispatchShowEditor: () => dispatch(showEditor()),
-    loadEvergreen: () => dispatch(actionLoadEvergreen(ownProps.t))
+    loadEvergreen: () => dispatch(actionLoadEvergreen(ownProps.t)),
+    loadWatchdog: () => dispatch(actionLoadWatchdog(ownProps.t))
 });
 
 export default withTranslation()(
