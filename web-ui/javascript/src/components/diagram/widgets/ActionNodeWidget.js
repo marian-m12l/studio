@@ -8,6 +8,7 @@ import React from 'react';
 import PropTypes from "prop-types";
 import {withTranslation} from "react-i18next";
 import { DiagramEngine } from '@projectstorm/react-diagrams';
+import {connect} from "react-redux";
 
 import ActionNodeModel from "../models/ActionNodeModel";
 import EditableText from "./composites/EditableText";
@@ -53,7 +54,7 @@ class ActionNodeWidget extends React.Component {
     render() {
         const { t } = this.props;
         return (
-            <div className={`studio-node basic-node action-node ${this.props.selected && 'selected'}`}>
+            <div className={`studio-node basic-node action-node ${this.props.selected && 'selected'} ${this.props.viewer.action.node === this.props.node && 'playing'}`}>
                 <div className="node-content">
                     <div className="node-title">
                         <div className="ellipsis">
@@ -66,7 +67,7 @@ class ActionNodeWidget extends React.Component {
                             <span className='btn btn-xs glyphicon glyphicon-plus' onClick={this.addOption} title={t('editor.diagram.action.addOption')} />
                         </div>
                         {this.props.node.optionsIn.map((option, idx) =>
-                            <div key={`action-option-${idx}`} className="option">
+                            <div key={`action-option-${idx}`} className={`option ${this.props.viewer.action.node === this.props.node && this.props.viewer.action.index === idx && 'playing'}`}>
                                 <div className={`delete ${this.props.node.optionsIn.length <= 1 ? 'disabled' : ''}`} title={t('editor.diagram.action.removeOption')} onClick={this.removeSpecificOption(idx)}/>
                                 {option.label}
                                 <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.optionsIn[idx]} className="option-port-in"/>
@@ -92,4 +93,16 @@ ActionNodeWidget.propTypes = {
     selected: PropTypes.bool.isRequired
 };
 
-export default withTranslation()(ActionNodeWidget);
+const mapStateToProps = (state, ownProps) => ({
+    viewer: state.viewer
+});
+
+const mapDispatchToProps = (dispatch, ownProps) => ({
+});
+
+export default withTranslation()(
+    connect(
+        mapStateToProps,
+        mapDispatchToProps
+    )(ActionNodeWidget)
+);

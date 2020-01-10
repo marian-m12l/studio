@@ -139,7 +139,8 @@ class MenuNodeModel extends NodeModel {
                             index: targetIndex
                         }
                     ]
-                }
+                },
+                parentNode: that
             },
             {
                 node: null,
@@ -208,7 +209,8 @@ class MenuNodeModel extends NodeModel {
                     let previousNode = fromLinks[0].getSourcePort().getParent();
                     return previousNode.onEnter(null, d);
                 }
-            }
+            },
+            parentNode: that
         };
     }
 

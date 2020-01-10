@@ -10,7 +10,7 @@ import { toast } from 'react-toastify';
 import {withTranslation} from "react-i18next";
 
 import PackViewer from './PackViewer';
-import {hideViewer, setViewerAction, setViewerStage} from "../../actions";
+import {hideViewer, setViewerAction, setViewerStage, setViewerOptions} from "../../actions";
 
 import './EditorPackViewer.css';
 
@@ -44,6 +44,8 @@ class EditorPackViewer extends React.Component {
                 okClicked={this.onOk}
                 closeClicked={() => { this.onClose(); props.hideViewer(); }}
                 controls={props.viewer.stage.getControls()}
+                options={props.viewer.options}
+                optionToggled={(optionName) => { this.onOptionToggled(optionName); }}
             />
         });
     };
@@ -104,11 +106,16 @@ class EditorPackViewer extends React.Component {
         this.props.hideViewer();
     };
 
+    onOptionToggled = (optionName) => {
+        let options = this.props.viewer.options;
+        options[optionName] = !options[optionName];
+        this.props.setViewerOptions(options);
+    };
+
     render() {
         return (
             <>
-                <div className="editor-viewer-overlay" />
-                <div className="editor-viewer-content editor-viewer-center">
+                <div className={`editor-viewer-content editor-viewer-center ${this.props.viewer.options.translucent && 'translucent'}`}>
                     {this.state.viewer}
                 </div>
             </>
@@ -123,7 +130,8 @@ const mapStateToProps = (state, ownProps) => ({
 const mapDispatchToProps = (dispatch, ownProps) => ({
     hideViewer: () => dispatch(hideViewer()),
     setViewerStage: (stage) => dispatch(setViewerStage(stage)),
-    setViewerAction: (action) => dispatch(setViewerAction(action))
+    setViewerAction: (action) => dispatch(setViewerAction(action)),
+    setViewerOptions: (options) => dispatch(setViewerOptions(options))
 });
 
 export default withTranslation()(

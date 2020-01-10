@@ -272,7 +272,7 @@ class MenuNodeWidget extends React.Component {
     render() {
         const { t } = this.props;
         return (
-            <div className={`studio-node user-friendly-node menu-node ${this.props.selected && 'selected'}`}>
+            <div className={`studio-node user-friendly-node menu-node ${this.props.selected && 'selected'} ${this.props.viewer.stage && this.props.viewer.stage.parentNode && this.props.viewer.stage.parentNode === this.props.node && 'playing'}`}>
                 <div className="node-header">
                     <span className="dropzone glyphicon glyphicon-question-sign" title={t('editor.tray.menu')}/>
                 </div>
@@ -286,7 +286,7 @@ class MenuNodeWidget extends React.Component {
                         </div>
                     </div>
                     <div className="question-and-options">
-                        <div className="question">
+                        <div className={`question ${this.props.viewer.stage && this.props.viewer.stage.parentNode && this.props.viewer.stage.parentNode === this.props.node && this.props.viewer.action.node !== this.props.node && 'playing'}`}>
                             <p>{t('editor.diagram.menu.question')}</p>
                             <div className="question-asset">
                                 <input type="file" id={`audio-upload-question-${this.props.node.getUuid()}`} onChange={this.questionAudioFileSelected} />
@@ -303,14 +303,14 @@ class MenuNodeWidget extends React.Component {
                                 </div>
                             </div>
                         </div>
-                        <div className="options">
+                        <div className={`options ${this.props.viewer.stage && this.props.viewer.stage.parentNode && this.props.viewer.stage.parentNode === this.props.node && this.props.viewer.action.node === this.props.node && 'playing'}`}>
                             <p>{t('editor.diagram.menu.options')}</p>
                             <div>
                                 <span className={`btn btn-xs glyphicon glyphicon-minus ${this.props.node.optionsStages.length <= 1 ? 'disabled' : ''}`} onClick={this.removeOption} title={t('editor.diagram.menu.removeLastOption')} />
                                 <span className='btn btn-xs glyphicon glyphicon-plus' onClick={this.addOption} title={t('editor.diagram.menu.addOption')} />
                             </div>
                             {this.props.node.optionsStages.map((option, idx) =>
-                                <div key={`menu-option-${idx}`} className="option">
+                                <div key={`menu-option-${idx}`} className={`option ${this.props.viewer.action.node === this.props.node && this.props.viewer.action.index === idx && 'playing'}`}>
                                     <div className={`delete ${this.props.node.optionsStages.length <= 1 ? 'disabled' : ''}`} title={t('editor.diagram.menu.removeOption')} onClick={this.removeSpecificOption(idx)}/>
                                     <div className="policy">
                                         <input type="radio" value={`menu-option-${idx}`} checked={this.props.node.getDefaultOption() === idx} onChange={this.editDefaultOption(idx)} title={t('editor.diagram.menu.defaultOption')}/>
@@ -381,6 +381,7 @@ MenuNodeWidget.propTypes = {
 };
 
 const mapStateToProps = (state, ownProps) => ({
+    viewer: state.viewer
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({

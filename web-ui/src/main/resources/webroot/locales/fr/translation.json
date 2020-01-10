@@ -102,6 +102,15 @@
     }
   },
 
+  "viewer": {
+    "close": "Fermer l'aperçu",
+    "options": {
+      "translucent": "Transparence de l'aperçu",
+      "overlay": "Simulation de la translucidité du boîtier",
+      "autoplay": "Lecture automatique"
+    }
+  },
+
   "toasts": {
     "library": {
       "loading": "Chargement de la bibliothèque...",

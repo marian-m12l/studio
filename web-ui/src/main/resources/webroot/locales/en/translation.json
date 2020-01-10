@@ -102,6 +102,15 @@
     }
   },
 
+  "viewer": {
+    "close": "Close preview",
+    "options": {
+      "translucent": "Preview transparency",
+      "overlay": "Casing overlay simulation",
+      "autoplay": "Autoplay"
+    }
+  },
+
   "toasts": {
     "library": {
       "loading": "Loading library...",
