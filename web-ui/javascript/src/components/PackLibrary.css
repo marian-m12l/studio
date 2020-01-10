@@ -6,6 +6,7 @@
 
 .pack-library {
     display: flex;
+    flex-grow: 1;
 }
 
 .pack-library .plugged-device {

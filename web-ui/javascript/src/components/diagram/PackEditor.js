@@ -193,12 +193,14 @@ class PackEditor extends React.Component {
                        ]}
                        onClose={this.dismissSaveConfirmDialog}
                 />}
-                <a id="download" style={{visibility: 'hidden', position: 'absolute'}} />
-                <span title={t('editor.actions.save')} className="btn btn-default glyphicon glyphicon-floppy-disk" onClick={this.savePackToLibrary}/>
-                <input type="file" id="upload" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.packImportFileSelected} />
-                <span title={t('editor.actions.import')} className="btn btn-default glyphicon glyphicon-import" onClick={this.showImportFileSelector}/>
-                <span title={t('editor.actions.export')} className="btn btn-default glyphicon glyphicon-export" onClick={this.exportPack}/>
-                <span title={t('editor.actions.clear')} className="btn btn-default glyphicon glyphicon-trash" onClick={this.clear}/>
+                <div className="controls">
+                    <a id="download" style={{visibility: 'hidden', position: 'absolute'}} />
+                    <span title={t('editor.actions.save')} className="btn btn-default glyphicon glyphicon-floppy-disk" onClick={this.savePackToLibrary}/>
+                    <input type="file" id="upload" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.packImportFileSelected} />
+                    <span title={t('editor.actions.import')} className="btn btn-default glyphicon glyphicon-import" onClick={this.showImportFileSelector}/>
+                    <span title={t('editor.actions.export')} className="btn btn-default glyphicon glyphicon-export" onClick={this.exportPack}/>
+                    <span title={t('editor.actions.clear')} className="btn btn-default glyphicon glyphicon-trash" onClick={this.clear}/>
+                </div>
 
                 <PackDiagramWidget diagramEngine={this.state.engine}/>
             </div>
