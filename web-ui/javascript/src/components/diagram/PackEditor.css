@@ -66,6 +66,9 @@
 .storm-diagrams-canvas .node .studio-node.selected {
     border-color: #00c0ff !important;
 }
+.storm-diagrams-canvas .node .studio-node.playing {
+    border-color: #00ff00 !important;
+}
 @keyframes dash {
     from {
         stroke-dashoffset: 24;
@@ -197,6 +200,9 @@
 
 .storm-diagrams-canvas .studio-node.selected .node-header {
     border-color: #00c0ff !important;
+}
+.storm-diagrams-canvas .studio-node.playing .node-header {
+    border-color: #00ff00 !important;
 }
 
 .storm-diagrams-canvas .studio-node .node-content {
@@ -430,10 +436,15 @@
 .storm-diagrams-canvas .basic-node.action-node .options .option {
     position: relative;
     background-color: #9e7a34;
+    border: 1px solid #9e7a34;
     border-radius: 5px;
     margin-top: 2px;
     margin-left: 10px;
     margin-right: 10px;
+}
+
+.storm-diagrams-canvas .basic-node.action-node .options .option.playing {
+    border-color: #00ff00 !important;
 }
 
 .storm-diagrams-canvas .basic-node.action-node .options .option:hover>.delete {
@@ -611,6 +622,10 @@
     font-weight: bold;
 }
 
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question.playing p {
+    color: #00ff00;
+}
+
 .storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question .question-asset .dropzone-asset {
     position: relative;
     display: flex;
@@ -655,6 +670,10 @@
     font-weight: bold;
 }
 
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options.playing p {
+    color: #00ff00;
+}
+
 .storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options span.disabled {
     color: #999999;
 }
@@ -667,6 +686,10 @@
     border: 1px solid #b55ba8;
     border-radius: 5px;
     margin-top: 2px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option.playing {
+    border-color: #00ff00 !important;
 }
 
 .storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option:hover>.delete {

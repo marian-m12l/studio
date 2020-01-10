@@ -170,7 +170,7 @@ class CoverNodeWidget extends React.Component {
     render() {
         const { t } = this.props;
         return (
-            <div className={`studio-node user-friendly-node cover-node ${this.props.selected && 'selected'}`}>
+            <div className={`studio-node user-friendly-node cover-node ${this.props.selected && 'selected'} ${this.props.viewer.stage === this.props.node && 'playing'}`}>
                 <div className="node-header">
                     <span className="dropzone glyphicon glyphicon-book" title={t('editor.tray.cover')}/>
                 </div>
@@ -229,6 +229,7 @@ CoverNodeWidget.propTypes = {
 };
 
 const mapStateToProps = (state, ownProps) => ({
+    viewer: state.viewer
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({

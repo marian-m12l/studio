@@ -199,7 +199,7 @@ class StageNodeWidget extends React.Component {
     render() {
         const { t } = this.props;
         return (
-            <div className={`studio-node basic-node stage-node ${this.props.selected && 'selected'} ${this.props.node.isSquareOne() && 'square-one'}`}>
+            <div className={`studio-node basic-node stage-node ${this.props.selected && 'selected'} ${this.props.node.isSquareOne() && 'square-one'} ${this.props.viewer.stage === this.props.node && 'playing'}`}>
                 <div className="node-content">
                     <div className="node-title">
                         <div className="ellipsis">

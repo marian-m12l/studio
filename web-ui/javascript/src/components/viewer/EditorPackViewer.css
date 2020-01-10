@@ -4,19 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-.editor-viewer-overlay {
-    background: #444;
-    display: block;
-    height: 100%;
-    left: 0;
-    opacity: 0.75;
-    position: fixed;
-    top: 0;
-    vertical-align: middle;
-    width: 100%;
-    z-index: 5000;
-}
-
 .editor-viewer-content {
     margin-left: auto;
     margin-top: auto;
@@ -27,4 +14,8 @@
     top: 50%;
     transform: translate(-50%, -55%);
     z-index: 5001;
+}
+
+.editor-viewer-content.translucent {
+    opacity: 0.75;
 }

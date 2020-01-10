@@ -448,6 +448,11 @@ export const setViewerAction = (action) => ({
     action
 });
 
+export const setViewerOptions = (options) => ({
+    type: 'SET_VIEWER_OPTIONS',
+    options
+});
+
 export const setEditorDiagram = (diagram, filename = null) => ({
     type: 'SET_EDITOR_DIAGRAM',
     diagram,

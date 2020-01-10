@@ -139,7 +139,7 @@ class StoryNodeWidget extends React.Component {
     render() {
         const { t } = this.props;
         return (
-            <div className={`studio-node user-friendly-node story-node ${this.props.selected && 'selected'}`}>
+            <div className={`studio-node user-friendly-node story-node ${this.props.selected && 'selected'} ${this.props.viewer.stage === this.props.node && 'playing'}`}>
                 <div className="node-header">
                     <span className="dropzone glyphicon glyphicon-headphones" title={t('editor.tray.story')}/>
                 </div>
@@ -206,6 +206,7 @@ StoryNodeWidget.propTypes = {
 };
 
 const mapStateToProps = (state, ownProps) => ({
+    viewer: state.viewer
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({

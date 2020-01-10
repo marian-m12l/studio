@@ -6,6 +6,7 @@
 
 import React from 'react';
 import PropTypes from "prop-types";
+import {withTranslation} from "react-i18next";
 
 import './PackViewer.css';
 
@@ -53,13 +54,25 @@ class PackViewer extends React.Component {
 
     okClicked = (e) => {
         e.preventDefault();
-        if (this.props.controls.ok && this.props.okClicked) {
+        // OK button is used to replace autoplay when autoplay is disabled
+        if (
+            (this.props.controls.ok
+                || (
+                    !this.props.options.autoplay
+                    && this.props.controls.autoplay
+                    && (
+                        !this.audioRef
+                        || this.audioRef.current.ended
+                    )
+                )
+            ) && this.props.okClicked) {
             this.props.okClicked(e);
         }
     };
 
     audioEnded = (e) => {
-        if (this.props.controls.autoplay && this.props.okClicked) {
+        // Autoplay may be disabled
+        if (this.props.controls.autoplay && this.props.options.autoplay && this.props.okClicked) {
             this.props.okClicked(e);
         }
     };
@@ -75,24 +88,54 @@ class PackViewer extends React.Component {
         }
     };
 
+    toggleOption = (optionName) => {
+        return (e) => {
+            e.preventDefault();
+            if (this.props.optionToggled) {
+                this.props.optionToggled(optionName, e);
+            }
+        };
+    };
+
     render() {
+        const { t } = this.props;
         return (
             <div className="pack-viewer">
                 <svg width="1022" height="557">
+                    {/* Blur filter when casing overlay is ON */}
+                    <defs>
+                        <filter id="blurryOverlay">
+                            <feGaussianBlur in="SourceGraphic" stdDeviation=".8" />
+                        </filter>
+                    </defs>
 
                     {/* Story teller case */}
                     <path className="casing"
                           d="M46,2 h930 a44,44 0 0 1 44,44 v465 a44,44 0 0 1 -44,44 h-930 a44,44 0 0 1 -44,-44 v-465 a44,44 0 0 1 44,-44 z" />
 
                     {/* Screen with asset displayed */}
-                    <image id="asset" x="415" y="153" width="340" height="255"
+                    <image id="asset" x="415" y="153" width="340" height="255" filter={this.props.options.overlay ? 'url(#blurryOverlay)' : ''}
                            xlinkHref={this.props.image}/>
 
-                    {/* (Optional) translucent casing in front of screen */}
+                    {/* (Optional) Translucent casing in front of screen */}
+                    {this.props.options.overlay &&
                     <path className="casing translucent"
-                          d="M46,2 h930 a44,44 0 0 1 44,44 v465 a44,44 0 0 1 -44,44 h-930 a44,44 0 0 1 -44,-44 v-465 a44,44 0 0 1 44,-44 z" />
+                          d="M46,2 h930 a44,44 0 0 1 44,44 v465 a44,44 0 0 1 -44,44 h-930 a44,44 0 0 1 -44,-44 v-465 a44,44 0 0 1 44,-44 z"/>
+                    }
 
-                    {/* TODO Other controls (casing overlay on/off, autoplay on/off, ...) */}
+                    {/* Option buttons */}
+                    <a href="#" className="close" onClick={this.toggleOption('translucent')}>
+                        <title>{t('viewer.options.translucent')}</title>
+                        <text x="50" y="40" fontSize="32">{this.props.options.translucent ? '☼' : '☀'}</text>
+                    </a>
+                    <a href="#" className="close" onClick={this.toggleOption('overlay')}>
+                        <title>{t('viewer.options.overlay')}</title>
+                        <text x="90" y="40" fontSize="32">{this.props.options.overlay ? '▩' : '□'}</text>
+                    </a>
+                    <a href="#" className="close" onClick={this.toggleOption('autoplay')}>
+                        <title>{t('viewer.options.autoplay')}</title>
+                        <text x="130" y="40" fontSize="32">{this.props.options.autoplay ? '▶' : '▷'}</text>
+                    </a>
 
                     {/* Audio controls */}
                     <foreignObject x="415" y="90" width="340" height="55">
@@ -100,7 +143,10 @@ class PackViewer extends React.Component {
                     </foreignObject>
 
                     {/* Close button */}
-                    <a href="#" className="close" onClick={this.close}><text x="950" y="60" fontSize="64">&times;</text></a>
+                    <a href="#" className="close" onClick={this.close}>
+                        <title>{t('viewer.close')}</title>
+                        <text x="950" y="60" fontSize="64">&times;</text>
+                    </a>
 
                     {/* Wheel */}
                     <circle cx="242" cy="280" r="130" strokeWidth="4" stroke="#eead45" fill="#febd55"/>
@@ -158,7 +204,11 @@ PackViewer.propTypes = {
         home: PropTypes.bool.isRequired,
         pause: PropTypes.bool.isRequired,
         autoplay: PropTypes.bool.isRequired
-    })
+    }),
+    options: PropTypes.shape({
+        translucent: PropTypes.bool.isRequired,
+    }),
+    optionToggled: PropTypes.func
 };
 
-export default PackViewer;
+export default withTranslation()(PackViewer);

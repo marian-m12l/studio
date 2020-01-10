@@ -13,7 +13,12 @@ const initialState = {
         node: null,
         index: null
     },
-    diagram: null
+    diagram: null,
+    options: {
+        translucent: false,
+        overlay: true,
+        autoplay: true
+    }
 };
 
 const viewer = (state = initialState, action) => {
@@ -21,13 +26,16 @@ const viewer = (state = initialState, action) => {
         case 'SHOW_VIEWER':
             return { ...state, show: true };
         case 'HIDE_VIEWER':
-            return initialState;
+            // Keep options when hiding the viewer
+            return {...initialState, options: state.options};
         case 'SET_VIEWER_DIAGRAM':
             return { ...state, diagram: action.diagram };
         case 'SET_VIEWER_STAGE':
             return { ...state, stage: action.stage };
         case 'SET_VIEWER_ACTION':
             return {...state, action: action.action };
+        case 'SET_VIEWER_OPTIONS':
+            return {...state, options: action.options };
         default:
             return state
     }
