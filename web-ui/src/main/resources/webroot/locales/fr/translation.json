@@ -57,7 +57,8 @@
       "clone": "Dupliquer la sélection",
       "filterLayers": "Filtrer les calques",
       "displayForwardWorkflow": "Flux vers l'avant",
-      "displayReturningWorkflow": "Flux retour"
+      "displayReturningWorkflow": "Flux retour",
+      "verify": "Verifier le diagramme"
     },
     "diagram": {
       "editText": "Cliquez pour modifier",
@@ -98,6 +99,16 @@
           "customhome": "Personnaliser la transition MAISON",
           "disablehome": "Désactiver le bouton MAISON"
         }
+      }
+    },
+    "verify": {
+      "errors": {
+        "fromPort": "Il manque le lien entrant (port FROM).",
+        "okPort": "Il manque le lien sortant (port OK).",
+        "assets": "Image ou son manquant.",
+        "optionsIn": "Il manque le lien entrant vers (au moins) une option.",
+        "optionsOut": "Il manque le lien sortant pour l'option #{{index}}.",
+        "optionAssets": "Image ou son manquant pour l'option #{{index}}."
       }
     }
   },
@@ -176,7 +187,10 @@
       "imageAssetWrongType": "Les formats d'image supportés sont : BMP, JPEG, PNG.",
       "audioAssetWrongType": "Les formats audio supportés sont : WAV, MP3, OGG.",
       "tooManyEntryPoints": "Un pack d'histoires ne peut avoir qu'un seul point d'entrée.",
-      "cannotCloneCoverNode": "Le nœud départ ne peut pas être dupliqué."
+      "cannotCloneCoverNode": "Le nœud départ ne peut pas être dupliqué.",
+      "verifyDiagramErrors": "Le diagramme contient {{count}} nœud en erreur.",
+      "verifyDiagramErrors_plural": "Le diagramme contient {{count}} nœuds en erreur.",
+      "verifyDiagramOK": "Le diagramme est valide."
     },
     "viewer": {
       "missingPrev": "Impossible de trouver l'option précédente.",

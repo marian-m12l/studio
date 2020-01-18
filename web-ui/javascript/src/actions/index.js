@@ -464,6 +464,11 @@ export const setEditorFilename = (filename = null) => ({
     filename
 });
 
+export const setDiagramErrors= (errors) => ({
+    type: 'SET_DIAGRAM_ERRORS',
+    errors
+});
+
 export const showLibrary = () => ({
     type: 'SHOW_LIBRARY'
 });

@@ -167,10 +167,24 @@ class CoverNodeWidget extends React.Component {
         }
     };
 
+    getNodeErrors = () => {
+        return this.props.errors[this.props.node.getID()];
+    };
+
+    getNodeErrorsTitle = () => {
+        let nodeErrors = this.getNodeErrors();
+        return nodeErrors ? Object.values(nodeErrors).join('\n') : null;
+    };
+
+    getNodeError = (key) => {
+        let nodeErrors = this.getNodeErrors();
+        return nodeErrors ? nodeErrors[key] : null;
+    };
+
     render() {
         const { t } = this.props;
         return (
-            <div className={`studio-node user-friendly-node cover-node ${this.props.selected && 'selected'} ${this.props.viewer.stage === this.props.node && 'playing'}`}>
+            <div className={`studio-node user-friendly-node cover-node ${this.props.selected && 'selected'} ${this.props.viewer.stage === this.props.node && 'playing'} ${this.getNodeErrors() && 'error'}`} title={this.getNodeErrorsTitle()}>
                 <div className="node-header">
                     <span className="dropzone glyphicon glyphicon-book" title={t('editor.tray.cover')}/>
                 </div>
@@ -214,7 +228,7 @@ class CoverNodeWidget extends React.Component {
                         </div>
                     </div>
                 </div>
-                {this.props.node.okPort && <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.okPort} className="ok-port"/>}
+                {this.props.node.okPort && <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.okPort} className={`ok-port ${this.getNodeError('okPort') ? 'error' : ''}`}/>}
             </div>
         );
     }
@@ -229,7 +243,8 @@ CoverNodeWidget.propTypes = {
 };
 
 const mapStateToProps = (state, ownProps) => ({
-    viewer: state.viewer
+    viewer: state.viewer,
+    errors: state.editor.errors
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
