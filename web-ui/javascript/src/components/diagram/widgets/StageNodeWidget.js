@@ -196,10 +196,24 @@ class StageNodeWidget extends React.Component {
         }
     };
 
+    getNodeErrors = () => {
+        return this.props.errors[this.props.node.getID()];
+    };
+
+    getNodeErrorsTitle = () => {
+        let nodeErrors = this.getNodeErrors();
+        return nodeErrors ? Object.values(nodeErrors).join('\n') : null;
+    };
+
+    getNodeError = (key) => {
+        let nodeErrors = this.getNodeErrors();
+        return nodeErrors ? nodeErrors[key] : null;
+    };
+
     render() {
         const { t } = this.props;
         return (
-            <div className={`studio-node basic-node stage-node ${this.props.selected && 'selected'} ${this.props.node.isSquareOne() && 'square-one'} ${this.props.viewer.stage === this.props.node && 'playing'}`}>
+            <div className={`studio-node basic-node stage-node ${this.props.selected && 'selected'} ${this.props.node.isSquareOne() && 'square-one'} ${this.props.viewer.stage === this.props.node && 'playing'} ${this.getNodeErrors() && 'error'}`} title={this.getNodeErrorsTitle()}>
                 <div className="node-content">
                     <div className="node-title">
                         <div className="ellipsis">
@@ -254,7 +268,7 @@ class StageNodeWidget extends React.Component {
                             <div className="output-port">
                                 {this.props.node.okPort && <>
                                     <span title={t('editor.diagram.story.options.customok')} className={'glyphicon glyphicon-ok'}/>
-                                    <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.okPort} className="ok-port"/>
+                                    <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.okPort} className={`ok-port ${this.getNodeError('okPort') ? 'error' : ''}`}/>
                                 </>}
                             </div>
                             <div className="output-port">
@@ -266,7 +280,7 @@ class StageNodeWidget extends React.Component {
                         </div>}
                     </div>
                 </div>
-                {this.props.node.fromPort && <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.fromPort} className="from-port"/>}
+                {this.props.node.fromPort && <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.fromPort} className={`from-port ${this.getNodeError('fromPort') ? 'error' : ''}`}/>}
             </div>
         );
     }
@@ -281,7 +295,8 @@ StageNodeWidget.propTypes = {
 };
 
 const mapStateToProps = (state, ownProps) => ({
-    viewer: state.viewer
+    viewer: state.viewer,
+    errors: state.editor.errors
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({

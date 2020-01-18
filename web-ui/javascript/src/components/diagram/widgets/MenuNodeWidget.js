@@ -269,10 +269,24 @@ class MenuNodeWidget extends React.Component {
         }
     };
 
+    getNodeErrors = () => {
+        return this.props.errors[this.props.node.getID()];
+    };
+
+    getNodeErrorsTitle = () => {
+        let nodeErrors = this.getNodeErrors();
+        return nodeErrors ? Object.values(nodeErrors).join('\n') : null;
+    };
+
+    getNodeError = (key) => {
+        let nodeErrors = this.getNodeErrors();
+        return nodeErrors ? nodeErrors[key] : null;
+    };
+
     render() {
         const { t } = this.props;
         return (
-            <div className={`studio-node user-friendly-node menu-node ${this.props.selected && 'selected'} ${this.props.viewer.stage && this.props.viewer.stage.parentNode && this.props.viewer.stage.parentNode === this.props.node && 'playing'}`}>
+            <div className={`studio-node user-friendly-node menu-node ${this.props.selected && 'selected'} ${this.props.viewer.stage && this.props.viewer.stage.parentNode && this.props.viewer.stage.parentNode === this.props.node && 'playing'} ${this.getNodeErrors() && 'error'}`} title={this.getNodeErrorsTitle()}>
                 <div className="node-header">
                     <span className="dropzone glyphicon glyphicon-question-sign" title={t('editor.tray.menu')}/>
                 </div>
@@ -310,7 +324,7 @@ class MenuNodeWidget extends React.Component {
                                 <span className='btn btn-xs glyphicon glyphicon-plus' onClick={this.addOption} title={t('editor.diagram.menu.addOption')} />
                             </div>
                             {this.props.node.optionsStages.map((option, idx) =>
-                                <div key={`menu-option-${idx}`} className={`option ${this.props.viewer.action.node === this.props.node && this.props.viewer.action.index === idx && 'playing'}`}>
+                                <div key={`menu-option-${idx}`} className={`option ${this.props.viewer.action.node === this.props.node && this.props.viewer.action.index === idx && 'playing'} ${this.getNodeError('assets_'+idx) ? 'error' : ''}`}>
                                     <div className={`delete ${this.props.node.optionsStages.length <= 1 ? 'disabled' : ''}`} title={t('editor.diagram.menu.removeOption')} onClick={this.removeSpecificOption(idx)}/>
                                     <div className="policy">
                                         <input type="radio" value={`menu-option-${idx}`} checked={this.props.node.getDefaultOption() === idx} onChange={this.editDefaultOption(idx)} title={t('editor.diagram.menu.defaultOption')}/>
@@ -350,7 +364,7 @@ class MenuNodeWidget extends React.Component {
                                             </div>
                                         </div>
                                     </div>
-                                    <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.optionsOut[idx]} className="option-port"/>
+                                    <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.optionsOut[idx]} className={`option-port ${this.getNodeError('optionsOut_'+idx) ? 'error' : ''}`}/>
                                 </div>
                             )}
                             <div className="option">
@@ -366,7 +380,7 @@ class MenuNodeWidget extends React.Component {
                         </div>
                     </div>
                 </div>
-                {this.props.node.fromPort && <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.fromPort} className="from-port"/>}
+                {this.props.node.fromPort && <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.fromPort} className={`from-port ${this.getNodeError('fromPort') ? 'error' : ''}`}/>}
             </div>
         );
     }
@@ -381,7 +395,8 @@ MenuNodeWidget.propTypes = {
 };
 
 const mapStateToProps = (state, ownProps) => ({
-    viewer: state.viewer
+    viewer: state.viewer,
+    errors: state.editor.errors
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({

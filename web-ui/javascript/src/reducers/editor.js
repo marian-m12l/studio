@@ -8,7 +8,8 @@ import React from "react";
 
 const initialState = {
     diagram: null,
-    filename: ''
+    filename: '',
+    errors: {}
 };
 
 const editor = (state = initialState, action) => {
@@ -17,6 +18,8 @@ const editor = (state = initialState, action) => {
             return { ...state, diagram: action.diagram, filename: (action.filename || '') };
         case 'SET_EDITOR_FILENAME':
             return { ...state, filename: (action.filename || '') };
+        case 'SET_DIAGRAM_ERRORS':
+            return { ...state, errors: action.errors };
         default:
             return state
     }

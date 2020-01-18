@@ -57,7 +57,8 @@
       "clone": "Duplicate selection",
       "filterLayers": "Filter layers",
       "displayForwardWorkflow": "Forward workflow",
-      "displayReturningWorkflow": "Returning workflow"
+      "displayReturningWorkflow": "Returning workflow",
+      "verify": "Verify diagram"
     },
     "diagram": {
       "editText": "Click to edit",
@@ -98,6 +99,16 @@
           "customhome": "Customize HOME transition",
           "disablehome": "Disable HOME button"
         }
+      }
+    },
+    "verify": {
+      "errors": {
+        "fromPort": "Incoming link is missing (FROM port).",
+        "okPort": "Outgoing link is missing (OK port).",
+        "assets": "Missing asset.",
+        "optionsIn": "Incoming link is missing to (at least) one option.",
+        "optionsOut": "Outgoing link is missing for option #{{index}}.",
+        "optionAssets": "Missing asset for option #{{index}}."
       }
     }
   },
@@ -176,7 +187,10 @@
       "imageAssetWrongType": "Supported image asset formats are: BMP, JPEG, PNG.",
       "audioAssetWrongType": "Supported audio asset formats are: WAV, MP3, OGG.",
       "tooManyEntryPoints": "A story pack can only have one entry point.",
-      "cannotCloneCoverNode": "The cover node cannot be duplicated."
+      "cannotCloneCoverNode": "The cover node cannot be duplicated.",
+      "verifyDiagramErrors": "The diagram contains {{count}} node with errors.",
+      "verifyDiagramErrors_plural": "The diagram contains {{count}} nodes with errors.",
+      "verifyDiagramOK": "The diagram is valid."
     },
     "viewer": {
       "missingPrev": "Cannot find previous option.",

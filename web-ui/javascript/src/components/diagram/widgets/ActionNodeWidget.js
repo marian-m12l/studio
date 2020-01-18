@@ -51,10 +51,24 @@ class ActionNodeWidget extends React.Component {
         };
     };
 
+    getNodeErrors = () => {
+        return this.props.errors[this.props.node.getID()];
+    };
+
+    getNodeErrorsTitle = () => {
+        let nodeErrors = this.getNodeErrors();
+        return nodeErrors ? Object.values(nodeErrors).join('\n') : null;
+    };
+
+    getNodeError = (key) => {
+        let nodeErrors = this.getNodeErrors();
+        return nodeErrors ? nodeErrors[key] : null;
+    };
+
     render() {
         const { t } = this.props;
         return (
-            <div className={`studio-node basic-node action-node ${this.props.selected && 'selected'} ${this.props.viewer.action.node === this.props.node && 'playing'}`}>
+            <div className={`studio-node basic-node action-node ${this.props.selected && 'selected'} ${this.props.viewer.action.node === this.props.node && 'playing'} ${this.getNodeErrors() && 'error'}`} title={this.getNodeErrorsTitle()}>
                 <div className="node-content">
                     <div className="node-title">
                         <div className="ellipsis">
@@ -70,13 +84,13 @@ class ActionNodeWidget extends React.Component {
                             <div key={`action-option-${idx}`} className={`option ${this.props.viewer.action.node === this.props.node && this.props.viewer.action.index === idx && 'playing'}`}>
                                 <div className={`delete ${this.props.node.optionsIn.length <= 1 ? 'disabled' : ''}`} title={t('editor.diagram.action.removeOption')} onClick={this.removeSpecificOption(idx)}/>
                                 {option.label}
-                                <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.optionsIn[idx]} className="option-port-in"/>
-                                <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.optionsOut[idx]} className="option-port-out"/>
+                                <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.optionsIn[idx]} className={`option-port-in ${this.getNodeError('optionsIn') ? 'error' : ''}`}/>
+                                <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.optionsOut[idx]} className={`option-port-out ${this.getNodeError('optionsOut_'+idx) ? 'error' : ''}`}/>
                             </div>
                         )}
                         <div className="option">
                             {t('editor.diagram.action.random')}
-                            <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.randomOptionIn} className="option-port-in option-port-random"/>
+                            <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.randomOptionIn} className={`option-port-in option-port-random ${this.getNodeError('optionsIn') ? 'error' : ''}`}/>
                         </div>
                     </div>
                 </div>
@@ -94,7 +108,8 @@ ActionNodeWidget.propTypes = {
 };
 
 const mapStateToProps = (state, ownProps) => ({
-    viewer: state.viewer
+    viewer: state.viewer,
+    errors: state.editor.errors
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
