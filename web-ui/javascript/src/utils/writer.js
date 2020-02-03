@@ -249,6 +249,9 @@ export async function writeToArchive(diagramModel) {
     // Wait for all assets and virtual stage nodes, then flatten the array
     let stageNodes = await Promise.all(stageNodesPromises);
     stageNodes = stageNodes.flat(1);
+    // Make sure entry point is first in nodes list
+    let entryPointUuid = diagramModel.getEntryPoint().getUuid();
+    stageNodes = stageNodes.reduce((acc, node) => (node.uuid === entryPointUuid) ? [node, ...acc] : [...acc, node], []);
 
     if (diagramModel.thumbnail) {
         zip.file('thumbnail.png', diagramModel.thumbnail.substring(diagramModel.thumbnail.indexOf(',')+1), {base64: true});
