@@ -15,6 +15,7 @@ const EditableText = ({value, onChange, engine}) => {
     const onClick = (e) => setBeingEdited(true);
     const onKeyUp = (e) => {
         if (e.key === 'Enter' || e.key === 'Escape') {
+            engine.getModel().setLocked(false);
             setBeingEdited(false);
         }
     };
