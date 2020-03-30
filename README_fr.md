@@ -51,7 +51,7 @@ Le transfert de packs d'histoires de et vers la Fabrique à Histoire\* est gér�
 est distribué avec le logiciel Luniistore\*, et doit y être récupéré:
 
 * Télécharger et installer le logiciel Luniistore\*
-* Créer les répertoires `$DOT_STUDIO/lib/` dans votre dossier personnel (e.g. `mkdir -p ~/.studio/lib` sur Linux ou macOS, `mkdir %UserProfile%\.studio` sur Windows)
+* Créer les répertoires `$DOT_STUDIO/lib/` dans votre dossier personnel (p. ex. `mkdir -p ~/.studio/lib` sur Linux ou macOS, `mkdir %UserProfile%\.studio` sur Windows)
 * Depuis `$LOCAL_LUNIITHEQUE/lib`, copiez ces trois fichiers JAR vers `$DOT_STUDIO/lib/` :
   * `lunii-java-util.jar`
   * `lunii-device-gateway.jar`
@@ -65,7 +65,7 @@ Afin d'afficher les métadonnées des packs d'histoires, celles-ci doivent être
 * Ouvrez `$LOCAL_LUNIITHEQUE/.local.properties` dans une éditeur de texte, et notez la valeur du jeton :
   * Si vous êtes connecté sur le logiciel Luniistore\*, le jeton se trouve dans la propriété `tokens`, attribut `tokens.access_tokens.data.firebase`
   * Si vous n'êtes pas connecté sur le logiciel Luniistore\*, le jeton se trouve dans la propriété `token`, attribut `firebase`
-* Appelez `https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN` et enregistrez le résultat dans `$DOT_STUDIO/db/official.json` (e.g. `curl -v -X GET https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN > ~/.studio/db/official.json`)
+* Appelez `https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN` et enregistrez le résultat dans `$DOT_STUDIO/db/official.json` (p. ex. `curl -v -X GET https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN > ~/.studio/db/official.json`)
 
 ### Construire l'application
 
