@@ -38,9 +38,10 @@ This application requires some assets from the official Luniistore\* software.
 * Download and install it
 * The assets we need are stored in a user-specific folder, referred to as `$LOCAL_LUNIITHEQUE` in the remainder of this documentation. Its path depends on your platform:
   * On Linux, is is located at `~/.local/share/Luniitheque`
+  * On macOS, it is located at `~/Library/Application\ Support/Luniitheque`
   * On Windows, it is located at `%UserProfile%\AppData\Roaming\Luniitheque`
 * The assets must be copied to a newly-created user-specific folder (referred to as `$DOT_STUDIO`) in order to be read by this application. Its expected path depends on your platform:
-  * On Linux, `~/.studio`
+  * On Linux and macOS, `~/.studio`
   * On Windows, `%UserProfile%\.studio`
 
 #### Lunii\* Story Teller driver
@@ -48,7 +49,7 @@ This application requires some assets from the official Luniistore\* software.
 Transfer of story pack to and from the Story Teller device is handled by the official Lunii\* driver. This driver
 is distributed with the Luniistore\* software, and must be obtained through it:
 
-* Create the folders `$DOT_STUDIO/lib/` in your home directory (e.g. `mkdir -p ~/.studio/lib` on Linux, `mkdir %UserProfile%\.studio` on Windows)
+* Create the folders `$DOT_STUDIO/lib/` in your home directory (e.g. `mkdir -p ~/.studio/lib` on Linux or macOS, `mkdir %UserProfile%\.studio` on Windows)
 * From `$LOCAL_LUNIITHEQUE/lib`, copy these three JAR files into `$DOT_STUDIO/lib/`:
   * `lunii-java-util.jar`
   * `lunii-device-gateway.jar`
@@ -132,6 +133,7 @@ These **experimental** features allow:
 
 To enable these features, locate the configuration file `Luniistore.cfg`:
   * On Linux, in `/opt/Luniistore/app`
+  * On macOS, in `/Applications/Luniistore.app/Contents/Java`
   * On Windows, in `%ProgramFiles%\Luniistore\app`
 
 Then add this line under the `[JVMOptions]` section (replace `$DOT_STUDIO` with the actual path)(use forward slashes
