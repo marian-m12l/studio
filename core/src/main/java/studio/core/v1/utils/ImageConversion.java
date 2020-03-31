@@ -7,6 +7,7 @@
 package studio.core.v1.utils;
 
 import javax.imageio.ImageIO;
+import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -31,11 +32,23 @@ public class ImageConversion {
 
     public static byte[] convertImage(byte[] data, String format) throws IOException {
         BufferedImage inputImage = ImageIO.read(new ByteArrayInputStream(data));
+        // Redraw image to remove potential alpha channel
+        BufferedImage redrawn = redrawImage(inputImage);
         ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ImageIO.write(inputImage, format, output);
+        ImageIO.write(redrawn, format, output);
         if (output.size() == 0) {
             throw new IOException("Failed to convert image");
         }
         return output.toByteArray();
+    }
+
+    private static BufferedImage redrawImage(BufferedImage inputImage) {
+        BufferedImage redrawn = new BufferedImage(inputImage.getWidth(), inputImage.getHeight(), BufferedImage.TYPE_INT_RGB);
+        Graphics2D g2d = redrawn.createGraphics();
+        g2d.setColor(Color.BLACK);
+        g2d.fillRect(0, 0, redrawn.getWidth(), redrawn.getHeight());
+        g2d.drawImage(inputImage, 0, 0, null);
+        g2d.dispose();
+        return redrawn;
     }
 }
