@@ -43,7 +43,8 @@ class PackLibrary extends React.Component {
             removingFromLibrary: null,
             showRemoveFromDeviceConfirmDialog: false,
             removingFromDevice: null,
-            reordering: null
+            reordering: null,
+            beforeReordering: null
         };
     }
 
@@ -252,7 +253,21 @@ class PackLibrary extends React.Component {
                     </div>
                     <div className="device-dropzone"
                          onDrop={this.onDropPackIntoDevice}
-                         onDragOver={event => { event.preventDefault(); }}>
+                         onDragOver={event => { event.preventDefault(); }}
+                         onDragLeave={event => {
+                             // Get the location of the dropzone
+                             var rect = event.target.closest('.device-dropzone').getBoundingClientRect();
+                             // Check whether the mouse coordinates are outside the dropzone rectangle
+                             if(event.clientX > rect.left + rect.width || event.clientX < rect.left || event.clientY > rect.top + rect.height || event.clientY < rect.top) {
+                                 console.log("Reset reorder to beforeReordering: %o", this.state.beforeReordering);
+                                 this.setState({
+                                     device: {
+                                         ...this.state.device,
+                                         packs: [...this.state.beforeReordering]
+                                     }
+                                 });
+                             }
+                         }}>
                         {this.state.device.packs.length === 0 && <div className="empty">{t('library.device.empty')}</div>}
                         {this.state.device.packs.length > 0 && <div className="pack-grid">
                             {this.state.device.packs.map((pack,idx) =>
@@ -261,7 +276,7 @@ class PackLibrary extends React.Component {
                                      className={this.isPackDraggable(pack) ? 'pack-draggable' : 'pack-not-draggable'}
                                      onDragStart={event => {
                                          event.dataTransfer.setData("device-pack", JSON.stringify(pack));
-                                         this.setState({reordering: pack});
+                                         this.setState({reordering: pack, beforeReordering: [...this.state.device.packs]});
                                      }}
                                      onDragEnter={event => {
                                          let data = this.state.reordering;
@@ -287,8 +302,12 @@ class PackLibrary extends React.Component {
                                          }
                                      }}
                                      onDragEnd={event => {
-                                         let uuids = this.state.device.packs.map(p => p.uuid);
-                                         this.props.reorderOnDevice(uuids);
+                                         // Reorder on device only if order changed
+                                         if (this.state.beforeReordering.reduce((acc,p)=>acc+','+p.uuid, '') !== this.state.device.packs.reduce((acc,p)=>acc+','+p.uuid, '')) {
+                                             console.log("Order changed, reordering...");
+                                             let uuids = this.state.device.packs.map(p => p.uuid);
+                                             this.props.reorderOnDevice(uuids);
+                                         }
                                          this.setState({reordering: null});
                                      }}>
                                     <div className="pack-thumb">
