@@ -18,4 +18,4 @@ if not exist %DOT_STUDIO%\lib\lunii-device-wrapper.jar copy %LOCAL_LUNIITHEQUE%\
 copy .\agent\studio-agent-${project.version}-jar-with-dependencies.jar %DOT_STUDIO%\agent\studio-agent.jar
 copy .\agent\studio-metadata-${project.version}-jar-with-dependencies.jar %DOT_STUDIO%\agent\studio-metadata.jar
 
-java -cp ${project.build.finalName}.jar;lib/*;%DOT_STUDIO%/lib/*;. io.vertx.core.Launcher run ${vertx.main.verticle}
+java -Dfile.encoding=UTF-8 -cp ${project.build.finalName}.jar;lib/*;%DOT_STUDIO%/lib/*;. io.vertx.core.Launcher run ${vertx.main.verticle}
