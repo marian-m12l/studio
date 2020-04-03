@@ -272,6 +272,7 @@
                         <argument>${project.build.directory}/classes:${project.build.directory}/lib/*:${system.libs}/*</argument>
                         <argument>-Denv=dev</argument>
                         <argument>-Dfile.encoding=UTF-8</argument>
+                        <argument>-Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.Log4j2LogDelegateFactory</argument>
                         <argument>io.vertx.core.Launcher</argument>
                         <argument>run</argument>
                         <argument>${vertx.main.verticle}</argument>
