@@ -81,6 +81,8 @@ Pour démarrer l'application :
 Si la commande est exécutée dans un terminale, des logs devraient s'afficher, en se terminant par `INFOS: Succeeded in deploying verticle`.
 * Ouvrez un navigateur et saisissez l'url `http://localhost:8080` pour charger l'interface web.
 
+Note: Évitez d'exécuter le script en tant que superutilisateur/administrateur, ce qui pourrait créer des problèmes de permissions.
+
 ### Utiliser l'application
 
 L'interface web est composée de deux écrans :

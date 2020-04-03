@@ -79,6 +79,8 @@ To start the application:
 If run in a terminal, it should display some logs, ending with `INFOS: Succeeded in deploying verticle`.
 * Open a browser and type the url `http://localhost:8080` to load the web UI.
 
+Note: You should avoid running the script as superuser/administrator, as this may create permissions issues.
+
 ### Using the application
 
 The web UI is made of two screens:
