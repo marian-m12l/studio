@@ -220,7 +220,8 @@
       },
       "loadingFailed": "Échec du chargement de la version supportée du Luniistore.",
       "fetchingFailed": "Échec de la récupération de la dernière version du Luniistore."
-    }
+    },
+    "reportIssue": "Signaler cette anomalie"
   },
 
   "dialogs": {

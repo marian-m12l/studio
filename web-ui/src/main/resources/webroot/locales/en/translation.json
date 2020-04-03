@@ -220,7 +220,8 @@
       },
       "loadingFailed": "Failed to load supported Luniistore version.",
       "fetchingFailed": "Failed to fetch latest Luniistore version."
-    }
+    },
+    "reportIssue": "Report this issue"
   },
 
   "dialogs": {

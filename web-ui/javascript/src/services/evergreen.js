@@ -4,13 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+import {handleJsonOrError} from "../utils/fetch";
 
 export const fetchEvergreenInfos = () => {
     return fetch('http://localhost:8080/api/evergreen/infos')
-        .then(response => response.json());
+        .then(handleJsonOrError);
 };
 
 export const fetchEvergreenLatestRelease = () => {
     return fetch('http://localhost:8080/api/evergreen/latest')
-        .then(response => response.json());
+        .then(handleJsonOrError);
 };

@@ -4,15 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+import {handleJsonOrError} from "../utils/fetch";
 
 export const fetchDeviceInfos = () => {
     return fetch('http://localhost:8080/api/device/infos')
-        .then(response => response.json());
+        .then(handleJsonOrError);
 };
 
 export const fetchDevicePacks = () => {
     return fetch('http://localhost:8080/api/device/packs')
-        .then(response => response.json());
+        .then(handleJsonOrError);
 };
 
 export const addFromLibrary = (uuid, path) => {
@@ -21,7 +22,7 @@ export const addFromLibrary = (uuid, path) => {
         headers: { "Content-Type" : "application/json" },
         body: JSON.stringify({uuid, path})
     })
-        .then(response => response.json());
+        .then(handleJsonOrError);
 };
 
 export const removeFromDevice = (uuid) => {
@@ -30,7 +31,7 @@ export const removeFromDevice = (uuid) => {
         headers: { "Content-Type" : "application/json" },
         body: JSON.stringify({uuid})
     })
-        .then(response => response.json());
+        .then(handleJsonOrError);
 };
 
 export const reorderPacks = (uuids) => {
@@ -39,7 +40,7 @@ export const reorderPacks = (uuids) => {
         headers: { "Content-Type" : "application/json" },
         body: JSON.stringify({uuids})
     })
-        .then(response => response.json());
+        .then(handleJsonOrError);
 };
 
 export const addToLibrary = (uuid) => {
@@ -48,5 +49,5 @@ export const addToLibrary = (uuid) => {
         headers: { "Content-Type" : "application/json" },
         body: JSON.stringify({uuid})
     })
-        .then(response => response.json());
+        .then(handleJsonOrError);
 };

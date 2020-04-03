@@ -4,15 +4,16 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+import {handleJsonOrError} from "../utils/fetch";
 
 export const fetchLibraryInfos = () => {
     return fetch('http://localhost:8080/api/library/infos')
-        .then(response => response.json());
+        .then(handleJsonOrError);
 };
 
 export const fetchLibraryPacks = () => {
     return fetch('http://localhost:8080/api/library/packs')
-        .then(response => response.json());
+        .then(handleJsonOrError);
 };
 
 export const downloadFromLibrary = async (uuid, path) => {
@@ -48,7 +49,7 @@ export const convertInLibrary = async (uuid, path) => {
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({uuid, path})
     })
-        .then(response => response.json());
+        .then(handleJsonOrError);
 };
 
 export const removeFromLibrary = (path) => {
@@ -57,5 +58,5 @@ export const removeFromLibrary = (path) => {
         headers: { "Content-Type" : "application/json" },
         body: JSON.stringify({path})
     })
-        .then(response => response.json());
+        .then(handleJsonOrError);
 };
