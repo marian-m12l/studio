@@ -24,7 +24,7 @@ A clear and concise description of what you expected to happen.
 If applicable, add screenshots to help explain your problem.
 
 **Logs**
-Check the logs **in the console** for errors, if any.
+Check the logs **in the console** for errors, if any. Join the `studio-latest.log` file if relevant.
 Also check **the network tab of your browser's developer tools** and look for HTTP calls in error, if any. HTTP responses may contain useful data.
 
 **Desktop and environment (please complete the following information):**
