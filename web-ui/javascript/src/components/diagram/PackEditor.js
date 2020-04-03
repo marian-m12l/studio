@@ -22,6 +22,7 @@ import StagePortFactory from "./factories/StagePortFactory";
 import PackDiagramModel from "./models/PackDiagramModel";
 import PackDiagramWidget from "./widgets/PackDiagramWidget";
 import FixedZoomCanvasAction from "./actions/FixedZoomCanvasAction";
+import IssueReportToast from "../IssueReportToast";
 import Modal from "../Modal";
 import {generateFilename} from "../../utils/packs";
 import {writeToArchive} from "../../utils/writer";
@@ -118,7 +119,7 @@ class PackEditor extends React.Component {
             })
             .catch(e => {
                 console.error('failed to save story pack to library', e);
-                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.editor.savingFailed'), autoClose: 5000 });
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: <IssueReportToast content={<>{t('toasts.editor.savingFailed')}</>} error={e} />, autoClose: false });
             })
             .finally(() => {
                 // Always hide confirmation dialog
@@ -146,7 +147,7 @@ class PackEditor extends React.Component {
             })
             .catch(e => {
                 console.error('failed to export story pack', e);
-                toast.update(toastId, { type: toast.TYPE.ERROR, render: t('toasts.editor.exportingFailed'), autoClose: 5000 });
+                toast.update(toastId, { type: toast.TYPE.ERROR, render: <IssueReportToast content={<>{t('toasts.editor.exportingFailed')}</>} error={e} />, autoClose: false });
             });
     };
 
