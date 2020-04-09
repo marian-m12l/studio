@@ -125,7 +125,7 @@ to the device) :
 * OGG/Vorbis \*\*
 * WAVE (signed 16-bits, mono, 32000 Hz)
 
-MP3 and OGG files are expected to be sampled at 44000Hz.
+MP3 and OGG files are expected to be sampled at 44100Hz.
 
 ### [Experimental] Seeing unofficial metadata in Luniistore\* application / Loading official database from Luniistore\* application
 
