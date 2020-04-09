@@ -127,7 +127,7 @@ convertis lors du transfert vers l'appareil) :
 * OGG/Vorbis \*\*
 * WAVE (16-bits signés, mono, 32000 Hz)
 
-Les fichiers MP3 et OGG doivent, eux, être échantillonnés à 44000Hz.
+Les fichiers MP3 et OGG doivent, eux, être échantillonnés à 44100Hz.
 
 ### [Expérimental] Voir les métadonnées non-officielles dans le Luniistore\* / Charger la base de données officielle des métadonnées depuis le Luniistore\*
 
