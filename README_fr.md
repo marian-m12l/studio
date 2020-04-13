@@ -28,9 +28,13 @@ Pour exécuter l'application :
 * JRE 11+
 
 Pour construire l'application :
-* Git
-* JDK 11+
-* Maven 3+
+* Sans Docker
+  * Git
+  * JDK 11+
+  * Maven 3+
+* Avec Docker
+  * Git
+  * Docker
 
 #### Logiciel Luniistore\*
 
@@ -69,7 +73,18 @@ Afin d'afficher les métadonnées des packs d'histoires, celles-ci doivent être
 
 ### Construire l'application
 
-Après avoir cloné ce dépôt de sources, exécuter `mvn clean install` pour construire l'application. Ceci créera l'archive de distribution dans `web-ui/target/`.
+#### Sans Docker
+
+Après avoir cloné ce dépôt de sources, exécuter `mvn clean install` pour construire l'application.
+
+#### Avec Docker
+
+Après avoir cloné ce dépôt de sources, exécuter:
+```shell
+docker run --rm -v $(pwd):/code -v $LOCAL_LUNIITHEQUE/lib/:/root/.studio/lib maven:3.6.3-jdk-11-slim mvn clean install -f /code/pom.xml
+```
+
+Ceci créera l'archive de distribution dans `web-ui/target/`.
 
 ### Démarrer l'application
 

@@ -2,3 +2,4 @@
 *.iml
 *node_modules
 *target
+web-ui/javascript/build

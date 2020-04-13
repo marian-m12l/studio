@@ -28,8 +28,13 @@ To run the application:
 * JRE 11+
 
 To build the application:
-* JDK 11+
-* Maven 3+
+* Without Docker
+  * Git
+  * JDK 11+
+  * Maven 3+
+* With Docker
+  * Git
+  * Docker
 
 #### Luniistore\* software
 
@@ -67,7 +72,19 @@ In order to display story pack metadata, they must be downloaded and stored on a
 
 ### Building the application
 
-Once you have cloned this repository, execute `mvn clean install` to build the application. This will produce the distribution archive in `web-ui/target/`.
+#### Without Docker
+
+Once you have cloned this repository, execute `mvn clean install` to build the application.
+
+#### With Docker
+
+Once you have cloned this repository, execute:
+
+```shell
+docker run --rm -v $(pwd):/code -v $LOCAL_LUNIITHEQUE/lib/:/root/.studio/lib maven:3.6.3-jdk-11-slim mvn clean install -f /code/pom.xml
+```
+
+This will produce the distribution archive in `web-ui/target/`.
 
 ### Starting the application
 
