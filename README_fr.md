@@ -94,7 +94,7 @@ L'interface web est composée de deux écrans :
 
 L'écran de la bibliothèque d'histoires affiche toujours votre bibliothèque locale. Il s'agit des packs d'histoires situés dnas le répertoire `$DOT_STUDIO/library`. Ces packs peuvent être au format binaire (le format officiel, supporté par l'appareil) ou au format archive (le format officieux, utilisé pour la création et la modification de packs d'histoires).
 
-Dans l'appareil est branché, un panneau apparaît sur la gauche, affichant les métadaonnées et les packs d'histoires de l'appareil. Glisser et déposer un pack depuis ou vers l'appareil commencera le transfert.
+Quand l'appareil est branché, un panneau apparaît sur la gauche, affichant les métadaonnées et les packs d'histoires de l'appareil. Glisser et déposer un pack depuis ou vers l'appareil commencera le transfert.
 
 #### Éditeur d'histoire
 
