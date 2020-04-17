@@ -12,7 +12,7 @@ Un ensemble d'outils pour lire, créer et transférer des packs d'histoires de e
 PRÉAMBULE
 ---------
 
-Ce logiciel s'appuie sur mes propres recherches de rétro ingénierie, limitées à la collecte des informations nécessaires à l'intéropérabilité avec la Fabrique à Histoires Lunii\*, et ne distribue aucun contenu protégé.
+Ce logiciel s'appuie sur mes propres recherches de rétro ingénierie, limitées à la collecte des informations nécessaires à l'interopérabilité avec la Fabrique à Histoires Lunii\*, et ne distribue aucun contenu protégé.
 
 Ce logiciel est encore à un stade précoce de développement, et n'a donc pas encore été testé minutieusement. En particulier, il n'a été utilisé que sur un nombre très restreint d'appareils, et pourrait endommager votre appareil. EN UTILISANT CE LOGICIEL, VOUS EN ASSUMEZ LE RISQUE.
 
@@ -73,7 +73,7 @@ Après avoir cloné ce dépôt de sources, exécuter `mvn clean install` pour co
 
 ### Démarrer l'application
 
-Vous devez d'abord contruire l'application ou télécharger une archive de distribution ([dans la dernière release](https://github.com/marian-m12l/studio/releases/latest)).
+Vous devez d'abord construire l'application ou télécharger une archive de distribution ([dans la dernière release](https://github.com/marian-m12l/studio/releases/latest)).
 
 Pour démarrer l'application :
 * Décompressez l'archive de distribution
@@ -92,9 +92,9 @@ L'interface web est composée de deux écrans :
 
 #### Bibliothèque d'histoires
 
-L'écran de la bibliothèque d'histoires affiche toujours votre bibliothèque locale. Il s'agit des packs d'histoires situés dnas le répertoire `$DOT_STUDIO/library`. Ces packs peuvent être au format binaire (le format officiel, supporté par l'appareil) ou au format archive (le format officieux, utilisé pour la création et la modification de packs d'histoires).
+L'écran de la bibliothèque d'histoires affiche toujours votre bibliothèque locale. Il s'agit des packs d'histoires situés dans le répertoire `$DOT_STUDIO/library`. Ces packs peuvent être au format binaire (le format officiel, supporté par l'appareil) ou au format archive (le format officieux, utilisé pour la création et la modification de packs d'histoires).
 
-Dans l'appareil est branché, un panneau apparaît sur la gauche, affichant les métadaonnées et les packs d'histoires de l'appareil. Glisser et déposer un pack depuis ou vers l'appareil commencera le transfert.
+Quand l'appareil est branché, un panneau apparaît sur la gauche, affichant les métadonnées et les packs d'histoires de l'appareil. Glisser et déposer un pack depuis ou vers l'appareil commencera le transfert.
 
 #### Éditeur d'histoire
 
