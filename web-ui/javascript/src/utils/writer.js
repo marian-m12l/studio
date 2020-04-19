@@ -111,14 +111,26 @@ export async function writeToArchive(diagramModel) {
             }
             let coverNode = diagramModel.getEntryPoint();
             let firstUsefulNode = (coverNode.okPort && coverNode.okPort.getLinks() && Object.values(coverNode.okPort.getLinks()).length > 0) ? Object.values(coverNode.okPort.getLinks())[0].getTargetPort() : null;
-            let okTarget = (node.okPort && node.okPort.getLinks() && Object.values(node.okPort.getLinks()).length > 0)
-                ? Object.values(node.okPort.getLinks())[0].getTargetPort()
+            // If this story node _is_ the first useful node, go to cover node
+            if (firstUsefulNode.getParent() === node) {
+                firstUsefulNode = null;
+            }
+            let okTarget = node.okPort
+                ? (
+                    (node.okPort.getLinks() && Object.values(node.okPort.getLinks()).length > 0)
+                        ? Object.values(node.okPort.getLinks())[0].getTargetPort()
+                        : null
+                )
                 : node.getType() === 'story'
                     // When no transition is set, story nodes redirect to the first useful node after pack selection
                     ? firstUsefulNode
                     : null;
-            let homeTarget = (node.homePort && node.homePort.getLinks() && Object.values(node.homePort.getLinks()).length > 0)
-                ? Object.values(node.homePort.getLinks())[0].getTargetPort()
+            let homeTarget = node.homePort
+                ? (
+                    node.homePort.getLinks() && Object.values(node.homePort.getLinks()).length > 0
+                        ? Object.values(node.homePort.getLinks())[0].getTargetPort()
+                        : null
+                )
                 : node.getType() === 'story'
                     // When no transition is set, story nodes redirect to the first useful node after pack selection
                     ? firstUsefulNode
