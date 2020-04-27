@@ -275,27 +275,17 @@ export function readFromArchive(file) {
                             .concat(Object.values(virtualNodes).filter(grp => grp[0].type.startsWith('cover')).map(grp => grp[0]))
                             [0];
                         let firstUsefulNodeUuid = coverNode.okTransition.actionNode;
-                        // If this story node _is_ the first useful node, go to cover node
-                        if (firstUsefulNodeUuid === storyVirtualAction.id) {
-                            firstUsefulNodeUuid = null;
-                        }
-                        let okTransitionNode = (storyVirtualStage.okTransition && storyVirtualStage.okTransition.actionNode) || null;
-                        if (okTransitionNode !== firstUsefulNodeUuid) {
+                        if (storyVirtualStage.okTransition.actionNode !== firstUsefulNodeUuid) {
                             // Enable custom OK transition to create OK port
                             storyNode.setCustomOkTransition(true);
                             // Create link
-                            if (okTransitionNode !== null) {
-                                links.push(storyNode.okPort.link(getTransitionTargetNode(storyVirtualStage.okTransition, actionNodes, simplifiedNodes)));
-                            }
+                            links.push(storyNode.okPort.link(getTransitionTargetNode(storyVirtualStage.okTransition, actionNodes, simplifiedNodes)));
                         }
-                        let homeTransitionNode = (storyVirtualStage.homeTransition && storyVirtualStage.homeTransition.actionNode) || null;
-                        if (homeTransitionNode !== firstUsefulNodeUuid) {
+                        if (storyVirtualStage.homeTransition.actionNode !== firstUsefulNodeUuid) {
                             // Enable custom Home transition to create Home port
                             storyNode.setCustomHomeTransition(true);
                             // Create link
-                            if (homeTransitionNode !== null) {
-                                links.push(storyNode.homePort.link(getTransitionTargetNode(storyVirtualStage.homeTransition, actionNodes, simplifiedNodes)));
-                            }
+                            links.push(storyNode.homePort.link(getTransitionTargetNode(storyVirtualStage.homeTransition, actionNodes, simplifiedNodes)));
                         }
                         simplifiedNodes.set(storyVirtualAction.id, storyNode);
                     }
