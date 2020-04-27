@@ -183,7 +183,7 @@ class StoryNodeWidget extends React.Component {
                                 </div>
                             </div>
                             <div className="options">
-                                <span title={t('editor.diagram.story.options.customok')} className={'btn btn-xs glyphicon glyphicon-ok' + (this.props.node.customOkTransition ? ' active' : '')} onClick={this.toggleCustomOkTransition}/>
+                                <span title={t('editor.diagram.story.options.customok')} className={'btn btn-xs glyphicon glyphicon-play' + (this.props.node.customOkTransition ? ' active' : '')} onClick={this.toggleCustomOkTransition}/>
                                 {!this.props.node.disableHome &&<span title={t('editor.diagram.story.options.customhome')} className={'btn btn-xs glyphicon glyphicon-home' + (this.props.node.customHomeTransition ? ' active' : '')} onClick={this.toggleCustomHomeTransition}/>}
                                 <span title={t('editor.diagram.story.options.disablehome')} className={'btn btn-xs glyphicon glyphicon-home' + (this.props.node.disableHome ? ' active' : '')}
                                       style={{textDecorationLine: 'line-through', textDecorationColor: 'red', textDecorationStyle: 'double', textDecorationThickness: '3px'}} onClick={this.toggleDisableHome}/>
@@ -192,7 +192,7 @@ class StoryNodeWidget extends React.Component {
                         {(this.props.node.okPort || this.props.node.homePort) && <div className='ports'>
                             <div className="output-port">
                                 {this.props.node.okPort && <>
-                                    <span title={t('editor.diagram.story.options.customok')} className={'glyphicon glyphicon-ok'}/>
+                                    <span title={t('editor.diagram.story.options.customok')} className={'glyphicon glyphicon-play'}/>
                                     <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.okPort} className={`ok-port ${this.getNodeError('okPort') ? 'error' : ''}`}/>
                                 </>}
                             </div>

@@ -75,7 +75,13 @@
         "resetImage": "Reset image asset",
         "audio": "Audio asset",
         "resetAudio": "Reset audio asset",
-        "preview": "Preview"
+        "preview": "Preview",
+        "transitions": {
+          "ok": "OK transition",
+          "autoplay": "Autoplay transition",
+          "okAndAutoplay": "Autoplay/OK transition",
+          "home": "HOME transition"
+        }
       },
       "action": {
         "options": "Options:",
@@ -95,7 +101,7 @@
       },
       "story": {
         "options": {
-          "customok": "Customize OK transition",
+          "customok": "Customize autoplay transition",
           "customhome": "Customize HOME transition",
           "disablehome": "Disable HOME button"
         }

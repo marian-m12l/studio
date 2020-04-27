@@ -75,7 +75,13 @@
         "resetImage": "Réinitialiser l'image",
         "audio": "Ressource audio",
         "resetAudio": "Réinitialiser l'audio",
-        "preview": "Aperçu"
+        "preview": "Aperçu",
+        "transitions": {
+          "ok": "Transition OK",
+          "autoplay": "Transition lecture auto",
+          "okAndAutoplay": "Transition lecture auto / OK",
+          "home": "Transition MAISON"
+        }
       },
       "action": {
         "options": "Options :",
@@ -95,7 +101,7 @@
       },
       "story": {
         "options": {
-          "customok": "Personnaliser la transition OK",
+          "customok": "Personnaliser la transition lecture auto",
           "customhome": "Personnaliser la transition MAISON",
           "disablehome": "Désactiver le bouton MAISON"
         }

@@ -210,6 +210,15 @@ class StageNodeWidget extends React.Component {
         return nodeErrors ? nodeErrors[key] : null;
     };
 
+    getOkAutoplayTransitionLabel = () => {
+        const { t } = this.props;
+        return this.props.node.getControls().ok
+            ? this.props.node.getControls().autoplay
+                ? t('editor.diagram.stage.transitions.okAndAutoplay')
+                : t('editor.diagram.stage.transitions.ok')
+            : t('editor.diagram.stage.transitions.autoplay');
+    };
+
     render() {
         const { t } = this.props;
         return (
@@ -267,13 +276,13 @@ class StageNodeWidget extends React.Component {
                         {(this.props.node.okPort || this.props.node.homePort) && <div className='ports'>
                             <div className="output-port">
                                 {this.props.node.okPort && <>
-                                    <span title={t('editor.diagram.story.options.customok')} className={'glyphicon glyphicon-ok'}/>
+                                    <span title={this.getOkAutoplayTransitionLabel()} className={`glyphicon glyphicon-${this.props.node.getControls().autoplay ? 'play' : 'ok'}`}/>
                                     <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.okPort} className={`ok-port ${this.getNodeError('okPort') ? 'error' : ''}`}/>
                                 </>}
                             </div>
                             <div className="output-port">
                                 {this.props.node.homePort && <>
-                                    <span title={t('editor.diagram.story.options.customhome')} className={'glyphicon glyphicon-home'}/>
+                                    <span title={t('editor.diagram.stage.transitions.home')} className={'glyphicon glyphicon-home'}/>
                                     <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.homePort} className="home-port"/>
                                 </>}
                             </div>
