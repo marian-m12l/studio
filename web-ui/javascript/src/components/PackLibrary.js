@@ -18,7 +18,9 @@ import {
     actionLoadPackInEditor,
     actionConvertInLibrary,
     actionRemoveFromLibrary,
-    actionUploadToLibrary
+    actionUploadToLibrary,
+    actionCreatePackInEditor,
+    actionLoadSampleInEditor
 } from "../actions";
 import {AppContext} from "../AppContext";
 import Modal from "./Modal";
@@ -208,6 +210,16 @@ class PackLibrary extends React.Component {
         return !pack.official;
     };
 
+    onCreateNewPackInEditor = (e) => {
+        e.preventDefault();
+        this.props.createPackInEditor();
+    };
+
+    onOpenSamplePackInEditor = (e) => {
+        e.preventDefault();
+        this.props.loadSampleInEditor();
+    };
+
     render() {
         const { t } = this.props;
         let storagePercentage = null;
@@ -338,7 +350,10 @@ class PackLibrary extends React.Component {
                     <div className="library-dropzone"
                          onDrop={this.onDropPackIntoLibrary}
                          onDragOver={event => { event.preventDefault(); }}>
-                        {this.state.library.packs.length === 0 && <div className="empty">{t('library.local.empty')}</div>}
+                        {this.state.library.packs.length === 0 && <div className="empty">
+                            <p>{t('library.local.empty.header')}</p>
+                            <p><a href="" onClick={this.onCreateNewPackInEditor}>{t('library.local.empty.link1')}</a> <a href="" onClick={this.onOpenSamplePackInEditor}>{t('library.local.empty.link2')}</a> {t('library.local.empty.suffix')}</p>
+                        </div>}
                         {this.state.library.packs.length > 0 && <div className="pack-grid">
                             {this.state.library.packs.map(pack =>
                                 <div key={pack.path}
@@ -369,7 +384,7 @@ class PackLibrary extends React.Component {
                                     </div>
                                 </div>
                             )}
-                    </div>}
+                        </div>}
                     </div>
                 </div>}
             </div>
@@ -393,7 +408,9 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     loadPackInEditor: (packData, filename) => dispatch(actionLoadPackInEditor(packData, filename, ownProps.t)),
     convertPackInLibrary: (uuid, path) => dispatch(actionConvertInLibrary(uuid, path, ownProps.t)),
     removeFromLibrary: (path) => dispatch(actionRemoveFromLibrary(path, ownProps.t)),
-    uploadPackToLibrary: (path, packData) => dispatch(actionUploadToLibrary(null, path, packData, ownProps.t))
+    uploadPackToLibrary: (path, packData) => dispatch(actionUploadToLibrary(null, path, packData, ownProps.t)),
+    createPackInEditor: () => dispatch(actionCreatePackInEditor(ownProps.t)),
+    loadSampleInEditor: () => dispatch(actionLoadSampleInEditor(ownProps.t))
 });
 
 export default withTranslation()(

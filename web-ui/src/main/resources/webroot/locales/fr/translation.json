@@ -20,7 +20,12 @@
     "local": {
       "title": "BIBLIOTHÈQUE LOCALE",
       "path": "Chemin :",
-      "empty": "Aucun pack d'histoires dans la bibliothèque.",
+      "empty": {
+        "header": "Aucun pack d'histoires dans la bibliothèque.",
+        "link1": "Créez un nouveau pack d'histoires",
+        "link2": "ou ouvrez un pack d'exemple",
+        "suffix": " dans l'éditeur."
+      },
       "convertPack": "Convertir ce pack d'histoires au format archive (éditable)",
       "editPack": "Ouvrir ce pack d'histoires dans l'éditeur",
       "removePack": "Supprimer ce pack d'histoires de la bibliothèque",

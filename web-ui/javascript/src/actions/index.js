@@ -8,12 +8,14 @@ import React from 'react';
 import { toast } from 'react-toastify';
 
 import IssueReportToast from "../components/IssueReportToast";
+import PackDiagramModel from "../components/diagram/models/PackDiagramModel";
 import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice, reorderPacks, addToLibrary} from '../services/device';
 import {fetchLibraryInfos, fetchLibraryPacks, downloadFromLibrary, uploadToLibrary, convertInLibrary, removeFromLibrary} from '../services/library';
 import {fetchEvergreenInfos, fetchEvergreenLatestRelease} from '../services/evergreen';
 import {fetchWatchdogSupported, fetchWatchdogLatest} from '../services/watchdog';
-import {sortPacks} from "../utils/packs";
+import {generateFilename, sortPacks} from "../utils/packs";
 import {readFromArchive} from "../utils/reader";
+import {simplifiedSample} from "../utils/sample";
 
 
 export const actionLoadLibrary = (t) => {
@@ -274,6 +276,26 @@ export const actionLoadPackInEditor = (packData, filename, t) => {
                 console.error('failed to load story pack', e);
                 toast.update(toastId, { type: toast.TYPE.ERROR, render: <IssueReportToast content={<>{t('toasts.editor.loadingFailed')}</>} error={e} />, autoClose: false });
             });
+    }
+};
+
+export const actionCreatePackInEditor = (t) => {
+    return dispatch => {
+        // Set empty model in editor
+        let model = new PackDiagramModel();
+        dispatch(setEditorDiagram(model));
+        // Show editor
+        dispatch(showEditor());
+    }
+};
+
+export const actionLoadSampleInEditor = (t) => {
+    return dispatch => {
+        // Set sample model in editor
+        let model = simplifiedSample();
+        dispatch(setEditorDiagram(model, generateFilename(model)));
+        // Show editor
+        dispatch(showEditor());
     }
 };
 
