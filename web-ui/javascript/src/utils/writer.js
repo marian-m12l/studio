@@ -32,7 +32,7 @@ export async function writeToArchive(diagramModel) {
                 options: node.optionsOut
                     .map(optionPort => {
                         return (optionPort && optionPort.getLinks() && Object.values(optionPort.getLinks()).length > 0)
-                            ? Object.values(optionPort.getLinks())[0].getTargetPort().getParent().uuid
+                            ? Object.values(optionPort.getLinks())[0].getForwardTargetPort().getParent().uuid
                             : null;
                     })   // Stage nodes referenced by "business" uuid
             };
@@ -110,15 +110,15 @@ export async function writeToArchive(diagramModel) {
                 }
             }
             let coverNode = diagramModel.getEntryPoint();
-            let firstUsefulNode = (coverNode.okPort && coverNode.okPort.getLinks() && Object.values(coverNode.okPort.getLinks()).length > 0) ? Object.values(coverNode.okPort.getLinks())[0].getTargetPort() : null;
+            let firstUsefulNode = (coverNode.okPort && coverNode.okPort.getLinks() && Object.values(coverNode.okPort.getLinks()).length > 0) ? Object.values(coverNode.okPort.getLinks())[0].getForwardTargetPort() : null;
             let okTarget = (node.okPort && node.okPort.getLinks() && Object.values(node.okPort.getLinks()).length > 0)
-                ? Object.values(node.okPort.getLinks())[0].getTargetPort()
+                ? Object.values(node.okPort.getLinks())[0].getForwardTargetPort()
                 : node.getType() === 'story'
                     // When no transition is set, story nodes redirect to the first useful node after pack selection
                     ? firstUsefulNode
                     : null;
             let homeTarget = (node.homePort && node.homePort.getLinks() && Object.values(node.homePort.getLinks()).length > 0)
-                ? Object.values(node.homePort.getLinks())[0].getTargetPort()
+                ? Object.values(node.homePort.getLinks())[0].getForwardTargetPort()
                 : node.getType() === 'story'
                     // When no transition is set, story nodes redirect to the first useful node after pack selection
                     ? firstUsefulNode
@@ -199,7 +199,7 @@ export async function writeToArchive(diagramModel) {
                         }
                     }
                     // OK transition follows the 'menu' node's output ports
-                    let okTarget = (node.optionsOut[idx] && node.optionsOut[idx].getLinks() && Object.values(node.optionsOut[idx].getLinks()).length > 0) ? Object.values(node.optionsOut[idx].getLinks())[0].getTargetPort() : null;
+                    let okTarget = (node.optionsOut[idx] && node.optionsOut[idx].getLinks() && Object.values(node.optionsOut[idx].getLinks()).length > 0) ? Object.values(node.optionsOut[idx].getLinks())[0].getForwardTargetPort() : null;
                     // Home transition goes back to the incoming node or to the pack selection
                     let homeTarget = null;
                     let fromLinks = Object.values(node.fromPort.getLinks());
