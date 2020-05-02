@@ -198,7 +198,7 @@ export function readFromArchive(file) {
                         // Build stage node
                         var stageNode = new StageNodeModel({ name: node.name, uuid: node.uuid });
                         // Square one
-                        stageNode.squareOne = node.squareOne || false;
+                        stageNode.setSquareOne(node.squareOne || false);
                         // Async load from asset files
                         let imagePromise = new Promise((resolve, reject) => {
                             if (node.image) {
