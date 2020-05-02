@@ -20,7 +20,12 @@
     "local": {
       "title": "LOCAL LIBRARY",
       "path": "Path:",
-      "empty": "No story packs in library, yet.",
+      "empty": {
+        "header": "No story packs in library, yet.",
+        "link1": "Create a new story pack",
+        "link2": "or view an example pack",
+        "suffix": " in the editor."
+      },
       "convertPack": "Convert this story pack to (editable) archive format",
       "editPack": "Open this story pack in editor",
       "removePack": "Remove this story pack from library",
