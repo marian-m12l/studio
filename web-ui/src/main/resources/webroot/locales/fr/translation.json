@@ -50,7 +50,8 @@
       "menu": "Nœud de menu",
       "story": "Nœud d'histoire",
       "stage": "Nœud de scène",
-      "action": "Nœud d'action"
+      "action": "Nœud d'action",
+      "help": "Afficher l'aide"
     },
     "tools": {
       "zoom": "Afficher le diagramme entier",
@@ -233,7 +234,8 @@
   "dialogs": {
     "shared": {
       "yes": "Oui",
-      "no": "Non"
+      "no": "Non",
+      "ok": "OK"
     },
     "editor": {
       "save": {
@@ -244,6 +246,32 @@
         "title": "Le nom de fichier peut être mis à jour",
         "content": "Générer un nouveau nom de fichier pour ce pack d'histoires ?",
         "line2": "(L'identifiant UUID sera également renouvelé)"
+      },
+      "help": {
+        "cover": {
+          "title": "<span class=\"glyphicon glyphicon-book\"></span> Nœud Départ",
+          "content": "<p>Un pack d'histoires <strong>ne peut contenir qu'un Nœud Départ</strong>. Il contient l'image et l'audio qui sont joués par la Fabrique à Histoires lorsque l'utilisateur choisit un pack d'histoires.</p><p>Actions autorisées : <ul><li>(<span class=\"glyphicon glyphicon-resize-horizontal\"></span>) MOLETTE : pour parcourir la liste des packs d'histoires</li><li>(<span class=\"glyphicon glyphicon-ok\"></span>) OK : pour avancer vers le premier nœud utile du pack.</li></ul></p>"
+        },
+        "menu": {
+          "title": "<span class=\"glyphicon glyphicon-question-sign\"></span> Nœud de Menu",
+          "content": "<p>Un Nœud de Menu peut être utilisé pour <strong>poser une question à l'utilisateur</strong>, and proposer <strong>une liste d'options parmi lesquelles choisir</strong>. Chaque option permet peut avancer vers un nœud différent, que ce soit un Nœud d'Histoire, un autre Nœud de Menu, ou même un Nœud d'Action.</p><p>Actions autorisées pendant la question : <ul><li>(<span class=\"glyphicon glyphicon-play\"></span>) LECTURE AUTOMATIQUE : pour avancer vers la première option à la fin de la question</li></ul></p><p>Actions autorisées sur les options : <ul><li>(<span class=\"glyphicon glyphicon-resize-horizontal\"></span>) MOLETTE : pour sélectionner une autre option</li><li>(<span class=\"glyphicon glyphicon-ok\"></span>) OK : pour avancer vers le nœud suivant, selon l'option sélectionnée</li><li>(<span class=\"glyphicon glyphicon-home\"></span>) MAISON : pour retourner au nœud précédent (si un seul nœud mène à ce Nœud de Menu) <strong>ou</strong> pour retourner au nœud de sélection du pack (le point d'entrée du diagramme)</li></ul></p><p><strong>ATTENTION : la transition MAISON peut varier selon le nombre de liens menant à ca Nœud de Menu.</strong></p>"
+        },
+        "story": {
+          "title": "<span class=\"glyphicon glyphicon-headphones\"></span> Nœud d'Histoire",
+          "content": "<p>Un Nœud d'Histoire <strong>lit seulement de l'audio</strong>, et <strong>retourne automatiquement au début du pack d'histoires après la lecture</strong>.</p><p>Actions autorisées : <ul><li>(<span class=\"glyphicon glyphicon-play\"></span>) LECTURE AUTOMATIQUE : pour retourner au début du pack d'histoires après la lecture</li><li>(<span class=\"glyphicon glyphicon-pause\"></span>) PAUSE : pour mettre en pause et reprendre la lecture</li><li>(<span class=\"glyphicon glyphicon-home\"></span>) MAISON : pour retourner manuellement au début du pack d'histoires</li></ul></p><p><strong>ATTENTION :</strong> les transitions LECTURE AUTOMATIQUE et MAISON retournent au <strong>premier nœud utile</strong> du pack, c'est-à-dire le nœud suivant immédiatement le point d'entrée. Ainsi, <strong>IL N'EST PAS POSSIBLE D'AVOIR UN UNIQUE NŒUD D'HISTOIRE JUSTE APRÈS LE NŒUD DÉPART</strong>.</p><p>Vous pouvez personnaliser le comportement d'un Nœud d'Histoire : <ul><li>En redéfinissant la transition LECTURE AUTOMATIQUE</li><li>En redéfinissant la transition MAISON</li><li>En désactivant totalement le bouton MAISON</li></ul></p>"
+        },
+        "stage": {
+          "title": "Nœud de Scène",
+          "content": "<p>Un Nœud de Scène peut lire un fichier audio et/ou afficher une image. Plusieurs réglages permettent contrôler ce que l'utilisateur peut ou ne peut pas faire : <ul><li>(<span class=\"glyphicon glyphicon-resize-horizontal\"></span>) Autoriser la sélection par la MOLETTE : si l'utilisateur peut ou ne peut pas naviguer dans le \"menu\" courant / la liste du Nœud d'Action courant (p.ex. à désactiver pour la lecture d'une question ou d'une histoire)</li><li>(<span class=\"glyphicon glyphicon-ok\"></span>) Autoriser le bouton OK : si l'utilisateur peut ou ne peut pas appuyer sur OK (p.ex. à désactiver pour la lecture d'une question ou d'une histoire)</li><li>(<span class=\"glyphicon glyphicon-home\"></span>) Autoriser le bouton MAISON : si l'utilisateur peut ou ne peut pas appuyer sur MAISON (p.ex. à désactiver pour la lecture d'une question)</li><li>(<span class=\"glyphicon glyphicon-pause\"></span>) Autoriser le bouton PAUSE : si l'utilisateur peut ou ne peut pas appuyer sur PAUSE (p.ex. à activer pour la lecture d'une histoire)</li><li>(<span class=\"glyphicon glyphicon-play\"></span>) Activer la LECTURE AUTOMATIQUE : si la Fabrique à Histoires doit automatiquement exécuter la transition OK à la fin de la lecture du fichier audio (p.ex. à activer pour la lecture d'une question ou d'une histoire)</li></ul></p><p><strong>ATTENTION :</strong> Les Nœuds de Scène et d'Action sont intimement liés au format de fichier de la Fabrique à Histoires. L'utilisation de ces nœuds n'est pas très intuitive, mais offre la plus grande flexibilité. <strong>Soyez certain de comprendre ce que vous faites, vous pourriez facilement vous tirer dans le pied</strong>.</p>"
+        },
+        "action": {
+          "title": "Nœud d'Action",
+          "content": "<p>Un Nœud d'Action est simplement une liste d'items, chaque item pointant vers un Nœud de Scène. Il peut être utilisé pour créer un \"menu\" dans lequel l'utilisateur peut choisir une option (quand le molette est activée), ou comme un référentiel d'histoires ou de questions, ou simplement pour réaliser une transition d'un Nœud de Scène au suivant.</p><p><strong>ATTENTION :</strong> Les Nœuds de Scène et d'Action sont intimement liés au format de fichier de la Fabrique à Histoires. L'utilisation de ces nœuds n'est pas très intuitive, mais offre la plus grande flexibilité. <strong>Soyez certain de comprendre ce que vous faites, vous pourriez facilement vous tirer dans le pied</strong>.</p>"
+        },
+        "diagram": {
+          "title": "Diagramme et Ressources",
+          "content": "<p><strong>Le diagramme représente un pack d'histoires</strong>, commençant par le point d'entrée et définissant comment l'utilisateur navigue entre les nœuds. Quelques points notables : <ul><li>Le point d'entrée du pack d'hitoires / diagramme peut être soit un Nœud Départ, soit un Nœud de Scène</li><li>Lors de l'utilisation des Nœuds Experts, vous pouvez enchaîner Nœuds de Scène et Nœuds d'Action comme vous le souhaitez, mais gardez en tête la \"règle d'or\": un Nœud de Scène ne peut pointer que vers un Nœud d'Action, et un Nœud d'Action contient une liste de Nœuds de Scène uniquement.</li><li>Vous pouvez mélanger Nœuds Experts et Nœuds Simplifiés si vous le souhaitez. L'éditeur empêchera la création de liens ne suivant pas la \"règle d'or\".</li></ul></p><p><strong>Les ressources image</strong> doivent respecter les critères suivants : <ul><li>Les format supportés sont BMP (24-bits), PNG** (sans canal alpha) and JPEG** (les formats marqués d'astérisques sont automatiquement convertis lors du transfert vers l'appareil)</li><li><strong>Les dimensions de l'image doivent être  320x240</strong></li><li>Les images peuvent être en couleurs, bien que certaines couleurs ne seront certainement pas affichées fidèlement par l'écran situé derrière le boîtier en plastique. Gardez à l'esprit que la couleur du boîtier peut changer, comme c'est le cas pour la récente édition de Noël.</li></ul></p><p><strong>Les ressources audio</strong>  doivent respecter les critères suivants : <ul><li>Les formats supportés sont WAVE (16-bits signés, mono, 32000 Hz), MP3** (44100 Hz) and OGG/Vorbis** (44100 Hz) (les formats marqués d'astérisques sont automatiquement convertis lors du transfert vers l'appareil)</li><li>Pour une meilleure lecture, les fichiers audio doivent inclure un court \"blanc\" (environ 400 ms pour les sons courts, quelques secondes pour une longue histoire) en début et fin de fichier.</li><li>Le volume doit être assez élevé. Visez un niveau de pics autour de -3dB ou supérieur, et une moyenne RMS autour de -20dB.</li></ul></p>"
+        }
       }
     },
     "library": {

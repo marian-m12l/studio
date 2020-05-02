@@ -17,8 +17,12 @@ class Modal extends React.Component {
     }
 
     render() {
+        let classes = 'modal show ';
+        if (this.props.className) {
+            classes += this.props.className
+        }
         return (
-            <div className="modal show" id={`modal-${this.props.id}`} tabIndex="-1" role="dialog">
+            <div className={classes} id={`modal-${this.props.id}`} tabIndex="-1" role="dialog">
                 <div className="modal-dialog modal-dialog-centered" role="document">
                     <div className="modal-content">
                         <div className="modal-header">
@@ -45,7 +49,8 @@ Modal.propTypes = {
     title: PropTypes.string.isRequired,
     content: PropTypes.element.isRequired,
     buttons: PropTypes.array.isRequired,
-    onClose: PropTypes.func.isRequired
+    onClose: PropTypes.func.isRequired,
+    className: PropTypes.string
 };
 
 export default Modal;
