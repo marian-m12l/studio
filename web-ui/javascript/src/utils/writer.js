@@ -208,7 +208,7 @@ export async function writeToArchive(diagramModel) {
                         // TODO Add link constraint to limit fromPort to only 1 parent ???
                         homeTarget = null;
                     } else {
-                        let incomingNodeSource = fromLinks[0].getSourcePort();
+                        let incomingNodeSource = fromLinks[0].getForwardSourcePort();
                         let incomingNode = incomingNodeSource.getParent();
                         if (incomingNode.squareOne) {
                             // If incoming node is pack selection, there is no action node to point to, just use default behaviour of going back to pack selection
@@ -220,7 +220,7 @@ export async function writeToArchive(diagramModel) {
                                 // TODO If we cannot determine the incoming action node, use default behaviour of going back to pack selection
                                 homeTarget = null;
                             } else {
-                                let prevIncomingPort = prevIncomingLinks[0].getSourcePort();
+                                let prevIncomingPort = prevIncomingLinks[0].getForwardSourcePort();
                                 let prevAction = prevIncomingPort.getParent();
                                 homeTarget = {
                                     actionNode: prevAction.getUuid(),
