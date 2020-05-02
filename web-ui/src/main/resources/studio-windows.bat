@@ -19,4 +19,7 @@ if not exist %DOT_STUDIO%\lib\lunii-device-wrapper.jar copy %LOCAL_LUNIITHEQUE%\
 copy %STUDIO_PATH%\agent\studio-agent-${project.version}-jar-with-dependencies.jar %DOT_STUDIO%\agent\studio-agent.jar
 copy %STUDIO_PATH%\agent\studio-metadata-${project.version}-jar-with-dependencies.jar %DOT_STUDIO%\agent\studio-metadata.jar
 
+:: Start default browser with UI
+start "" http://localhost:8080
+
 java -Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.Log4j2LogDelegateFactory -Dfile.encoding=UTF-8 -cp %STUDIO_PATH%/${project.build.finalName}.jar;%STUDIO_PATH%/lib/*;%DOT_STUDIO%/lib/*;. io.vertx.core.Launcher run ${vertx.main.verticle}
