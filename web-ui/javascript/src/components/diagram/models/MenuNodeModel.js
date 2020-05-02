@@ -206,7 +206,7 @@ class MenuNodeModel extends NodeModel {
                         }
                     ]
                 } else {
-                    let previousNode = fromLinks[0].getSourcePort().getParent();
+                    let previousNode = fromLinks[0].getForwardSourcePort().getParent();
                     return previousNode.onEnter(null, d);
                 }
             },

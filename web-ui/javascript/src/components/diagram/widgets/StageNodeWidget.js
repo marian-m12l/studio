@@ -181,10 +181,10 @@ class StageNodeWidget extends React.Component {
             this.props.setViewerStage(viewingNode);
             let fromLinks = viewingNode.fromPort ? Object.values(viewingNode.fromPort.getLinks()) : [];
             if (fromLinks.length > 0) {
-                let firstActionNode = fromLinks[0].getSourcePort().getParent();
+                let firstActionNode = fromLinks[0].getForwardSourcePort().getParent();
                 this.props.setViewerAction({
                     node: firstActionNode,
-                    index: firstActionNode.optionsOut.indexOf(fromLinks[0].getSourcePort())
+                    index: firstActionNode.optionsOut.indexOf(fromLinks[0].getForwardSourcePort())
                 });
             } else {
                 this.props.setViewerAction({
