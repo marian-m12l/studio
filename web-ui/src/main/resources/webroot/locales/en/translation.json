@@ -50,7 +50,8 @@
       "menu": "Menu Node",
       "story": "Story Node",
       "stage": "Stage Node",
-      "action": "Action Node"
+      "action": "Action Node",
+      "help": "Show help"
     },
     "tools": {
       "zoom": "Zoom to fit",
@@ -233,7 +234,8 @@
   "dialogs": {
     "shared": {
       "yes": "Yes",
-      "no": "No"
+      "no": "No",
+      "ok": "OK"
     },
     "editor": {
       "save": {
@@ -244,6 +246,32 @@
         "title": "Pack filename may be updated",
         "content": "Generate a new pack filename?",
         "line2": "(UUID will also be renewed)"
+      },
+      "help": {
+        "cover": {
+          "title": "<span class=\"glyphicon glyphicon-book\"></span> Cover Node",
+          "content": "<p>A story pack <strong>may only contain one Cover Node</strong>. It contains the image and audio that are played by the Story Teller when the user is choosing a story pack.</p><p>Allowed actions: <ul><li>(<span class=\"glyphicon glyphicon-resize-horizontal\"></span>) WHEEL: to go through the list of story packs</li><li>(<span class=\"glyphicon glyphicon-ok\"></span>) OK: to transition to the first actual node of the story pack.</li></ul></p>"
+        },
+        "menu": {
+          "title": "<span class=\"glyphicon glyphicon-question-sign\"></span> Menu Node",
+          "content": "<p>A Menu Node can be used to <strong>ask a question to the user</strong>, and offer them <strong>a list of options to choose from</strong>. Each option can transition to a different node, be it a Story Node, another Menu Node, or even an Action Node.</p><p>Allowed actions during question: <ul><li>(<span class=\"glyphicon glyphicon-play\"></span>) AUTOPLAY: to transition to the first option after the question is played</li></ul></p><p>Allowed actions on options: <ul><li>(<span class=\"glyphicon glyphicon-resize-horizontal\"></span>) WHEEL: to select another option</li><li>(<span class=\"glyphicon glyphicon-ok\"></span>) OK: to transition to the next node, depending on the selected option</li><li>(<span class=\"glyphicon glyphicon-home\"></span>) HOME: to go back to the previous node (if only one node leads to this Menu Node) <strong>or</strong> to go back to the pack-selection node (the diagram entry point)</li></ul></p><p><strong>BE CAREFUL: the HOME transition may vary depending on the number of links leading to this Menu Node.</strong></p>"
+        },
+        "story": {
+          "title": "<span class=\"glyphicon glyphicon-headphones\"></span> Story Node",
+          "content": "<p>A Story Node <strong>only plays audio</strong>, and <strong>automatically goes back to the start of the story pack when done playing</strong>.</p><p>Allowed actions: <ul><li>(<span class=\"glyphicon glyphicon-play\"></span>) AUTOPLAY: to transition back to the start of the story pack after the audio is played</li><li>(<span class=\"glyphicon glyphicon-pause\"></span>) PAUSE: to pause and resume the playback</li><li>(<span class=\"glyphicon glyphicon-home\"></span>) HOME: to manually transition back to the start of the story pack</li></ul></p><p><strong>BE CAREFUL:</strong> the AUTOPLAY and HOME transitions go back to the <strong>first useful node</strong> of the pack, which is the node following the entry point. Thus, <strong>YOU SHOULD NOT HAVE A SINGLE STORY NODE RIGHT AFTER THE COVER NODE</strong>.</p><p>You can customize the behaviour of a Story Node: <ul><li>By overriding the AUTOPLAY transition</li><li>By overriding the HOME transition</li><li>By disabling the HOME button altogether</li></ul></p>"
+        },
+        "stage": {
+          "title": "Stage Node",
+          "content": "<p>A Stage Node can play an audio file and/or display an image. There are a few settings you can toggle to control what the user can or cannot do: <ul><li>(<span class=\"glyphicon glyphicon-resize-horizontal\"></span>) Allow WHEEL selection: whether the user can or cannot navigate the current \"menu\" / Action Node's list (you may want to disable this when playing a question or a story)</li><li>(<span class=\"glyphicon glyphicon-ok\"></span>) Allow OK button: whether the user can press OK (you may want to disable this when playing a question or a story)</li><li>(<span class=\"glyphicon glyphicon-home\"></span>) Allow HOME button: whether the user can press HOME (you may want to disable this when playing a question)</li><li>(<span class=\"glyphicon glyphicon-pause\"></span>) Allow PAUSE button: whether the user can press PAUSE (you may want to enable this when playing a story)</li><li>(<span class=\"glyphicon glyphicon-play\"></span>) Enable AUTOPLAY: whether the Story Teller should automatically play the OK transition when the audio file is done playing (you may want to enable this when playing a question or a story)</li></ul></p><p><strong>BE CAREFUL:</strong> Stage and action nodes are closely tied to the file format understood by the Story Teller. These nodes are not very intuitive to work with, but give you the most flexibility. <strong>Be sure to know what you are doing or you may shoot yourself in the foot</strong>.</p>"
+        },
+        "action": {
+          "title": "Action Node",
+          "content": "<p>An Action Node is simply a list of items, each item pointing to a Stage Node. It may be used to create a \"menu\" from which the user can choose an option (when the wheel is enabled), or as a repository of stories or questions to play, or simply to transition from a Stage Node to another.</p><p><strong>BE CAREFUL:</strong> Stage and action nodes are closely tied to the file format understood by the Story Teller. These nodes are not very intuitive to work with, but give you the most flexibility. <strong>Be sure to know what you are doing or you may shoot yourself in the foot</strong>.</p>"
+        },
+        "diagram": {
+          "title": "Diagram and Assets",
+          "content": "<p><strong>The diagram represents a story pack</strong>, starting from an entry point and defining how the user can navigate between nodes. Here are a few notable things: <ul><li>The entry point of the story pack / diagram may be either a Cover Node or a Stage Node</li><li>When using Expert Nodes, you can chain Stage Nodes and Action Nodes however you like, but keep in mind the \"golden rule\": a Stage Node can only transition to an Action Node, and an Action Node contains a list of Stage Nodes only.</li><li>You can mix and match expert nodes with simplified nodes if you see fit. The editor got your back and won't let you make invalid links that do not follow the \"golden rule\".</li></ul></p><p><strong>Image assets</strong> must follow a few requirements: <ul><li>Supported formats are BMP (24-bits), PNG** (without alpha layer) and JPEG** (formats marked with asterisks are automatically converted when transferring to the device)</li><li><strong>Image dimensions must be 320x240</strong></li><li>Images may use colors, even though some colors may not render accurately due to the screen being behind the plastic cover. Bear in mind that the color of the cover may change, as seen with the recently released Christmas edition.</li></ul></p><p><strong>Audio assets</strong> must follow a few requirements: <ul><li>Supported formats are WAVE (signed 16-bits, mono, 32000 Hz), MP3** (44100 Hz) and OGG/Vorbis** (44100 Hz) (formats marked with asterisks are automatically converted when transferring to the device)</li><li>For better playback, audio files should include short blanks (around 400 ms for short sounds, a few seconds for long stories) at the beginning and end of file.</li><li>Audio levels should be pretty high. Aim for peak level around -3dB or higher, and mean RMS around -20dB.</li></ul></p>"
+        }
       }
     },
     "library": {

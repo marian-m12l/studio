@@ -979,7 +979,16 @@
     flex-shrink: 0;
 }
 
-.pack-diagram-widget .content .tray .tray-item{
+.pack-diagram-widget .content .tray>.help {
+    text-decoration: none;
+    color: white;
+    margin-top: 30px;
+    font-size: 200%;
+    cursor: pointer;
+}
+
+.pack-diagram-widget .content .tray .tray-item {
+    position: relative;
     font-family: Helvetica, Arial;
     padding: 5px;
     margin: 10px 10px;
@@ -987,6 +996,23 @@
     border-radius: 5px;
     margin-bottom: 2px;
     cursor: pointer;
+}
+
+.pack-diagram-widget .content .tray .tray-item .help {
+    visibility: hidden;
+    position: absolute;
+    left: 5px;
+    top: 7px;
+    text-decoration: none;
+    color: white;
+}
+
+.pack-diagram-widget .content .tray .tray-item:hover .help {
+    visibility: visible;
+}
+
+.pack-diagram-widget .content .tray .tray-item.dragging .help {
+    visibility: hidden;
 }
 
 .pack-diagram-widget .content .tray .tray-item.tray-item-cover {
@@ -1012,6 +1038,13 @@
 .pack-diagram-widget .content .tray .tray-item.tray-item-action {
     border-color: #9e7a34;
     background-color: #6e5524;
+}
+
+
+/* Help dialogs */
+
+.pack-diagram-widget .help-dialog .modal-body {
+    text-align: justify;
 }
 
 
