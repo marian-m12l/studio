@@ -64,7 +64,7 @@ class ActionNodeModel extends NodeModel {
         if (optionLinks.length !== 1) {
             return [];
         } else {
-            let nextNode = optionLinks[0].getTargetPort().getParent();
+            let nextNode = optionLinks[0].getForwardTargetPort().getParent();
 
             return [
                 nextNode,
@@ -82,7 +82,7 @@ class ActionNodeModel extends NodeModel {
         if (optionLinks.length !== 1) {
             return [];
         } else {
-            let nextChoice = optionLinks[0].getTargetPort().getParent();
+            let nextChoice = optionLinks[0].getForwardTargetPort().getParent();
 
             return [
                 nextChoice,
@@ -100,7 +100,7 @@ class ActionNodeModel extends NodeModel {
         if (optionLinks.length !== 1) {
             return [];
         } else {
-            let nextChoice = optionLinks[0].getTargetPort().getParent();
+            let nextChoice = optionLinks[0].getForwardTargetPort().getParent();
 
             return [
                 nextChoice,

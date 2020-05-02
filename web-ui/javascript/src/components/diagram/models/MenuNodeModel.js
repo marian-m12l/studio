@@ -188,7 +188,7 @@ class MenuNodeModel extends NodeModel {
                 if (optionOutLinks.length !== 1) {
                     return [];
                 } else {
-                    let optionOutTargetPort = optionOutLinks[0].getTargetPort();
+                    let optionOutTargetPort = optionOutLinks[0].getForwardTargetPort();
                     let optionOutTargetNode = optionOutTargetPort.getParent();
                     return optionOutTargetNode.onEnter(optionOutTargetPort, d);
                 }

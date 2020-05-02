@@ -161,7 +161,7 @@ class StageNodeModel extends NodeModel {
         if (okLinks.length !== 1) {
             return [];
         } else {
-            let okTargetPort = okLinks[0].getTargetPort();
+            let okTargetPort = okLinks[0].getForwardTargetPort();
             let okTargetNode = okTargetPort.getParent();
             return okTargetNode.onEnter(okTargetPort, diagram);
         }
@@ -180,7 +180,7 @@ class StageNodeModel extends NodeModel {
                 }
             ];
         } else {
-            let homeTargetPort = homeLinks[0].getTargetPort();
+            let homeTargetPort = homeLinks[0].getForwardTargetPort();
             let homeTargetNode = homeTargetPort.getParent();
             return homeTargetNode.onEnter(homeTargetPort, diagram);
         }

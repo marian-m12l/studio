@@ -16,6 +16,14 @@ class StudioLinkModel extends DefaultLinkModel {
         this.inversed = inversed;
     }
 
+    getForwardTargetPort() {
+        return this.inversed ? this.getSourcePort() : this.getTargetPort();
+    }
+
+    getForwardSourcePort() {
+        return this.inversed ? this.getTargetPort() : this.getSourcePort();
+    }
+
     deserialize(event) {
         super.deserialize(event);
         this.inversed = event.data.inversed;
