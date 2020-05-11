@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -63,39 +64,42 @@ public class MockStoryTellerService implements IStoryTellerService {
         return System.getProperty("user.home") + MOCKED_DEVICE_PATH;
     }
 
-    public Optional<JsonObject> deviceInfos() {
+    public CompletableFuture<Optional<JsonObject>> deviceInfos() {
         File deviceFolder = new File(devicePath());
         int files = deviceFolder.listFiles().length;
-        return Optional.of(new JsonObject()
-                .put("uuid", "mocked-device")
-                .put("serial", "mocked-serial")
-                .put("firmware", "mocked-version")
-                .put("storage", new JsonObject()
-                        .put("size", files)
-                        .put("free", 0)
-                        .put("taken", files)
+        return CompletableFuture.completedFuture(
+                Optional.of(new JsonObject()
+                        .put("uuid", "mocked-device")
+                        .put("serial", "mocked-serial")
+                        .put("firmware", "mocked-version")
+                        .put("storage", new JsonObject()
+                                .put("size", files)
+                                .put("free", 0)
+                                .put("taken", files)
+                        )
+                        .put("error", false)
                 )
-                .put("error", false)
         );
     }
 
-    public JsonArray packs() {
+    public CompletableFuture<JsonArray> packs() {
         // Check that mocked device folder exists
         File deviceFolder = new File(devicePath());
         if (!deviceFolder.exists() || !deviceFolder.isDirectory()) {
-            return new JsonArray();
+            return CompletableFuture.completedFuture(new JsonArray());
         } else {
             // List binary pack files in mocked device folder
             try (Stream<Path> paths = Files.walk(Paths.get(devicePath()))) {
-                return new JsonArray(
-                        paths
-                                .filter(Files::isRegularFile)
-                                .map(path -> this.readBinaryPackFile(path).map(
-                                        meta -> this.getPackMetadata(meta, path.getFileName().toString())
-                                ))
-                                .filter(Optional::isPresent)
-                                .map(Optional::get)
-                                .collect(Collectors.toList())
+                return CompletableFuture.completedFuture(new JsonArray(
+                                paths
+                                        .filter(Files::isRegularFile)
+                                        .map(path -> this.readBinaryPackFile(path).map(
+                                                meta -> this.getPackMetadata(meta, path.getFileName().toString())
+                                        ))
+                                        .filter(Optional::isPresent)
+                                        .map(Optional::get)
+                                        .collect(Collectors.toList())
+                        )
                 );
             } catch (IOException e) {
                 LOGGER.error("Failed to read packs from mocked device", e);
@@ -181,32 +185,32 @@ public class MockStoryTellerService implements IStoryTellerService {
         }
     }
 
-    public boolean deletePack(String uuid) {
+    public CompletableFuture<Boolean> deletePack(String uuid) {
         // Check that mocked device folder exists
         File deviceFolder = new File(devicePath());
         if (!deviceFolder.exists() || !deviceFolder.isDirectory()) {
-            return false;
+            return CompletableFuture.completedFuture(false);
         } else {
             try {
                 File packFile = new File(devicePath() + "/" + uuid + ".pack");
                 if (packFile.exists()) {
                     FileUtils.forceDelete(packFile);
-                    return true;
+                    return CompletableFuture.completedFuture(true);
                 } else {
                     LOGGER.error("Cannot remove pack from mocked device because it is not in the folder");
-                    return false;
+                    return CompletableFuture.completedFuture(false);
                 }
             } catch (IOException e) {
                 LOGGER.error("Failed to remove pack from mocked device", e);
                 e.printStackTrace();
-                return false;
+                return CompletableFuture.completedFuture(false);
             }
         }
     }
 
-    public boolean reorderPacks(List<String> uuids) {
+    public CompletableFuture<Boolean> reorderPacks(List<String> uuids) {
         // Not supported
-        return false;
+        return CompletableFuture.completedFuture(false);
     }
 
     public Optional<String> extractPack(String uuid, File destFile) {
@@ -280,6 +284,11 @@ public class MockStoryTellerService implements IStoryTellerService {
                         .put("official", metadata.isOfficial())
                 )
                 .orElse(json);
+    }
+
+    public CompletableFuture<Void> dump(String outputPath) {
+        // Not supported
+        return CompletableFuture.completedFuture(null);
     }
 
 }

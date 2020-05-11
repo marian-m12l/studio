@@ -6,24 +6,26 @@
 
 package studio.webui.service;
 
-import com.lunii.device.gateway.raw.AbstractUsb4JavaLuniiDriver;
-import com.lunii.device.gateway.raw.Usb4JavaLuniiDevice;
-import com.lunii.device.gateway.raw.Usb4JavaLuniiDriver;
-import com.lunii.device.wrapper.raw.RawDevice;
-import com.lunii.device.wrapper.raw.handler.*;
-import com.lunii.java.util.progress.Progress;
-import com.lunii.java.util.progress.ProgressCallback;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import studio.core.v1.Constants;
+import org.usb4java.Device;
+import studio.driver.LibUsbHelper;
+import studio.driver.StoryTellerAsyncDriver;
+import studio.driver.event.DeviceHotplugEventListener;
+import studio.driver.event.TransferProgressListener;
+import studio.driver.model.StoryPackInfos;
+import studio.driver.model.TransferStatus;
 import studio.metadata.DatabaseMetadataService;
 
 import java.io.File;
-import java.lang.reflect.Method;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 public class StoryTellerService implements IStoryTellerService {
@@ -34,8 +36,8 @@ public class StoryTellerService implements IStoryTellerService {
 
     private final DatabaseMetadataService databaseMetadataService;
 
-    private RawDeviceHandler rawDeviceHandler;
-    private Device rawDevice;
+    private StoryTellerAsyncDriver driver;
+    private Device device;
 
 
     public StoryTellerService(EventBus eventBus, DatabaseMetadataService databaseMetadataService) {
@@ -43,254 +45,222 @@ public class StoryTellerService implements IStoryTellerService {
         this.databaseMetadataService = databaseMetadataService;
 
         LOGGER.info("Setting up story teller driver");
-        Usb4JavaLuniiDriver driver = new Usb4JavaLuniiDriver();
+        driver = new StoryTellerAsyncDriver();
 
-        driver.addDevicePluggedListener(new AbstractUsb4JavaLuniiDriver.DevicePluggedListener() {
-            public void onPlugged(Usb4JavaLuniiDevice device) {
+        driver.registerDeviceListener(new DeviceHotplugEventListener() {
+            @Override
+            public void onDevicePlugged(Device device) {
                 if (device == null) {
                     LOGGER.error("Device plugged but got null device");
                     // Send 'failure' event on bus
                     eventBus.send("storyteller.failure", null);
                 } else {
-                    try {
-                        LOGGER.info("Device plugged");
-                        rawDeviceHandler = new RawDeviceHandler(device);
-                        rawDevice = rawDeviceHandler.load();
-                        JsonObject eventData = new JsonObject()
-                                .put("uuid", rawDevice.getUuid().toString())
-                                .put("serial", rawDevice.getSerialNumber())
-                                .put("firmware", Optional.ofNullable(rawDevice.getFirmwareVersion()).map(fv -> fv.getMajor() + "." + fv.getMinor()).orElse(null))
-                                .put("storage", new JsonObject()
-                                        .put("size", rawDevice.getUsableSDCardSizeInSectors()*512L)
-                                        .put("free", rawDeviceHandler.getTotalFreeSpace())
-                                        .put("taken", rawDeviceHandler.getTotalTakenSpace())
-                                )
-                                .put("error", rawDeviceHandler.getError());
-                        // Send 'plugged' event on bus
-                        eventBus.send("storyteller.plugged", eventData);
-                    } catch (DeviceHandlerException e) {
-                        LOGGER.error("Failed to plug device", e);
-                        // Send 'failure' event on bus
-                        eventBus.send("storyteller.failure", null);
-                    }
+                    LOGGER.info("Device plugged");
+                    StoryTellerService.this.device = device;
+                    CompletableFuture.runAsync(() -> driver.getDeviceInfos()
+                            .handle((infos, e) -> {
+                                if (e != null) {
+                                    LOGGER.error("Failed to plug device", e);
+                                    // Send 'failure' event on bus
+                                    eventBus.send("storyteller.failure", null);
+                                } else {
+                                    JsonObject eventData = new JsonObject()
+                                            .put("uuid", infos.getUuid().toString())
+                                            .put("serial", infos.getSerialNumber())
+                                            .put("firmware", infos.getFirmwareMajor() == -1 ? null : infos.getFirmwareMajor() + "." + infos.getFirmwareMinor())
+                                            .put("storage", new JsonObject()
+                                                    .put("size", infos.getSdCardSizeInSectors() * (long) LibUsbHelper.SECTOR_SIZE)
+                                                    .put("free", (infos.getSdCardSizeInSectors() - infos.getUsedSpaceInSectors()) * (long) LibUsbHelper.SECTOR_SIZE)
+                                                    .put("taken", infos.getUsedSpaceInSectors() * (long) LibUsbHelper.SECTOR_SIZE)
+                                            )
+                                            .put("error", infos.isInError());
+                                    // Send 'plugged' event on bus
+                                    eventBus.send("storyteller.plugged", eventData);
+                                }
+                                return null;
+                            })
+                    );
                 }
-
             }
-        });
 
-        driver.addDeviceUnpluggedListener(new AbstractUsb4JavaLuniiDriver.DeviceUnpluggedListener() {
             @Override
-            public void onUnplugged(Usb4JavaLuniiDevice device) {
+            public void onDeviceUnplugged(Device device) {
                 LOGGER.info("Device unplugged");
-                rawDeviceHandler = null;
+                StoryTellerService.this.device = null;
                 // Send 'unplugged' event on bus
                 eventBus.send("storyteller.unplugged", null);
             }
         });
     }
 
-    public Optional<JsonObject> deviceInfos() {
-        if (rawDeviceHandler == null) {
-            return Optional.empty();
+    public CompletableFuture<Optional<JsonObject>> deviceInfos() {
+        if (this.device == null) {
+            return CompletableFuture.completedFuture(Optional.empty());
         } else {
-            try {
-                return Optional.of(new JsonObject()
-                        .put("uuid", rawDevice.getUuid().toString())
-                        .put("serial", rawDevice.getSerialNumber())
-                        .put("firmware", Optional.ofNullable(rawDevice.getFirmwareVersion()).map(fv -> fv.getMajor() + "." + fv.getMinor()).orElse(null))
-                        .put("storage", new JsonObject()
-                                .put("size", rawDevice.getUsableSDCardSizeInSectors()*512L)
-                                .put("free", rawDeviceHandler.getTotalFreeSpace())
-                                .put("taken", rawDeviceHandler.getTotalTakenSpace())
+            return driver.getDeviceInfos()
+                    .thenApply(infos -> Optional.of(
+                            new JsonObject()
+                                .put("uuid", infos.getUuid().toString())
+                                .put("serial", infos.getSerialNumber())
+                                .put("firmware", infos.getFirmwareMajor() == -1 ? null : infos.getFirmwareMajor() + "." + infos.getFirmwareMinor())
+                                .put("storage", new JsonObject()
+                                        .put("size", infos.getSdCardSizeInSectors() * (long) LibUsbHelper.SECTOR_SIZE)
+                                        .put("free", (infos.getSdCardSizeInSectors() - infos.getUsedSpaceInSectors()) * (long) LibUsbHelper.SECTOR_SIZE)
+                                        .put("taken", infos.getUsedSpaceInSectors() * (long) LibUsbHelper.SECTOR_SIZE)
+                                )
+                                .put("error", infos.isInError())
                         )
-                        .put("error", rawDeviceHandler.getError())
-                );
-            } catch (DeviceHandlerException e) {
-                LOGGER.error("Failed to read device infos", e);
-                throw new RuntimeException(e);
-            }
+                    );
         }
     }
 
-    public JsonArray packs() {
-        if (rawDeviceHandler == null) {
-            return new JsonArray();
+    public CompletableFuture<JsonArray> packs() {
+        if (this.device == null) {
+            return CompletableFuture.completedFuture(new JsonArray());
         } else {
-            try {
-                return new JsonArray(
-                        rawDeviceHandler.readIndex().stream()
-                                .map(this::getPackMetadata)
-                                .collect(Collectors.toList())
-                );
-            } catch (DeviceHandlerException e) {
-                LOGGER.error("Failed to read packs from device", e);
-                throw new RuntimeException(e);
-            }
+            return driver.getPacksList()
+                    .thenApply(packs ->
+                            new JsonArray(
+                                    packs.stream()
+                                            .map(this::getPackMetadata)
+                                            .collect(Collectors.toList())
+                            )
+                    );
         }
     }
 
     public Optional<String> addPack(String uuid, File packFile) {
-        if (rawDeviceHandler == null) {
+        if (this.device == null) {
             return Optional.empty();
         } else {
             String transferId = UUID.randomUUID().toString();
-            // Perform transfer asynchronously, and send events on eventbus to monitor progress and end of transfer
-            Timer timer = new Timer();
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
+
+            try {
+                // Create stream on file
+                FileInputStream fis = new FileInputStream(packFile);
+                LOGGER.info("Transferring pack to device: " + packFile.length() + " bytes");
+                int fileSizeInSectors = (int) (packFile.length() / LibUsbHelper.SECTOR_SIZE);
+                LOGGER.info("Transferring pack to device: " + fileSizeInSectors + " sectors");
+                driver.uploadPack(fis, fileSizeInSectors, new TransferProgressListener() {
+                    @Override
+                    public void onProgress(TransferStatus status) {
+                        // Send event on eventbus to monitor progress
+                        double p = (double) status.getTransferred() / (double) status.getTotal();
+                        LOGGER.debug("Pack add progress... " + status.getTransferred() + " / " + status.getTransferred() + " (" + p + ")");
+                        eventBus.send("storyteller.transfer."+transferId+".progress", new JsonObject().put("progress", p));
+                    }
+                    @Override
+                    public void onComplete(TransferStatus status) {
+                        LOGGER.info("Pack added.");
+                    }
+                }).whenComplete((status,t) -> {
+                    // Close source file in all cases
                     try {
-                        // Make sure the device does not already contain this pack
-                        if (rawDeviceHandler.readIndex().stream().anyMatch(p -> p.getUuid().toString().equalsIgnoreCase(uuid))) {
-                            LOGGER.error("Cannot add pack to device because the device already contains this pack");
-                            eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
-                            return;
-                        }
-
-                        // Need to set up a virtual pack to compute the pack's start sector
-                        LOGGER.info("Computing pack start sector...");
-                        RawDevice virtualRawDevice = new RawDevice(rawDeviceHandler);
-                        Method setErrorMethod = virtualRawDevice.getClass().getDeclaredMethod("setError", boolean.class);
-                        setErrorMethod.setAccessible(true);
-                        setErrorMethod.invoke(virtualRawDevice, rawDevice.isError());
-                        Method setFirmwareVersionMethod = virtualRawDevice.getClass().getDeclaredMethod("setFirmwareVersion", FirmwareVersion.class);
-                        setFirmwareVersionMethod.setAccessible(true);
-                        setFirmwareVersionMethod.invoke(virtualRawDevice, rawDevice.getFirmwareVersion());
-                        Method setSerialNumberMethod = virtualRawDevice.getClass().getDeclaredMethod("setSerialNumber", String.class);
-                        setSerialNumberMethod.setAccessible(true);
-                        setSerialNumberMethod.invoke(virtualRawDevice, rawDevice.getSerialNumber());
-                        Method setUuidMethod = virtualRawDevice.getClass().getDeclaredMethod("setUuid", UUID.class);
-                        setUuidMethod.setAccessible(true);
-                        setUuidMethod.invoke(virtualRawDevice, rawDevice.getUuid());
-                        Method setSdCardSizeInSectorsMethod = virtualRawDevice.getClass().getDeclaredMethod("setSdCardSizeInSectors", int.class);
-                        setSdCardSizeInSectorsMethod.setAccessible(true);
-                        setSdCardSizeInSectorsMethod.invoke(virtualRawDevice, rawDevice.getSdCardSizeInSectors());
-                        Method setUsableSDCardSizeInSectorsMethod = virtualRawDevice.getClass().getDeclaredMethod("setUsableSDCardSizeInSectors", int.class);
-                        setUsableSDCardSizeInSectorsMethod.setAccessible(true);
-                        setUsableSDCardSizeInSectorsMethod.invoke(virtualRawDevice, rawDevice.getUsableSDCardSizeInSectors());
-                        Method loadVirtualContentMethod = virtualRawDevice.getClass().getDeclaredMethod("loadVirtualContent", PhysicalContent.class);
-                        loadVirtualContentMethod.setAccessible(true);
-                        loadVirtualContentMethod.invoke(virtualRawDevice, rawDevice.physicalContent);
-
-                        Method addPackMethod = virtualRawDevice.getRawVirtualContent().getClass().getDeclaredMethod("addPack", UUID.class, short.class, int.class, short.class);
-                        addPackMethod.setAccessible(true);
-                        RawVirtualPack rawVirtualPack = (RawVirtualPack) addPackMethod.invoke(virtualRawDevice.getRawVirtualContent(),
-                                UUID.fromString(uuid),
-                                (short) 1,  // Version, no need for exact value
-                                (int) Math.ceil(packFile.length()/512.0), // Pack size in sectors
-                                (short) 0   // Sampling rate, no need for exact value
-                        );
-                        LOGGER.info("Adding pack at start sector: " + rawVirtualPack.getStartSector());
-
-                        rawDeviceHandler.addStoryPack(-1, packFile, rawVirtualPack.getStartSector(), new ProgressCallback() {
-                            @Override
-                            public boolean onProgress(Progress progress) {
-                                // Send events on eventbus to monitor progress
-                                double p = (double) progress.getWorkDone() / (double) progress.getTotalWork();
-                                LOGGER.debug("Pack add progress... " + progress.getWorkDone() + " / " + progress.getTotalWork() + " (" + p + ")");
-                                eventBus.send("storyteller.transfer."+transferId+".progress", new JsonObject().put("progress", p));
-                                return true;
-                            }
-                        });
-                        // Send event on eventbus to signal end of transfer
-                        eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", true));
-                    } catch (Exception e) {
-                        LOGGER.error("Failed to add pack to device", e);
-                        e.printStackTrace();
+                        fis.close();
+                    } catch (IOException e) {
+                        LOGGER.error("Failed to close source file.", e);
+                    }
+                    // Handle failure
+                    if (t != null) {
+                        LOGGER.error("Failed to add pack to device", t);
                         // Send event on eventbus to signal transfer failure
                         eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
                     }
-                }
-            }, 1000);
+                    // Handle success
+                    else {
+                        // Send event on eventbus to signal end of transfer
+                        eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", true));
+                    }
+                });
+            } catch (Exception e) {
+                LOGGER.error("Failed to add pack to device", e);
+                // Send event on eventbus to signal transfer failure
+                eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
+            }
             return Optional.of(transferId);
         }
     }
 
-    public boolean deletePack(String uuid) {
-        if (rawDeviceHandler == null) {
-            return false;
+    public CompletableFuture<Boolean> deletePack(String uuid) {
+        if (this.device == null) {
+            return CompletableFuture.completedFuture(false);
         } else {
-            try {
-                if (rawDeviceHandler.readIndex().stream().anyMatch(p -> p.getUuid().toString().equalsIgnoreCase(uuid))) {
-                    rawDeviceHandler.deleteStoryPack(UUID.fromString(uuid));
-                    return true;
-                } else {
-                    LOGGER.error("Cannot remove pack from device because it is not on the device");
-                    return false;
-                }
-            } catch (DeviceHandlerException | PackDoesNotExistException e) {
-                LOGGER.error("Failed to remove pack from device", e);
-                e.printStackTrace();
-                return false;
-            }
+            return driver.deletePack(uuid);
         }
     }
 
-    public boolean reorderPacks(List<String> uuids) {
-        try {
-            List<PhysicalPack> physicalPacks = new ArrayList(rawDeviceHandler.readIndex());
-            physicalPacks.sort(Comparator.comparingInt((o) -> uuids.indexOf(o.getUuid().toString())));
-            rawDeviceHandler.writeStoryPacksIndex(physicalPacks);
-            return true;
-        } catch (Exception e) {
-            LOGGER.error("Failed to reorder packs on device", e);
-            e.printStackTrace();
-            return false;
+    public CompletableFuture<Boolean> reorderPacks(List<String> uuids) {
+        if (this.device == null) {
+            return CompletableFuture.completedFuture(false);
+        } else {
+            return driver.reorderPacks(uuids);
         }
     }
 
     public Optional<String> extractPack(String uuid, File destFile) {
-        if (rawDeviceHandler == null) {
+        if (this.device == null) {
             return Optional.empty();
         } else {
             String transferId = UUID.randomUUID().toString();
-            // Perform transfer asynchronously, and send events on eventbus to monitor progress and end of transfer
-            Timer timer = new Timer();
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
+            // Check that the destination is available
+            if (destFile.exists()) {
+                LOGGER.error("Cannot extract pack from device because the destination file already exists");
+                eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
+                return Optional.empty();
+            }
+            try {
+                // Open destination file
+                FileOutputStream fos = new FileOutputStream(destFile);
+                driver.downloadPack(uuid, fos, new TransferProgressListener() {
+                    @Override
+                    public void onProgress(TransferStatus status) {
+                        // Send event on eventbus to monitor progress
+                        double p = (double) status.getTransferred() / (double) status.getTotal();
+                        LOGGER.debug("Pack extraction progress... " + status.getTransferred() + " / " + status.getTotal() + " (" + p + ")");
+                        eventBus.send("storyteller.transfer."+transferId+".progress", new JsonObject().put("progress", p));
+                    }
+                    @Override
+                    public void onComplete(TransferStatus status) {
+                        LOGGER.info("Pack extracted.");
+                    }
+                }).whenComplete((status,t) -> {
+                    // Close destination file in all cases
                     try {
-                        if (rawDeviceHandler.readIndex().stream().anyMatch(p -> p.getUuid().toString().equalsIgnoreCase(uuid))) {
-                            // Check that the destination is available
-                            if (destFile.exists()) {
-                                LOGGER.error("Cannot extract pack from device because the destination file already exists");
-                                eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
-                                return;
-                            }
-
-                            PhysicalPack pack = rawDeviceHandler.readIndex().stream()
-                                    .filter(p -> p.getUuid().toString().equalsIgnoreCase(uuid))
-                                    .collect(Collectors.toList())
-                                    .get(0);
-                            rawDeviceHandler.writeToFileFromSD(Constants.PACKS_LIST_SECTOR+pack.getStartSector(), pack.getSectorSize(), destFile, new ProgressCallback() {
-                                @Override
-                                public boolean onProgress(Progress progress) {
-                                    // Send events on eventbus to monitor progress
-                                    double p = (double) progress.getWorkDone() / (double) progress.getTotalWork();
-                                    LOGGER.debug("Pack extraction progress... " + progress.getWorkDone() + " / " + progress.getTotalWork() + " (" + p + ")");
-                                    eventBus.send("storyteller.transfer."+transferId+".progress", new JsonObject().put("progress", p));
-                                    return true;
-                                }
-                            });
-                            // Send event on eventbus to signal end of transfer
-                            eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", true));
-                        } else {
-                            LOGGER.error("Cannot extract pack from device because it is not on the device");
-                            eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
-                        }
-                    } catch (Exception e) {
-                        LOGGER.error("Failed to extract pack from device", e);
-                        e.printStackTrace();
+                        fos.close();
+                    } catch (IOException e) {
+                        LOGGER.error("Failed to close destination file.", e);
+                    }
+                    // Handle failure
+                    if (t != null) {
+                        LOGGER.error("Failed to extract pack from device", t);
                         // Send event on eventbus to signal transfer failure
                         eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
                     }
-                }
-            }, 1000);
+                    // Handle success
+                    else {
+                        // Send event on eventbus to signal end of transfer
+                        eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", true));
+                    }
+                });
+            } catch (Exception e) {
+                LOGGER.error("Failed to extract pack from device", e);
+                // Send event on eventbus to signal transfer failure
+                eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
+            }
             return Optional.of(transferId);
         }
     }
 
-    private JsonObject getPackMetadata(PhysicalPack pack) {
+    public CompletableFuture<Void> dump(String outputPath) {
+        if (this.device == null) {
+            return CompletableFuture.completedFuture(null);
+        } else {
+            new File(outputPath).mkdirs();
+            return driver.dump(outputPath);
+        }
+    }
+
+    private JsonObject getPackMetadata(StoryPackInfos pack) {
         return databaseMetadataService.getPackMetadata(pack.getUuid().toString())
                 .map(metadata -> new JsonObject()
                         .put("uuid", pack.getUuid().toString())
@@ -298,13 +268,13 @@ public class StoryTellerService implements IStoryTellerService {
                         .put("title", metadata.getTitle())
                         .put("description", metadata.getDescription())
                         .put("image", metadata.getThumbnail())
-                        .put("sectorSize", pack.getSectorSize())
+                        .put("sectorSize", pack.getSizeInSectors())
                         .put("official", metadata.isOfficial())
                 )
                 .orElse(new JsonObject()
                         .put("uuid", pack.getUuid().toString())
                         .put("version", pack.getVersion())
-                        .put("sectorSize", pack.getSectorSize())
+                        .put("sectorSize", pack.getSizeInSectors())
                 );
     }
 

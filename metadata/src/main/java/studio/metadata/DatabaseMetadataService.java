@@ -7,12 +7,15 @@
 package studio.metadata;
 
 import com.google.gson.*;
-import studio.metadata.logger.PluggableLogger;
 
 import java.io.*;
 import java.util.*;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 
 public class DatabaseMetadataService {
+
+    private static final Logger LOGGER = Logger.getLogger(DatabaseMetadataService.class.getName());
 
     public static final String OFFICIAL_DB_PROP = "studio.db.official";
     public static final String OFFICIAL_DB_JSON_PATH = "/.studio/db/official.json";
@@ -20,16 +23,14 @@ public class DatabaseMetadataService {
     public static final String UNOFFICIAL_DB_PROP = "studio.db.unofficial";
     public static final String UNOFFICIAL_DB_JSON_PATH = "/.studio/db/unofficial.json";
 
-    private final PluggableLogger logger;
     private final Map<String, JsonObject> cachedOfficialDatabase;
 
-    public DatabaseMetadataService(PluggableLogger pluggableLogger, boolean isAgent) {
-        this.logger = pluggableLogger;
+    public DatabaseMetadataService(boolean isAgent) {
         // Read and cache official database
         cachedOfficialDatabase = new HashMap<>();
         if (!isAgent) {
             try {
-                logger.debug("Reading and caching official metadata database");
+                LOGGER.fine("Reading and caching official metadata database");
                 // Read official metadata database file (path may be overridden by system property `studio.db.official`)
                 String databasePath = System.getProperty(OFFICIAL_DB_PROP, System.getProperty("user.home") + OFFICIAL_DB_JSON_PATH);
                 JsonObject officialRoot = new JsonParser().parse(new FileReader(databasePath)).getAsJsonObject();
@@ -40,7 +41,7 @@ public class DatabaseMetadataService {
                     cachedOfficialDatabase.put(uuid, packMetadata);
                 });
             } catch (FileNotFoundException e) {
-                logger.error("Missing official metadata database file", e);
+                LOGGER.log(Level.SEVERE, "Missing official metadata database file", e);
             }
         }
         // Initialize empty unofficial database if needed
@@ -52,7 +53,7 @@ public class DatabaseMetadataService {
                 fileWriter.write("{}");
                 fileWriter.close();
             } catch (IOException e) {
-                logger.error("Failed to initialize unofficial metadata database", e);
+                LOGGER.log(Level.SEVERE, "Failed to initialize unofficial metadata database", e);
                 throw new IllegalStateException("Failed to initialize unofficial metadata database");
             }
         } else if (!isAgent) {
@@ -62,7 +63,7 @@ public class DatabaseMetadataService {
     }
 
     public Optional<DatabasePackMetadata> getPackMetadata(String uuid) {
-        logger.debug("Fetching metadata for pack: " + uuid);
+        LOGGER.fine("Fetching metadata for pack: " + uuid);
         Optional<DatabasePackMetadata> metadata = this.getOfficialMetadata(uuid);
         if (!metadata.isPresent()) {
             metadata = this.getUnofficialMetadata(uuid);
@@ -71,7 +72,7 @@ public class DatabaseMetadataService {
     }
 
     public Optional<DatabasePackMetadata> getOfficialMetadata(String uuid) {
-        logger.debug("Fetching metadata from official database for pack: " + uuid);
+        LOGGER.fine("Fetching metadata from official database for pack: " + uuid);
         return Optional.ofNullable(cachedOfficialDatabase.get(uuid)).map(packMetadata -> {
             // FIXME Handle multiple locales
             JsonObject localesAvailable = packMetadata.getAsJsonObject("locales_available");
@@ -88,12 +89,12 @@ public class DatabaseMetadataService {
     }
 
     public boolean isOfficialPack(String uuid) {
-        logger.debug("Looking in official database for pack: " + uuid);
+        LOGGER.fine("Looking in official database for pack: " + uuid);
         return cachedOfficialDatabase.containsKey(uuid);
     }
 
     public Optional<DatabasePackMetadata> getUnofficialMetadata(String uuid) {
-        logger.debug("Fetching metadata from unofficial database for pack: " + uuid);
+        LOGGER.fine("Fetching metadata from unofficial database for pack: " + uuid);
         // Fetch from unofficial metadata database file (path may be overridden by system property `studio.db.unofficial`)
         try {
             String databasePath = System.getProperty(UNOFFICIAL_DB_PROP, System.getProperty("user.home") + UNOFFICIAL_DB_JSON_PATH);
@@ -109,7 +110,7 @@ public class DatabaseMetadataService {
                 ));
             }
         } catch (FileNotFoundException e) {
-            logger.error("Missing unofficial metadata database file", e);
+            LOGGER.log(Level.SEVERE, "Missing unofficial metadata database file", e);
         }
 
         // Missing metadata
@@ -122,7 +123,7 @@ public class DatabaseMetadataService {
             String databasePath = System.getProperty(OFFICIAL_DB_PROP, System.getProperty("user.home") + OFFICIAL_DB_JSON_PATH);
             writeDatabaseFile(databasePath, json);
         } catch (IOException e) {
-            logger.error("Failed to update official metadata database file", e);
+            LOGGER.log(Level.SEVERE, "Failed to update official metadata database file", e);
         }
     }
 
@@ -154,14 +155,14 @@ public class DatabaseMetadataService {
             // Write database file
             writeDatabaseFile(databasePath, unofficialRoot);
         } catch (FileNotFoundException e) {
-            logger.error("Missing unofficial metadata database file", e);
+            LOGGER.log(Level.SEVERE, "Missing unofficial metadata database file", e);
         } catch (IOException e) {
-            logger.error("Failed to update unofficial metadata database file", e);
+            LOGGER.log(Level.SEVERE, "Failed to update unofficial metadata database file", e);
         }
     }
 
     public void cleanUnofficialDatabase() {
-        logger.debug("Cleaning unofficial database.");
+        LOGGER.fine("Cleaning unofficial database.");
         // Remove official packs from unofficial metadata database file
         try {
             String databasePath = System.getProperty(UNOFFICIAL_DB_PROP, System.getProperty("user.home") + UNOFFICIAL_DB_JSON_PATH);
@@ -179,9 +180,9 @@ public class DatabaseMetadataService {
             // Write database file
             writeDatabaseFile(databasePath, unofficialRoot);
         } catch (FileNotFoundException e) {
-            logger.error("Missing unofficial metadata database file", e);
+            LOGGER.log(Level.SEVERE, "Missing unofficial metadata database file", e);
         } catch (IOException e) {
-            logger.error("Failed to clean unofficial metadata database file", e);
+            LOGGER.log(Level.SEVERE, "Failed to clean unofficial metadata database file", e);
         }
     }
 

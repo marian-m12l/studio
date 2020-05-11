@@ -10,7 +10,6 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import net.bytebuddy.asm.Advice;
 import studio.metadata.DatabaseMetadataService;
-import studio.metadata.logger.JavaUtilPluggableLogger;
 import studio.metadata.utils.DatabaseUpdateStatusHolder;
 
 import java.io.BufferedReader;
@@ -78,7 +77,7 @@ public class OfficialDatabaseAdvice {
 
                         // Try and update official database
                         logger.info("Fetched metadata, updating local database");
-                        DatabaseMetadataService databaseMetadataService = new DatabaseMetadataService(new JavaUtilPluggableLogger(DatabaseMetadataService.class.getName()), true);
+                        DatabaseMetadataService databaseMetadataService = new DatabaseMetadataService(true);
                         databaseMetadataService.replaceOfficialDatabase(response);
                     } else {
                         logger.log(Level.SEVERE, "Failed to fetch metadata database. Status code: " + statusCode);
