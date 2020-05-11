@@ -25,7 +25,6 @@ import studio.webui.api.DeviceController;
 import studio.webui.api.EvergreenController;
 import studio.webui.api.LibraryController;
 import studio.webui.api.WatchdogController;
-import studio.webui.logger.VertxPluggableLogger;
 import studio.webui.service.*;
 import studio.webui.service.mock.MockStoryTellerService;
 
@@ -45,7 +44,7 @@ public class MainVerticle extends AbstractVerticle {
     public void start() {
 
         // Service that manages pack metadata
-        databaseMetadataService = new DatabaseMetadataService(new VertxPluggableLogger(DatabaseMetadataService.class.getName()), false);
+        databaseMetadataService = new DatabaseMetadataService(false);
 
         // Service that manages local library
         libraryService = new LibraryService(databaseMetadataService);

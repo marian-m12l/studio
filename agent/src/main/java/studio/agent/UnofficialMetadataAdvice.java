@@ -11,7 +11,6 @@ import com.google.gson.JsonObject;
 import net.bytebuddy.asm.Advice;
 import studio.metadata.DatabaseMetadataService;
 import studio.metadata.DatabasePackMetadata;
-import studio.metadata.logger.JavaUtilPluggableLogger;
 import sun.net.www.protocol.http.HttpURLConnection;
 
 import java.io.ByteArrayInputStream;
@@ -37,7 +36,7 @@ public class UnofficialMetadataAdvice {
             String uuid = url.substring(url.indexOf("pack_uuid=") + 10);
             try {
                 // Try and get metadata from unofficial database
-                DatabaseMetadataService databaseMetadataService = new DatabaseMetadataService(new JavaUtilPluggableLogger(DatabaseMetadataService.class.getName()), true);
+                DatabaseMetadataService databaseMetadataService = new DatabaseMetadataService(true);
                 Optional<DatabasePackMetadata> packMetadata = databaseMetadataService.getUnofficialMetadata(uuid);
                 if (packMetadata.isPresent()) {
                     logger.info("Unofficial database contains metadata for fetched pack with uuid: " + uuid);

@@ -9,7 +9,6 @@ package studio.webui.api;
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
@@ -19,7 +18,6 @@ import studio.webui.service.LibraryService;
 
 import java.io.File;
 import java.util.List;
-import java.util.Optional;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -32,24 +30,38 @@ public class DeviceController {
         Router router = Router.router(vertx);
 
         // Plugged device metadata
-        router.get("/infos").blockingHandler(ctx -> {
-            Optional<JsonObject> maybeDeviceInfos = storyTellerService.deviceInfos();
-            maybeDeviceInfos.ifPresentOrElse(
-                    deviceInfos -> ctx.response()
-                            .putHeader("content-type", "application/json")
-                            .end(Json.encode(deviceInfos.put("plugged", true))),
-                    () -> ctx.response()
-                            .putHeader("content-type", "application/json")
-                            .end(Json.encode(new JsonObject().put("plugged", false)))
-            );
+        router.get("/infos").handler(ctx -> {
+            storyTellerService.deviceInfos()
+                    .whenComplete((maybeDeviceInfos, e) -> {
+                        if (e != null) {
+                            LOGGER.error("Failed to read device infos", e);
+                            ctx.fail(500, e);
+                        } else {
+                            maybeDeviceInfos.ifPresentOrElse(
+                                    deviceInfos -> ctx.response()
+                                            .putHeader("content-type", "application/json")
+                                            .end(Json.encode(deviceInfos.put("plugged", true))),
+                                    () -> ctx.response()
+                                            .putHeader("content-type", "application/json")
+                                            .end(Json.encode(new JsonObject().put("plugged", false)))
+                            );
+                        }
+                    });
         });
 
         // Plugged device packs list
-        router.get("/packs").blockingHandler(ctx -> {
-            JsonArray devicePacks = storyTellerService.packs();
-            ctx.response()
-                    .putHeader("content-type", "application/json")
-                    .end(Json.encode(devicePacks));
+        router.get("/packs").handler(ctx -> {
+            storyTellerService.packs()
+                    .whenComplete((devicePacks, e) -> {
+                        if (e != null) {
+                            LOGGER.error("Failed to read packs from device", e);
+                            ctx.fail(500, e);
+                        } else {
+                            ctx.response()
+                                    .putHeader("content-type", "application/json")
+                                    .end(Json.encode(devicePacks));
+                        }
+                    });
         });
 
         // Add pack from library to device
@@ -94,35 +106,49 @@ public class DeviceController {
         });
 
         // Remove pack from device
-        router.post("/removeFromDevice").blockingHandler(ctx -> {
+        router.post("/removeFromDevice").handler(ctx -> {
             String uuid = ctx.getBodyAsJson().getString("uuid");
-            boolean removed = storyTellerService.deletePack(uuid);
-            if (removed) {
-                ctx.response()
-                        .putHeader("content-type", "application/json")
-                        .end(Json.encode(new JsonObject().put("success", true)));
-            } else {
-                LOGGER.error("Pack was not removed from device");
-                ctx.fail(500);
-            }
+            storyTellerService.deletePack(uuid)
+                    .whenComplete((removed, e) -> {
+                        if (e != null) {
+                            LOGGER.error("Failed to remove pack from device", e);
+                            ctx.fail(500, e);
+                        } else {
+                            if (removed) {
+                                ctx.response()
+                                        .putHeader("content-type", "application/json")
+                                        .end(Json.encode(new JsonObject().put("success", true)));
+                            } else {
+                                LOGGER.error("Pack was not removed from device");
+                                ctx.fail(500);
+                            }
+                        }
+                    });
         });
 
         // Reorder packs on device
-        router.post("/reorder").blockingHandler(ctx -> {
+        router.post("/reorder").handler(ctx -> {
             List<String> uuids = ctx.getBodyAsJson().getJsonArray("uuids").getList();
-            boolean reordered = storyTellerService.reorderPacks(uuids);
-            if (reordered) {
-                ctx.response()
-                        .putHeader("content-type", "application/json")
-                        .end(Json.encode(new JsonObject().put("success", true)));
-            } else {
-                LOGGER.error("Failed to reorder packs on device");
-                ctx.fail(500);
-            }
+            storyTellerService.reorderPacks(uuids)
+                    .whenComplete((reordered, e) -> {
+                        if (e != null) {
+                            LOGGER.error("Failed to reorder packs on device", e);
+                            ctx.fail(500, e);
+                        } else {
+                            if (reordered) {
+                                ctx.response()
+                                        .putHeader("content-type", "application/json")
+                                        .end(Json.encode(new JsonObject().put("success", true)));
+                            } else {
+                                LOGGER.error("Failed to reorder packs on device");
+                                ctx.fail(500);
+                            }
+                        }
+                    });
         });
 
         // Add pack from device to library
-        router.post("/addToLibrary").blockingHandler(ctx -> {
+        router.post("/addToLibrary").handler(ctx -> {
             String uuid = ctx.getBodyAsJson().getString("uuid");
             // Transfer pack file to library file
             String path = libraryService.libraryPath() + uuid + ".pack";
@@ -138,6 +164,23 @@ public class DeviceController {
                                 ctx.fail(500);
                             }
                     );
+        });
+
+        // Dump important sectors
+        router.post("/dump").handler(ctx -> {
+            String outputPath = ctx.getBodyAsJson().getString("outputPath");
+            // Dump important sector into outputPath
+            storyTellerService.dump(outputPath)
+                    .whenComplete((done, e) -> {
+                        if (e != null) {
+                            LOGGER.error("Failed to dump important sectors from device", e);
+                            ctx.fail(500, e);
+                        } else {
+                            ctx.response()
+                                    .putHeader("content-type", "application/json")
+                                    .end(Json.encode(new JsonObject().put("success", true)));
+                        }
+                    });
         });
 
         return router;

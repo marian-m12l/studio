@@ -26,7 +26,6 @@
         <frontend-maven-plugin.version>1.7.6</frontend-maven-plugin.version>
         <vertx.version>3.7.0</vertx.version>
         <vertx.main.verticle>studio.webui.MainVerticle</vertx.main.verticle>
-        <system.libs>${user.home}/.studio/lib</system.libs>
     </properties>
 
     <dependencies>
@@ -38,6 +37,11 @@
         <dependency>
             <groupId>studio</groupId>
             <artifactId>studio-metadata</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>studio</groupId>
+            <artifactId>studio-driver</artifactId>
             <version>${project.version}</version>
         </dependency>
         <dependency>
@@ -82,47 +86,20 @@
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
         </dependency>
-        <!-- Story Teller dependencies (some must be copied manually to ../lunii/libs folder -->
-        <dependency>
-            <groupId>org.usb4java</groupId>
-            <artifactId>usb4java</artifactId>
-            <version>1.2.0</version>
-        </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
-            <version>2.11.1</version>
+            <version>2.13.2</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>2.11.1</version>
+            <version>2.13.2</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j18-impl</artifactId>
-            <version>2.12.1</version>
-        </dependency>
-        <dependency>
-            <groupId>com.lunii</groupId>
-            <artifactId>lunii-device-gateway</artifactId>
-            <version>unknown</version>
-            <scope>system</scope>
-            <systemPath>${system.libs}/lunii-device-gateway.jar</systemPath>
-        </dependency>
-        <dependency>
-            <groupId>com.lunii</groupId>
-            <artifactId>lunii-device-wrapper</artifactId>
-            <version>unknown</version>
-            <scope>system</scope>
-            <systemPath>${system.libs}/lunii-device-wrapper.jar</systemPath>
-        </dependency>
-        <dependency>
-            <groupId>com.lunii</groupId>
-            <artifactId>lunii-java-util</artifactId>
-            <version>unknown</version>
-            <scope>system</scope>
-            <systemPath>${system.libs}/lunii-java-util.jar</systemPath>
+            <artifactId>log4j-jul</artifactId>
+            <version>2.13.2</version>
         </dependency>
     </dependencies>
 
@@ -233,7 +210,6 @@
                         </goals>
                         <configuration>
                             <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                            <excludeGroupIds>com.lunii</excludeGroupIds>
                         </configuration>
                     </execution>
                 </executions>
@@ -268,10 +244,11 @@
                 <configuration>
                     <executable>java</executable>
                     <arguments>
+                        <argument>-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005</argument>
                         <argument>-cp</argument>
-                        <argument>${project.build.directory}/classes:${project.build.directory}/lib/*:${system.libs}/*</argument>
-                        <argument>-Denv=dev</argument>
+                        <argument>${project.build.directory}/classes:${project.build.directory}/lib/*</argument>
                         <argument>-Dfile.encoding=UTF-8</argument>
+                        <argument>-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager</argument>
                         <argument>-Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.Log4j2LogDelegateFactory</argument>
                         <argument>io.vertx.core.Launcher</argument>
                         <argument>run</argument>
