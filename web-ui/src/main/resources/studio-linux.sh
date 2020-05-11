@@ -18,5 +18,8 @@ if [ ! -e "$DOT_STUDIO/lib/lunii-device-wrapper.jar" ]; then cp $LOCAL_LUNIITHEQ
 # Copy agent and metadata JARs
 cp $STUDIO_PATH/agent/studio-agent-${project.version}-jar-with-dependencies.jar $DOT_STUDIO/agent/studio-agent.jar
 cp $STUDIO_PATH/agent/studio-metadata-${project.version}-jar-with-dependencies.jar $DOT_STUDIO/agent/studio-metadata.jar
-xdg-open http://localhost:8080
+
+#Plan browser launch  10 seconds after (letting java some time to build up)
+$(sleep 10 && xdg-open http://localhost:3000 ) &
+
 java -Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.Log4j2LogDelegateFactory -Dfile.encoding=UTF-8 -cp $STUDIO_PATH/${project.build.finalName}.jar:$STUDIO_PATH/lib/*:$DOT_STUDIO/lib/*:. io.vertx.core.Launcher run ${vertx.main.verticle}
