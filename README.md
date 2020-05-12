@@ -25,39 +25,30 @@ USAGE
 ### Prerequisite
 
 To run the application:
-* JRE 11+
+* JDK 11+
 
 To build the application:
-* JDK 11+
 * Maven 3+
 
 #### Luniistore\* software
 
-This application requires some assets from the official Luniistore\* software.
+On Windows, this application requires the _libusb_ driver to be installed. The easiest way to achieve this is to have
+the official Luniistore\* software installed.
 
-* Download and install it
+#### Official pack metadata database
+
+In order to display story pack metadata, this application requires some assets from the official Luniistore\* software,
+which must be downloaded and stored on a local database file.
+
 * The assets we need are stored in a user-specific folder, referred to as `$LOCAL_LUNIITHEQUE` in the remainder of this documentation. Its path depends on your platform:
-  * On Linux, is is located at `~/.local/share/Luniitheque`
+  * On Linux, it is located at `~/.local/share/Luniitheque`
   * On macOS, it is located at `~/Library/Application\ Support/Luniitheque`
   * On Windows, it is located at `%UserProfile%\AppData\Roaming\Luniitheque`
 * The assets must be copied to a newly-created user-specific folder (referred to as `$DOT_STUDIO`) in order to be read by this application. Its expected path depends on your platform:
   * On Linux and macOS, `~/.studio`
   * On Windows, `%UserProfile%\.studio`
 
-#### Lunii\* Story Teller driver
-
-Transfer of story pack to and from the Story Teller device is handled by the official Lunii\* driver. This driver
-is distributed with the Luniistore\* software, and must be obtained through it:
-
-* Create the folders `$DOT_STUDIO/lib/` in your home directory (e.g. `mkdir -p ~/.studio/lib` on Linux or macOS, `mkdir %UserProfile%\.studio` on Windows)
-* From `$LOCAL_LUNIITHEQUE/lib`, copy these three JAR files into `$DOT_STUDIO/lib/`:
-  * `lunii-java-util.jar`
-  * `lunii-device-gateway.jar`
-  * `lunii-device-wrapper.jar`
-
-#### Official pack metadata database
-
-In order to display story pack metadata, they must be downloaded and stored on a local database file.
+To fetch the story pack metadata:
 
 * Start the official Luniistore\* software to get a fresh authentication token (valid for one hour)
 * Open `$LOCAL_LUNIITHEQUE/.local.properties` in a text editor, and note the value of the token:
@@ -65,9 +56,9 @@ In order to display story pack metadata, they must be downloaded and stored on a
   * If your are not logged in on the Luniistore\* software, the token is located on the `token` property, `firebase` attribute
 * Query `https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN` and save the result as `$DOT_STUDIO/db/official.json` (e.g. `curl -v -X GET https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN > ~/.studio/db/official.json`)
 
-### Building the application
+### [Optional] Building the application
 
-Once you have cloned this repository, execute `mvn clean install` to build the application. This will produce the distribution archive in `web-ui/target/`.
+Once you have cloned this repository, execute `mvn clean install` to build the application. This will produce the **distribution archive** in `web-ui/target/`.
 
 ### Starting the application
 
