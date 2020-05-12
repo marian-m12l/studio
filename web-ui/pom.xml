@@ -244,9 +244,10 @@
                 <configuration>
                     <executable>java</executable>
                     <arguments>
-                        <argument>-agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005</argument>
                         <argument>-cp</argument>
                         <argument>${project.build.directory}/classes:${project.build.directory}/lib/*</argument>
+                        <argument>-Denv=dev</argument>
+                        <argument>-Dstudio.open=false</argument>
                         <argument>-Dfile.encoding=UTF-8</argument>
                         <argument>-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager</argument>
                         <argument>-Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.Log4j2LogDelegateFactory</argument>
