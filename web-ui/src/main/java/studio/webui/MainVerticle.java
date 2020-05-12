@@ -99,6 +99,19 @@ public class MainVerticle extends AbstractVerticle {
 
         // Start HTTP server
         vertx.createHttpServer().requestHandler(router).listen(8080);
+
+        // Automatically open URL in browser, unless instructed otherwise
+        String openBrowser = System.getProperty("studio.open", "true");
+        if (Boolean.valueOf(openBrowser)) {
+            LOGGER.info("Opening URL in default browser...");
+            if (Desktop.isDesktopSupported()) {
+                try {
+                    Desktop.getDesktop().browse(new URI("http://localhost:8080"));
+                } catch (Exception e) {
+                    LOGGER.error("Failed to open URL in default browser", e);
+                }
+            }
+        }
     }
 
     private SockJSHandler eventBusHandler() {
