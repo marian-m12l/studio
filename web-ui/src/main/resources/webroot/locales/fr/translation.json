@@ -223,16 +223,6 @@
       "loadingFailed": "Échec du chargement de la version actuelle.",
       "fetchingFailed": "Échec de la récupération de la dernière version."
     },
-    "watchdog": {
-      "loading": "Chargement de la version supportée du Luniistore...",
-      "fetching": "Récupération de la dernière version du Luniistore...",
-      "fetched": {
-        "supported": "La version du Luniistore est supportée.",
-        "unsupported": "Le Luniistore a reçu des mises à jour depuis la dernière version supportée. Vous pourriez rencontrer des erreurs."
-      },
-      "loadingFailed": "Échec du chargement de la version supportée du Luniistore.",
-      "fetchingFailed": "Échec de la récupération de la dernière version du Luniistore."
-    },
     "reportIssue": "Signaler cette anomalie"
   },
 
