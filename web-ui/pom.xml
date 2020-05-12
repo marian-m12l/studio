@@ -24,7 +24,7 @@
         <node.version>v12.3.1</node.version>
         <yarn.version>v1.16.0</yarn.version>
         <frontend-maven-plugin.version>1.7.6</frontend-maven-plugin.version>
-        <vertx.version>3.7.0</vertx.version>
+        <vertx.version>3.9.0</vertx.version>
         <vertx.main.verticle>studio.webui.MainVerticle</vertx.main.verticle>
     </properties>
 
