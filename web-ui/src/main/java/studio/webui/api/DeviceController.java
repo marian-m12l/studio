@@ -83,7 +83,7 @@ public class DeviceController {
                 }
             }, 1000);
 
-            futureConvertedPack.setHandler(maybeConvertedPack -> {
+            futureConvertedPack.onComplete(maybeConvertedPack -> {
                 if (maybeConvertedPack.succeeded()) {
                     // Then, start transfer to device
                     storyTellerService.addPack(uuid, maybeConvertedPack.result())

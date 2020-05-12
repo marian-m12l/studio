@@ -9999,10 +9999,10 @@ verror@1.10.0:
     core-util-is "1.0.2"
     extsprintf "^1.2.0"
 
-vertx3-eventbus-client@^3.7.1:
-  version "3.7.1"
-  resolved "https://registry.yarnpkg.com/vertx3-eventbus-client/-/vertx3-eventbus-client-3.7.1.tgz#1b114809e873e3f8bd1481ebf3f36ad607b9ade5"
-  integrity sha512-AM/VtJeMCmHcd7p2k8dQ4eMwOEHI/BR4xaEKFAKuIk9neDix3O2wOJZPKTErccHzRiUydQ8MAvxUojy4lkObgw==
+vertx3-eventbus-client@^3.9.0:
+  version "3.9.0"
+  resolved "https://registry.yarnpkg.com/vertx3-eventbus-client/-/vertx3-eventbus-client-3.9.0.tgz#3a172bb28487026c6bc7989548be5a152d0397a3"
+  integrity sha512-XbjBObbKfZnoWuxR4fk4evoQ4nEPl2xwt2Y26M+9lp0qZsPLyoCDUYfo9aUfS864/b6wmLZ7X7fTxxiwNsJjZg==
   dependencies:
     sockjs-client "^1.1.5"
 

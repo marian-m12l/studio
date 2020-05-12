@@ -27,6 +27,8 @@ import studio.webui.api.LibraryController;
 import studio.webui.service.*;
 import studio.webui.service.mock.MockStoryTellerService;
 
+import java.awt.*;
+import java.net.URI;
 import java.util.Set;
 
 public class MainVerticle extends AbstractVerticle {
@@ -95,18 +97,21 @@ public class MainVerticle extends AbstractVerticle {
             errorHandler.handle(ctx);
         });
 
+        // Start HTTP server
         vertx.createHttpServer().requestHandler(router).listen(8080);
     }
 
     private SockJSHandler eventBusHandler() {
         BridgeOptions options = new BridgeOptions()
                 .addOutboundPermitted(new PermittedOptions().setAddressRegex("storyteller\\.(.+)"));
-        return SockJSHandler.create(vertx).bridge(options, event -> {
+        SockJSHandler sockJSHandler = SockJSHandler.create(vertx);
+        sockJSHandler.bridge(options, event -> {
             if (event.type() == BridgeEventType.SOCKET_CREATED) {
                 LOGGER.debug("New sockjs client");
             }
             event.complete(true);
         });
+        return sockJSHandler;
     }
 
     private Router apiRouter() {

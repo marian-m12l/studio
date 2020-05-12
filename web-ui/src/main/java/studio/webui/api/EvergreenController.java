@@ -22,7 +22,7 @@ public class EvergreenController {
 
         // Current version
         router.get("/infos").blockingHandler(ctx -> {
-            evergreenService.infos().setHandler(maybeJson -> {
+            evergreenService.infos().onComplete(maybeJson -> {
                 if (maybeJson.succeeded()) {
                     ctx.response()
                             .putHeader("content-type", "application/json")
@@ -36,7 +36,7 @@ public class EvergreenController {
 
         // Latest release
         router.get("/latest").blockingHandler(ctx -> {
-            evergreenService.latest().setHandler(maybeJson -> {
+            evergreenService.latest().onComplete(maybeJson -> {
                 if (maybeJson.succeeded()) {
                     ctx.response()
                             .putHeader("content-type", "application/json")
