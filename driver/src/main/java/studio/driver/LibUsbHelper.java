@@ -13,7 +13,7 @@ import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.security.SecureRandom;
 import java.util.Arrays;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.*;
 import java.util.function.Function;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -193,12 +193,15 @@ public class LibUsbHelper {
 
     public static final short SECTOR_SIZE = 512;
 
+    private static final long POLL_DELAY = 5000L;
+
     // LibUsb context
     private static Context context = new Context();
     // Worker thread to handle libusb async events
     private static LibUsbAsyncEventsWorker asyncEventHandlerWorker = null;
-    // Worker thread to actively poll device when hotplug is not supported
-    private static LibUsbActivePollingWorker activePollingWorker = null;
+    // Scheduled task to actively poll device when hotplug is not supported
+    private static ScheduledExecutorService scheduledExecutor = null;
+    private static Future<?> activePollingTask = null;
     // To generate random packet tags
     private static final SecureRandom prng = new SecureRandom();
 
@@ -249,22 +252,23 @@ public class LibUsbHelper {
                     null
             );
         } else {
-            LOGGER.info("Hotplug is NOT supported. Starting thread to actively poll USB device...");
-            activePollingWorker = new LibUsbActivePollingWorker(context, listener);
-            activePollingWorker.start();
+            LOGGER.info("Hotplug is NOT supported. Scheduling task to actively poll USB device...");
+            scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+            activePollingTask = scheduledExecutor.scheduleAtFixedRate(
+                    new LibUsbActivePollingWorker(context, listener),
+                    0, POLL_DELAY, TimeUnit.MILLISECONDS);
         }
 
         // De-initialize libusb context  and stop worker threads when JVM exits
         Runtime.getRuntime().addShutdownHook(
                 new Thread(() -> {
-                    if (activePollingWorker != null) {
-                        LOGGER.info("Stopping active polling worker thread");
-                        activePollingWorker.abort();
-                        try {
-                            activePollingWorker.join();
-                        } catch (InterruptedException e) {
-                            LOGGER.log(Level.SEVERE, "Failed to stop active polling worker thread", e);
-                        }
+                    if (activePollingTask != null && !activePollingTask.isDone()) {
+                        LOGGER.info("Stopping active polling worker task");
+                        activePollingTask.cancel(true);
+                    }
+                    if (scheduledExecutor != null) {
+                        LOGGER.info("Shutting down active polling executor");
+                        scheduledExecutor.shutdown();
                     }
                     if (asyncEventHandlerWorker != null) {
                         LOGGER.info("Stopping async event handling worker thread");
