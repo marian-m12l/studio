@@ -54,3 +54,11 @@
 .App-header .btn.focus, .App-header .btn:focus, .App-header .btn:hover {
     color: #919e3d;
 }
+
+/* Announce dialog */
+
+.App .announce-dialog .modal-body>div {
+    text-align: justify;
+    max-height: 500px;
+    overflow-y: auto;
+}

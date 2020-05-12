@@ -11,7 +11,7 @@ import IssueReportToast from "../components/IssueReportToast";
 import PackDiagramModel from "../components/diagram/models/PackDiagramModel";
 import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice, reorderPacks, addToLibrary} from '../services/device';
 import {fetchLibraryInfos, fetchLibraryPacks, downloadFromLibrary, uploadToLibrary, convertInLibrary, removeFromLibrary} from '../services/library';
-import {fetchEvergreenInfos, fetchEvergreenLatestRelease} from '../services/evergreen';
+import {fetchEvergreenInfos, fetchEvergreenLatestRelease, fetchEvergreenAnnounce} from '../services/evergreen';
 import {fetchWatchdogSupported, fetchWatchdogLatest} from '../services/watchdog';
 import {generateFilename, sortPacks} from "../utils/packs";
 import {readFromArchive} from "../utils/reader";
@@ -391,6 +391,20 @@ export const actionLoadEvergreen = (t) => {
                         } else {
                             toast.update(toastId, { type: toast.TYPE.INFO, render: t('toasts.evergreen.fetched.upToDate', { version: infos.version }), autoClose: 5000 });
                         }
+                        // Check if the user opted-out
+                        let announceOptOut = localStorage.getItem('announceOptOut') || 0;
+                        if (announceOptOut) {
+                            console.log("user opted-out of announces. no need to fetch.");
+                        } else {
+                            console.log("fetching announce...");
+                            return fetchEvergreenAnnounce()
+                                .then(announce => {
+                                    dispatch(setAnnounce(announce));
+                                })
+                                .catch(e => {
+                                    console.error('failed to fetch announce', e);
+                                });
+                        }
                     })
                     .catch(e => {
                         console.error('failed to fetch latest release', e);
@@ -503,4 +517,9 @@ export const showEditor = () => ({
 export const setApplicationVersion = (version) => ({
     type: 'SET_APPLICATION_VERSION',
     version
+});
+
+export const setAnnounce = (announce) => ({
+    type: 'SET_ANNOUNCE',
+    announce
 });

@@ -48,6 +48,20 @@ public class EvergreenController {
             });
         });
 
+        // Announce
+        router.get("/announce").blockingHandler(ctx -> {
+            evergreenService.announce().setHandler(maybeJson -> {
+                if (maybeJson.succeeded()) {
+                    ctx.response()
+                            .putHeader("content-type", "application/json")
+                            .end(Json.encode(maybeJson.result()));
+                } else {
+                    LOGGER.error("Failed to get announce");
+                    ctx.fail(500, maybeJson.cause());
+                }
+            });
+        });
+
         return router;
     }
 }

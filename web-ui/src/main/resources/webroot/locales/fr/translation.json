@@ -242,6 +242,9 @@
       "no": "Non",
       "ok": "OK"
     },
+    "announce": {
+      "optout": "Ne plus afficher ces annonces à l'avenir"
+    },
     "editor": {
       "save": {
         "title": "Le pack d'histoires existe déjà dans la bibliothèque",

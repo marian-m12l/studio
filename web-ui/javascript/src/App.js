@@ -9,9 +9,11 @@ import { connect } from 'react-redux';
 import { ToastContainer, toast } from 'react-toastify';
 import EventBus from 'vertx3-eventbus-client';
 import { withTranslation } from 'react-i18next';
+import marked from 'marked';
 import 'react-toastify/dist/ReactToastify.css';
 
 import {AppContext} from './AppContext';
+import Modal from './components/Modal';
 import PackEditor from './components/diagram/PackEditor';
 import PackLibrary from './components/PackLibrary';
 import EditorPackViewer from "./components/viewer/EditorPackViewer";
@@ -39,7 +41,8 @@ class App extends React.Component {
         this.state = {
             eventBus: null,
             shown: null,
-            viewer: null
+            viewer: null,
+            announce: null
         };
     }
 
@@ -90,6 +93,19 @@ class App extends React.Component {
     }
 
     componentWillReceiveProps(nextProps, nextContext) {
+        if (nextProps.evergreen.announce !== this.props.evergreen.announce && nextProps.evergreen.announce !== null) {
+            // Check last announce display time in local storage and compare to announce time
+            let announceTime = Date.parse(nextProps.evergreen.announce.date);
+            let lastAnnounceShown = localStorage.getItem('lastAnnounceShown') || 0;
+            console.log('announce: ' + announceTime);
+            console.log('last shown: ' + lastAnnounceShown);
+            if (announceTime > lastAnnounceShown) {
+                console.log('Announce must be displayed');
+                this.setState({announce: nextProps.evergreen.announce.content})
+            } else {
+                console.log('Announce already displayed');
+            }
+        }
         this.setState({
             shown: nextProps.ui.shown,
             viewer: nextProps.viewer.show ? <EditorPackViewer/> : null
@@ -104,12 +120,32 @@ class App extends React.Component {
         this.props.dispatchShowEditor();
     };
 
+    dismissAnnounceDialog = () => {
+        localStorage.setItem('lastAnnounceShown', Date.now());
+        this.setState({announce: null});
+    };
+
+    announceOptOut = () => {
+        localStorage.setItem('announceOptOut', 1);
+        this.dismissAnnounceDialog();
+    };
+
     render() {
         const { t, i18n } = this.props;
         return (
             <AppContext.Provider value={{eventBus: this.state.eventBus}}>
                 <div className="App">
                     <ToastContainer/>
+                    {this.state.announce && <Modal id={`announce-dialog`}
+                                                   className="announce-dialog"
+                                                   title={"\uD83E\uDD41 \uD83E\uDD41 \uD83E\uDD41"}
+                                                   content={<div dangerouslySetInnerHTML={{__html: marked(this.state.announce)}} ></div>}
+                                                   buttons={[
+                                                       { label: t('dialogs.announce.optout'), onClick: this.announceOptOut },
+                                                       { label: t('dialogs.shared.ok'), onClick: this.dismissAnnounceDialog }
+                                                   ]}
+                                                   onClose={this.dismissAnnounceDialog}
+                    />}
                     {this.state.viewer}
                     <header className="App-header">
                         <div className="flags">

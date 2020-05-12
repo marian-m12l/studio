@@ -242,6 +242,9 @@
       "no": "No",
       "ok": "OK"
     },
+    "announce": {
+      "optout": "Do not show these announces anymore"
+    },
     "editor": {
       "save": {
         "title": "Pack already exists in library",

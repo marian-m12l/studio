@@ -7,13 +7,16 @@
 import React from "react";
 
 const initialState = {
-    version: ''
+    version: '',
+    announce: null
 };
 
 const evergreen = (state = initialState, action) => {
     switch (action.type) {
         case 'SET_APPLICATION_VERSION':
             return { ...state, version: action.version };
+        case 'SET_ANNOUNCE':
+            return { ...state, announce: action.announce };
         default:
             return state
     }
