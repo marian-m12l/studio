@@ -119,7 +119,7 @@ export async function writeToArchive(diagramModel) {
                     : null;
             let homeTarget = (node.homePort && node.homePort.getLinks() && Object.values(node.homePort.getLinks()).length > 0)
                 ? Object.values(node.homePort.getLinks())[0].getForwardTargetPort()
-                : node.getType() === 'story'
+                : (node.getType() === 'story' && !node.disableHome) // Make sure home button is not disabled
                     // When no transition is set, story nodes redirect to the first useful node after pack selection
                     ? firstUsefulNode
                     : null;

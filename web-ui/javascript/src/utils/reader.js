@@ -258,7 +258,8 @@ export function readFromArchive(file) {
                     if (node.okTransition) {
                         links.push(stageNode.okPort.link(getTransitionTargetNode(node.okTransition, actionNodes, simplifiedNodes)));
                     }
-                    if (node.homeTransition) {
+                    // Make sure home port exists, because a bug in pack writer produced incorrect story packs with home transition and disabled home button (#100)
+                    if (node.homeTransition && stageNode.homePort) {
                         links.push(stageNode.homePort.link(getTransitionTargetNode(node.homeTransition, actionNodes, simplifiedNodes)))
                     }
                 });
