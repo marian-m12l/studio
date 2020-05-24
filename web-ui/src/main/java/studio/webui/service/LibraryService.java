@@ -113,7 +113,7 @@ public class LibraryService {
         return Optional.of(new File(libraryPath() + packPath));
     }
 
-    public Optional<File> getBinaryPackFile(String packPath) {
+    public Optional<File> getBinaryPackFile(String packPath, Boolean allowEnriched) {
         // Archive format packs must first be converted to binary format
         if (packPath.endsWith(".zip")) {
             try {
@@ -137,7 +137,7 @@ public class LibraryService {
                 LOGGER.warn("Writing binary format pack");
                 BinaryStoryPackWriter packWriter = new BinaryStoryPackWriter();
                 FileOutputStream fos = new FileOutputStream(tmp);
-                packWriter.write(uncompressedPack, fos);
+                packWriter.write(uncompressedPack, fos, allowEnriched);
                 fos.close();
 
                 return Optional.of(tmp);

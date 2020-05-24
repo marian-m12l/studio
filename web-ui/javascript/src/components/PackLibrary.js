@@ -74,7 +74,7 @@ class PackLibrary extends React.Component {
         }
         var data = JSON.parse(packData);
         // Transfer pack and show progress
-        this.props.addFromLibrary(data.uuid, data.path, this.context);
+        this.props.addFromLibrary(data.uuid, data.path, this.props.settings.allowEnriched, this.context);
     };
 
     onRemovePackFromDevice = (uuid) => {
@@ -396,11 +396,12 @@ PackLibrary.contextType = AppContext;
 
 const mapStateToProps = (state, ownProps) => ({
     device: state.device,
-    library: state.library
+    library: state.library,
+    settings: state.settings
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-    addFromLibrary: (uuid, path, context) => dispatch(actionAddFromLibrary(uuid, path, context, ownProps.t)),
+    addFromLibrary: (uuid, path, allowEnriched, context) => dispatch(actionAddFromLibrary(uuid, path, allowEnriched, context, ownProps.t)),
     removeFromDevice: (uuid) => dispatch(actionRemoveFromDevice(uuid, ownProps.t)),
     reorderOnDevice: (uuids) => dispatch(actionReorderOnDevice(uuids, ownProps.t)),
     addToLibrary: (uuid, context) => dispatch(actionAddToLibrary(uuid, context, ownProps.t)),

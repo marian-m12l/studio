@@ -4,7 +4,8 @@
     "welcome": "Welcome to STUdio",
     "buttons": {
       "library": "Pack library",
-      "editor": "Pack editor"
+      "editor": "Pack editor",
+      "settings": "Settings"
     }
   },
 
@@ -291,6 +292,11 @@
         "title": "Confirm removal",
         "content": "Remove pack from library?"
       }
+    },
+    "settings": {
+      "title": "Settings",
+      "announceOptOut": "Opt out of announces: ",
+      "allowEnriched": "Allow enriched binary format (includes metadata): "
     }
   }
 

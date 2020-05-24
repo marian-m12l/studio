@@ -12,6 +12,10 @@ import com.google.gson.JsonParser;
 import org.apache.commons.io.IOUtils;
 import studio.core.v1.Constants;
 import studio.core.v1.model.*;
+import studio.core.v1.model.enriched.EnrichedNodeMetadata;
+import studio.core.v1.model.enriched.EnrichedNodePosition;
+import studio.core.v1.model.enriched.EnrichedNodeType;
+import studio.core.v1.model.enriched.EnrichedPackMetadata;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 
 import java.io.IOException;
@@ -44,12 +48,13 @@ public class ArchiveStoryPackReader {
 
                 // Read metadata
                 metadata.setVersion(root.get("version").getAsShort());
-                Optional.ofNullable(root.get("title")).ifPresent(title ->
+                Optional.ofNullable(root.get("title")).filter(JsonElement::isJsonPrimitive).ifPresent(title ->
                         metadata.setTitle(title.getAsString())
                 );
-                Optional.ofNullable(root.get("description")).ifPresent(desc ->
+                Optional.ofNullable(root.get("description")).filter(JsonElement::isJsonPrimitive).ifPresent(desc ->
                         metadata.setDescription(desc.getAsString())
                 );
+                // TODO Thumbnail?
 
                 // Read first stage node
                 JsonObject mainStageNode = root.getAsJsonArray("stageNodes").get(0).getAsJsonObject();
@@ -87,6 +92,8 @@ public class ArchiveStoryPackReader {
         Map<String, List<StageNode>> assetToStageNodes = new HashMap<>();
         // Keep first node
         StageNode squareOne = null;
+        // Enriched pack metadata
+        EnrichedPackMetadata enrichedPack = null;
 
 
         ZipEntry entry;
@@ -98,13 +105,24 @@ public class ArchiveStoryPackReader {
 
                 // Read metadata
                 version = root.get("version").getAsShort();
+                // Read (optional) enriched pack metadata
+                Optional<String> maybeTitle = Optional.ofNullable(root.get("title")).filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
+                Optional<String> maybeDescription = Optional.ofNullable(root.get("description")).filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
+                // TODO Thumbnail?
+                if (maybeTitle.isPresent() || maybeDescription.isPresent()) {
+                    enrichedPack = new EnrichedPackMetadata(maybeTitle.orElse(null), maybeDescription.orElse(null));
+                }
 
                 // Read action nodes
                 TreeMap<String, ActionNode> actionNodes = new TreeMap<>();
                 Iterator<JsonElement> actionsIter = root.getAsJsonArray("actionNodes").iterator();
                 while (actionsIter.hasNext()) {
                     JsonObject node = actionsIter.next().getAsJsonObject();
-                    actionNodes.put(node.get("id").getAsString(), new ActionNode());
+
+                    // Read (optional) enriched node metadata
+                    EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(node);
+
+                    actionNodes.put(node.get("id").getAsString(), new ActionNode(enrichedNodeMetadata));
                 }
 
                 // Read stage nodes
@@ -124,6 +142,9 @@ public class ArchiveStoryPackReader {
                     }
                     JsonObject controlSettings = node.getAsJsonObject("controlSettings");
 
+                    // Read (optional) enriched node metadata
+                    EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(node);
+
                     StageNode stageNode = new StageNode(
                             uuid,
                             null,
@@ -136,7 +157,8 @@ public class ArchiveStoryPackReader {
                                     controlSettings.get("home").getAsBoolean(),
                                     controlSettings.get("pause").getAsBoolean(),
                                     controlSettings.get("autoplay").getAsBoolean()
-                            )
+                            ),
+                            enrichedNodeMetadata
                     );
 
                     if (node.get("squareOne") != null && node.get("squareOne").getAsBoolean()) {
@@ -227,6 +249,26 @@ public class ArchiveStoryPackReader {
             nodes.add(0, squareOne);
         }
 
-        return new StoryPack(factoryDisabled, version, nodes);
+        return new StoryPack(factoryDisabled, version, nodes, enrichedPack);
+    }
+
+    private EnrichedNodeMetadata readEnrichedNodeMetadata(JsonObject node) {
+        Optional<String> maybeName = Optional.ofNullable(node.get("name")).filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
+        Optional<String> maybeType = Optional.ofNullable(node.get("type")).filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
+        Optional<String> maybeGroupId = Optional.ofNullable(node.get("groupId")).filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
+        Optional<JsonObject> maybePosition = Optional.ofNullable(node.get("position")).filter(JsonElement::isJsonObject).map(JsonElement::getAsJsonObject);
+        if (maybeName.isPresent() || maybeType.isPresent() || maybeGroupId.isPresent() || maybePosition.isPresent()) {
+            return new EnrichedNodeMetadata(
+                    maybeName.orElse(null),
+                    maybeType.map(EnrichedNodeType::fromLabel).orElse(null),
+                    maybeGroupId.orElse(null),
+                    maybePosition
+                            .map(position -> new EnrichedNodePosition(
+                                    position.get("x").getAsShort(),
+                                    position.get("y").getAsShort()))
+                            .orElse(null)
+            );
+        }
+        return null;
     }
 }

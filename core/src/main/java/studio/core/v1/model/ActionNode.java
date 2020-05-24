@@ -6,16 +6,23 @@
 
 package studio.core.v1.model;
 
+import studio.core.v1.model.enriched.EnrichedNodeMetadata;
+
 import java.util.List;
 
-public class ActionNode implements Node {
+public class ActionNode extends Node {
 
     private List<StageNode> options;
 
     public ActionNode() {
     }
 
-    public ActionNode(List<StageNode> options) {
+    public ActionNode(EnrichedNodeMetadata enriched) {
+        super(enriched);
+    }
+
+    public ActionNode(List<StageNode> options, EnrichedNodeMetadata enriched) {
+        super(enriched);
         this.options = options;
     }
 

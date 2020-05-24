@@ -11,6 +11,7 @@ import EventBus from 'vertx3-eventbus-client';
 import { withTranslation } from 'react-i18next';
 import marked from 'marked';
 import 'react-toastify/dist/ReactToastify.css';
+import Switch from "react-switch";
 
 import {AppContext} from './AppContext';
 import Modal from './components/Modal';
@@ -27,7 +28,9 @@ import {
     showLibrary,
     showEditor,
     actionLoadEvergreen,
-    actionLoadWatchdog
+    actionLoadWatchdog,
+    setAnnounceOptOut,
+    setAllowEnriched
 } from "./actions";
 
 import './App.css';
@@ -42,7 +45,8 @@ class App extends React.Component {
             eventBus: null,
             shown: null,
             viewer: null,
-            announce: null
+            announce: null,
+            showSettings: false
         };
     }
 
@@ -79,7 +83,7 @@ class App extends React.Component {
             this.props.loadLibrary();
 
             // Load evergeen infos on startup
-            this.props.loadEvergreen();
+            this.props.loadEvergreen(this.props.settings.announceOptOut);
 
             // Load watchdog infos on startup
             this.props.loadWatchdog();
@@ -126,8 +130,24 @@ class App extends React.Component {
     };
 
     announceOptOut = () => {
-        localStorage.setItem('announceOptOut', 1);
+        this.props.setAnnounceOptOut(true);
         this.dismissAnnounceDialog();
+    };
+
+    showSettings= () => {
+        this.setState({showSettings: true});
+    };
+
+    dismissSettingsDialog = () => {
+        this.setState({showSettings: false});
+    };
+
+    onAnnounceOptOutChanged = (announceOptOut) => {
+        this.props.setAnnounceOptOut(announceOptOut);
+    };
+
+    onAllowEnrichedChanged = (allowEnriched) => {
+        this.props.setAllowEnriched(allowEnriched);
     };
 
     render() {
@@ -146,11 +166,24 @@ class App extends React.Component {
                                                    ]}
                                                    onClose={this.dismissAnnounceDialog}
                     />}
+                    {this.state.showSettings && <Modal id={`settings-dialog`}
+                                                   className="settings-dialog"
+                                                   title={t('dialogs.settings.title')}
+                                                   content={<div>
+                                                       <div><span>{t('dialogs.settings.announceOptOut')}</span><Switch onChange={this.onAnnounceOptOutChanged} checked={this.props.settings.announceOptOut} height={15} width={35} handleDiameter={20} boxShadow="0px 1px 5px rgba(0, 0, 0, 0.6)" activeBoxShadow="0px 0px 1px 10px rgba(0, 0, 0, 0.2)" uncheckedIcon={false} checkedIcon={false} /></div>
+                                                       <div><span>{t('dialogs.settings.allowEnriched')}</span><Switch onChange={this.onAllowEnrichedChanged} checked={this.props.settings.allowEnriched} height={15} width={35} handleDiameter={20} boxShadow="0px 1px 5px rgba(0, 0, 0, 0.6)" activeBoxShadow="0px 0px 1px 10px rgba(0, 0, 0, 0.2)" uncheckedIcon={false} checkedIcon={false} /></div>
+                                                   </div>}
+                                                   buttons={[
+                                                       { label: t('dialogs.shared.ok'), onClick: this.dismissSettingsDialog}
+                                                   ]}
+                                                   onClose={this.dismissSettingsDialog}
+                    />}
                     {this.state.viewer}
                     <header className="App-header">
                         <div className="flags">
                             <span title="Français" onClick={() => i18n.changeLanguage('fr')}>🇫🇷&nbsp;</span>
                             <span title="English" onClick={() => i18n.changeLanguage('en')}>🇬🇧&nbsp;</span>
+                            <span title={t('header.buttons.settings')} className="btn glyphicon glyphicon-wrench" onClick={this.showSettings}/>
                         </div>
                         <div  className="welcome">
                             {t('header.welcome')}
@@ -171,6 +204,7 @@ class App extends React.Component {
 
 const mapStateToProps = (state, ownProps) => ({
     evergreen: state.evergreen,
+    settings: state.settings,
     ui: state.ui,
     viewer: state.viewer
 });
@@ -183,8 +217,10 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     setEditorDiagram: (diagram, filename) => dispatch(setEditorDiagram(diagram, filename)),
     dispatchShowLibrary: () => dispatch(showLibrary()),
     dispatchShowEditor: () => dispatch(showEditor()),
-    loadEvergreen: () => dispatch(actionLoadEvergreen(ownProps.t)),
-    loadWatchdog: () => dispatch(actionLoadWatchdog(ownProps.t))
+    loadEvergreen: (announceOptOut) => dispatch(actionLoadEvergreen(announceOptOut, ownProps.t)),
+    loadWatchdog: () => dispatch(actionLoadWatchdog(ownProps.t)),
+    setAnnounceOptOut: (announceOptOut) => dispatch(setAnnounceOptOut(announceOptOut)),
+    setAllowEnriched: (allowEnriched) => dispatch(setAllowEnriched(allowEnriched))
 });
 
 export default withTranslation()(

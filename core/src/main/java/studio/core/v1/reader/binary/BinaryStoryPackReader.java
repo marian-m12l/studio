@@ -8,11 +8,16 @@ package studio.core.v1.reader.binary;
 
 import studio.core.v1.Constants;
 import studio.core.v1.model.*;
+import studio.core.v1.model.enriched.EnrichedNodeMetadata;
+import studio.core.v1.model.enriched.EnrichedNodePosition;
+import studio.core.v1.model.enriched.EnrichedNodeType;
+import studio.core.v1.model.enriched.EnrichedPackMetadata;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 
 public class BinaryStoryPackReader {
@@ -26,7 +31,19 @@ public class BinaryStoryPackReader {
         // Read sector 1
         dis.skipBytes(3);   // Skip to version
         metadata.setVersion(dis.readShort());
-        dis.skipBytes(Constants.SECTOR_SIZE - 5); // Skip to end of sector
+
+        // Read (optional) enriched pack metadata
+        dis.skipBytes(Constants.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING);
+        Optional<String> maybeTitle = readString(dis, Constants.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE);
+        metadata.setTitle(maybeTitle.orElse(null));
+        Optional<String> maybeDescription = readString(dis, Constants.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE);
+        metadata.setDescription(maybeDescription.orElse(null));
+        // TODO Thumbnail?
+
+        dis.skipBytes(Constants.SECTOR_SIZE - 5
+                - Constants.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING
+                - Constants.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE*2
+                - Constants.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE*2); // Skip to end of sector
 
         // Read main stage node
         long uuidLowBytes = dis.readLong();
@@ -46,7 +63,21 @@ public class BinaryStoryPackReader {
         short stages = dis.readShort();
         boolean factoryDisabled = dis.readByte() == 1;
         short version = dis.readShort();
-        dis.skipBytes(Constants.SECTOR_SIZE - 5); // Skip to end of sector
+
+        // Read (optional) enriched pack metadata
+        EnrichedPackMetadata enrichedPack = null;
+        dis.skipBytes(Constants.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING);
+        Optional<String> maybeTitle = readString(dis, Constants.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE);
+        Optional<String> maybeDescription = readString(dis, Constants.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE);
+        // TODO Thumbnail?
+        if (maybeTitle.isPresent() || maybeDescription.isPresent()) {
+            enrichedPack = new EnrichedPackMetadata(maybeTitle.orElse(null), maybeDescription.orElse(null));
+        }
+
+        dis.skipBytes(Constants.SECTOR_SIZE - 5
+                - Constants.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING
+                - Constants.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE*2
+                - Constants.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE*2); // Skip to end of sector
 
         // Read stage nodes (`stages` sectors, starting from sector 2)
         TreeMap<SectorAddr, StageNode> stageNodes = new TreeMap<>();
@@ -110,6 +141,10 @@ public class BinaryStoryPackReader {
             boolean pauseEnabled = dis.readShort() == 1;
             boolean autoJumpEnabled = dis.readShort() == 1;
 
+            // Read (optional) enriched node metadata
+            dis.skipBytes(Constants.BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING);
+            EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(dis);
+
             // Build stage node
             SectorAddr address = new SectorAddr(i);
             Transition okTransition = okActionNodeAddr != null ? new Transition(null, okTransitionIndex) : null;
@@ -120,7 +155,8 @@ public class BinaryStoryPackReader {
                     null,
                     okTransition,
                     homeTransition,
-                    new ControlSettings(wheelEnabled, okEnabled, homeEnabled, pauseEnabled, autoJumpEnabled)
+                    new ControlSettings(wheelEnabled, okEnabled, homeEnabled, pauseEnabled, autoJumpEnabled),
+                    enrichedNodeMetadata
             );
             stageNodes.put(address, stageNode);
 
@@ -148,7 +184,9 @@ public class BinaryStoryPackReader {
             }
 
             // Skip to end of sector
-            dis.skipBytes(Constants.SECTOR_SIZE - 54);
+            dis.skipBytes(Constants.SECTOR_SIZE - 54
+                    - Constants.BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING
+                    - Constants.BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE*2 - 16 - 1 - 4);
         }
 
         // Read action nodes
@@ -171,12 +209,20 @@ public class BinaryStoryPackReader {
                 optionAddr = dis.readShort();
             }
 
+            // Read (optional) enriched node metadata
+            int alignmentOverflow = 2*(options.size()) % Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT;
+            int alignmentPadding = Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT_PADDING + (alignmentOverflow > 0 ? Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT - alignmentOverflow : 0);
+            dis.skipBytes(alignmentPadding - 2);    // No need to skip the last 2 bytes that were read in the previous loop
+            EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(dis);
+
             // Update action on transitions referencing this sector
-            ActionNode actionNode = new ActionNode(options);
+            ActionNode actionNode = new ActionNode(options, enrichedNodeMetadata);
             transitionsWithAction.get(actionNodeAddr).forEach(transition -> transition.setActionNode(actionNode));
 
             // Skip to end of sector
-            dis.skipBytes(Constants.SECTOR_SIZE - (2*(options.size()+1)));
+            dis.skipBytes(Constants.SECTOR_SIZE - (2*(options.size()+1))
+                    - (alignmentPadding - 2)
+                    - Constants.BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE*2 - 16 - 1 - 4);
             currentOffset++;
         }
 
@@ -211,6 +257,48 @@ public class BinaryStoryPackReader {
 
         dis.close();
 
-        return new StoryPack(factoryDisabled, version, List.copyOf(stageNodes.values()));
+        return new StoryPack(factoryDisabled, version, List.copyOf(stageNodes.values()), enrichedPack);
+    }
+
+    private Optional<String> readString(DataInputStream dis, int maxChars) throws IOException {
+        byte[] bytes = new byte[maxChars*2];
+        dis.read(bytes);
+        String str = new String(bytes, StandardCharsets.UTF_16);
+        int firstNullChar = str.indexOf("\u0000");
+        return firstNullChar == 0
+                ? Optional.empty()
+                : firstNullChar == -1
+                    ? Optional.of(str)
+                    : Optional.of(str.substring(0, firstNullChar));
+    }
+
+    private EnrichedNodeMetadata readEnrichedNodeMetadata(DataInputStream dis) throws IOException {
+        Optional<String> maybeName = readString(dis, Constants.BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE);
+        Optional<String> maybeGroupId = Optional.empty();
+        long groupIdLowBytes = dis.readLong();
+        long groupIdHighBytes = dis.readLong();
+        if (groupIdLowBytes != 0 || groupIdHighBytes != 0) {
+            maybeGroupId = Optional.of((new UUID(groupIdLowBytes, groupIdHighBytes)).toString());
+        }
+        Optional<EnrichedNodeType> maybeType = Optional.empty();
+        byte nodeTypeByte = dis.readByte();
+        if (nodeTypeByte != 0x00) {
+            maybeType = Optional.ofNullable(EnrichedNodeType.fromCode(nodeTypeByte));
+        }
+        Optional<EnrichedNodePosition> maybePosition = Optional.empty();
+        short positionX = dis.readShort();
+        short positionY = dis.readShort();
+        if (positionX != 0 || positionY != 0) {
+            maybePosition = Optional.of(new EnrichedNodePosition(positionX, positionY));
+        }
+        if (maybeName.isPresent() || maybeType.isPresent() || maybeGroupId.isPresent() || maybePosition.isPresent()) {
+            return new EnrichedNodeMetadata(
+                    maybeName.orElse(null),
+                    maybeType.orElse(null),
+                    maybeGroupId.orElse(null),
+                    maybePosition.orElse(null)
+            );
+        }
+        return null;
     }
 }
