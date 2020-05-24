@@ -172,13 +172,12 @@ public class StoryTellerService implements IStoryTellerService {
                         loadVirtualContentMethod.setAccessible(true);
                         loadVirtualContentMethod.invoke(virtualRawDevice, rawDevice.physicalContent);
 
-                        Method addPackMethod = virtualRawDevice.getRawVirtualContent().getClass().getDeclaredMethod("addPack", UUID.class, short.class, int.class, short.class);
+                        Method addPackMethod = virtualRawDevice.getRawVirtualContent().getClass().getDeclaredMethod("addPack", UUID.class, short.class, int.class);
                         addPackMethod.setAccessible(true);
                         RawVirtualPack rawVirtualPack = (RawVirtualPack) addPackMethod.invoke(virtualRawDevice.getRawVirtualContent(),
                                 UUID.fromString(uuid),
                                 (short) 1,  // Version, no need for exact value
-                                (int) Math.ceil(packFile.length()/512.0), // Pack size in sectors
-                                (short) 0   // Sampling rate, no need for exact value
+                                (int) Math.ceil(packFile.length()/512.0)    // Pack size in sectors
                         );
                         LOGGER.info("Adding pack at start sector: " + rawVirtualPack.getStartSector());
 
