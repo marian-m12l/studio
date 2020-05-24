@@ -4,7 +4,8 @@
     "welcome": "Bienvenue dans STUdio",
     "buttons": {
       "library": "Bibliothèque",
-      "editor": "Éditeur"
+      "editor": "Éditeur",
+      "settings": "Paramètres"
     }
   },
 
@@ -291,6 +292,11 @@
         "title": "Confirmer la suppression",
         "content": "Supprimer le pack d'histoires de la bibliothèque ?"
       }
+    },
+    "settings": {
+      "title": "Paramètres",
+      "announceOptOut": "Désactiver les annonces : ",
+      "allowEnriched": "Utiliser le format binaire enrichi (contient les métadonnées): "
     }
   }
 

@@ -28,6 +28,7 @@
     "react-i18next": "^10.11.2",
     "react-redux": "^7.0.3",
     "react-scripts": "3.0.1",
+    "react-switch": "^5.0.1",
     "react-toastify": "^5.2.1",
     "redux": "^4.0.1",
     "redux-thunk": "^2.3.0",

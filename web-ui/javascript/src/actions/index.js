@@ -106,10 +106,10 @@ export const actionRefreshDevice = (t) => {
     }
 };
 
-export const actionAddFromLibrary = (uuid, path, context, t) => {
+export const actionAddFromLibrary = (uuid, path, allowEnriched, context, t) => {
     return dispatch => {
         let toastId = toast(t('toasts.device.adding'), { autoClose: false });
-        return addFromLibrary(uuid, path)
+        return addFromLibrary(uuid, path, allowEnriched)
             .then(resp => {
                 // Monitor transfer progress
                 let transferId = resp.transferId;
@@ -376,7 +376,7 @@ export const actionRemoveFromLibrary = (path, t) => {
     }
 };
 
-export const actionLoadEvergreen = (t) => {
+export const actionLoadEvergreen = (announceOptOut, t) => {
     return dispatch => {
         let toastId = toast(t('toasts.evergreen.loading'), { autoClose: false });
         return fetchEvergreenInfos()
@@ -392,7 +392,6 @@ export const actionLoadEvergreen = (t) => {
                             toast.update(toastId, { type: toast.TYPE.INFO, render: t('toasts.evergreen.fetched.upToDate', { version: infos.version }), autoClose: 5000 });
                         }
                         // Check if the user opted-out
-                        let announceOptOut = localStorage.getItem('announceOptOut') || 0;
                         if (announceOptOut) {
                             console.log("user opted-out of announces. no need to fetch.");
                         } else {
@@ -522,4 +521,14 @@ export const setApplicationVersion = (version) => ({
 export const setAnnounce = (announce) => ({
     type: 'SET_ANNOUNCE',
     announce
+});
+
+export const setAnnounceOptOut = (announceOptOut) => ({
+    type: 'SET_ANNOUNCE_OPTOUT',
+    announceOptOut
+});
+
+export const setAllowEnriched = (allowEnriched) => ({
+    type: 'SET_ALLOW_ENRICHED',
+    allowEnriched
 });

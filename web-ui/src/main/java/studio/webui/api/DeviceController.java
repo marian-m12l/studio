@@ -56,6 +56,7 @@ public class DeviceController {
         router.post("/addFromLibrary").blockingHandler(ctx -> {
             String uuid = ctx.getBodyAsJson().getString("uuid");
             String packPath = ctx.getBodyAsJson().getString("path");
+            Boolean allowEnriched = ctx.getBodyAsJson().getBoolean("allowEnriched", false);
             // First, get the pack file, potentially converted from archive format to pack format
             // Perform conversion/uncompression asynchronously
             Future<File> futureConvertedPack = Future.future();
@@ -63,7 +64,7 @@ public class DeviceController {
             timer.schedule(new TimerTask() {
                 @Override
                 public void run() {
-                    libraryService.getBinaryPackFile(packPath)
+                    libraryService.getBinaryPackFile(packPath, allowEnriched)
                             .ifPresentOrElse(
                                     packFile -> futureConvertedPack.tryComplete(packFile),
                                     () -> futureConvertedPack.tryFail("Failed to read or convert pack"));
