@@ -255,10 +255,10 @@ export function readFromArchive(file) {
                 // Add links from actual stage nodes to actual action nodes or simplified nodes
                 json.stageNodes.filter(node => (node.type || 'stage') === 'stage').forEach(node => {
                     var stageNode = stageNodes.get(node.uuid);
-                    if (node.okTransition) {
+                    if (node.okTransition && stageNode.okPort) {
                         links.push(stageNode.okPort.link(getTransitionTargetNode(node.okTransition, actionNodes, simplifiedNodes)));
                     }
-                    if (node.homeTransition) {
+                    if (node.homeTransition && stageNode.homePort) {
                         links.push(stageNode.homePort.link(getTransitionTargetNode(node.homeTransition, actionNodes, simplifiedNodes)))
                     }
                 });
