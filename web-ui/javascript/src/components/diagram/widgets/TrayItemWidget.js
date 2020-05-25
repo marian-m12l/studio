@@ -39,7 +39,7 @@ class TrayItemWidget extends React.Component {
                 }}
                 className={classes}
             >
-                {this.props.helpClicked && <a onClick={this.props.helpClicked} title={t('editor.tray.help')} className="help glyphicon glyphicon-info-sign"/>}
+                {this.props.helpClicked && <button onClick={this.props.helpClicked} title={t('editor.tray.help')} className="help glyphicon glyphicon-info-sign"/>}
                 {this.props.children}
             </div>
         );

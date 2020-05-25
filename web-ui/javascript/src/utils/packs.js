@@ -7,8 +7,8 @@
 export function sortPacks(packs) {
     return packs.sort((a,b) => {
         // Official packs last, alphabetic order except for missing titles (uuids, last)
-        let titleA = a.title && a.title.toUpperCase() || '__'+a.uuid.toUpperCase();
-        let titleB = b.title && b.title.toUpperCase() || '__'+b.uuid.toUpperCase();
+        let titleA = (a.title && a.title.toUpperCase()) || '__'+a.uuid.toUpperCase();
+        let titleB = (b.title && b.title.toUpperCase()) || '__'+b.uuid.toUpperCase();
         if (a.official === b.official) {
             return (titleA < titleB) ? -1 : (titleA > titleB) ? 1 : 0;
         } else {

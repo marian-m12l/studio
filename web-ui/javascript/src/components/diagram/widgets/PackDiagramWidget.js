@@ -172,6 +172,9 @@ class PackDiagramWidget extends React.Component {
             case "story":
                 node = new StoryNodeModel({ name: "Story node" });
                 break;
+            default:
+                // Unsupported node
+                break;
         }
         var points = this.props.diagramEngine.getRelativeMousePoint(event);
         node.setPosition(points.x, points.y);
@@ -396,7 +399,7 @@ class PackDiagramWidget extends React.Component {
                 <div className="metadata-section right">
                     <label htmlFor="pack-thumb">{t('editor.metadata.thumb')}</label>
                     <input type="file" id="pack-thumb" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.changeThumbnail} />
-                    <img src={this.getDiagramModel().thumbnail || defaultImage} width="120" height="120" onClick={this.showThumbnailSelector} />
+                    <img src={this.getDiagramModel().thumbnail || defaultImage} alt="" width="120" height="120" onClick={this.showThumbnailSelector} />
                 </div>
             </div>
 
@@ -419,7 +422,7 @@ class PackDiagramWidget extends React.Component {
                     <TrayItemWidget model={{ type: "action" }} className="tray-item-action" helpClicked={this.showHelpDialog('action')}>
                         {t('editor.tray.action')}
                     </TrayItemWidget>
-                    <a onClick={this.showHelpDialog('diagram')} title={t('editor.tray.help')} className="help glyphicon glyphicon-info-sign"/>
+                    <button onClick={this.showHelpDialog('diagram')} title={t('editor.tray.help')} className="help glyphicon glyphicon-info-sign"/>
                 </TrayWidget>
 
                 {/* Diagram */}

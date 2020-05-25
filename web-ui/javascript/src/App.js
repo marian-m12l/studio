@@ -59,6 +59,7 @@ class App extends React.Component {
         console.log("Setting up vert.x event bus...");
         let eventBus = new EventBus('http://localhost:8080/eventbus');
         this.setState({eventBus}, () => {
+            // eslint-disable-next-line
             this.state.eventBus.onopen = () => {
                 console.log("vert.x event bus open. Registering handlers...");
                 this.state.eventBus.registerHandler('storyteller.plugged', (error, message) => {
@@ -184,8 +185,8 @@ class App extends React.Component {
                     {this.state.viewer}
                     <header className="App-header">
                         <div className="flags">
-                            <span title="Français" onClick={() => i18n.changeLanguage('fr')}>🇫🇷&nbsp;</span>
-                            <span title="English" onClick={() => i18n.changeLanguage('en')}>🇬🇧&nbsp;</span>
+                            <span title="Français" role="img" aria-label="FR" onClick={() => i18n.changeLanguage('fr')}>🇫🇷&nbsp;</span>
+                            <span title="English" role="img" aria-label="GB" onClick={() => i18n.changeLanguage('en')}>🇬🇧&nbsp;</span>
                             <span title={t('header.buttons.settings')} className="btn glyphicon glyphicon-wrench" onClick={this.showSettings}/>
                         </div>
                         <div  className="welcome">
