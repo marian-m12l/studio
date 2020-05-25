@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import React from 'react';
 import { AbstractModelFactory } from '@projectstorm/react-canvas-core';
 
 import StagePortModel from "../models/StagePortModel";

@@ -273,8 +273,7 @@ export function readFromArchive(file) {
                         let storyNode = simplifiedNodes.get(storyVirtualAction.id);
                         // Add 'ok' and 'home' transitions if they do not point to the 'first useful node' (default behaviour)
                         let coverNode = json.stageNodes.filter(node => node.squareOne)
-                            .concat(Object.values(virtualNodes).filter(grp => grp[0].type.startsWith('cover')).map(grp => grp[0]))
-                            [0];
+                            .concat(Object.values(virtualNodes).filter(grp => grp[0].type.startsWith('cover')).map(grp => grp[0]))[0];
                         let firstUsefulNodeUuid = coverNode.okTransition.actionNode;
                         if (storyVirtualStage.okTransition.actionNode !== firstUsefulNodeUuid) {
                             // Enable custom OK transition to create OK port
@@ -404,6 +403,9 @@ function nodeSize(node) {
             return { width: 250, height: 141 + 74*node.optionsStages.length };
         case 'story':
             return { width: 150, height: 132 };
+        default:
+            // Unsupported node type
+            return {};
     }
 }
 

@@ -4,8 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import React from "react";
-
 import {
     LOCAL_STORAGE_ANNOUNCE_OPTOUT,
     LOCAL_STORAGE_ALLOW_ENRICHED_BINARY_FORMAT

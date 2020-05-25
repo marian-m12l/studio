@@ -140,6 +140,16 @@
 .pack-grid .pack-ribbon.blue span::before {border-left-color: #1e5799; border-top-color: #1e5799;}
 .pack-grid .pack-ribbon.blue span::after {border-right-color: #1e5799; border-top-color: #1e5799;}
 
+.pack-grid button.pack-action,button.library-action {
+    background: none;
+    border: none;
+    padding: 0;
+    color: #337ab7;
+}
+.pack-grid button.pack-action:hover,button.library-action:hover {
+    color: #23527c;
+}
+
 .device-dropzone {
     min-height: 200px;
 }

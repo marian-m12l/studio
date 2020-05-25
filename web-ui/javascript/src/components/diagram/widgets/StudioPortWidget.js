@@ -26,7 +26,6 @@ class StudioPortWidget extends React.Component {
     };
 
     render() {
-        const { t } = this.props;
         let classes = 'custom-port ';
         if (this.props.model instanceof ActionPortModel) {
             classes += 'action-port ';

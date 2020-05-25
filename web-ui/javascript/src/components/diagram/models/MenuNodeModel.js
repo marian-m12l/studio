@@ -64,7 +64,7 @@ class MenuNodeModel extends NodeModel {
         // Keep at least one option
         if (this.optionsStages.length > 1) {
             // Remove stages and ports from list
-            let optionStage = this.optionsStages.splice(idx, 1)[0];
+            this.optionsStages.splice(idx, 1);
             let optionOutPort = this.optionsOut.splice(idx, 1)[0];
             // Remove any attached link
             Object.values(optionOutPort.getLinks())

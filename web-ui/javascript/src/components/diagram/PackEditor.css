@@ -980,6 +980,8 @@
 }
 
 .pack-diagram-widget .content .tray>.help {
+    background: none;
+    border: none;
     text-decoration: none;
     color: white;
     margin-top: 30px;
@@ -1005,6 +1007,9 @@
     top: 7px;
     text-decoration: none;
     color: white;
+    background: none;
+    border: none;
+    padding: 0;
 }
 
 .pack-diagram-widget .content .tray .tray-item:hover .help {

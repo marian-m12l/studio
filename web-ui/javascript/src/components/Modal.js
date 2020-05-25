@@ -12,10 +12,6 @@ import './Modal.css';
 
 class Modal extends React.Component {
 
-    constructor(props) {
-        super(props);
-    }
-
     render() {
         let classes = 'modal show ';
         if (this.props.className) {
