@@ -291,6 +291,10 @@
       "removeFromLibrary": {
         "title": "Confirm removal",
         "content": "Remove pack from library?"
+      },
+      "askAllowEnriched": {
+        "title": "Enabled enriched binary format?",
+        "content": "<p>The so-called enriched binary format <strong>leverages empty spaces within binary packs to store metadata</strong> (pack's title and description, as well each node's type, name and position).</p><p>This avoids loss of information (except for the pack thumbnail) and the pack can be converted back to archive format, then opened in the editor with all information intact (although potentially truncated).</p><p>However, this is a deviation from the original / official pack format understood by the device, and the packs may not be read correctly at some point.</p><p><em>You will be able to change this behaviour in the Settings panel.</em></p><p>Do you want to enable the enriched binary format (select No if you prefer to stick to the original / official format for maximum compatibility)?</p>"
       }
     },
     "settings": {

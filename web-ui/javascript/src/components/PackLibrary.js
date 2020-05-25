@@ -20,10 +20,14 @@ import {
     actionRemoveFromLibrary,
     actionUploadToLibrary,
     actionCreatePackInEditor,
-    actionLoadSampleInEditor
+    actionLoadSampleInEditor,
+    setAllowEnriched
 } from "../actions";
 import {AppContext} from "../AppContext";
 import Modal from "./Modal";
+import {
+    LOCAL_STORAGE_ALLOW_ENRICHED_BINARY_FORMAT
+} from "../utils/storage";
 
 import './PackLibrary.css';
 
@@ -46,7 +50,11 @@ class PackLibrary extends React.Component {
             showRemoveFromDeviceConfirmDialog: false,
             removingFromDevice: null,
             reordering: null,
-            beforeReordering: null
+            beforeReordering: null,
+            allowEnrichedDialog: {
+                show: false,
+                data: null
+            }
         };
     }
 
@@ -73,8 +81,36 @@ class PackLibrary extends React.Component {
             return;
         }
         var data = JSON.parse(packData);
+
+        // If transferring an archive pack (which needs conversion), and allowEnriched settings is not set yet, ask whether to use enriched binary format or not
+        if (data.format !== 'binary' && localStorage.getItem(LOCAL_STORAGE_ALLOW_ENRICHED_BINARY_FORMAT) === null) {
+            this.setState({
+                allowEnrichedDialog: {
+                    show: true,
+                    data
+                }
+            });
+        } else {
+            this.doAddToDevice(data, this.props.settings.allowEnriched);
+        }
+    };
+
+    doAddToDevice = (data, allow) => {
         // Transfer pack and show progress
-        this.props.addFromLibrary(data.uuid, data.path, this.props.settings.allowEnriched, this.context);
+        this.props.addFromLibrary(data.uuid, data.path, allow, this.context);
+    };
+
+    dismissEnrichedDialog = (allow) => {
+        return () => {
+            this.props.setAllowEnriched(allow);
+            this.doAddToDevice(this.state.allowEnrichedDialog.data, allow);
+            this.setState({
+                allowEnrichedDialog: {
+                    show: false,
+                    data: null
+                }
+            });
+        }
     };
 
     onRemovePackFromDevice = (uuid) => {
@@ -250,6 +286,16 @@ class PackLibrary extends React.Component {
                        ]}
                        onClose={this.dismissRemoveFromLibraryConfirmDialog}
                 />}
+                {this.state.allowEnrichedDialog.show &&
+                <Modal id="ask-allow-enriched"
+                       title={t('dialogs.library.askAllowEnriched.title')}
+                       content={<div dangerouslySetInnerHTML={{__html: t('dialogs.library.askAllowEnriched.content')}} ></div>}
+                       buttons={[
+                           { label: t('dialogs.shared.no'), onClick: this.dismissEnrichedDialog(false)},
+                           { label: t('dialogs.shared.yes'), onClick: this.dismissEnrichedDialog(true)}
+                       ]}
+                       onClose={this.dismissEnrichedDialog(false)}
+                />}
 
                 {/* Device view, if plugged */}
                 {this.state.device.metadata && <div className="plugged-device">
@@ -411,7 +457,8 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     removeFromLibrary: (path) => dispatch(actionRemoveFromLibrary(path, ownProps.t)),
     uploadPackToLibrary: (path, packData) => dispatch(actionUploadToLibrary(null, path, packData, ownProps.t)),
     createPackInEditor: () => dispatch(actionCreatePackInEditor(ownProps.t)),
-    loadSampleInEditor: () => dispatch(actionLoadSampleInEditor(ownProps.t))
+    loadSampleInEditor: () => dispatch(actionLoadSampleInEditor(ownProps.t)),
+    setAllowEnriched: (allowEnriched) => dispatch(setAllowEnriched(allowEnriched))
 });
 
 export default withTranslation()(
