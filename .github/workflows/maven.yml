@@ -16,6 +16,8 @@ jobs:
 
     steps:
     - uses: actions/checkout@v2
+      with:
+        ref: usbdriver
     - name: Set up JDK 11
       uses: actions/setup-java@v1
       with:
