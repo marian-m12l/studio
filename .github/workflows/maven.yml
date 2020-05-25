@@ -24,3 +24,10 @@ jobs:
         java-version: 11
     - name: Build with Maven
       run: mvn -B package --file pom.xml
+    - name: Copy assembly
+      run: mkdir staging && cp web-ui/target/*.zip staging
+    - name: Upload artifact
+      uses: actions/upload-artifact@v1
+      with:
+        name: Assembly
+        path: staging
