@@ -19,10 +19,6 @@ import StudioPortWidget from "./StudioPortWidget";
 
 class MenuNodeWidget extends React.Component {
 
-    constructor(props) {
-        super(props);
-    }
-
     editName = (event) => {
         this.props.node.setName(event.target.value);
         this.props.updateCanvas();
@@ -344,7 +340,7 @@ class MenuNodeWidget extends React.Component {
                                                     {!this.props.node.getOptionImage(idx) && <span className="dropzone glyphicon glyphicon-picture"/>}
                                                     {this.props.node.getOptionImage(idx) && <>
                                                         <div className="delete" title={t('editor.diagram.stage.resetImage')} onClick={this.resetOptionImage(idx)}/>
-                                                        <img src={this.props.node.getOptionImage(idx)} className="dropzone"/>
+                                                        <img src={this.props.node.getOptionImage(idx)} alt="" className="dropzone"/>
                                                     </>}
                                                 </div>
                                             </div>

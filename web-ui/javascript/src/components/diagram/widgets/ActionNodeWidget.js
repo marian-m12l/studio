@@ -17,10 +17,6 @@ import StudioPortWidget from "./StudioPortWidget";
 
 class ActionNodeWidget extends React.Component {
 
-    constructor(props) {
-        super(props);
-    }
-
     editName = (event) => {
         this.props.node.setName(event.target.value);
         this.props.updateCanvas();

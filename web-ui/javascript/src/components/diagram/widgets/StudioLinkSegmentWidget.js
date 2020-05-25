@@ -13,10 +13,6 @@ import StudioLinkModel from "../models/StudioLinkModel";
 
 class StudioLinkSegmentWidget extends React.Component {
 
-    constructor(props) {
-        super(props);
-    }
-
     render() {
         const Bottom = React.cloneElement(
             this.props.factory.generateLinkSegment(

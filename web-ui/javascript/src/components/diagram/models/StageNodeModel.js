@@ -206,7 +206,7 @@ class StageNodeModel extends NodeModel {
         super.deserialize(event);
         this.uuid = event.data.uuid;
         this.squareOne = event.data.squareOne;
-        this.stage = (new Stage).deserialize(event.data.stage);
+        this.stage = (new Stage()).deserialize(event.data.stage);
         this.fromPort = event.data.fromPort ? this.getPortFromID(event.data.fromPort) : null;
         this.okPort = event.data.okPort ? this.getPortFromID(event.data.okPort) : null;
         this.homePort = event.data.homePort ? this.getPortFromID(event.data.homePort) : null;

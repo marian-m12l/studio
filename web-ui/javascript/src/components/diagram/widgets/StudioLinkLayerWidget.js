@@ -11,10 +11,6 @@ import { DiagramEngine, LinkLayerModel, LinkWidget } from '@projectstorm/react-d
 
 class StudioLinkLayerWidget extends React.Component {
 
-    constructor(props) {
-        super(props);
-    }
-
     render() {
         return (
             <>

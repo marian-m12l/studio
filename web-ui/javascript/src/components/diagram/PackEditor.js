@@ -95,7 +95,6 @@ class PackEditor extends React.Component {
 
     savePackToLibrary = () => {
         // Pack path is either stored (when open from library) or generated
-        let uuid = this.state.engine.getModel().getEntryPoint().getUuid();
         let path = this.props.editor.filename || generateFilename(this.state.engine.getModel());
         // Confirmation dialog if pack already in library
         if (this.props.library.packs.filter(pack => pack.path === path).length > 0) {
@@ -195,6 +194,7 @@ class PackEditor extends React.Component {
                        onClose={this.dismissSaveConfirmDialog}
                 />}
                 <div className="controls">
+                    {/* eslint-disable-next-line */}
                     <a id="download" style={{visibility: 'hidden', position: 'absolute'}} />
                     <span title={t('editor.actions.save')} className="btn btn-default glyphicon glyphicon-floppy-disk" onClick={this.savePackToLibrary}/>
                     <input type="file" id="upload" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.packImportFileSelected} />

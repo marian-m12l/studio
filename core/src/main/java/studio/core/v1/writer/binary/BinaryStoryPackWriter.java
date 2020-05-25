@@ -9,6 +9,8 @@ package studio.core.v1.writer.binary;
 import org.apache.commons.codec.digest.DigestUtils;
 import studio.core.v1.Constants;
 import studio.core.v1.model.*;
+import studio.core.v1.model.enriched.EnrichedNodePosition;
+import studio.core.v1.model.enriched.EnrichedNodeType;
 import studio.core.v1.reader.binary.AssetAddr;
 import studio.core.v1.reader.binary.SectorAddr;
 
@@ -21,14 +23,24 @@ import java.util.UUID;
 
 public class BinaryStoryPackWriter {
 
-    public void write(StoryPack pack, OutputStream outputStream) throws IOException {
+    public void write(StoryPack pack, OutputStream outputStream, boolean enrichedBinaryFormat) throws IOException {
         DataOutputStream dos = new DataOutputStream(outputStream);
 
         // Write sector 1
         dos.writeShort(pack.getStageNodes().size());
         dos.writeByte(pack.isFactoryDisabled() ? 1 : 0);
         dos.writeShort(pack.getVersion());
-        writePadding(dos, Constants.SECTOR_SIZE - 5);   // Skip to end of sector
+
+        // Write (optional) enriched pack metadata
+        int enrichedPackMetadataSize = 0;
+        if (enrichedBinaryFormat && pack.getEnriched() != null) {
+            writePadding(dos, Constants.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING);
+            writeTruncatedString(dos, pack.getEnriched().getTitle(), Constants.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE);
+            writeTruncatedString(dos, pack.getEnriched().getDescription(), Constants.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE);
+            // TODO Thumbnail?
+            enrichedPackMetadataSize = Constants.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING + Constants.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE*2 + Constants.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE*2;
+        }
+        writePadding(dos, Constants.SECTOR_SIZE - 5 - enrichedPackMetadataSize);   // Skip to end of sector
 
         // Count action nodes and assets (with sizes) and attribute a sector address (offset) to each
         TreeMap<SectorAddr, ActionNode> actionNodesMap = new TreeMap<>();
@@ -148,8 +160,15 @@ public class BinaryStoryPackWriter {
             dos.writeShort(stageNode.getControlSettings().isPauseEnabled() ? 1 : 0);
             dos.writeShort(stageNode.getControlSettings().isAutoJumpEnabled() ? 1 : 0);
 
+            // Write (optional) enriched node metadata
+            int enrichedNodeMetadataSize = 0;
+            if (enrichedBinaryFormat && stageNode.getEnriched() != null) {
+                writePadding(dos, Constants.BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING);
+                enrichedNodeMetadataSize = Constants.BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING + writeEnrichedNodeMetadata(dos, stageNode);
+            }
+
             // Skip to end of sector
-            writePadding(dos, Constants.SECTOR_SIZE - 54);
+            writePadding(dos, Constants.SECTOR_SIZE - 54 - enrichedNodeMetadataSize);
         }
 
         // Write action sectors
@@ -170,8 +189,17 @@ public class BinaryStoryPackWriter {
                 dos.writeShort(stageNodeOffset);
             }
 
+            // Write (optional) enriched node metadata
+            int enrichedNodeMetadataSize = 0;
+            if (enrichedBinaryFormat && actionNode.getEnriched() != null) {
+                int alignmentOverflow = 2*(actionNode.getOptions().size()) % Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT;
+                int alignmentPadding = Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT_PADDING + (alignmentOverflow > 0 ? Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT - alignmentOverflow : 0);
+                writePadding(dos, alignmentPadding);
+                enrichedNodeMetadataSize = alignmentPadding + writeEnrichedNodeMetadata(dos, actionNode);
+            }
+
             // Skip to end of sector
-            writePadding(dos, Constants.SECTOR_SIZE - 2*(actionNode.getOptions().size()));
+            writePadding(dos, Constants.SECTOR_SIZE - 2*(actionNode.getOptions().size()) - enrichedNodeMetadataSize);
             currentOffset++;
         }
 
@@ -208,6 +236,45 @@ public class BinaryStoryPackWriter {
 
         // Write check bytes
         dos.write(Constants.CHECK_BYTES, 0, Constants.CHECK_BYTES.length);
+    }
+
+    private int writeEnrichedNodeMetadata(DataOutputStream dos, Node node) throws IOException {
+        writeTruncatedString(dos, node.getEnriched().getName(), Constants.BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE);
+        String nodeGroupId = node.getEnriched().getGroupId();
+        if (nodeGroupId != null) {
+            UUID groupId = UUID.fromString(nodeGroupId);
+            dos.writeLong(groupId.getMostSignificantBits());
+            dos.writeLong(groupId.getLeastSignificantBits());
+        } else {
+            writePadding(dos, 16);
+        }
+        EnrichedNodeType nodeType = node.getEnriched().getType();
+        if (nodeType != null) {
+            dos.writeByte(nodeType.code);
+        } else {
+            dos.writeByte(0x00);
+        }
+        EnrichedNodePosition nodePosition = node.getEnriched().getPosition();
+        if (nodePosition != null) {
+            dos.writeShort(nodePosition.getX());
+            dos.writeShort(nodePosition.getY());
+        } else {
+            writePadding(dos, 4);
+        }
+        return Constants.BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE*2 + 16 + 1 + 4;
+    }
+
+    private void writeTruncatedString(DataOutputStream dos, String str, int maxChars) throws IOException {
+        if (str != null) {
+            int strLength = Math.min(str.length(), maxChars);
+            dos.writeChars(str.substring(0, strLength));
+            int remaining =  maxChars - strLength;
+            if (remaining > 0) {
+                writePadding(dos, remaining*2);
+            }
+        } else {
+            writePadding(dos, maxChars*2);
+        }
     }
 
     private void writePadding(DataOutputStream dos, int length) throws IOException {

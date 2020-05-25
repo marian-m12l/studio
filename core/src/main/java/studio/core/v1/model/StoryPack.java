@@ -6,6 +6,8 @@
 
 package studio.core.v1.model;
 
+import studio.core.v1.model.enriched.EnrichedPackMetadata;
+
 import java.util.List;
 
 public class StoryPack {
@@ -13,14 +15,16 @@ public class StoryPack {
     private boolean factoryDisabled;
     private short version;
     private List<StageNode> stageNodes;
+    private EnrichedPackMetadata enriched;
 
     public StoryPack() {
     }
 
-    public StoryPack(boolean factoryDisabled, short version, List<StageNode> stageNodes) {
+    public StoryPack(boolean factoryDisabled, short version, List<StageNode> stageNodes, EnrichedPackMetadata enriched) {
         this.factoryDisabled = factoryDisabled;
         this.version = version;
         this.stageNodes = stageNodes;
+        this.enriched = enriched;
     }
 
     public String getUuid() {
@@ -49,5 +53,13 @@ public class StoryPack {
 
     public void setStageNodes(List<StageNode> stageNodes) {
         this.stageNodes = stageNodes;
+    }
+
+    public EnrichedPackMetadata getEnriched() {
+        return enriched;
+    }
+
+    public void setEnriched(EnrichedPackMetadata enriched) {
+        this.enriched = enriched;
     }
 }

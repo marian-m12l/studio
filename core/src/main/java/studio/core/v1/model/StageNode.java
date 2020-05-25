@@ -6,7 +6,9 @@
 
 package studio.core.v1.model;
 
-public class StageNode implements Node {
+import studio.core.v1.model.enriched.EnrichedNodeMetadata;
+
+public class StageNode extends Node {
 
     private String uuid;
     private ImageAsset image;
@@ -18,7 +20,8 @@ public class StageNode implements Node {
     public StageNode() {
     }
 
-    public StageNode(String uuid, ImageAsset image, AudioAsset audio, Transition okTransition, Transition homeTransition, ControlSettings controlSettings) {
+    public StageNode(String uuid, ImageAsset image, AudioAsset audio, Transition okTransition, Transition homeTransition, ControlSettings controlSettings, EnrichedNodeMetadata enriched) {
+        super(enriched);
         this.uuid = uuid;
         this.image = image;
         this.audio = audio;
