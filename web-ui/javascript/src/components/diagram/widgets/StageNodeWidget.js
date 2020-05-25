@@ -19,10 +19,6 @@ import {showViewer, setViewerDiagram, setViewerStage, setViewerAction} from "../
 
 class StageNodeWidget extends React.Component {
 
-    constructor(props) {
-        super(props);
-    }
-
     editName = (event) => {
         this.props.node.setName(event.target.value);
         this.props.updateCanvas();
@@ -245,7 +241,7 @@ class StageNodeWidget extends React.Component {
                                         {!this.props.node.getImage() && <span className="dropzone glyphicon glyphicon-picture"/>}
                                         {this.props.node.getImage() && <>
                                             <div className="delete" title={t('editor.diagram.stage.resetImage')} onClick={this.resetImage}/>
-                                            <img src={this.props.node.getImage()} className="dropzone"/>
+                                            <img src={this.props.node.getImage()} alt="" className="dropzone"/>
                                         </>}
                                     </div>
                                 </div>

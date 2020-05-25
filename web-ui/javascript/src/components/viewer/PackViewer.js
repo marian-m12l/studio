@@ -124,14 +124,17 @@ class PackViewer extends React.Component {
                     }
 
                     {/* Option buttons */}
+                    {/* eslint-disable-next-line */}
                     <a href="#" className="close" onClick={this.toggleOption('translucent')}>
                         <title>{t('viewer.options.translucent')}</title>
                         <text x="50" y="40" fontSize="32">{this.props.options.translucent ? '☼' : '☀'}</text>
                     </a>
+                    {/* eslint-disable-next-line */}
                     <a href="#" className="close" onClick={this.toggleOption('overlay')}>
                         <title>{t('viewer.options.overlay')}</title>
                         <text x="90" y="40" fontSize="32">{this.props.options.overlay ? '▩' : '□'}</text>
                     </a>
+                    {/* eslint-disable-next-line */}
                     <a href="#" className="close" onClick={this.toggleOption('autoplay')}>
                         <title>{t('viewer.options.autoplay')}</title>
                         <text x="130" y="40" fontSize="32">{this.props.options.autoplay ? '▶' : '▷'}</text>
@@ -143,6 +146,7 @@ class PackViewer extends React.Component {
                     </foreignObject>
 
                     {/* Close button */}
+                    {/* eslint-disable-next-line */}
                     <a href="#" className="close" onClick={this.close}>
                         <title>{t('viewer.close')}</title>
                         <text x="950" y="60" fontSize="64">&times;</text>
@@ -150,16 +154,19 @@ class PackViewer extends React.Component {
 
                     {/* Wheel */}
                     <circle cx="242" cy="280" r="130" strokeWidth="4" stroke="#eead45" fill="#febd55"/>
+                    {/* eslint-disable-next-line */}
                     <a href="#" onClick={this.wheelClickedLeft}>
                         <path className="actionable" d="M177,167 A130,130 0 0 0 177,393" strokeWidth="4"
                               stroke="transparent" fill="transparent"/>
                     </a>
+                    {/* eslint-disable-next-line */}
                     <a href="#" onClick={this.wheelClickedRight}>
                         <path className="actionable" d="M307,167 A130,130 0 0 1 307,393" strokeWidth="4"
                               stroke="transparent" fill="transparent"/>
                     </a>
 
                     {/* Home */}
+                    {/* eslint-disable-next-line */}
                     <a href="#" onClick={this.homeClicked}>
                         <g className="button actionable">
                             <circle className="button actionable" cx="850" cy="117" r="30" />
@@ -168,6 +175,7 @@ class PackViewer extends React.Component {
                     </a>
 
                     {/* Pause */}
+                    {/* eslint-disable-next-line */}
                     <a href="" onClick={this.pauseClicked}>
                         <g className="button actionable">
                             <circle className="button actionable" cx="850" cy="242" r="30" />
@@ -176,6 +184,7 @@ class PackViewer extends React.Component {
                     </a>
 
                     {/* OK */}
+                    {/* eslint-disable-next-line */}
                     <a href="" onClick={this.okClicked}>
                         <g className="button actionable">
                             <circle cx="850" cy="407" r="55"/>

@@ -258,7 +258,8 @@ export function readFromArchive(file) {
                     if (node.okTransition) {
                         links.push(stageNode.okPort.link(getTransitionTargetNode(node.okTransition, actionNodes, simplifiedNodes)));
                     }
-                    if (node.homeTransition) {
+                    // Make sure home port exists, because a bug in pack writer produced incorrect story packs with home transition and disabled home button (#100)
+                    if (node.homeTransition && stageNode.homePort) {
                         links.push(stageNode.homePort.link(getTransitionTargetNode(node.homeTransition, actionNodes, simplifiedNodes)))
                     }
                 });
@@ -272,8 +273,7 @@ export function readFromArchive(file) {
                         let storyNode = simplifiedNodes.get(storyVirtualAction.id);
                         // Add 'ok' and 'home' transitions if they do not point to the 'first useful node' (default behaviour)
                         let coverNode = json.stageNodes.filter(node => node.squareOne)
-                            .concat(Object.values(virtualNodes).filter(grp => grp[0].type.startsWith('cover')).map(grp => grp[0]))
-                            [0];
+                            .concat(Object.values(virtualNodes).filter(grp => grp[0].type.startsWith('cover')).map(grp => grp[0]))[0];
                         let firstUsefulNodeUuid = coverNode.okTransition.actionNode;
                         if (storyVirtualStage.okTransition.actionNode !== firstUsefulNodeUuid) {
                             // Enable custom OK transition to create OK port
@@ -403,6 +403,9 @@ function nodeSize(node) {
             return { width: 250, height: 141 + 74*node.optionsStages.length };
         case 'story':
             return { width: 150, height: 132 };
+        default:
+            // Unsupported node type
+            return {};
     }
 }
 

@@ -11,7 +11,7 @@ import IssueReportToast from "../components/IssueReportToast";
 import PackDiagramModel from "../components/diagram/models/PackDiagramModel";
 import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice, reorderPacks, addToLibrary} from '../services/device';
 import {fetchLibraryInfos, fetchLibraryPacks, downloadFromLibrary, uploadToLibrary, convertInLibrary, removeFromLibrary} from '../services/library';
-import {fetchEvergreenInfos, fetchEvergreenLatestRelease} from '../services/evergreen';
+import {fetchEvergreenInfos, fetchEvergreenLatestRelease, fetchEvergreenAnnounce} from '../services/evergreen';
 import {generateFilename, sortPacks} from "../utils/packs";
 import {readFromArchive} from "../utils/reader";
 import {simplifiedSample} from "../utils/sample";
@@ -105,10 +105,10 @@ export const actionRefreshDevice = (t) => {
     }
 };
 
-export const actionAddFromLibrary = (uuid, path, context, t) => {
+export const actionAddFromLibrary = (uuid, path, allowEnriched, context, t) => {
     return dispatch => {
         let toastId = toast(t('toasts.device.adding'), { autoClose: false });
-        return addFromLibrary(uuid, path)
+        return addFromLibrary(uuid, path, allowEnriched)
             .then(resp => {
                 // Monitor transfer progress
                 let transferId = resp.transferId;
@@ -375,7 +375,7 @@ export const actionRemoveFromLibrary = (path, t) => {
     }
 };
 
-export const actionLoadEvergreen = (t) => {
+export const actionLoadEvergreen = (announceOptOut, t) => {
     return dispatch => {
         let toastId = toast(t('toasts.evergreen.loading'), { autoClose: false });
         return fetchEvergreenInfos()
@@ -389,6 +389,19 @@ export const actionLoadEvergreen = (t) => {
                             toast.update(toastId, { type: toast.TYPE.SUCCESS, render: <><p>{t('toasts.evergreen.fetched.newRelease.label')}</p><p><a href={latest.html_url}>{t('toasts.evergreen.fetched.newRelease.link', { version: latest.name })}</a></p></> });
                         } else {
                             toast.update(toastId, { type: toast.TYPE.INFO, render: t('toasts.evergreen.fetched.upToDate', { version: infos.version }), autoClose: 5000 });
+                        }
+                        // Check if the user opted-out
+                        if (announceOptOut) {
+                            console.log("user opted-out of announces. no need to fetch.");
+                        } else {
+                            console.log("fetching announce...");
+                            return fetchEvergreenAnnounce()
+                                .then(announce => {
+                                    dispatch(setAnnounce(announce));
+                                })
+                                .catch(e => {
+                                    console.error('failed to fetch announce', e);
+                                });
                         }
                     })
                     .catch(e => {
@@ -472,4 +485,19 @@ export const showEditor = () => ({
 export const setApplicationVersion = (version) => ({
     type: 'SET_APPLICATION_VERSION',
     version
+});
+
+export const setAnnounce = (announce) => ({
+    type: 'SET_ANNOUNCE',
+    announce
+});
+
+export const setAnnounceOptOut = (announceOptOut) => ({
+    type: 'SET_ANNOUNCE_OPTOUT',
+    announceOptOut
+});
+
+export const setAllowEnriched = (allowEnriched) => ({
+    type: 'SET_ALLOW_ENRICHED',
+    allowEnriched
 });

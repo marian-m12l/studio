@@ -6,4 +6,24 @@
 
 package studio.core.v1.model;
 
-public interface Node {}
+import studio.core.v1.model.enriched.EnrichedNodeMetadata;
+
+public abstract class Node {
+
+    private EnrichedNodeMetadata enriched;
+
+    public Node() {
+    }
+
+    public Node(EnrichedNodeMetadata enriched) {
+        this.enriched = enriched;
+    }
+
+    public EnrichedNodeMetadata getEnriched() {
+        return enriched;
+    }
+
+    public void setEnriched(EnrichedNodeMetadata enriched) {
+        this.enriched = enriched;
+    }
+}

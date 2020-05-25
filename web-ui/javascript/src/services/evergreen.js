@@ -15,3 +15,8 @@ export const fetchEvergreenLatestRelease = () => {
     return fetch('http://localhost:8080/api/evergreen/latest')
         .then(handleJsonOrError);
 };
+
+export const fetchEvergreenAnnounce = () => {
+    return fetch('http://localhost:8080/api/evergreen/announce')
+        .then(handleJsonOrError);
+};

@@ -20,10 +20,14 @@ import {
     actionRemoveFromLibrary,
     actionUploadToLibrary,
     actionCreatePackInEditor,
-    actionLoadSampleInEditor
+    actionLoadSampleInEditor,
+    setAllowEnriched
 } from "../actions";
 import {AppContext} from "../AppContext";
 import Modal from "./Modal";
+import {
+    LOCAL_STORAGE_ALLOW_ENRICHED_BINARY_FORMAT
+} from "../utils/storage";
 
 import './PackLibrary.css';
 
@@ -46,7 +50,11 @@ class PackLibrary extends React.Component {
             showRemoveFromDeviceConfirmDialog: false,
             removingFromDevice: null,
             reordering: null,
-            beforeReordering: null
+            beforeReordering: null,
+            allowEnrichedDialog: {
+                show: false,
+                data: null
+            }
         };
     }
 
@@ -73,8 +81,36 @@ class PackLibrary extends React.Component {
             return;
         }
         var data = JSON.parse(packData);
+
+        // If transferring an archive pack (which needs conversion), and allowEnriched settings is not set yet, ask whether to use enriched binary format or not
+        if (data.format !== 'binary' && localStorage.getItem(LOCAL_STORAGE_ALLOW_ENRICHED_BINARY_FORMAT) === null) {
+            this.setState({
+                allowEnrichedDialog: {
+                    show: true,
+                    data
+                }
+            });
+        } else {
+            this.doAddToDevice(data, this.props.settings.allowEnriched);
+        }
+    };
+
+    doAddToDevice = (data, allow) => {
         // Transfer pack and show progress
-        this.props.addFromLibrary(data.uuid, data.path, this.context);
+        this.props.addFromLibrary(data.uuid, data.path, allow, this.context);
+    };
+
+    dismissEnrichedDialog = (allow) => {
+        return () => {
+            this.props.setAllowEnriched(allow);
+            this.doAddToDevice(this.state.allowEnrichedDialog.data, allow);
+            this.setState({
+                allowEnrichedDialog: {
+                    show: false,
+                    data: null
+                }
+            });
+        }
     };
 
     onRemovePackFromDevice = (uuid) => {
@@ -146,7 +182,6 @@ class PackLibrary extends React.Component {
     };
 
     packAddFileSelected = (event) => {
-        const { t } = this.props;
         let file = event.target.files[0];
         console.log('Selected file name = ' + file.name);
         this.addPackToLibrary(file);
@@ -250,6 +285,16 @@ class PackLibrary extends React.Component {
                        ]}
                        onClose={this.dismissRemoveFromLibraryConfirmDialog}
                 />}
+                {this.state.allowEnrichedDialog.show &&
+                <Modal id="ask-allow-enriched"
+                       title={t('dialogs.library.askAllowEnriched.title')}
+                       content={<div dangerouslySetInnerHTML={{__html: t('dialogs.library.askAllowEnriched.content')}} ></div>}
+                       buttons={[
+                           { label: t('dialogs.shared.no'), onClick: this.dismissEnrichedDialog(false)},
+                           { label: t('dialogs.shared.yes'), onClick: this.dismissEnrichedDialog(true)}
+                       ]}
+                       onClose={this.dismissEnrichedDialog(false)}
+                />}
 
                 {/* Device view, if plugged */}
                 {this.state.device.metadata && <div className="plugged-device">
@@ -323,16 +368,16 @@ class PackLibrary extends React.Component {
                                          this.setState({reordering: null});
                                      }}>
                                     <div className="pack-thumb">
-                                        <img src={pack.image || defaultImage} width="128" height="128" draggable={false} />
+                                        <img src={pack.image || defaultImage} alt="" width="128" height="128" draggable={false} />
                                         <div className="pack-version"><span>{`v${pack.version}`}</span></div>
                                         {pack.official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
                                     </div>
                                     <div>
                                         <span>{pack.title || pack.uuid}</span>&nbsp;
-                                        <a href="#" onClick={this.onRemovePackFromDevice(pack.uuid)}>
+                                        <button className="pack-action" onClick={this.onRemovePackFromDevice(pack.uuid)}>
                                             <span className="glyphicon glyphicon-trash"
                                                   title={t('library.device.removePack')} />
-                                        </a>
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -350,9 +395,9 @@ class PackLibrary extends React.Component {
                     <div className="library-dropzone"
                          onDrop={this.onDropPackIntoLibrary}
                          onDragOver={event => { event.preventDefault(); }}>
-                        {this.state.library.packs.length === 0 && <div className="empty">
+                        {this.state.library.packs.length !== 0 && <div className="empty">
                             <p>{t('library.local.empty.header')}</p>
-                            <p><a href="" onClick={this.onCreateNewPackInEditor}>{t('library.local.empty.link1')}</a> <a href="" onClick={this.onOpenSamplePackInEditor}>{t('library.local.empty.link2')}</a> {t('library.local.empty.suffix')}</p>
+                            <p><button className="library-action" onClick={this.onCreateNewPackInEditor}>{t('library.local.empty.link1')}</button> <button className="library-action" onClick={this.onOpenSamplePackInEditor}>{t('library.local.empty.link2')}</button> {t('library.local.empty.suffix')}</p>
                         </div>}
                         {this.state.library.packs.length > 0 && <div className="pack-grid">
                             {this.state.library.packs.map(pack =>
@@ -363,24 +408,24 @@ class PackLibrary extends React.Component {
                                          event.dataTransfer.setData("local-library-pack", JSON.stringify(pack));
                                      }}>
                                     <div className="pack-thumb">
-                                        <img src={pack.image || defaultImage} width="128" height="128" draggable={false} />
+                                        <img src={pack.image || defaultImage} alt="" width="128" height="128" draggable={false} />
                                         <div className="pack-version"><span>{`v${pack.version}`}</span></div>
                                         {pack.official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
                                     </div>
                                     <div>
                                         <span>{pack.title || pack.uuid}</span>&nbsp;
-                                        {pack.format === 'binary' && <a href="#" onClick={this.onConvertLibraryPack(pack)}>
+                                        {pack.format === 'binary' && <button className="pack-action" onClick={this.onConvertLibraryPack(pack)}>
                                             <span className="glyphicon glyphicon-cog"
                                                   title={t('library.local.convertPack')} />
-                                        </a>}
-                                        {pack.format === 'archive' && <a href="#" onClick={this.onEditLibraryPack(pack)}>
+                                        </button>}
+                                        {pack.format === 'archive' && <button className="pack-action" onClick={this.onEditLibraryPack(pack)}>
                                             <span className="glyphicon glyphicon-edit"
                                                   title={t('library.local.editPack')} />
-                                        </a>}
-                                        <a href="#" onClick={this.onRemovePackFromLibrary(pack.path)}>
+                                        </button>}
+                                        <button className="pack-action" onClick={this.onRemovePackFromLibrary(pack.path)}>
                                             <span className="glyphicon glyphicon-trash"
                                                   title={t('library.local.removePack')} />
-                                        </a>
+                                        </button>
                                     </div>
                                 </div>
                             )}
@@ -396,11 +441,12 @@ PackLibrary.contextType = AppContext;
 
 const mapStateToProps = (state, ownProps) => ({
     device: state.device,
-    library: state.library
+    library: state.library,
+    settings: state.settings
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-    addFromLibrary: (uuid, path, context) => dispatch(actionAddFromLibrary(uuid, path, context, ownProps.t)),
+    addFromLibrary: (uuid, path, allowEnriched, context) => dispatch(actionAddFromLibrary(uuid, path, allowEnriched, context, ownProps.t)),
     removeFromDevice: (uuid) => dispatch(actionRemoveFromDevice(uuid, ownProps.t)),
     reorderOnDevice: (uuids) => dispatch(actionReorderOnDevice(uuids, ownProps.t)),
     addToLibrary: (uuid, context) => dispatch(actionAddToLibrary(uuid, context, ownProps.t)),
@@ -410,7 +456,8 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     removeFromLibrary: (path) => dispatch(actionRemoveFromLibrary(path, ownProps.t)),
     uploadPackToLibrary: (path, packData) => dispatch(actionUploadToLibrary(null, path, packData, ownProps.t)),
     createPackInEditor: () => dispatch(actionCreatePackInEditor(ownProps.t)),
-    loadSampleInEditor: () => dispatch(actionLoadSampleInEditor(ownProps.t))
+    loadSampleInEditor: () => dispatch(actionLoadSampleInEditor(ownProps.t)),
+    setAllowEnriched: (allowEnriched) => dispatch(setAllowEnriched(allowEnriched))
 });
 
 export default withTranslation()(

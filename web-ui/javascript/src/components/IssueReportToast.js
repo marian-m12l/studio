@@ -49,7 +49,7 @@ class IssueReportToast extends React.Component {
         super(props);
 
         // Fill environment and error log
-        let errorLog = this.props.error && '> ' + encodeURIComponent(this.props.error.message).replace(/(?:(\r\n|\r|\n)\t?|\t)/g, '%0a') || '';
+        let errorLog = (this.props.error && '> ' + encodeURIComponent(this.props.error.message).replace(/(?:(\r\n|\r|\n)\t?|\t)/g, '%0a')) || '';
         let body = encodeURIComponent(bugReportTemplate)
             .replace(/__ISSUE_LOG/g, errorLog)
             .replace(/__OS/g, encodeURIComponent(window.navigator.platform))
@@ -65,7 +65,7 @@ class IssueReportToast extends React.Component {
             <>
                 <p>{this.props.content}</p>
                 <p>
-                    <a href={this.url} target="_blank"><span className="glyphicon glyphicon-bell"/>{t('toasts.reportIssue')}</a>
+                    <a href={this.url} target="_blank" rel="noopener noreferrer"><span className="glyphicon glyphicon-bell"/>{t('toasts.reportIssue')}</a>
                 </p>
             </>
         );

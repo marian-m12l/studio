@@ -9,6 +9,7 @@ import device from './device';
 import editor from './editor';
 import evergreen from './evergreen';
 import library from './library';
+import settings from './settings';
 import ui from './ui';
 import viewer from './viewer';
 
@@ -18,6 +19,7 @@ export default combineReducers({
     editor,
     evergreen,
     library,
+    settings,
     ui,
     viewer
 });
