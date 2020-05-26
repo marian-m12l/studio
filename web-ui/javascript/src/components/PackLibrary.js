@@ -373,7 +373,7 @@ class PackLibrary extends React.Component {
                                         {pack.official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
                                     </div>
                                     <div>
-                                        <span>{pack.title || pack.uuid}</span>&nbsp;
+                                        <span>{pack.title && pack.title !== "MISSING_PACK_TITLE" ? pack.title : pack.uuid}</span>&nbsp;
                                         <button className="pack-action" onClick={this.onRemovePackFromDevice(pack.uuid)}>
                                             <span className="glyphicon glyphicon-trash"
                                                   title={t('library.device.removePack')} />
@@ -413,7 +413,7 @@ class PackLibrary extends React.Component {
                                         {pack.official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
                                     </div>
                                     <div>
-                                        <span>{pack.title || pack.uuid}</span>&nbsp;
+                                        <span>{pack.title && pack.title !== "MISSING_PACK_TITLE" ? pack.title : pack.uuid}</span>&nbsp;
                                         {pack.format === 'binary' && <button className="pack-action" onClick={this.onConvertLibraryPack(pack)}>
                                             <span className="glyphicon glyphicon-cog"
                                                   title={t('library.local.convertPack')} />
