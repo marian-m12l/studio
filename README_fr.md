@@ -63,9 +63,19 @@ Afin d'afficher les métadonnées des packs d'histoires, celles-ci doivent être
 
 * Lancer le logiciel Luniistore\* afin d'obtenir un jeton d'authentification (valable pendant une heure)
 * Ouvrez `$LOCAL_LUNIITHEQUE/.local.properties` dans une éditeur de texte, et notez la valeur du jeton :
-  * Si vous êtes connecté sur le logiciel Luniistore\*, le jeton se trouve dans la propriété `tokens`, attribut `tokens.access_tokens.data.firebase`
-  * Si vous n'êtes pas connecté sur le logiciel Luniistore\*, le jeton se trouve dans la propriété `token`, attribut `firebase`
-* Appelez `https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN` et enregistrez le résultat dans `$DOT_STUDIO/db/official.json` (p. ex. `curl -v -X GET https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN > ~/.studio/db/official.json`)
+  * Si vous êtes connecté sur le logiciel Luniistore\*, le jeton se trouve dans la propriété `tokens`, attribut `tokens.access_tokens.data.server`
+  * Si vous n'êtes pas connecté sur le logiciel Luniistore\*, le jeton se trouve dans la propriété `token`, attribut `server`
+* Avec un outil du type curl, appelez `https://server-data-prod.lunii.com/v2/packs` avec les entêtes HTTP :
+  * `Accept: application/json`
+  * `Content-Type: application/json; charset=UTF-8`
+  * `X-AUTH-TOKEN: valeur_du_jeton_jwt`
+  
+  et enregistrez le résultat dans `$DOT_STUDIO/db/official.json`.
+
+Voici un exemple de commande curl pour récupérer cette base de données:
+```
+curl -o ~/.studio/db/official.json -v -X GET -H 'Accept: application/json' -H 'Content-Type: application/json; charset=UTF-8' -H 'X-AUTH-TOKEN: valeur_du_jeton_jwt' https://server-data-prod.lunii.com/v2/packs
+```
 
 ### Construire l'application
 
