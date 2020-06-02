@@ -34,9 +34,11 @@ public class DatabaseMetadataService {
                 // Read official metadata database file (path may be overridden by system property `studio.db.official`)
                 String databasePath = System.getProperty(OFFICIAL_DB_PROP, System.getProperty("user.home") + OFFICIAL_DB_JSON_PATH);
                 JsonObject officialRoot = new JsonParser().parse(new FileReader(databasePath)).getAsJsonObject();
+                // Support newer file format which has an additional wrapper: { "code": "0.0", "response": { ...
+                final JsonObject packsRoot = (officialRoot.keySet().contains("response")) ? officialRoot.getAsJsonObject("response") : officialRoot;
                 // Go through all packs
-                officialRoot.keySet().forEach(key -> {
-                    JsonObject packMetadata = officialRoot.getAsJsonObject(key);
+                packsRoot.keySet().forEach(key -> {
+                    JsonObject packMetadata = packsRoot.getAsJsonObject(key);
                     String uuid = packMetadata.get("uuid").getAsString();
                     cachedOfficialDatabase.put(uuid, packMetadata);
                 });
