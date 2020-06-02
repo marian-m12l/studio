@@ -12,7 +12,7 @@
 
     <groupId>studio</groupId>
     <artifactId>studio-parent</artifactId>
-    <version>0.1.17</version>
+    <version>0.1.18-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
