@@ -61,9 +61,19 @@ In order to display story pack metadata, they must be downloaded and stored on a
 
 * Start the official Luniistore\* software to get a fresh authentication token (valid for one hour)
 * Open `$LOCAL_LUNIITHEQUE/.local.properties` in a text editor, and note the value of the token:
-  * If your are logged in on the Luniistore\* software, the token is located on the `tokens` property, `tokens.access_tokens.data.firebase` attribute
-  * If your are not logged in on the Luniistore\* software, the token is located on the `token` property, `firebase` attribute
-* Query `https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN` and save the result as `$DOT_STUDIO/db/official.json` (e.g. `curl -v -X GET https://lunii-data-prod.firebaseio.com/packs.json?auth=TOKEN > ~/.studio/db/official.json`)
+  * If your are logged in on the Luniistore\* software, the token is located on the `tokens` property, `tokens.access_tokens.data.server` attribute
+  * If your are not logged in on the Luniistore\* software, the token is located on the `token` property, `server` attribute
+* Using a tool such as curl, query `https://server-data-prod.lunii.com/v2/packs` with the following HTTP headers:
+  * `Accept: application/json`
+  * `Content-Type: application/json; charset=UTF-8`
+  * `X-AUTH-TOKEN: value_of_your_jwt_token`
+  
+  and save the result as `$DOT_STUDIO/db/official.json`.
+
+Here is an example for curl command to retrieve the database:
+```
+curl -o ~/.studio/db/official.json -v -X GET -H 'Accept: application/json' -H 'Content-Type: application/json; charset=UTF-8' -H 'X-AUTH-TOKEN: value_of_your_jwt_token' https://server-data-prod.lunii.com/v2/packs
+```
 
 ### Building the application
 
