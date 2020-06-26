@@ -25,18 +25,21 @@ UTILISATION
 ### Prérequis
 
 Pour exécuter l'application :
-* JRE 11+
+* JDK 11+
 
 Pour construire l'application :
-* Git
-* JDK 11+
 * Maven 3+
 
 #### Logiciel Luniistore\*
 
-Cette application nécessite certaines ressources du logiciel officiel Luniistore\*.
+Sur Windows, cette application nécessite que le pilote _libusb_ soit installé. Le moyen le plus simple pour cela est
+d'installer le logiciel officiel Luniistore\*.
 
-* Téléchargez-le et installez-le
+#### Base de données officielle des métadonnées de packs d'histoires
+
+Afin d'afficher les métadonnées des packs d'histoires, cette application nécessite certaines ressources du logiciel
+officiel Luniistore\*, qui doivent être téléchargées et stockées dans un fichier local.
+
 * Les ressources nécessaires sont dans un répertoire de l'utilisateur, appelé `$LOCAL_LUNIITHEQUE` dans la suite de ce document. Son chemin dépend de votre plate-forme :
   * Sur Linux, il se trouve au chemin `~/.local/share/Luniitheque`
   * Sur macOS, il se trouve au chemin `~/Library/Application\ Support/Luniitheque`
@@ -45,21 +48,7 @@ Cette application nécessite certaines ressources du logiciel officiel Luniistor
   * Sur Linux et macOS, `~/.studio`
   * Sur Windows, `%UserProfile%\.studio`
 
-#### Pilote de la Fabrique à Histoire\*
-
-Le transfert de packs d'histoires de et vers la Fabrique à Histoire\* est géré par le pilote Lunii\* officiel. Ce pilote
-est distribué avec le logiciel Luniistore\*, et doit y être récupéré:
-
-* Télécharger et installer le logiciel Luniistore\*
-* Créer les répertoires `$DOT_STUDIO/lib/` dans votre dossier personnel (p. ex. `mkdir -p ~/.studio/lib` sur Linux ou macOS, `mkdir %UserProfile%\.studio` sur Windows)
-* Depuis `$LOCAL_LUNIITHEQUE/lib`, copiez ces trois fichiers JAR vers `$DOT_STUDIO/lib/` :
-  * `lunii-java-util.jar`
-  * `lunii-device-gateway.jar`
-  * `lunii-device-wrapper.jar`
-
-#### Base de données officielle des métadonnées de packs d'histoires
-
-Afin d'afficher les métadonnées des packs d'histoires, celles-ci doivent être téléchargées et stockées dans un fichier local.
+Pour récupérer les métadonnées des packs d'histoires :
 
 * Lancer le logiciel Luniistore\* afin d'obtenir un jeton d'authentification (valable pendant une heure)
 * Ouvrez `$LOCAL_LUNIITHEQUE/.local.properties` dans une éditeur de texte, et notez la valeur du jeton :
@@ -77,9 +66,9 @@ Voici un exemple de commande curl pour récupérer cette base de données:
 curl -o ~/.studio/db/official.json -v -X GET -H 'Accept: application/json' -H 'Content-Type: application/json; charset=UTF-8' -H 'X-AUTH-TOKEN: valeur_du_jeton_jwt' https://server-data-prod.lunii.com/v2/packs
 ```
 
-### Construire l'application
+### [Optionnel] Construire l'application
 
-Après avoir cloné ce dépôt de sources, exécuter `mvn clean install` pour construire l'application. Ceci créera l'archive de distribution dans `web-ui/target/`.
+Après avoir cloné ce dépôt de sources, exécuter `mvn clean install` pour construire l'application. Ceci créera **l'archive de distribution** dans `web-ui/target/`.
 
 ### Démarrer l'application
 
@@ -88,8 +77,8 @@ Vous devez d'abord construire l'application ou télécharger une archive de dist
 Pour démarrer l'application :
 * Décompressez l'archive de distribution
 * Exécutez le script de lancement : `studio-linux.sh`, `studio-macos.sh` ou `studio-windows.bat` selon votre plate-forme. Vous devrez probablement rendre ce fichier exécutable d'abord.
-Si la commande est exécutée dans un terminale, des logs devraient s'afficher, en se terminant par `INFOS: Succeeded in deploying verticle`.
-* Ouvrez un navigateur et saisissez l'url `http://localhost:8080` pour charger l'interface web.
+Si la commande est exécutée dans un terminal, des logs devraient s'afficher, en se terminant par `INFOS: Succeeded in deploying verticle`.
+* S'il ne s'ouvre pas automatiquement, ouvrez un navigateur et saisissez l'url `http://localhost:8080` pour charger l'interface web.
 
 Note: Évitez d'exécuter le script en tant que superutilisateur/administrateur, ce qui pourrait créer des problèmes de permissions.
 

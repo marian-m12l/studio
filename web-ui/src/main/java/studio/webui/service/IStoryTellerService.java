@@ -12,19 +12,22 @@ import io.vertx.core.json.JsonObject;
 import java.io.File;
 import java.util.List;
 import java.util.Optional;
+import java.util.concurrent.CompletableFuture;
 
 public interface IStoryTellerService {
 
 
-    Optional<JsonObject> deviceInfos();
+    CompletableFuture<Optional<JsonObject>> deviceInfos();
 
-    JsonArray packs();
+    CompletableFuture<JsonArray> packs();
 
     Optional<String> addPack(String uuid, File packFile);
 
-    boolean deletePack(String uuid);
+    CompletableFuture<Boolean> deletePack(String uuid);
 
-    boolean reorderPacks(List<String> uuids);
+    CompletableFuture<Boolean> reorderPacks(List<String> uuids);
 
     Optional<String> extractPack(String uuid, File destFile);
+
+    CompletableFuture<Void> dump(String outputPath);
 }

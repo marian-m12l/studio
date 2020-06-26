@@ -12,13 +12,14 @@
 
     <groupId>studio</groupId>
     <artifactId>studio-parent</artifactId>
-    <version>0.1.18-SNAPSHOT</version>
+    <version>0.2.0-beta.3-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
     <modules>
         <module>agent</module>
         <module>core</module>
+        <module>driver</module>
         <module>metadata</module>
         <module>web-ui</module>
     </modules>

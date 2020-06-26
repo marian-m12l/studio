@@ -32,6 +32,11 @@
             <AppenderRef ref="RollingFile"/>
         </Logger>
 
+        <Logger name="studio.driver" level="fine" additivity="false">
+            <AppenderRef ref="STDOUT"/>
+            <AppenderRef ref="RollingFile"/>
+        </Logger>
+
     </Loggers>
 
 </Configuration>

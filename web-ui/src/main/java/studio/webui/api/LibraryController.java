@@ -92,7 +92,7 @@ public class LibraryController {
                 }
             }, 1000);
 
-            futureConvertedPack.setHandler(maybeConvertedPack -> {
+            futureConvertedPack.onComplete(maybeConvertedPack -> {
                 if (maybeConvertedPack.succeeded()) {
                     // Then, add converted pack to library
                     boolean added = libraryService.addPackFile(packPath + ".zip", maybeConvertedPack.result().getAbsolutePath());

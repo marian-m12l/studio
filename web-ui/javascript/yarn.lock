@@ -10051,7 +10051,7 @@ verror@1.10.0:
     core-util-is "1.0.2"
     extsprintf "^1.2.0"
 
-vertx3-eventbus-client@^3.7.1:
+vertx3-eventbus-client@^3.9.0:
   version "3.9.1"
   resolved "https://registry.yarnpkg.com/vertx3-eventbus-client/-/vertx3-eventbus-client-3.9.1.tgz#44b5ebedecbe3a76205a3fc5d859b19def3db223"
   integrity sha512-ovStQYmYL55q3y5CuQd5YfpGUPM3iRjdcuW8sYI2Y6oAjOiw7a7OiI/K1x7DpfRC6kmuwCCD6v6h/pMzmCQZHQ==

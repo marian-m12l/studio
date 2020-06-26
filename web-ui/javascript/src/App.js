@@ -28,7 +28,6 @@ import {
     showLibrary,
     showEditor,
     actionLoadEvergreen,
-    actionLoadWatchdog,
     setAnnounceOptOut,
     setAllowEnriched
 } from "./actions";
@@ -88,9 +87,6 @@ class App extends React.Component {
 
             // Load evergeen infos on startup
             this.props.loadEvergreen(this.props.settings.announceOptOut);
-
-            // Load watchdog infos on startup
-            this.props.loadWatchdog();
 
             // Load sample diagram in editor
             let model = simplifiedSample();
@@ -222,7 +218,6 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     dispatchShowLibrary: () => dispatch(showLibrary()),
     dispatchShowEditor: () => dispatch(showEditor()),
     loadEvergreen: (announceOptOut) => dispatch(actionLoadEvergreen(announceOptOut, ownProps.t)),
-    loadWatchdog: () => dispatch(actionLoadWatchdog(ownProps.t)),
     setAnnounceOptOut: (announceOptOut) => dispatch(setAnnounceOptOut(announceOptOut)),
     setAllowEnriched: (allowEnriched) => dispatch(setAllowEnriched(allowEnriched))
 });

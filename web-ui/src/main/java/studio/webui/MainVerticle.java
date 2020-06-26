@@ -24,11 +24,11 @@ import studio.metadata.DatabaseMetadataService;
 import studio.webui.api.DeviceController;
 import studio.webui.api.EvergreenController;
 import studio.webui.api.LibraryController;
-import studio.webui.api.WatchdogController;
-import studio.webui.logger.VertxPluggableLogger;
 import studio.webui.service.*;
 import studio.webui.service.mock.MockStoryTellerService;
 
+import java.awt.*;
+import java.net.URI;
 import java.util.Set;
 
 public class MainVerticle extends AbstractVerticle {
@@ -39,13 +39,12 @@ public class MainVerticle extends AbstractVerticle {
     private LibraryService libraryService;
     private EvergreenService evergreenService;
     private IStoryTellerService storyTellerService;
-    private WatchdogService watchdogService;
 
     @Override
     public void start() {
 
         // Service that manages pack metadata
-        databaseMetadataService = new DatabaseMetadataService(new VertxPluggableLogger(DatabaseMetadataService.class.getName()), false);
+        databaseMetadataService = new DatabaseMetadataService(false);
 
         // Service that manages local library
         libraryService = new LibraryService(databaseMetadataService);
@@ -60,9 +59,6 @@ public class MainVerticle extends AbstractVerticle {
         } else {
             storyTellerService = new StoryTellerService(vertx.eventBus(), databaseMetadataService);
         }
-
-        // Service that monitors Luniistore updates
-        watchdogService = new WatchdogService(vertx);
 
 
         Router router = Router.router(vertx);
@@ -101,18 +97,34 @@ public class MainVerticle extends AbstractVerticle {
             errorHandler.handle(ctx);
         });
 
+        // Start HTTP server
         vertx.createHttpServer().requestHandler(router).listen(8080);
+
+        // Automatically open URL in browser, unless instructed otherwise
+        String openBrowser = System.getProperty("studio.open", "true");
+        if (Boolean.valueOf(openBrowser)) {
+            LOGGER.info("Opening URL in default browser...");
+            if (Desktop.isDesktopSupported()) {
+                try {
+                    Desktop.getDesktop().browse(new URI("http://localhost:8080"));
+                } catch (Exception e) {
+                    LOGGER.error("Failed to open URL in default browser", e);
+                }
+            }
+        }
     }
 
     private SockJSHandler eventBusHandler() {
         BridgeOptions options = new BridgeOptions()
                 .addOutboundPermitted(new PermittedOptions().setAddressRegex("storyteller\\.(.+)"));
-        return SockJSHandler.create(vertx).bridge(options, event -> {
+        SockJSHandler sockJSHandler = SockJSHandler.create(vertx);
+        sockJSHandler.bridge(options, event -> {
             if (event.type() == BridgeEventType.SOCKET_CREATED) {
                 LOGGER.debug("New sockjs client");
             }
             event.complete(true);
         });
+        return sockJSHandler;
     }
 
     private Router apiRouter() {
@@ -132,9 +144,6 @@ public class MainVerticle extends AbstractVerticle {
 
         // Evergreen services
         router.mountSubRouter("/evergreen", EvergreenController.apiRouter(vertx, evergreenService));
-
-        // Watchdog services
-        router.mountSubRouter("/watchdog", WatchdogController.apiRouter(vertx, watchdogService));
 
         return router;
     }
