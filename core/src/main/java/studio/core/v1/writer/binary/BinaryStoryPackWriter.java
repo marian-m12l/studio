@@ -228,11 +228,7 @@ public class BinaryStoryPackWriter {
             currentOffset += assetAddr.getSize();
         }
 
-        // Because of bug Luniistore's error-checker, we need at least 100000 sectors (i.e. 51 200 000 bytes) *after* the last action node
-        int requiredPadding = 100000 - (currentOffset - actionNodesMap.lastKey().getOffset());
-        if (requiredPadding > 0) {
-            writePadding(dos, Constants.SECTOR_SIZE * requiredPadding);
-        }
+        // The Luniistore's error-checker bug is no more! No need to pad the story pack to 100000 sectors after the last action node
 
         // Write check bytes
         dos.write(Constants.CHECK_BYTES, 0, Constants.CHECK_BYTES.length);
