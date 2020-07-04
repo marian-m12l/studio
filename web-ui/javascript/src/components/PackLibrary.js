@@ -395,7 +395,7 @@ class PackLibrary extends React.Component {
                     <div className="library-dropzone"
                          onDrop={this.onDropPackIntoLibrary}
                          onDragOver={event => { event.preventDefault(); }}>
-                        {this.state.library.packs.length !== 0 && <div className="empty">
+                        {this.state.library.packs.length === 0 && <div className="empty">
                             <p>{t('library.local.empty.header')}</p>
                             <p><button className="library-action" onClick={this.onCreateNewPackInEditor}>{t('library.local.empty.link1')}</button> <button className="library-action" onClick={this.onOpenSamplePackInEditor}>{t('library.local.empty.link2')}</button> {t('library.local.empty.suffix')}</p>
                         </div>}
