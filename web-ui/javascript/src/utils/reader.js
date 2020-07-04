@@ -281,7 +281,8 @@ export function readFromArchive(file) {
                             // Create link
                             links.push(storyNode.okPort.link(getTransitionTargetNode(storyVirtualStage.okTransition, actionNodes, simplifiedNodes)));
                         }
-                        if (storyVirtualStage.homeTransition.actionNode !== firstUsefulNodeUuid) {
+                        // Home transition may be disabled
+                        if (!storyNode.disableHome && storyVirtualStage.homeTransition.actionNode !== firstUsefulNodeUuid) {
                             // Enable custom Home transition to create Home port
                             storyNode.setCustomHomeTransition(true);
                             // Create link
