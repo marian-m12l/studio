@@ -127,4 +127,45 @@ public class PackAssetsCompression {
 
         return pack;
     }
+
+    public static StoryPack withPreparedAssetsFirmware2dot4(StoryPack pack) throws IOException {
+        // Store prepared assets bytes
+        TreeMap<String, byte[]> assets = new TreeMap<>();
+
+        for (int i = 0; i < pack.getStageNodes().size(); i++) {
+            StageNode node = pack.getStageNodes().get(i);
+
+            if (node.getImage() != null) {
+                byte[] imageData = node.getImage().getRawData();
+                String assetHash = DigestUtils.sha1Hex(imageData);
+                if (assets.get(assetHash) == null) {
+                    // Convert to 4-bits depth / RLE encoding BMP
+                    if (!"image/bmp".equals(node.getImage().getMimeType()) || imageData[28] != 0x04 || imageData[30] != 0x02) {
+                        imageData = ImageConversion.anyToRLECompressedBitmap(imageData);
+                    }
+                    assets.put(assetHash, imageData);
+                }
+                // Use asset (already compressed) bytes from map
+                node.getImage().setRawData(assets.get(assetHash));
+                node.getImage().setMimeType("image/bmp");
+            }
+
+            if (node.getAudio() != null) {
+                byte[] audioData = node.getAudio().getRawData();
+                String assetHash = DigestUtils.sha1Hex(audioData);
+                if (assets.get(assetHash) == null) {
+                    if (!"audio/mp3".equals(node.getAudio().getMimeType()) && !"audio/mpeg".equals(node.getAudio().getMimeType())) {
+                        // FIXME Cannot convert to MP3, story pack MUST ALREADY be using MP3 audio files
+                        throw new RuntimeException("Cannot convert to MP3, story pack MUST ALREADY be using MP3 audio files");
+                    }
+                    assets.put(assetHash, audioData);
+                }
+                // Use asset (already compressed) bytes from map
+                node.getAudio().setRawData(assets.get(assetHash));
+                node.getAudio().setMimeType("audio/mpeg");
+            }
+        }
+
+        return pack;
+    }
 }
