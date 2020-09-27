@@ -18,5 +18,4 @@ cache:
   - C:\Users\appveyor\.m2\ -> pom.xml
 
 artifacts:
-  - path: '**\*.jar'
   - path: '**\*.zip'
