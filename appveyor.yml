@@ -18,6 +18,5 @@ cache:
   - C:\Users\appveyor\.m2\ -> pom.xml
 
 artifacts:
-  - path: /.*\.jar/
-    name: Build Snapshot
-    type: zip
+  - path: '**\*.jar'
+  - path: '**\*.zip'
