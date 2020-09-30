@@ -1,3 +1,6 @@
+:bangbang: **IMPORTANT:** Le firmware Lunii a été mis à jour cet été, et le nouveau firmware n'est **PAS** supporté par STUdio. Vous pouvez suivre l'avancement [ici](https://github.com/marian-m12l/studio/issues/122)
+:---:
+
 [![Release](https://img.shields.io/github/v/release/marian-m12l/studio)](https://github.com/marian-m12l/studio/releases/latest)
 [![Gitter](https://badges.gitter.im/STUdio-Story-Teller-Unleashed/general.svg)](https://gitter.im/STUdio-Story-Teller-Unleashed/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
