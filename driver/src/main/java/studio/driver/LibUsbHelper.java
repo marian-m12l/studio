@@ -11,6 +11,7 @@ import studio.driver.event.DeviceHotplugEventListener;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.concurrent.*;
@@ -527,12 +528,14 @@ public class LibUsbHelper {
     private static boolean checkCommandStatusWrapper(ByteBuffer csw) {
         // Check Command Status Wrapper length
         if (csw.remaining() != MASS_STORAGE_CSW_LENGTH) {
+            LOGGER.severe("Invalid CSW: wrong size ("+csw.remaining()+")");
             return false;
         }
         // Check CSW signature
         byte[] signature = new byte[MASS_STORAGE_CSW_SIGNATURE.length];
         csw.get(signature);
         if (!Arrays.equals(signature, MASS_STORAGE_CSW_SIGNATURE)) {
+            LOGGER.severe("Invalid CSW: wrong signature ("+bytesToHex(signature)+")");
             return false;
         }
         // Check Command Block Tag
@@ -545,10 +548,23 @@ public class LibUsbHelper {
         csw.order(ByteOrder.LITTLE_ENDIAN);
         int residue = csw.getInt(8);
         if (residue > 0) {
+            LOGGER.severe("Invalid CSW: positive residue ("+residue+")");
             return false;
         }
         // Check status
         byte status = csw.get(12);
+        LOGGER.finest("CSW status: "+status);
         return status == 0;
+    }
+
+    private static final byte[] HEX_ARRAY = "0123456789ABCDEF".getBytes();
+    private static String bytesToHex(byte[] bytes) {
+        byte[] hexChars = new byte[bytes.length * 2];
+        for (int j = 0; j < bytes.length; j++) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+            hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
+        }
+        return new String(hexChars, StandardCharsets.UTF_8);
     }
 }

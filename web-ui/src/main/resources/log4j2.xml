@@ -22,17 +22,17 @@
 
     <Loggers>
 
-        <Root level="info">
+        <Root level="INFO">
             <AppenderRef ref="STDOUT"/>
             <AppenderRef ref="RollingFile"/>
         </Root>
 
-        <Logger name="studio" level="info" additivity="false">
+        <Logger name="studio" level="INFO" additivity="false">
             <AppenderRef ref="STDOUT"/>
             <AppenderRef ref="RollingFile"/>
         </Logger>
 
-        <Logger name="studio.driver" level="fine" additivity="false">
+        <Logger name="studio.driver" level="ALL" additivity="false">
             <AppenderRef ref="STDOUT"/>
             <AppenderRef ref="RollingFile"/>
         </Logger>
