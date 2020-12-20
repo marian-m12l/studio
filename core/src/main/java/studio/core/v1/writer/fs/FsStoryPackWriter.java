@@ -8,6 +8,7 @@ package studio.core.v1.writer.fs;
 
 import org.apache.commons.codec.digest.DigestUtils;
 import studio.core.v1.model.*;
+import studio.core.v1.utils.XXTEACipher;
 
 import java.io.*;
 import java.nio.ByteBuffer;
@@ -19,9 +20,8 @@ import java.util.*;
 /*
 Writer for the new binary format coming with firmware 2.4
 Assets must be prepared to match the expected format : 4-bits depth / RLE encoding BMP for images, and mono 44100Hz MP3 for sounds.
-The first 512 bytes of most files are scrambled. This is worked around by copying scrambled parts and boot file from
-an existing pack, and by avoiding reference to this part of the files when possible (using offsets). When not possible
-(for the assets), the scrambled part is combined with the end of an asset to try and make a consistent file.
+The first 512 bytes of most files are scrambled with a common key, provided in an external file. The bt file uses a
+device-specific key.
  */
 public class FsStoryPackWriter {
 
@@ -33,15 +33,13 @@ public class FsStoryPackWriter {
     private static final String SOUND_FOLDER = "sf" + File.separator;
     private static final String BOOT_FILENAME = "bt";
 
-    // FIXME These offsets exist to make sure the scrambled part of index files is never referenced
-    private static final int INDEX_OFFSET_LI = 128;
-    private static final int INDEX_OFFSET_RI = 43;
-    private static final int INDEX_OFFSET_SI = 43;
+    private final byte[] commonKey;
+    private final byte[] specificKey;
 
-    // FIXME Scrambled part of all files are extracted from an existing story pack
-    private static final String EXISTING_PACK_PATH = System.getProperty("user.home") + "/.studio/fs/4CDF38C6";
-    private static final String EXISTING_IMAGE_PATH = "/rf/000/CF3AFD3D";
-    private static final String EXISTING_SOUND_PATH = "/sf/000/FD1684D3";
+    public FsStoryPackWriter(byte[] commonKey, byte[] specificKey) {
+        this.commonKey = commonKey;
+        this.specificKey = specificKey;
+    }
 
     // TODO Enriched metadata in a dedicated file (pack's title, description and thumbnail, nodes' name, group, type and position
 
@@ -171,9 +169,8 @@ public class FsStoryPackWriter {
 
         // Add lists index file: li
         FileOutputStream liFos = new FileOutputStream(new File(packFolder, LIST_INDEX_FILENAME));
-        DataOutputStream liDos = new DataOutputStream(liFos);
-        // Initialize file with the scrambled part
-        initializeLiFile(liDos);
+        ByteArrayOutputStream liBaos = new ByteArrayOutputStream();
+        DataOutputStream liDos = new DataOutputStream(liBaos);
         // Add action nodes
         for (ActionNode actionNode : actionNodesOrdered) {
             writeActionNode(
@@ -182,16 +179,18 @@ public class FsStoryPackWriter {
             );
         }
         liDos.close();
+        liBaos.close();
+        byte[] liBytes = liBaos.toByteArray();
+        // The first block of bytes must be ciphered with the common key
+        byte[] liCiphered = cipherFirstBlockCommonKey(liBytes);
+        liFos.write(liCiphered);
         liFos.close();
 
 
         // Add images index file: ri
         FileOutputStream riFos = new FileOutputStream(new File(packFolder, IMAGE_INDEX_FILENAME));
-        DataOutputStream riDos = new DataOutputStream(riFos);
-        // Initialize file with the scrambled part
-        initializeRiFile(riDos);
-        // Analyze the base image to determine how the actual image can be combined with the scrambled part
-        BaseImageAnalysis analysis = analyzeBaseImageFile();
+        ByteArrayOutputStream riBaos = new ByteArrayOutputStream();
+        DataOutputStream riDos = new DataOutputStream(riBaos);
         // For each image asset: 12-bytes relative path (e.g. 000\11111111)
         for (int i=0; i<imageHashOrdered.size(); i++) {
             // Write image path into ri file
@@ -200,21 +199,27 @@ public class FsStoryPackWriter {
             riDos.write(rfPath.getBytes(Charset.forName("UTF-8")));
             // Write image data into file
             File rfFile = new File(packFolder, IMAGE_FOLDER + rfPath.replace('\\', '/'));
-            debug("Writing RF file: " + rfFile.toString());
             rfFile.getParentFile().mkdirs();
             FileOutputStream rfFos = new FileOutputStream(rfFile);
-            writeImageAsset(rfFos, assets.get(imageHash), analysis);
+            byte[] rfBytes = assets.get(imageHash);
+            // The first block of bytes must be ciphered with the common key
+            byte[] rfCiphered = cipherFirstBlockCommonKey(rfBytes);
+            rfFos.write(rfCiphered);
             rfFos.close();
         }
         riDos.close();
+        riBaos.close();
+        byte[] riBytes = riBaos.toByteArray();
+        // The first block of bytes must be ciphered with the common key
+        byte[] riCiphered = cipherFirstBlockCommonKey(riBytes);
+        riFos.write(riCiphered);
         riFos.close();
 
 
         // Add sound index file: si
-        FileOutputStream siFos = new FileOutputStream(new File(packFolder, "si"));
-        DataOutputStream siDos = new DataOutputStream(siFos);
-        // Initialize file with the scrambled part
-        initializeSiFile(siDos);
+        FileOutputStream siFos = new FileOutputStream(new File(packFolder, SOUND_INDEX_FILENAME));
+        ByteArrayOutputStream siBaos = new ByteArrayOutputStream();
+        DataOutputStream siDos = new DataOutputStream(siBaos);
         // For each image asset: 12-bytes relative path (e.g. 000\11111111)
         for (int i=0; i<audioHashOrdered.size(); i++) {
             // Write sound path into si file
@@ -225,55 +230,27 @@ public class FsStoryPackWriter {
             File sfFile = new File(packFolder, SOUND_FOLDER + sfPath.replace('\\', '/'));
             sfFile.getParentFile().mkdirs();
             FileOutputStream sfFos = new FileOutputStream(sfFile);
-            writeSoundAsset(sfFos, assets.get(audioHash));
+            byte[] sfBytes = assets.get(audioHash);
+            // The first block of bytes must be ciphered with the common key
+            byte[] sfCiphered = cipherFirstBlockCommonKey(sfBytes);
+            sfFos.write(sfCiphered);
             sfFos.close();
         }
         siDos.close();
+        siBaos.close();
+        byte[] siBytes = siBaos.toByteArray();
+        // The first block of bytes must be ciphered with the common key
+        byte[] siCiphered = cipherFirstBlockCommonKey(siBytes);
+        siFos.write(siCiphered);
         siFos.close();
 
 
         // Add boot file: bt
         FileOutputStream btFos = new FileOutputStream(new File(packFolder, BOOT_FILENAME));
-        DataOutputStream btDos = new DataOutputStream(btFos);
-        copyBootFile(btDos);
-        btDos.close();
+        // TODO The first 64 bytes of 'ri' file must be ciphered with the device-specific key into 'bt' file
+        byte[] btCiphered = cipherFirstBlockSpecificKey(Arrays.copyOfRange(riBytes, 0, Math.min(64, riBytes.length)));
+        btFos.write(btCiphered);
         btFos.close();
-    }
-
-    private static byte[] readFromExistingPack(String filePath, int length) throws IOException {
-        // Open file, read <length>-bytes scrambled part
-        FileInputStream fileInputStream = new FileInputStream(EXISTING_PACK_PATH + File.separator + filePath);
-        byte[] scrambled = fileInputStream.readNBytes(length);
-        fileInputStream.close();
-        return scrambled;
-    }
-
-    // FIXME This is the "hackish" part, where we keep the scrambled part as-is. It will be ignored because all references to LI file will be offset by 128 (512 bytes)
-    private static void initializeLiFile(DataOutputStream liDos) throws IOException {
-        // Copy scrambled part from existing pack
-        liDos.write(readFromExistingPack(LIST_INDEX_FILENAME, 512));
-    }
-
-    // FIXME This is the "hackish" part, where we keep the scrambled part as-is. It will be ignored because all references to RI file will be offset by 43 (516 bytes)
-    private static void initializeRiFile(DataOutputStream riDos) throws IOException {
-        // Copy scrambled part from existing pack
-        riDos.write(readFromExistingPack(IMAGE_INDEX_FILENAME, 512));
-        // Offset 4 more bytes, to be aligned with 12-bytes data chunks
-        riDos.writeInt(0);
-    }
-
-    // FIXME This is the "hackish" part, where we keep the scrambled part as-is. It will be ignored because all references to SI file will be offset by 43 (516 bytes)
-    private static void initializeSiFile(DataOutputStream siDos) throws IOException {
-        // Copy scrambled part from existing pack
-        siDos.write(readFromExistingPack(SOUND_INDEX_FILENAME, 512));
-        // Offset 4 more bytes, to be aligned with 12-bytes data chunks
-        siDos.writeInt(0);
-    }
-
-    // FIXME This is the "hackish" part, where we keep the boot file as-is.
-    private static void copyBootFile(DataOutputStream btDos) throws IOException {
-        // Copy boot file from existing pack
-        btDos.write(readFromExistingPack(BOOT_FILENAME, 64));
     }
 
     private static String transformUuid(UUID uuid) {
@@ -298,15 +275,12 @@ public class FsStoryPackWriter {
             boolean autoplay
     ) throws IOException {
         ByteBuffer bb = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN);
-        // All references to RI file must be offset by 43 (except -1)
-        bb.putInt(imageAssetIndexInRI >= 0 ? imageAssetIndexInRI + INDEX_OFFSET_RI : imageAssetIndexInRI);
-        // All references to SI file must be offset by 43 (except -1)
-        bb.putInt(soundAssetIndexInSI >= 0 ? soundAssetIndexInSI + INDEX_OFFSET_SI : soundAssetIndexInSI);
-        // All references to LI file must be offset by 128 (except -1)
-        bb.putInt(okTransitionActionNodeIndexInLI >= 0 ? okTransitionActionNodeIndexInLI + INDEX_OFFSET_LI : okTransitionActionNodeIndexInLI);
+        bb.putInt(imageAssetIndexInRI);
+        bb.putInt(soundAssetIndexInSI);
+        bb.putInt(okTransitionActionNodeIndexInLI);
         bb.putInt(okTransitionNumberOfOptions);
         bb.putInt(okTransitionSelectedOptionIndex);
-        bb.putInt(homeTransitionActionNodeIndexInLI >= 0 ? homeTransitionActionNodeIndexInLI + INDEX_OFFSET_LI : homeTransitionActionNodeIndexInLI);
+        bb.putInt(homeTransitionActionNodeIndexInLI);
         bb.putInt(homeTransitionNumberOfOptions);
         bb.putInt(homeTransitionSelectedOptionIndex);
         bb.putShort(boolToShort(wheel));
@@ -340,227 +314,24 @@ public class FsStoryPackWriter {
         return String.format("000\\%08d", index);
     }
 
-
-    /*
-    Analysis of the original image file (from the existing pack) to determine how the actual image file wan be combined
-    with the scrambled part:
-      - Stores the position of the first clear / replaceable line
-      - Counts the number of clear / replaceable lines
-      - Stores the expected byte-size of those lines
-      - Stores the scrambled part + all the clear data until the first clear / replaceable line
-     */
-    private static class BaseImageAnalysis {
-        int firstReplaceableLine;
-        int nbOfReplaceableLines;
-        int expectedReplacementBytes;
-        byte[] scrambledBytes;
-
-        BaseImageAnalysis(int firstReplaceableLine, int nbOfReplaceableLines, int expectedReplacementBytes, byte[] scrambledBytes) {
-            this.firstReplaceableLine = firstReplaceableLine;
-            this.nbOfReplaceableLines = nbOfReplaceableLines;
-            this.expectedReplacementBytes = expectedReplacementBytes;
-            this.scrambledBytes = scrambledBytes;
+    private byte[] cipherFirstBlockCommonKey(byte[] data) {
+        byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
+        int[] dataInt = XXTEACipher.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
+        int[] encryptedInt = XXTEACipher.btea(dataInt, Math.min(128, data.length/4), XXTEACipher.toIntArray(commonKey, ByteOrder.BIG_ENDIAN));
+        byte[] encryptedBlock = XXTEACipher.toByteArray(encryptedInt, ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer bb = ByteBuffer.allocate(data.length);
+        bb.put(encryptedBlock);
+        if (data.length > 512) {
+            bb.put(Arrays.copyOfRange(data, 512, data.length));
         }
+        return bb.array();
     }
-
-    // Analysis of existing image file
-    private static BaseImageAnalysis analyzeBaseImageFile() throws IOException {
-        // Open existing image file
-        FileInputStream fileInputStream = new FileInputStream(EXISTING_PACK_PATH + File.separator + EXISTING_IMAGE_PATH);
-        // Store scrambled data and all the clear data until the first clear / replaceable line
-        ByteArrayOutputStream scrambledBytes = new ByteArrayOutputStream();
-        // Read scrambled part
-        byte[] scrambled = fileInputStream.readNBytes(512);
-        scrambledBytes.write(scrambled);
-
-        int firstEOLIndex = -1;
-        int nbOfReplaceableLines = 0;
-        int index = 512;
-        byte[] word = new byte[2];
-        // Find first end-of-line (aligned 0x0000) after index 512
-        while (fileInputStream.read(word) != -1) {
-            // Keep all data until the first end-of-line
-            if (firstEOLIndex == -1) {
-                //debug(word[0] + " - " + word[1]);
-                //debug("Store word: " + index);
-                scrambledBytes.write(word);
-            }
-            // Is this an end-of-line word?
-            if (word[0] == 0x00 && word[1] == 0x00) {
-                if (firstEOLIndex == -1) {
-                    // Keep first match
-                    firstEOLIndex = index;
-                } else {
-                    // Count the other lines
-                    //debug("Match EOL: " + index);
-                    nbOfReplaceableLines++;
-                }
-            }
-            // Is this the beginning of raw pixel data chunk (non-RLE-encoded)?
-            else if (word[0] == 0x00 && word[1] != 0x01 && word[1] != 0x02) {
-                // Skip the next N pixels
-                int skipPixels = word[1] & 0xff;
-                int skipBytes = (int) Math.ceil(skipPixels/2.0);
-                if (skipBytes % 2 != 0) {
-                    skipBytes++;
-                }
-                //debug("Skipping " + skipPixels + " uncompressed pixels (" + skipBytes + " bytes)");
-                // If still in first line, keep the skipped data
-                if (firstEOLIndex == -1) {
-                    byte[] skipped = fileInputStream.readNBytes(skipBytes);
-                    //debug("Store skipped bytes: " + skipBytes);
-                    scrambledBytes.write(skipped);
-                } else {
-                    fileInputStream.skip(skipBytes);
-                }
-                index += skipBytes;
-            }
-            index += 2;
-        }
-        fileInputStream.close();
-
-        int firstReplaceableLine = firstEOLIndex + 2;
-        //debug("First match = " + firstEOLIndex);
-        //debug("Count = " + nbOfReplaceableLines);
-        //debug("Index = " + index);
-        //debug("Expected = " + (index - firstReplaceableLine));
-        return new BaseImageAnalysis(
-                firstReplaceableLine,
-                nbOfReplaceableLines,
-                index - firstReplaceableLine,
-                scrambledBytes.toByteArray()
-        );
-    }
-
-    // Processing of an actual image file to combine it with the scrambled part
-    private static byte[] preprocessImageFile(byte[] data, BaseImageAnalysis analysis) throws IOException {
-        //debug("Preprocess: " + data.length + ": " + analysis.nbOfReplaceableLines + " - " + analysis.expectedReplacementBytes);
-
-        // Read raw data index at 0x0A
-        ByteBuffer wrap = ByteBuffer.wrap(data, 10, 4).order(ByteOrder.LITTLE_ENDIAN);
-        int offset = wrap.getInt();
-        //debug("Data offset = " + offset);
-
-        int linesToSkip = 240 - analysis.nbOfReplaceableLines;
-        int skippedLines = 0;
-        int count = 0;
-        int firstReplacementLineIndex = -1;
-        int index = offset;
-        // Skip <n> end-of-lines (aligned 0x0000) after data offset
-        while (index < data.length-1) {
-            // TODO Need to skip non-RLE chunks ?
-            // Is this an end-of-line word?
-            if (data[index] == 0x00 && data[index+1] == 0x00) {
-                count++;
-                if (skippedLines < linesToSkip) {
-                    //debug("Skipping EOL: " + index);
-                    skippedLines++;
-                } else {
-                    debug("Ignoring EOL: " + index);
-                }
-                if (skippedLines == linesToSkip) {
-                    // Store index of the first replacement line
-                    firstReplacementLineIndex = index+2;
-                    //break;
-                    skippedLines++;
-                }
-            }
-            // Move to the next 2-bytes word
-            index += 2;
-        }
-
-        //debug("EOL count: " + count);
-
-        //debug("First replacement line at: " + firstReplacementLineIndex);
-        //debug("Skipped = " + skippedLines);
-
-        // Extract all bytes from firstReplacementLineIndex
-        byte[] bytes = Arrays.copyOfRange(data, firstReplacementLineIndex, data.length);
-
-        //debug("Expected replacement bytes = " + analysis.expectedReplacementBytes);
-        //debug("Actual replacement bytes = " + bytes.length);
-
-        // FIXME If the replacement lines are bigger than expected bytes, the image CANNOT BE COMBINED WITH SCRAMBLED PART
-        if (bytes.length > analysis.expectedReplacementBytes) {
-            throw new RuntimeException("Image file is too big to fit into base image: " + bytes.length + " > " + analysis.expectedReplacementBytes);
-        }
-        // If the replacement lines are smaller than expected bytes, expand some compressed chunks to match the expected bytes number
-        else if (bytes.length < analysis.expectedReplacementBytes) {
-            int diff = analysis.expectedReplacementBytes - bytes.length - 2; // Leave room to add missing EOL before end-of-file
-            debug("Image file is too small: expanding compressed chunks to add the missing " + diff + " bytes");
-            ByteArrayOutputStream expanded = new ByteArrayOutputStream();
-            int i = 0;
-            while (diff > 0) {
-                // Uncompress chunk when both color indexes are identical
-                int nbConsecutivePixels = bytes[i] & 0xff;
-                byte firstColorIndex = (byte) ((bytes[i+1] & 0xf0) >> 4);
-                byte secondColorIndex = (byte) (bytes[i+1] & 0x0f);
-                //debug("\tAddress " + (i+firstReplacementLineIndex) + "\tPixels " + nbConsecutivePixels + "\tFirst " + firstColorIndex + "\tSecond " + secondColorIndex);
-                if (nbConsecutivePixels > 2 && firstColorIndex == secondColorIndex) {
-                    // Decompress N consecutive pixels (1 word) into N words: this add N-1 two-byte words
-                    // Make sure to not expand more than necessary when just a few bytes are missing
-                    int bytesToExpand = Math.min(diff, (nbConsecutivePixels-1)*2);
-
-                    //debug("Decompressing chunk of " + nbConsecutivePixels + " consecutive pixels with color index " + firstColorIndex + " at address " + (i+firstReplacementLineIndex));
-
-                    if (bytesToExpand == diff) {
-                        //debug("This chunk exceeds remaining diff (" + (nbConsecutivePixels-1)*2 + " > " + diff + "): Adding only " + diff + " bytes");
-                    }
-
-                    // First word contains the remaining (not expanded) pixels
-                    int remaining = nbConsecutivePixels - (bytesToExpand/2);
-                    //debug("Remaining pixels in first chunk after expansion: " + remaining);
-                    expanded.write(new byte[] { (byte)(remaining & 0xff), bytes[i+1] });
-                    // Following words contain expanded pixels
-                    //debug("Number of 1-PIXEL words added: " + (bytesToExpand/2));
-                    for (int j = 0; j < bytesToExpand ; j+=2) {
-                        expanded.write(new byte[] { 0x01, bytes[i+1] });
-                    }
-
-                    //debug("\tThis operation added" + bytesToExpand + " bytes");
-
-                    diff -= bytesToExpand;
-                } else {
-                    expanded.write(bytes, i, 2);
-                }
-                i += 2;
-            }
-            // Copy as-is the remaining pixels
-            expanded.write(bytes, i, bytes.length-i-2);
-            // Add missing EOL before end-of-file
-            expanded.write(new byte[] { 0x00, 0x00 });
-            // End-of-file
-            expanded.write(bytes, bytes.length-2, 2);
-            bytes = expanded.toByteArray();
-        } else {
-            // Exact size, no need to process image file
-            debug("WOW, the image is exactly the expected size!");
-        }
-
-        return bytes;
-    }
-
-    private static void writeImageAsset(FileOutputStream rfFos, byte[] data, BaseImageAnalysis analysis) throws IOException {
-        // FIXME This is the "hackish" part, where we keep the scrambled part as-is. The BMP header and first data (lower rows) are kept, which means a part of the base image will be visible.
-        // All data until the first replaceable line (including scrambled BMP header and first rows of pixel data are kept
-        //debug("Scrambled bytes until first EOL = " + analysis.scrambledBytes.length);
-        rfFos.write(analysis.scrambledBytes);
-        // FIXME Using the lines number from analysis causes errors, which are avoided by using fewer replacement lines (e.g. 207 instead of 213)
-        // FIXME This does not work for all images
-        analysis.nbOfReplaceableLines = analysis.nbOfReplaceableLines - 6;
-        // Image data must be the exact expected size, and contain the right amount of pixel data. To achieve this, smaller RLE-encoded pixel data are expanded to match the expected byte size and pixel rows
-        byte[] imageReplacementBytes = preprocessImageFile(data, analysis);
-        //debug("Replacement bytes = " + imageReplacementBytes.length);
-        // Write the end of the image data
-        rfFos.write(imageReplacementBytes);
-    }
-
-    private static void writeSoundAsset(FileOutputStream sfFos, byte[] data) throws IOException {
-        // FIXME This is the "hackish" part, where we keep the scrambled part as-is. The MP3 header and first data (silence) are kept, which seems OK.
-        // Copy scrambled part from existing pack
-        sfFos.write(readFromExistingPack(EXISTING_SOUND_PATH, 512));
-        // Write the end of the audio data
-        sfFos.write(data, 512, data.length-512);
+    // TODO Fix specific key
+    private byte[] cipherFirstBlockSpecificKey(byte[] data) {
+        byte[] block = Arrays.copyOfRange(data, 0, Math.min(64, data.length));
+        int[] dataInt = XXTEACipher.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
+        int[] encryptedInt = XXTEACipher.btea(dataInt, Math.min(128, data.length/4), XXTEACipher.toIntArray(specificKey, ByteOrder.BIG_ENDIAN));
+        return XXTEACipher.toByteArray(encryptedInt, ByteOrder.LITTLE_ENDIAN);
     }
 
     private static void debug(String message) {
