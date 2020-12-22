@@ -25,6 +25,10 @@
             <artifactId>usb4java</artifactId>
             <version>1.3.0</version>
         </dependency>
+        <dependency>
+            <groupId>commons-codec</groupId>
+            <artifactId>commons-codec</artifactId>
+        </dependency>
     </dependencies>
 
 

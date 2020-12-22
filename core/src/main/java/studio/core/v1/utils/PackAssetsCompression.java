@@ -86,15 +86,19 @@ public class PackAssetsCompression {
                 byte[] imageData = node.getImage().getRawData();
                 String assetHash = DigestUtils.sha1Hex(imageData);
                 if (assets.get(assetHash) == null) {
-                    if (!"image/bmp".equals(node.getImage().getMimeType())) {
-                        switch (node.getImage().getMimeType()) {
-                            case "image/png":
-                                imageData = ImageConversion.pngToBitmap(imageData);
-                                break;
-                            case "image/jpeg":
-                                imageData = ImageConversion.jpegToBitmap(imageData);
-                                break;
-                        }
+                    switch (node.getImage().getMimeType()) {
+                        case "image/png":
+                            imageData = ImageConversion.anyToBitmap(imageData);
+                            break;
+                        case "image/jpeg":
+                            imageData = ImageConversion.anyToBitmap(imageData);
+                            break;
+                        case "image/bmp":
+                            // Convert from 4-bits depth / RLE encoding BMP
+                            if (imageData[28] == 0x04 && imageData[30] == 0x02) {
+                                imageData = ImageConversion.anyToBitmap(imageData);
+                            }
+                            break;
                     }
                     assets.put(assetHash, imageData);
                 }

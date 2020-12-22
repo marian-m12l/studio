@@ -97,7 +97,7 @@ class PackLibrary extends React.Component {
 
     doAddToDevice = (data, allow) => {
         // Transfer pack and show progress
-        this.props.addFromLibrary(data.uuid, data.path, allow, this.context);
+        this.props.addFromLibrary(data.uuid, data.path, allow, this.state.device.metadata.driver, this.context);
     };
 
     dismissEnrichedDialog = (allow) => {
@@ -173,7 +173,7 @@ class PackLibrary extends React.Component {
         var droppedPack = this.state.device.packs.find(p => p.uuid === data.uuid);
         if (this.isPackDraggable(droppedPack)) {
             // Transfer pack and show progress
-            this.props.addToLibrary(data.uuid, this.context);
+            this.props.addToLibrary(data.uuid, this.state.device.metadata.driver, this.context);
         }
     };
 
@@ -414,7 +414,7 @@ class PackLibrary extends React.Component {
                                     </div>
                                     <div>
                                         <span>{pack.title || pack.uuid}</span>&nbsp;
-                                        {pack.format === 'binary' && <button className="pack-action" onClick={this.onConvertLibraryPack(pack)}>
+                                        {pack.format !== 'archive' && <button className="pack-action" onClick={this.onConvertLibraryPack(pack)}>
                                             <span className="glyphicon glyphicon-cog"
                                                   title={t('library.local.convertPack')} />
                                         </button>}
@@ -446,10 +446,10 @@ const mapStateToProps = (state, ownProps) => ({
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-    addFromLibrary: (uuid, path, allowEnriched, context) => dispatch(actionAddFromLibrary(uuid, path, allowEnriched, context, ownProps.t)),
+    addFromLibrary: (uuid, path, allowEnriched, driver, context) => dispatch(actionAddFromLibrary(uuid, path, allowEnriched, driver, context, ownProps.t)),
     removeFromDevice: (uuid) => dispatch(actionRemoveFromDevice(uuid, ownProps.t)),
     reorderOnDevice: (uuids) => dispatch(actionReorderOnDevice(uuids, ownProps.t)),
-    addToLibrary: (uuid, context) => dispatch(actionAddToLibrary(uuid, context, ownProps.t)),
+    addToLibrary: (uuid, driver, context) => dispatch(actionAddToLibrary(uuid, driver, context, ownProps.t)),
     downloadPackFromLibrary: (uuid, path) => dispatch(actionDownloadFromLibrary(uuid, path, ownProps.t)),
     loadPackInEditor: (packData, filename) => dispatch(actionLoadPackInEditor(packData, filename, ownProps.t)),
     convertPackInLibrary: (uuid, path) => dispatch(actionConvertInLibrary(uuid, path, ownProps.t)),

@@ -74,13 +74,13 @@ public class FsStoryPackReader {
         DataInputStream niDis = new DataInputStream(niFis);
         ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
         // Nodes index file format version (1)
-        bb.getShort();  // TODO expect 1
+        bb.getShort();
         // Story pack version
         short version = bb.getShort();
         // Start of actual nodes list in this file (0x200 / 512)
         int nodesList = bb.getInt();
         // Size of a stage node in this file (0x2C / 44)
-        int nodeSize = bb.getInt(); // TODO expect 44
+        int nodeSize = bb.getInt();
         // Number of stage nodes in this file
         int stageNodesCount = bb.getInt();
         // Number of images (in RI file and rf/ folder)
@@ -150,7 +150,7 @@ public class FsStoryPackReader {
             }
 
             StageNode stageNode = new StageNode(
-                    "stage-"+i, // FIXME uuid ???
+                    i == 0 ? packFolder.getName() : "stage-"+i, // FIXME uuid ???
                     image,
                     audio,
                     okTransition,

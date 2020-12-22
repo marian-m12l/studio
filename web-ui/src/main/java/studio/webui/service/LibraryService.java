@@ -10,14 +10,17 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.reader.archive.ArchiveStoryPackReader;
 import studio.core.v1.reader.binary.BinaryStoryPackReader;
+import studio.core.v1.reader.fs.FsStoryPackReader;
 import studio.core.v1.utils.PackAssetsCompression;
 import studio.core.v1.writer.archive.ArchiveStoryPackWriter;
 import studio.core.v1.writer.binary.BinaryStoryPackWriter;
+import studio.core.v1.writer.fs.FsStoryPackWriter;
 import studio.metadata.DatabaseMetadataService;
 import studio.metadata.DatabasePackMetadata;
 
@@ -37,6 +40,7 @@ public class LibraryService {
 
     public static final String LOCAL_LIBRARY_PROP = "studio.library";
     public static final String LOCAL_LIBRARY_PATH = "/.studio/library/";
+    public static final String COMMON_KEY_FILE = "/.studio/key";
 
     private final Logger LOGGER = LoggerFactory.getLogger(LibraryService.class);
 
@@ -58,6 +62,12 @@ public class LibraryService {
         }
     }
 
+    public byte[] getCommonKey() throws Exception {
+        String commonKeyFilePath = System.getProperty("user.home") + COMMON_KEY_FILE;
+        String hexString = Files.readString(Paths.get(commonKeyFilePath)).trim();
+        return Hex.decodeHex(hexString);
+    }
+
     public JsonObject libraryInfos() {
         return new JsonObject()
                 .put("path", libraryPath());
@@ -70,7 +80,7 @@ public class LibraryService {
             return new JsonArray();
         } else {
             // First, refresh unofficial database with metadata from archive packs
-            try (Stream<Path> paths = Files.walk(Paths.get(libraryPath()))) {
+            try (Stream<Path> paths = Files.walk(Paths.get(libraryPath()), 1)) {
                 paths
                         .filter(Files::isRegularFile)
                         .filter(path -> path.toString().endsWith(".zip"))
@@ -91,10 +101,10 @@ public class LibraryService {
             }
 
             // List pack files in library folder
-            try (Stream<Path> paths = Files.walk(Paths.get(libraryPath()))) {
+            try (Stream<Path> paths = Files.walk(Paths.get(libraryPath()), 1)) {
                 return new JsonArray(
                         paths
-                                .filter(Files::isRegularFile)
+                                .filter(path -> !path.equals(Paths.get(libraryPath())))
                                 .map(path -> this.readPackFile(path).map(
                                         meta -> this.getPackMetadata(meta, path.getFileName().toString())
                                 ))
@@ -119,7 +129,7 @@ public class LibraryService {
             try {
                 File tmp = File.createTempFile(packPath, ".pack");
 
-                LOGGER.warn("Pack to transfer is in archive format. Converting to binary format and storing in temporary file: " + tmp.getAbsolutePath());
+                LOGGER.warn("Pack is in archive format. Converting to binary format and storing in temporary file: " + tmp.getAbsolutePath());
 
                 LOGGER.warn("Reading archive format pack");
                 ArchiveStoryPackReader packReader = new ArchiveStoryPackReader();
@@ -146,8 +156,37 @@ public class LibraryService {
                 e.printStackTrace();
                 return Optional.empty();
             }
-        } else {
+        } else if (packPath.endsWith(".pack")) {
             return getRawPackFile(packPath);
+        } else {
+            try {
+                File tmp = File.createTempFile(packPath, ".pack");
+
+                LOGGER.warn("Pack is in FS folder format. Converting to binary format and storing in temporary file: " + tmp.getAbsolutePath());
+
+                LOGGER.warn("Reading FS folder format pack");
+                FsStoryPackReader packReader = new FsStoryPackReader(getCommonKey());
+                StoryPack storyPack = packReader.read(Paths.get(libraryPath() + packPath));
+
+                // Uncompress pack assets
+                StoryPack uncompressedPack = storyPack;
+                if (PackAssetsCompression.hasCompressedAssets(storyPack)) {
+                    LOGGER.warn("Uncompressing pack assets");
+                    uncompressedPack = PackAssetsCompression.withUncompressedAssets(storyPack);
+                }
+
+                LOGGER.warn("Writing binary format pack");
+                BinaryStoryPackWriter packWriter = new BinaryStoryPackWriter();
+                FileOutputStream fos = new FileOutputStream(tmp);
+                packWriter.write(uncompressedPack, fos, allowEnriched);
+                fos.close();
+
+                return Optional.of(tmp);
+            } catch (Exception e) {
+                LOGGER.error("Failed to convert binary format pack to archive format");
+                e.printStackTrace();
+                return Optional.empty();
+            }
         }
     }
 
@@ -155,7 +194,7 @@ public class LibraryService {
         // Binary format packs must first be converted to archive format
         if (packPath.endsWith(".zip")) {
             return getRawPackFile(packPath);
-        } else {
+        } else if (packPath.endsWith(".pack")) {
             try {
                 File tmp = File.createTempFile(packPath, ".zip");
 
@@ -168,9 +207,8 @@ public class LibraryService {
                 fis.close();
 
                 // Compress pack assets
-                StoryPack compressedPack = storyPack;
                 LOGGER.warn("Compressing pack assets");
-                compressedPack = PackAssetsCompression.withCompressedAssets(storyPack);
+                StoryPack compressedPack = PackAssetsCompression.withCompressedAssets(storyPack);
 
                 LOGGER.warn("Writing archive format pack");
                 ArchiveStoryPackWriter packWriter = new ArchiveStoryPackWriter();
@@ -184,6 +222,67 @@ public class LibraryService {
                 e.printStackTrace();
                 return Optional.empty();
             }
+        } else {
+            try {
+                File tmp = File.createTempFile(packPath, ".zip");
+
+                LOGGER.warn("Pack is in FS folder format. Converting to archive format and storing in temporary file: " + tmp.getAbsolutePath());
+
+                LOGGER.warn("Reading FS folder format pack");
+                FsStoryPackReader packReader = new FsStoryPackReader(getCommonKey());
+                StoryPack storyPack = packReader.read(Paths.get(libraryPath() + packPath));
+
+                // TODO Compress pack assets ?
+                /*LOGGER.warn("Compressing pack assets");
+                StoryPack compressedPack = PackAssetsCompression.withCompressedAssets(storyPack);*/
+
+                LOGGER.warn("Writing archive format pack");
+                ArchiveStoryPackWriter packWriter = new ArchiveStoryPackWriter();
+                FileOutputStream fos = new FileOutputStream(tmp);
+                packWriter.write(storyPack, fos);
+                fos.close();
+
+                return Optional.of(tmp);
+            } catch (Exception e) {
+                LOGGER.error("Failed to convert FS folder format pack to archive format");
+                e.printStackTrace();
+                return Optional.empty();
+            }
+        }
+    }
+
+    public Optional<File> getFsPackFile(String packPath, Boolean allowEnriched) {
+        // Archive format packs must first be converted to FS folder format
+        if (packPath.endsWith(".zip")) {
+            try {
+                Path tmp = Files.createTempDirectory(packPath);
+
+                LOGGER.warn("Pack to transfer is in archive format. Converting to FS folder format and storing in temporary folder: " + tmp.toAbsolutePath().toString());
+
+                LOGGER.warn("Reading archive format pack");
+                ArchiveStoryPackReader packReader = new ArchiveStoryPackReader();
+                FileInputStream fis = new FileInputStream(libraryPath() + packPath);
+                StoryPack storyPack = packReader.read(fis);
+                fis.close();
+
+                // Prepare assets (RLE-encoded BMP, audio must already be MP3)
+                StoryPack packWithPreparedAssets = PackAssetsCompression.withPreparedAssetsFirmware2dot4(storyPack);
+
+                LOGGER.warn("Writing FS folder format pack");
+                FsStoryPackWriter writer = new FsStoryPackWriter(getCommonKey());
+                writer.write(packWithPreparedAssets, tmp);
+
+                return Optional.of(tmp.toFile());
+            } catch (Exception e) {
+                LOGGER.error("Failed to convert archive format pack to binary format");
+                e.printStackTrace();
+                return Optional.empty();
+            }
+        } else if (packPath.endsWith(".pack")) {
+            // FIXME Support converting from binary pack to FS folder pack
+            return Optional.empty();
+        } else {
+            return getRawPackFile(packPath);
         }
     }
 
@@ -260,6 +359,22 @@ public class LibraryService {
                 return metadata;
             } catch (IOException e) {
                 LOGGER.error("Failed to read binary-format pack " + path.toString() + " from local library", e);
+                e.printStackTrace();
+                return Optional.empty();
+            }
+        } else if (Files.isDirectory(path)) {
+            try {
+                LOGGER.debug("Reading FS folder pack metadata.");
+                FsStoryPackReader packReader = new FsStoryPackReader(getCommonKey());
+                Optional<StoryPackMetadata> metadata = Optional.of(packReader.readMetadata(path));
+                metadata.map(meta -> {
+                    int packSectorSize = (int)Math.ceil((double)path.toFile().length() / 512d);
+                    meta.setSectorSize(packSectorSize);
+                    return meta;
+                });
+                return metadata;
+            } catch (Exception e) {
+                LOGGER.error("Failed to read FS folder format pack " + path.toString() + " from local library", e);
                 e.printStackTrace();
                 return Optional.empty();
             }
