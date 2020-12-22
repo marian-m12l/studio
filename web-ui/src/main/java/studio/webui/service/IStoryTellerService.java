@@ -21,13 +21,13 @@ public interface IStoryTellerService {
 
     CompletableFuture<JsonArray> packs();
 
-    Optional<String> addPack(String uuid, File packFile);
+    CompletableFuture<Optional<String>> addPack(String uuid, File packFile);
 
     CompletableFuture<Boolean> deletePack(String uuid);
 
     CompletableFuture<Boolean> reorderPacks(List<String> uuids);
 
-    Optional<String> extractPack(String uuid, File destFile);
+    CompletableFuture<Optional<String>> extractPack(String uuid, File destFile);
 
     CompletableFuture<Void> dump(String outputPath);
 }

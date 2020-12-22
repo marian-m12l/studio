@@ -24,12 +24,8 @@ public class ImageConversion {
 
     private static final String BITMAP_RLE4_COMPRESSION = "BI_RLE4";
 
-    public static byte[] pngToBitmap(byte[] pngData) throws IOException {
-        return convertImage(pngData, BITMAP_FORMAT);
-    }
-
-    public static byte[] jpegToBitmap(byte[] jpegData) throws IOException {
-        return convertImage(jpegData, BITMAP_FORMAT);
+    public static byte[] anyToBitmap(byte[] data) throws IOException {
+        return convertImage(data, BITMAP_FORMAT);
     }
 
     public static byte[] bitmapToPng(byte[] bmpData) throws IOException {
@@ -77,6 +73,7 @@ public class ImageConversion {
 
     private static BufferedImage redrawIndexedImage(BufferedImage inputImage) {
         // TODO Use the known color palette from the existing pack's base image
+        // TODO Auto-generate palette ?
         int[] cmap = new int[16];
         cmap[0] = 0x00ffffff;
         cmap[1] = 0x00dddddd;

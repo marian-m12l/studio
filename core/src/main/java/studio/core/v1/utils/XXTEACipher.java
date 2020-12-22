@@ -38,8 +38,7 @@ public class XXTEACipher {
         int y, z, sum;
         int p, rounds, e;
         if (n > 1) {          /* Coding Part */
-            //rounds = 6 + 52/n;
-            rounds = 1; // TODO Always 1 round ???
+            rounds = 1;
             sum = 0;
             z = v[n-1];
             do {
@@ -54,9 +53,7 @@ public class XXTEACipher {
             } while (--rounds != 0);
         } else if (n < -1) {  /* Decoding Part */
             n = -n;
-            //rounds = 6 + 52/n;
-            //rounds = 0x34 / (n >>>1) +1;
-            rounds = 1; // TODO Always 1 round ???
+            rounds = 1;
             sum = rounds*DELTA;
             y = v[0];
             do {

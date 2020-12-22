@@ -69,36 +69,63 @@ public class DeviceController {
             String uuid = ctx.getBodyAsJson().getString("uuid");
             String packPath = ctx.getBodyAsJson().getString("path");
             Boolean allowEnriched = ctx.getBodyAsJson().getBoolean("allowEnriched", false);
-            // First, get the pack file, potentially converted from archive format to pack format
-            // Perform conversion/uncompression asynchronously
+            String driver = ctx.getBodyAsJson().getString("driver");
             Future<File> futureConvertedPack = Future.future();
-            Timer timer = new Timer();
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    libraryService.getBinaryPackFile(packPath, allowEnriched)
-                            .ifPresentOrElse(
-                                    packFile -> futureConvertedPack.tryComplete(packFile),
-                                    () -> futureConvertedPack.tryFail("Failed to read or convert pack"));
-                    futureConvertedPack.tryComplete();
-                }
-            }, 1000);
-
+            if ("raw".equalsIgnoreCase(driver)) {
+                // First, get the pack file, potentially converted from archive format to pack format
+                // Perform conversion/uncompression asynchronously
+                Timer timer = new Timer();
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        libraryService.getBinaryPackFile(packPath, allowEnriched)
+                                .ifPresentOrElse(
+                                        packFile -> futureConvertedPack.tryComplete(packFile),
+                                        () -> futureConvertedPack.tryFail("Failed to read or convert pack to binary format"));
+                        futureConvertedPack.tryComplete();
+                    }
+                }, 1000);
+            } else if ("fs".equalsIgnoreCase(driver)) {
+                // First, get the pack file, potentially converted from archive format to pack format
+                // Perform conversion/uncompression asynchronously
+                Timer timer = new Timer();
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        libraryService.getFsPackFile(packPath, allowEnriched)
+                                .ifPresentOrElse(
+                                        packFile -> futureConvertedPack.tryComplete(packFile),
+                                        () -> futureConvertedPack.tryFail("Failed to read or convert pack to folder format"));
+                        futureConvertedPack.tryComplete();
+                    }
+                }, 1000);
+            } else {
+                ctx.fail(400);
+                return;
+            }
             futureConvertedPack.onComplete(maybeConvertedPack -> {
                 if (maybeConvertedPack.succeeded()) {
                     // Then, start transfer to device
                     storyTellerService.addPack(uuid, maybeConvertedPack.result())
-                            .ifPresentOrElse(
-                                    transferId ->
-                                            // Return the transfer id, which is used to monitor transfer progress
-                                            ctx.response()
-                                                    .putHeader("content-type", "application/json")
-                                                    .end(Json.encode(new JsonObject().put("transferId", transferId))),
-                                    () -> {
-                                        LOGGER.error("Failed to transfer pack to device");
-                                        ctx.fail(500);
-                                    }
-                            );
+                            .whenComplete((maybeTransferId, e) -> {
+                                if (e != null) {
+                                    LOGGER.error("Failed to transfer pack to device", e);
+                                    ctx.fail(500, e);
+                                } else {
+                                    maybeTransferId
+                                            .ifPresentOrElse(
+                                                    transferId ->
+                                                            // Return the transfer id, which is used to monitor transfer progress
+                                                            ctx.response()
+                                                                    .putHeader("content-type", "application/json")
+                                                                    .end(Json.encode(new JsonObject().put("transferId", transferId))),
+                                                    () -> {
+                                                        LOGGER.error("Failed to transfer pack to device");
+                                                        ctx.fail(500);
+                                                    }
+                                            );
+                                }
+                            });
                 } else {
                     LOGGER.error("Failed to read or convert pack");
                     ctx.fail(500, maybeConvertedPack.cause());
@@ -151,20 +178,37 @@ public class DeviceController {
         // Add pack from device to library
         router.post("/addToLibrary").handler(ctx -> {
             String uuid = ctx.getBodyAsJson().getString("uuid");
+            String driver = ctx.getBodyAsJson().getString("driver");
             // Transfer pack file to library file
-            String path = libraryService.libraryPath() + uuid + ".pack";
+            String path = null;
+            if ("raw".equalsIgnoreCase(driver)) {
+                path = libraryService.libraryPath() + uuid + ".pack";
+            } else if ("fs".equalsIgnoreCase(driver)) {
+                path = libraryService.libraryPath();
+            } else {
+                ctx.fail(400);
+                return;
+            }
             storyTellerService.extractPack(uuid, new File(path))
-                    .ifPresentOrElse(
-                            transferId ->
-                                    // Return the transfer id, which is used to monitor transfer progress
-                                    ctx.response()
-                                            .putHeader("content-type", "application/json")
-                                            .end(Json.encode(new JsonObject().put("transferId", transferId))),
-                            () -> {
-                                LOGGER.error("Failed to transfer pack from device");
-                                ctx.fail(500);
-                            }
-                    );
+                    .whenComplete((maybeTransferId, e) -> {
+                        if (e != null) {
+                            LOGGER.error("Failed to transfer pack from device", e);
+                            ctx.fail(500, e);
+                        } else {
+                            maybeTransferId
+                                    .ifPresentOrElse(
+                                            transferId ->
+                                                    // Return the transfer id, which is used to monitor transfer progress
+                                                    ctx.response()
+                                                            .putHeader("content-type", "application/json")
+                                                            .end(Json.encode(new JsonObject().put("transferId", transferId))),
+                                            () -> {
+                                                LOGGER.error("Failed to transfer pack from device");
+                                                ctx.fail(500);
+                                            }
+                                    );
+                        }
+                    });
         });
 
         // Dump important sectors
