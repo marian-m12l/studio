@@ -32,7 +32,12 @@
       "removePack": "Supprimer ce pack d'histoires de la bibliothèque",
       "addPack": "Ajouter un pack d'histoires à la bibliothèque"
     },
-    "official": "Officiel"
+    "official": "Officiel",
+    "format": {
+      "archive": "Archive (éditable)",
+      "binary": "Binaire (v1.x)",
+      "fs": "FS (v2.x)"
+    }
   },
 
   "editor": {

@@ -52,6 +52,31 @@
     padding: 10px;
 }
 
+.pack-grid .pack-tile {
+    display: flex;
+    flex-direction: column;
+    width: min-content;
+    height: auto;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+    margin: 2px;
+    border-radius: 5px;
+}
+.pack-grid .pack-tile.pack-archive {
+    background-color: #ebcb42;
+    border: 3px solid #b89f33;
+}
+.pack-grid .pack-tile.pack-binary {
+    background-color: #56d3ca;
+    border: 3px solid #26807a;
+}
+.pack-grid .pack-tile.pack-fs {
+    background-color: #b55ba8;
+    border: 3px solid #824178;
+}
+
 .pack-grid .pack-draggable {
     cursor: move;
     cursor: grab;
@@ -65,14 +90,19 @@
     cursor: not-allowed;
 }
 
-.pack-grid .pack-thumb {
+.pack-grid .pack-tile .pack-format {
+    flex-grow: 0;
+}
+
+.pack-grid .pack-tile .pack-thumb {
     position: relative;
+    flex-grow: 0;
     margin: auto;
     width: 128px;
     height: 128px;
 }
 
-.pack-grid .pack-version {
+.pack-grid .pack-tile .pack-version {
     position: absolute;
     right: 2px; bottom: 2px;
     z-index: 1;
@@ -81,7 +111,7 @@
     text-align: right;
     border-radius: 10px;
 }
-.pack-grid .pack-version span {
+.pack-grid .pack-tile .pack-version span {
     font-size: 10px;
     color: #fff;
     text-align: center;
@@ -90,7 +120,7 @@
     background: radial-gradient(closest-side, rgba(41, 137, 216, .8) 0%, rgba(30, 87, 153, .6) 100%);
 }
 
-.pack-grid .pack-ribbon {
+.pack-grid .pack-tile .pack-ribbon {
     position: absolute;
     right: -5px; top: -5px;
     z-index: 1;
@@ -98,7 +128,7 @@
     width: 75px; height: 75px;
     text-align: right;
 }
-.pack-grid .pack-ribbon span {
+.pack-grid .pack-tile .pack-ribbon span {
     font-size: 10px;
     color: #fff;
     text-transform: uppercase;
@@ -112,7 +142,7 @@
     position: absolute;
     top: 19px; right: -21px;
 }
-.pack-grid .pack-ribbon span::before {
+.pack-grid .pack-tile .pack-ribbon span::before {
     content: '';
     position: absolute;
     left: 0px; top: 100%;
@@ -122,7 +152,7 @@
     border-bottom: 3px solid transparent;
     border-top: 3px solid #79A70A;
 }
-.pack-grid .pack-ribbon span::after {
+.pack-grid .pack-tile .pack-ribbon span::after {
     content: '';
     position: absolute;
     right: 0%; top: 100%;
@@ -132,21 +162,31 @@
     border-bottom: 3px solid transparent;
     border-top: 3px solid #79A70A;
 }
-.pack-grid .pack-ribbon.red span {background: linear-gradient(#F70505 0%, #8F0808 100%);}
-.pack-grid .pack-ribbon.red span::before {border-left-color: #8F0808; border-top-color: #8F0808;}
-.pack-grid .pack-ribbon.red span::after {border-right-color: #8F0808; border-top-color: #8F0808;}
+.pack-grid .pack-tile .pack-ribbon.red span {background: linear-gradient(#F70505 0%, #8F0808 100%);}
+.pack-grid .pack-tile .pack-ribbon.red span::before {border-left-color: #8F0808; border-top-color: #8F0808;}
+.pack-grid .pack-tile .pack-ribbon.red span::after {border-right-color: #8F0808; border-top-color: #8F0808;}
 
-.pack-grid .pack-ribbon.blue span {background: linear-gradient(#2989d8 0%, #1e5799 100%);}
-.pack-grid .pack-ribbon.blue span::before {border-left-color: #1e5799; border-top-color: #1e5799;}
-.pack-grid .pack-ribbon.blue span::after {border-right-color: #1e5799; border-top-color: #1e5799;}
+.pack-grid .pack-tile .pack-ribbon.blue span {background: linear-gradient(#2989d8 0%, #1e5799 100%);}
+.pack-grid .pack-tile .pack-ribbon.blue span::before {border-left-color: #1e5799; border-top-color: #1e5799;}
+.pack-grid .pack-tile .pack-ribbon.blue span::after {border-right-color: #1e5799; border-top-color: #1e5799;}
 
-.pack-grid button.pack-action,button.library-action {
+.pack-grid .pack-tile .pack-title {
+    flex-grow: 0;
+}
+
+.pack-grid .pack-tile .pack-actions {
+    flex-grow: 0;
+}
+
+.pack-grid .pack-tile button.pack-action,button.library-action {
     background: none;
     border: none;
     padding: 0;
+    padding-left: 2px;
+    padding-right: 2px;
     color: #337ab7;
 }
-.pack-grid button.pack-action:hover,button.library-action:hover {
+.pack-grid .pack-tile button.pack-action:hover,button.library-action:hover {
     color: #23527c;
 }
 

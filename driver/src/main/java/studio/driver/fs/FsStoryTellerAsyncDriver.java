@@ -446,7 +446,7 @@ public class FsStoryTellerAsyncDriver {
         return new TransferStatus(false, transferred.get(), folderSize, 0.0);
     }
 
-    private String computePackFolderName(String uuid) {
+    public String computePackFolderName(String uuid) {
         String uuidStr = uuid.replaceAll("-", "");
         return uuidStr.substring(uuidStr.length() - 8).toUpperCase();
     }
