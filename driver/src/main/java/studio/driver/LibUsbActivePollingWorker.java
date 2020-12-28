@@ -54,7 +54,7 @@ public class LibUsbActivePollingWorker implements Runnable {
                         (deviceVersion == DeviceVersion.DEVICE_VERSION_2 || deviceVersion == DeviceVersion.DEVICE_VERSION_ANY)
                         && (
                                 (descriptor.idVendor() == LibUsbDetectionHelper.VENDOR_ID_FW2 && descriptor.idProduct() == LibUsbDetectionHelper.PRODUCT_ID_FW2)
-                                || (descriptor.idVendor() == LibUsbDetectionHelper.VENDOR_ID_V2 && descriptor.idProduct() == LibUsbDetectionHelper.PRODUCT_ID_V2)
+                                || (descriptor.idVendor() == LibUsbDetectionHelper.VENDOR_ID_V2 && descriptor.idProduct() == (short)(LibUsbDetectionHelper.PRODUCT_ID_V2 & 0xffff))
                         )
                 ) {
                     found = d;

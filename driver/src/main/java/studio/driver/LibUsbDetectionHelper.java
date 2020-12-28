@@ -112,7 +112,7 @@ public class LibUsbDetectionHelper {
                 productId,
                 LibUsb.HOTPLUG_MATCH_ANY,   // Device class
                 (ctx, device, event, userData) -> {
-                    LOGGER.info("Hotplug event callback ("+vendorId+":"+productId+"): " + event);
+                    LOGGER.info(String.format("Hotplug event callback (%04x:%04x): " + event, vendorId, productId));
                     switch (event) {
                         case LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED:
                             CompletableFuture.runAsync(() -> listener.onDevicePlugged(device));

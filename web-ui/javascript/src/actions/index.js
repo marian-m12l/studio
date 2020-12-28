@@ -105,10 +105,10 @@ export const actionRefreshDevice = (t) => {
     }
 };
 
-export const actionAddFromLibrary = (uuid, path, allowEnriched, driver, context, t) => {
+export const actionAddFromLibrary = (uuid, path, allowEnriched, driver, deviceUuid, context, t) => {
     return dispatch => {
         let toastId = toast(t('toasts.device.adding'), { autoClose: false });
-        return addFromLibrary(uuid, path, allowEnriched, driver)
+        return addFromLibrary(uuid, path, allowEnriched, driver, deviceUuid)
             .then(resp => {
                 // Monitor transfer progress
                 let transferId = resp.transferId;
