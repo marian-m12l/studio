@@ -6,7 +6,6 @@
 
 package studio.core.v1.writer.fs;
 
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import studio.core.v1.model.*;
 import studio.core.v1.utils.XXTEACipher;
@@ -26,7 +25,6 @@ device-specific key.
  */
 public class FsStoryPackWriter {
 
-    private static final String DEVICE_METADATA_FILENAME = ".md";
     private static final String NODE_INDEX_FILENAME = "ni";
     private static final String LIST_INDEX_FILENAME = "li";
     private static final String IMAGE_INDEX_FILENAME = "ri";
@@ -35,22 +33,19 @@ public class FsStoryPackWriter {
     private static final String SOUND_FOLDER = "sf" + File.separator;
     private static final String BOOT_FILENAME = "bt";
 
+    private final byte[] deviceUuid;
     private final byte[] commonKey;
 
-    public FsStoryPackWriter(byte[] commonKey) {
+    public FsStoryPackWriter(byte[] deviceUuid, byte[] commonKey) {
+        this.deviceUuid = deviceUuid;
         this.commonKey = commonKey;
     }
 
     // TODO Enriched metadata in a dedicated file (pack's title, description and thumbnail, nodes' name, group, type and position)
 
-    public void write(StoryPack pack, Path outputFolder) throws IOException {
+    public Path write(StoryPack pack, Path outputFolder) throws IOException {
         // Compute specific key
-        File mdFile = new File(outputFolder.toFile(), DEVICE_METADATA_FILENAME);
-        FileInputStream deviceMetadataFis = new FileInputStream(mdFile);
-        deviceMetadataFis.skip(256);
-        byte[] uuid = deviceMetadataFis.readNBytes(256);
-        deviceMetadataFis.close();
-        byte[] specificKey = computeSpecificKeyFromUUID(uuid);
+        byte[] specificKey = computeSpecificKeyFromUUID(deviceUuid);
 
         // Create pack folder: last 8 digits of uuid
         File packFolder = new File(outputFolder.toFile(), transformUuid(UUID.fromString(pack.getUuid())));
@@ -254,10 +249,12 @@ public class FsStoryPackWriter {
 
         // Add boot file: bt
         FileOutputStream btFos = new FileOutputStream(new File(packFolder, BOOT_FILENAME));
-        // The first 64 bytes of 'ri' file must be ciphered with the device-specific key into 'bt' file
-        byte[] btCiphered = cipherFirstBlockSpecificKey(Arrays.copyOfRange(riBytes, 0, Math.min(64, riBytes.length)), specificKey);
+        // The first **scrambled** 64 bytes of 'ri' file must be ciphered with the device-specific key into 'bt' file
+        byte[] btCiphered = cipherFirstBlockSpecificKey(Arrays.copyOfRange(riCiphered, 0, Math.min(64, riCiphered.length)), specificKey);
         btFos.write(btCiphered);
         btFos.close();
+
+        return packFolder.toPath();
     }
 
     private static String transformUuid(UUID uuid) {
@@ -333,30 +330,26 @@ public class FsStoryPackWriter {
         }
         return bb.array();
     }
-    // FIXME Derive specific key from UUID and common key
+    private byte[] decipherFirstBlockCommonKey(byte[] data) {
+        byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
+        int[] dataInt = XXTEACipher.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
+        int[] decryptedInt = XXTEACipher.btea(dataInt, -(Math.min(128, data.length/4)), XXTEACipher.toIntArray(commonKey, ByteOrder.BIG_ENDIAN));
+        byte[] decryptedBlock = XXTEACipher.toByteArray(decryptedInt, ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer bb = ByteBuffer.allocate(data.length);
+        bb.put(decryptedBlock);
+        if (data.length > 512) {
+            bb.put(Arrays.copyOfRange(data, 512, data.length));
+        }
+        return bb.array();
+    }
     private byte[] computeSpecificKeyFromUUID(byte[] uuid) {
-        ByteBuffer bb = ByteBuffer.allocate(512);
-        bb.put(uuid);
-        for (int i = 0; i < 0xf8; i++) {
-            bb.put((byte) 0xff);
-        }
-        for (int i = 0; i < 0x8; i++) {
-            bb.put((byte) 0x00);
-        }
-        byte[] payload = bb.array();
-        debug(uuid);
-        debug(payload);
-        int[] dataInt = XXTEACipher.toIntArray(payload, ByteOrder.LITTLE_ENDIAN);
-        int[] encryptedInt = XXTEACipher.btea(dataInt, -(uuid.length/4), XXTEACipher.toIntArray(commonKey, ByteOrder.BIG_ENDIAN));
-        byte[] btKey = XXTEACipher.toByteArray(encryptedInt, ByteOrder.LITTLE_ENDIAN);
-        debug(btKey);
-        byte[] reorderedBtKey = new byte[] {
-                btKey[8], btKey[9], btKey[10], btKey[11],
-                btKey[12], btKey[13], btKey[14], btKey[15],
-                btKey[0], btKey[1], btKey[2], btKey[3],
-                btKey[4], btKey[5], btKey[6], btKey[7]
+        byte[] btKey = decipherFirstBlockCommonKey(uuid);
+        byte[] reorderedBtKey = new byte[]{
+                btKey[11], btKey[10], btKey[9], btKey[8],
+                btKey[15], btKey[14], btKey[13], btKey[12],
+                btKey[3], btKey[2], btKey[1], btKey[0],
+                btKey[7], btKey[6], btKey[5], btKey[4]
         };
-        debug(reorderedBtKey);
         return reorderedBtKey;
     }
     private byte[] cipherFirstBlockSpecificKey(byte[] data, byte[] specificKey) {
@@ -364,10 +357,6 @@ public class FsStoryPackWriter {
         int[] dataInt = XXTEACipher.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
         int[] encryptedInt = XXTEACipher.btea(dataInt, Math.min(128, data.length/4), XXTEACipher.toIntArray(specificKey, ByteOrder.BIG_ENDIAN));
         return XXTEACipher.toByteArray(encryptedInt, ByteOrder.LITTLE_ENDIAN);
-    }
-
-    private static void debug(byte[] data) {
-        System.err.println(Hex.encodeHexString(data));
     }
 
 }

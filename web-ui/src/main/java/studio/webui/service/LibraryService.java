@@ -251,7 +251,7 @@ public class LibraryService {
         }
     }
 
-    public Optional<File> getFsPackFile(String packPath, Boolean allowEnriched) {
+    public Optional<File> getFsPackFile(String packPath, String deviceUuid, Boolean allowEnriched) {
         // Archive format packs must first be converted to FS folder format
         if (packPath.endsWith(".zip")) {
             try {
@@ -269,10 +269,10 @@ public class LibraryService {
                 StoryPack packWithPreparedAssets = PackAssetsCompression.withPreparedAssetsFirmware2dot4(storyPack);
 
                 LOGGER.warn("Writing FS folder format pack");
-                FsStoryPackWriter writer = new FsStoryPackWriter(getCommonKey());
-                writer.write(packWithPreparedAssets, tmp);
+                FsStoryPackWriter writer = new FsStoryPackWriter(Hex.decodeHex(deviceUuid), getCommonKey());
+                Path folderPath = writer.write(packWithPreparedAssets, tmp);
 
-                return Optional.of(tmp.toFile());
+                return Optional.of(folderPath.toFile());
             } catch (Exception e) {
                 LOGGER.error("Failed to convert archive format pack to binary format");
                 e.printStackTrace();

@@ -70,6 +70,7 @@ public class DeviceController {
             String packPath = ctx.getBodyAsJson().getString("path");
             Boolean allowEnriched = ctx.getBodyAsJson().getBoolean("allowEnriched", false);
             String driver = ctx.getBodyAsJson().getString("driver");
+            String deviceUuid = ctx.getBodyAsJson().getString("deviceUuid", null);
             Future<File> futureConvertedPack = Future.future();
             if ("raw".equalsIgnoreCase(driver)) {
                 // First, get the pack file, potentially converted from archive format to pack format
@@ -92,7 +93,7 @@ public class DeviceController {
                 timer.schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        libraryService.getFsPackFile(packPath, allowEnriched)
+                        libraryService.getFsPackFile(packPath, deviceUuid, allowEnriched)
                                 .ifPresentOrElse(
                                         packFile -> futureConvertedPack.tryComplete(packFile),
                                         () -> futureConvertedPack.tryFail("Failed to read or convert pack to folder format"));

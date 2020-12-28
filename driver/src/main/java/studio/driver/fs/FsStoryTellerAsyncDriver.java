@@ -34,6 +34,7 @@ public class FsStoryTellerAsyncDriver {
 
     private static final String DEVICE_METADATA_FILENAME = ".md";
     private static final short DEVICE_METADATA_FORMAT_VERSION_1 = 1;
+    private static final short DEVICE_METADATA_FORMAT_VERSION_2 = 2;
     private static final String PACK_INDEX_FILENAME = ".pi";
     private static final String CONTENT_FOLDER = ".content";
     private static final String NODE_INDEX_FILENAME = "ni";
@@ -95,10 +96,10 @@ public class FsStoryTellerAsyncDriver {
             LOGGER.finest("Reading device infos from file: " + mdFile);
             FileInputStream deviceMetadataFis = new FileInputStream(mdFile);
 
-            // MD file format version (expect 1)
+            // MD file format version (expect 1 or 2)
             short mdVersion = readLittleEndianShort(deviceMetadataFis);
             LOGGER.finest("Device metadata format version: " + mdVersion);
-            if (mdVersion != DEVICE_METADATA_FORMAT_VERSION_1) {
+            if (mdVersion != DEVICE_METADATA_FORMAT_VERSION_1 && mdVersion != DEVICE_METADATA_FORMAT_VERSION_2) {
                 return CompletableFuture.failedFuture(new StoryTellerException("Unsupported device metadata format version: " + mdVersion));
             }
 
@@ -267,7 +268,18 @@ public class FsStoryTellerAsyncDriver {
                             // Remove from index
                             packUUIDs.remove(matched.get());
                             // Write pack index
-                            return writePackIndex(packUUIDs);
+                            return writePackIndex(packUUIDs)
+                                    .thenCompose(ok -> {
+                                        // Generate folder name
+                                        String folderName = this.partitionMountPoint + File.separator + CONTENT_FOLDER + File.separator + computePackFolderName(uuid);
+                                        LOGGER.fine("Removing pack folder: " + folderName);
+                                        try {
+                                            org.apache.commons.io.FileUtils.deleteDirectory(new File(folderName));
+                                            return CompletableFuture.completedFuture(ok);
+                                        } catch (IOException e) {
+                                            return CompletableFuture.failedFuture(new StoryTellerException("Failed to delete pack folder on device partition", e));
+                                        }
+                                    });
                         } else {
                             throw new StoryTellerException("Pack not found");
                         }
@@ -355,7 +367,34 @@ public class FsStoryTellerAsyncDriver {
                 File destFolder = new File(folderName);
                 destFolder.mkdirs();
                 // Copy folder with progress tracking
-                return CompletableFuture.completedFuture(copyPackFolder(inputPath, destFolder, listener));
+                return CompletableFuture.completedFuture(copyPackFolder(inputPath, destFolder, new TransferProgressListener() {
+                    @Override
+                    public void onProgress(TransferStatus status) {
+                        if (listener != null) {
+                            listener.onProgress(status);
+                        }
+                    }
+                    @Override
+                    public void onComplete(TransferStatus status) {
+                        // When transfer is complete, add pack UUID to index
+                        readPackIndex()
+                                .thenCompose(packUUIDs -> {
+                                    try {
+                                        // Add UUID in packs index
+                                        packUUIDs.add(UUID.fromString(uuid));
+                                        // Write pack index
+                                        return writePackIndex(packUUIDs)
+                                            .thenAccept(ok -> {
+                                                if (listener != null) {
+                                                    listener.onComplete(status);
+                                                }
+                                            });
+                                    } catch (Exception e) {
+                                        throw new StoryTellerException("Failed to write pack metadata on device partition", e);
+                                    }
+                                });
+                    }
+                }));
             } catch (IOException e) {
                 throw new StoryTellerException("Failed to copy pack from device", e);
             }
