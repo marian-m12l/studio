@@ -270,6 +270,7 @@ public class MockStoryTellerService implements IStoryTellerService {
     private JsonObject getPackMetadata(StoryPackMetadata packMetadata, String path) {
         JsonObject json = new JsonObject()
                 .put("uuid", packMetadata.getUuid())
+                .put("format", packMetadata.getFormat())
                 .put("version", packMetadata.getVersion())
                 .put("path", path);
         Optional.ofNullable(packMetadata.getTitle()).ifPresent(title -> json.put("title", title));

@@ -32,7 +32,12 @@
       "removePack": "Remove this story pack from library",
       "addPack": "Add a story pack to the library"
     },
-    "official": "Official"
+    "official": "Official",
+    "format": {
+      "archive": "Archive (editable)",
+      "binary": "Binary (v1.x)",
+      "fs": "FS (v2.x)"
+    }
   },
 
   "editor": {

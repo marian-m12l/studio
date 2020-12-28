@@ -13,6 +13,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import org.apache.commons.codec.binary.Hex;
 import org.usb4java.Device;
+import studio.core.v1.Constants;
 import studio.driver.model.fs.FsStoryPackInfos;
 import studio.driver.model.raw.RawStoryPackInfos;
 import studio.driver.raw.LibUsbMassStorageHelper;
@@ -419,7 +420,7 @@ public class StoryTellerService implements IStoryTellerService {
     private CompletableFuture<Optional<String>> extractPackV2(String uuid, File destFile) {
         String transferId = UUID.randomUUID().toString();
         // Check that the destination is available
-        if (destFile.exists()) {
+        if (new File(destFile, fsDriver.computePackFolderName(uuid)).exists()) {
             LOGGER.error("Cannot extract pack from device because the destination file already exists");
             return CompletableFuture.completedFuture(Optional.empty());
         }
@@ -470,6 +471,7 @@ public class StoryTellerService implements IStoryTellerService {
         return databaseMetadataService.getPackMetadata(pack.getUuid().toString())
                 .map(metadata -> new JsonObject()
                         .put("uuid", pack.getUuid().toString())
+                        .put("format", Constants.PACK_FORMAT_BINARY)
                         .put("version", pack.getVersion())
                         .put("title", metadata.getTitle())
                         .put("description", metadata.getDescription())
@@ -479,6 +481,7 @@ public class StoryTellerService implements IStoryTellerService {
                 )
                 .orElse(new JsonObject()
                         .put("uuid", pack.getUuid().toString())
+                        .put("format", Constants.PACK_FORMAT_BINARY)
                         .put("version", pack.getVersion())
                         .put("sectorSize", pack.getSizeInSectors())
                 );
@@ -487,6 +490,7 @@ public class StoryTellerService implements IStoryTellerService {
         return databaseMetadataService.getPackMetadata(pack.getUuid().toString())
                 .map(metadata -> new JsonObject()
                         .put("uuid", pack.getUuid().toString())
+                        .put("format", Constants.PACK_FORMAT_FS)
                         .put("version", pack.getVersion())
                         .put("title", metadata.getTitle())
                         .put("description", metadata.getDescription())
@@ -497,6 +501,7 @@ public class StoryTellerService implements IStoryTellerService {
                 )
                 .orElse(new JsonObject()
                         .put("uuid", pack.getUuid().toString())
+                        .put("format", Constants.PACK_FORMAT_FS)
                         .put("version", pack.getVersion())
                         .put("folderName", pack.getFolderName())
                         .put("sizeInBytes", pack.getSizeInBytes())

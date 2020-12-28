@@ -330,7 +330,7 @@ class PackLibrary extends React.Component {
                             {this.state.device.packs.map((pack,idx) =>
                                 <div key={pack.uuid}
                                      draggable={true}
-                                     className={this.isPackDraggable(pack) ? 'pack-draggable' : 'pack-not-draggable'}
+                                     className={this.isPackDraggable(pack) ? `pack-tile pack-${pack.format} pack-draggable` : `pack-tile pack-${pack.format} pack-not-draggable`}
                                      onDragStart={event => {
                                          event.dataTransfer.setData("device-pack", JSON.stringify(pack));
                                          this.setState({reordering: pack, beforeReordering: [...this.state.device.packs]});
@@ -367,13 +367,18 @@ class PackLibrary extends React.Component {
                                          }
                                          this.setState({reordering: null});
                                      }}>
+                                    <div className="pack-format">
+                                        <span>{t(`library.format.${pack.format}`)}</span>
+                                    </div>
                                     <div className="pack-thumb">
                                         <img src={pack.image || defaultImage} alt="" width="128" height="128" draggable={false} />
                                         <div className="pack-version"><span>{`v${pack.version}`}</span></div>
                                         {pack.official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
                                     </div>
-                                    <div>
-                                        <span>{pack.title || pack.uuid}</span>&nbsp;
+                                    <div className="pack-title">
+                                        <span title={pack.uuid}>{pack.title || pack.uuid}</span>&nbsp;
+                                    </div>
+                                    <div className="pack-actions">
                                         <button className="pack-action" onClick={this.onRemovePackFromDevice(pack.uuid)}>
                                             <span className="glyphicon glyphicon-trash"
                                                   title={t('library.device.removePack')} />
@@ -403,17 +408,22 @@ class PackLibrary extends React.Component {
                             {this.state.library.packs.map(pack =>
                                 <div key={pack.path}
                                      draggable={this.isPackDraggable(pack)}
-                                     className={this.isPackDraggable(pack) ? 'pack-draggable' : 'pack-not-draggable'}
+                                     className={this.isPackDraggable(pack) ? `pack-tile pack-${pack.format} pack-draggable` : `pack-tile pack-${pack.format}  pack-not-draggable`}
                                      onDragStart={event => {
                                          event.dataTransfer.setData("local-library-pack", JSON.stringify(pack));
                                      }}>
+                                    <div className="pack-format">
+                                        <span>{t(`library.format.${pack.format}`)}</span>
+                                    </div>
                                     <div className="pack-thumb">
                                         <img src={pack.image || defaultImage} alt="" width="128" height="128" draggable={false} />
                                         <div className="pack-version"><span>{`v${pack.version}`}</span></div>
                                         {pack.official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
                                     </div>
-                                    <div>
-                                        <span>{pack.title || pack.uuid}</span>&nbsp;
+                                    <div className="pack-title">
+                                        <span title={pack.uuid}>{pack.title || pack.uuid}</span>&nbsp;
+                                    </div>
+                                    <div className="pack-actions">
                                         {pack.format !== 'archive' && <button className="pack-action" onClick={this.onConvertLibraryPack(pack)}>
                                             <span className="glyphicon glyphicon-cog"
                                                   title={t('library.local.convertPack')} />
