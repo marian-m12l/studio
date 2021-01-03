@@ -4,11 +4,11 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package studio.driver.model;
+package studio.driver.model.raw;
 
 import java.util.UUID;
 
-public class DeviceInfos {
+public class RawDeviceInfos {
 
     private UUID uuid;
     private short firmwareMajor, firmwareMinor;
@@ -17,10 +17,10 @@ public class DeviceInfos {
     private int usedSpaceInSectors;
     private boolean inError;
 
-    public DeviceInfos() {
+    public RawDeviceInfos() {
     }
 
-    public DeviceInfos(UUID uuid, short firmwareMajor, short firmwareMinor, String serialNumber, int sdCardSizeInSectors, int usedSpaceInSectors, boolean inError) {
+    public RawDeviceInfos(UUID uuid, short firmwareMajor, short firmwareMinor, String serialNumber, int sdCardSizeInSectors, int usedSpaceInSectors, boolean inError) {
         this.uuid = uuid;
         this.firmwareMajor = firmwareMajor;
         this.firmwareMinor = firmwareMinor;
@@ -88,7 +88,7 @@ public class DeviceInfos {
 
     @Override
     public String toString() {
-        return "DeviceInfos{" +
+        return "RawDeviceInfos{" +
                 "uuid=" + uuid +
                 ", firmwareMajor=" + firmwareMajor +
                 ", firmwareMinor=" + firmwareMinor +

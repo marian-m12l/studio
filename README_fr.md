@@ -79,6 +79,7 @@ Vous devez d'abord construire l'application ou télécharger une archive de dist
 
 Pour démarrer l'application :
 * Décompressez l'archive de distribution
+* **Pour le firmware 2.x uniquement:** configurez le point de montage de votre appareil dans le script de lancement grâce à `FS_MOUNTPOINT`.
 * Exécutez le script de lancement : `studio-linux.sh`, `studio-macos.sh` ou `studio-windows.bat` selon votre plate-forme. Vous devrez probablement rendre ce fichier exécutable d'abord.
 Si la commande est exécutée dans un terminal, des logs devraient s'afficher, en se terminant par `INFOS: Succeeded in deploying verticle`.
 * S'il ne s'ouvre pas automatiquement, ouvrez un navigateur et saisissez l'url `http://localhost:8080` pour charger l'interface web.

@@ -16,11 +16,11 @@ export const fetchDevicePacks = () => {
         .then(handleJsonOrError);
 };
 
-export const addFromLibrary = (uuid, path, allowEnriched) => {
+export const addFromLibrary = (uuid, path, allowEnriched, driver, deviceUuid) => {
     return fetch('http://localhost:8080/api/device/addFromLibrary', {
         method: "POST",
         headers: { "Content-Type" : "application/json" },
-        body: JSON.stringify({uuid, path, allowEnriched})
+        body: JSON.stringify({uuid, path, allowEnriched, driver, deviceUuid})
     })
         .then(handleJsonOrError);
 };
@@ -43,11 +43,11 @@ export const reorderPacks = (uuids) => {
         .then(handleJsonOrError);
 };
 
-export const addToLibrary = (uuid) => {
+export const addToLibrary = (uuid, driver) => {
     return fetch('http://localhost:8080/api/device/addToLibrary', {
         method: "POST",
         headers: { "Content-Type" : "application/json" },
-        body: JSON.stringify({uuid})
+        body: JSON.stringify({uuid, driver})
     })
         .then(handleJsonOrError);
 };

@@ -17,11 +17,13 @@ public class LibUsbActivePollingWorker implements Runnable {
     private static final Logger LOGGER = Logger.getLogger(LibUsbActivePollingWorker.class.getName());
 
     private final Context context;
+    private final DeviceVersion deviceVersion;
     private final DeviceHotplugEventListener listener;
     private Device device = null;
 
-    public LibUsbActivePollingWorker(Context context, DeviceHotplugEventListener listener) {
+    public LibUsbActivePollingWorker(Context context, DeviceVersion deviceVersion, DeviceHotplugEventListener listener) {
         this.context = context;
+        this.deviceVersion = deviceVersion;
         this.listener = listener;
     }
 
@@ -42,7 +44,19 @@ public class LibUsbActivePollingWorker implements Runnable {
                 if (result != LibUsb.SUCCESS) {
                     throw new LibUsbException("Unable to read libusb device descriptor", result);
                 }
-                if (descriptor.idVendor() == LibUsbHelper.VENDOR_ID && descriptor.idProduct() == LibUsbHelper.PRODUCT_ID) {
+                if (
+                        (deviceVersion == DeviceVersion.DEVICE_VERSION_1 || deviceVersion == DeviceVersion.DEVICE_VERSION_ANY)
+                        && descriptor.idVendor() == LibUsbDetectionHelper.VENDOR_ID_FW1 && descriptor.idProduct() == LibUsbDetectionHelper.PRODUCT_ID_FW1
+                ) {
+                    found = d;
+                }
+                if (
+                        (deviceVersion == DeviceVersion.DEVICE_VERSION_2 || deviceVersion == DeviceVersion.DEVICE_VERSION_ANY)
+                        && (
+                                (descriptor.idVendor() == LibUsbDetectionHelper.VENDOR_ID_FW2 && descriptor.idProduct() == LibUsbDetectionHelper.PRODUCT_ID_FW2)
+                                || (descriptor.idVendor() == LibUsbDetectionHelper.VENDOR_ID_V2 && descriptor.idProduct() == (short)(LibUsbDetectionHelper.PRODUCT_ID_V2 & 0xffff))
+                        )
+                ) {
                     found = d;
                 }
             }
