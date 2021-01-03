@@ -300,7 +300,7 @@ class PackLibrary extends React.Component {
                 {this.state.device.metadata && <div className="plugged-device">
                     <div className="header">
                         <h4>{t('library.device.title')}</h4>
-                        <div><strong>{t('library.device.uuid')}</strong> {this.state.device.metadata.uuid}</div>
+                        <div className="header-uuid" title={this.state.device.metadata.uuid}><strong>{t('library.device.uuid')}</strong> {this.state.device.metadata.uuid}</div>
                         <div><strong>{t('library.device.serial')}</strong> {this.state.device.metadata.serial || '-'}</div>
                         <div><strong>{t('library.device.firmware')}</strong> {this.state.device.metadata.firmware || '-'}</div>
                         {this.state.device.metadata.error && <p><strong>DEVICE HAS ERRORS</strong></p>}
@@ -407,6 +407,7 @@ class PackLibrary extends React.Component {
                         {this.state.library.packs.length > 0 && <div className="pack-grid">
                             {this.state.library.packs.map(pack =>
                                 <div key={pack.path}
+                                     title={pack.path}
                                      draggable={this.isPackDraggable(pack)}
                                      className={this.isPackDraggable(pack) ? `pack-tile pack-${pack.format} pack-draggable` : `pack-tile pack-${pack.format}  pack-not-draggable`}
                                      onDragStart={event => {

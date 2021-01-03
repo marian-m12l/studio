@@ -354,7 +354,7 @@ public class FsStoryTellerAsyncDriver {
                         if (Files.exists(Paths.get(sourceFolder))) {
                             try {
                                 // Create destination folder
-                                File destFolder = new File(outputPath + File.separator + computePackFolderName(uuid));
+                                File destFolder = new File(outputPath + File.separator + uuid);
                                 destFolder.mkdirs();
                                 // Copy folder with progress tracking
                                 return copyPackFolder(sourceFolder, destFolder, listener);
