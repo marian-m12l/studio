@@ -26,6 +26,7 @@ import java.nio.file.Paths;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 public class FsStoryTellerAsyncDriver {
@@ -40,6 +41,8 @@ public class FsStoryTellerAsyncDriver {
     private static final String NODE_INDEX_FILENAME = "ni";
 
     private static final String FS_MOUNTPOINT_PROP = "studio.fs.mountpoint";
+    private static final long FS_MOUNTPOINT_POLL_DELAY = 1000L;
+    private static final long FS_MOUNTPOINT_RETRY = 10;
 
 
     private Device device = null;
@@ -59,6 +62,28 @@ public class FsStoryTellerAsyncDriver {
                             throw new StoryTellerException("FS device partition must be defined with system property " + FS_MOUNTPOINT_PROP);
                         }
                         LOGGER.fine("Lunii FS mount point: " + partitionMountPoint);
+
+                        // Wait for partition to be available
+                        String mdFile = partitionMountPoint + File.separator + DEVICE_METADATA_FILENAME;
+                        boolean mounted = false;
+                        try {
+                            for (int i = 0; i < FS_MOUNTPOINT_RETRY && !mounted; i++) {
+                                File folder = new File(mdFile);
+                                if (folder.exists()) {
+                                    LOGGER.info("FS device partition is mounted.");
+                                    mounted = true;
+                                } else {
+                                    Thread.sleep(FS_MOUNTPOINT_POLL_DELAY);
+                                }
+                            }
+                        } catch (InterruptedException e) {
+                            LOGGER.log(Level.SEVERE, "Failed to open device partition", e);
+                        }
+
+                        if (!mounted) {
+                            throw new StoryTellerException("FS device partition is not mounted: " + partitionMountPoint);
+                        }
+
                         // Update device reference
                         FsStoryTellerAsyncDriver.this.device = device;
                         // Notify listeners
