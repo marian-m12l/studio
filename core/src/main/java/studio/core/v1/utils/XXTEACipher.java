@@ -13,6 +13,8 @@ import java.util.List;
 
 public class XXTEACipher {
 
+    public static final byte[] COMMON_KEY = new byte[] { (byte)0x91, (byte)0xbd, (byte)0x7a, (byte)0x0a, (byte)0xa7, (byte)0x54, (byte)0x40, (byte)0xa9, (byte)0xbb, (byte)0xd4, (byte)0x9d, (byte)0x6c, (byte)0xe0, (byte)0xdc, (byte)0xc0, (byte)0xe3};
+
     private static final int DELTA = 0x9e3779b9;
 
     public static int[] toIntArray(byte[] data, ByteOrder endianness) {
