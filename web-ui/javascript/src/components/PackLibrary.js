@@ -97,7 +97,7 @@ class PackLibrary extends React.Component {
 
     doAddToDevice = (data, allow) => {
         // Transfer pack and show progress
-        this.props.addFromLibrary(data.uuid, data.path, allow, this.context);
+        this.props.addFromLibrary(data.uuid, data.path, allow, this.state.device.metadata.driver, this.state.device.metadata.uuid, this.context);
     };
 
     dismissEnrichedDialog = (allow) => {
@@ -173,7 +173,7 @@ class PackLibrary extends React.Component {
         var droppedPack = this.state.device.packs.find(p => p.uuid === data.uuid);
         if (this.isPackDraggable(droppedPack)) {
             // Transfer pack and show progress
-            this.props.addToLibrary(data.uuid, this.context);
+            this.props.addToLibrary(data.uuid, this.state.device.metadata.driver, this.context);
         }
     };
 
@@ -300,7 +300,7 @@ class PackLibrary extends React.Component {
                 {this.state.device.metadata && <div className="plugged-device">
                     <div className="header">
                         <h4>{t('library.device.title')}</h4>
-                        <div><strong>{t('library.device.uuid')}</strong> {this.state.device.metadata.uuid}</div>
+                        <div className="header-uuid" title={this.state.device.metadata.uuid}><strong>{t('library.device.uuid')}</strong> {this.state.device.metadata.uuid}</div>
                         <div><strong>{t('library.device.serial')}</strong> {this.state.device.metadata.serial || '-'}</div>
                         <div><strong>{t('library.device.firmware')}</strong> {this.state.device.metadata.firmware || '-'}</div>
                         {this.state.device.metadata.error && <p><strong>DEVICE HAS ERRORS</strong></p>}
@@ -330,7 +330,7 @@ class PackLibrary extends React.Component {
                             {this.state.device.packs.map((pack,idx) =>
                                 <div key={pack.uuid}
                                      draggable={true}
-                                     className={this.isPackDraggable(pack) ? 'pack-draggable' : 'pack-not-draggable'}
+                                     className={this.isPackDraggable(pack) ? `pack-tile pack-${pack.format} pack-draggable` : `pack-tile pack-${pack.format} pack-not-draggable`}
                                      onDragStart={event => {
                                          event.dataTransfer.setData("device-pack", JSON.stringify(pack));
                                          this.setState({reordering: pack, beforeReordering: [...this.state.device.packs]});
@@ -367,13 +367,18 @@ class PackLibrary extends React.Component {
                                          }
                                          this.setState({reordering: null});
                                      }}>
+                                    <div className="pack-format">
+                                        <span>{t(`library.format.${pack.format}`)}</span>
+                                    </div>
                                     <div className="pack-thumb">
                                         <img src={pack.image || defaultImage} alt="" width="128" height="128" draggable={false} />
                                         <div className="pack-version"><span>{`v${pack.version}`}</span></div>
                                         {pack.official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
                                     </div>
-                                    <div>
-                                        <span>{pack.title || pack.uuid}</span>&nbsp;
+                                    <div className="pack-title">
+                                        <span title={pack.uuid}>{pack.title || pack.uuid}</span>&nbsp;
+                                    </div>
+                                    <div className="pack-actions">
                                         <button className="pack-action" onClick={this.onRemovePackFromDevice(pack.uuid)}>
                                             <span className="glyphicon glyphicon-trash"
                                                   title={t('library.device.removePack')} />
@@ -402,19 +407,25 @@ class PackLibrary extends React.Component {
                         {this.state.library.packs.length > 0 && <div className="pack-grid">
                             {this.state.library.packs.map(pack =>
                                 <div key={pack.path}
+                                     title={pack.path}
                                      draggable={this.isPackDraggable(pack)}
-                                     className={this.isPackDraggable(pack) ? 'pack-draggable' : 'pack-not-draggable'}
+                                     className={this.isPackDraggable(pack) ? `pack-tile pack-${pack.format} pack-draggable` : `pack-tile pack-${pack.format}  pack-not-draggable`}
                                      onDragStart={event => {
                                          event.dataTransfer.setData("local-library-pack", JSON.stringify(pack));
                                      }}>
+                                    <div className="pack-format">
+                                        <span>{t(`library.format.${pack.format}`)}</span>
+                                    </div>
                                     <div className="pack-thumb">
                                         <img src={pack.image || defaultImage} alt="" width="128" height="128" draggable={false} />
                                         <div className="pack-version"><span>{`v${pack.version}`}</span></div>
                                         {pack.official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
                                     </div>
-                                    <div>
-                                        <span>{pack.title || pack.uuid}</span>&nbsp;
-                                        {pack.format === 'binary' && <button className="pack-action" onClick={this.onConvertLibraryPack(pack)}>
+                                    <div className="pack-title">
+                                        <span title={pack.uuid}>{pack.title || pack.uuid}</span>&nbsp;
+                                    </div>
+                                    <div className="pack-actions">
+                                        {pack.format !== 'archive' && <button className="pack-action" onClick={this.onConvertLibraryPack(pack)}>
                                             <span className="glyphicon glyphicon-cog"
                                                   title={t('library.local.convertPack')} />
                                         </button>}
@@ -446,10 +457,10 @@ const mapStateToProps = (state, ownProps) => ({
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-    addFromLibrary: (uuid, path, allowEnriched, context) => dispatch(actionAddFromLibrary(uuid, path, allowEnriched, context, ownProps.t)),
+    addFromLibrary: (uuid, path, allowEnriched, driver, deviceUuid, context) => dispatch(actionAddFromLibrary(uuid, path, allowEnriched, driver, deviceUuid, context, ownProps.t)),
     removeFromDevice: (uuid) => dispatch(actionRemoveFromDevice(uuid, ownProps.t)),
     reorderOnDevice: (uuids) => dispatch(actionReorderOnDevice(uuids, ownProps.t)),
-    addToLibrary: (uuid, context) => dispatch(actionAddToLibrary(uuid, context, ownProps.t)),
+    addToLibrary: (uuid, driver, context) => dispatch(actionAddToLibrary(uuid, driver, context, ownProps.t)),
     downloadPackFromLibrary: (uuid, path) => dispatch(actionDownloadFromLibrary(uuid, path, ownProps.t)),
     loadPackInEditor: (packData, filename) => dispatch(actionLoadPackInEditor(packData, filename, ownProps.t)),
     convertPackInLibrary: (uuid, path) => dispatch(actionConvertInLibrary(uuid, path, ownProps.t)),

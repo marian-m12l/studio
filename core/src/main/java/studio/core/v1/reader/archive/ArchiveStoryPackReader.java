@@ -249,7 +249,7 @@ public class ArchiveStoryPackReader {
             nodes.add(0, squareOne);
         }
 
-        return new StoryPack(factoryDisabled, version, nodes, enrichedPack);
+        return new StoryPack(nodes.get(0).getUuid(), factoryDisabled, version, nodes, enrichedPack);
     }
 
     private EnrichedNodeMetadata readEnrichedNodeMetadata(JsonObject node) {

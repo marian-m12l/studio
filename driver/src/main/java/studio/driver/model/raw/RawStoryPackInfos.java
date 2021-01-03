@@ -4,23 +4,23 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package studio.driver.model;
+package studio.driver.model.raw;
 
 import java.util.UUID;
 
-public class StoryPackInfos {
+public class RawStoryPackInfos {
 
     private UUID uuid;
-    short version;
+    private short version;
     private int startSector;
     private int sizeInSectors;
     private short statsOffset;
     private short samplingRate;
 
-    public StoryPackInfos() {
+    public RawStoryPackInfos() {
     }
 
-    public StoryPackInfos(UUID uuid, short version, int startSector, int sizeInSectors, short statsOffset, short samplingRate) {
+    public RawStoryPackInfos(UUID uuid, short version, int startSector, int sizeInSectors, short statsOffset, short samplingRate) {
         this.uuid = uuid;
         this.version = version;
         this.startSector = startSector;
@@ -79,7 +79,7 @@ public class StoryPackInfos {
 
     @Override
     public String toString() {
-        return "StoryPackInfos{" +
+        return "RawStoryPackInfos{" +
                 "uuid=" + uuid +
                 ", version=" + version +
                 ", startSector=" + startSector +

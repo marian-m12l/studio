@@ -12,6 +12,7 @@ import java.util.List;
 
 public class StoryPack {
 
+    private String uuid;
     private boolean factoryDisabled;
     private short version;
     private List<StageNode> stageNodes;
@@ -20,7 +21,8 @@ public class StoryPack {
     public StoryPack() {
     }
 
-    public StoryPack(boolean factoryDisabled, short version, List<StageNode> stageNodes, EnrichedPackMetadata enriched) {
+    public StoryPack(String uuid, boolean factoryDisabled, short version, List<StageNode> stageNodes, EnrichedPackMetadata enriched) {
+        this.uuid = uuid;
         this.factoryDisabled = factoryDisabled;
         this.version = version;
         this.stageNodes = stageNodes;
@@ -28,7 +30,11 @@ public class StoryPack {
     }
 
     public String getUuid() {
-        return this.stageNodes.get(0).getUuid();
+        return uuid;
+    }
+
+    public void setUuid(String uuid) {
+        this.uuid = uuid;
     }
 
     public boolean isFactoryDisabled() {
