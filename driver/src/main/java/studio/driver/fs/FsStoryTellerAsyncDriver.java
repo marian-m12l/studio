@@ -231,27 +231,29 @@ public class FsStoryTellerAsyncDriver {
     }
 
     private CompletableFuture<List<UUID>> readPackIndex() {
-        List<UUID> packUUIDs = new ArrayList<>();
-        try {
-            String piFile = this.partitionMountPoint + File.separator + PACK_INDEX_FILENAME;
+        return CompletableFuture.supplyAsync(() -> {
+            List<UUID> packUUIDs = new ArrayList<>();
+            try {
+                String piFile = this.partitionMountPoint + File.separator + PACK_INDEX_FILENAME;
 
-            LOGGER.finest("Reading packs index from file: " + piFile);
-            FileInputStream packIndexFis = new FileInputStream(piFile);
+                LOGGER.finest("Reading packs index from file: " + piFile);
+                FileInputStream packIndexFis = new FileInputStream(piFile);
 
-            byte[] packUuid = new byte[16];
-            while (packIndexFis.read(packUuid) > 0) {
-                ByteBuffer bb = ByteBuffer.wrap(packUuid);
-                long high = bb.getLong();
-                long low = bb.getLong();
-                packUUIDs.add(new UUID(high, low));
+                byte[] packUuid = new byte[16];
+                while (packIndexFis.read(packUuid) > 0) {
+                    ByteBuffer bb = ByteBuffer.wrap(packUuid);
+                    long high = bb.getLong();
+                    long low = bb.getLong();
+                    packUUIDs.add(new UUID(high, low));
+                }
+
+                packIndexFis.close();
+
+                return packUUIDs;
+            } catch (Exception e) {
+                throw new StoryTellerException("Failed to read pack index on device partition", e);
             }
-
-            packIndexFis.close();
-
-            return CompletableFuture.completedFuture(packUUIDs);
-        } catch (Exception e) {
-            return CompletableFuture.failedFuture(new StoryTellerException("Failed to read pack index on device partition", e));
-        }
+        });
     }
 
 
@@ -339,7 +341,7 @@ public class FsStoryTellerAsyncDriver {
         }
 
         return readPackIndex()
-                .thenApply(packUUIDs -> {
+                .thenCompose(packUUIDs -> CompletableFuture.supplyAsync(() -> {
                     // Look for UUID in packs index
                     Optional<UUID> matched = packUUIDs.stream().filter(p -> p.equals(UUID.fromString(uuid))).findFirst();
                     if (matched.isPresent()) {
@@ -365,7 +367,7 @@ public class FsStoryTellerAsyncDriver {
                     } else {
                         throw new StoryTellerException("Pack not found");
                     }
-                });
+                }));
     }
 
     public CompletableFuture<TransferStatus> uploadPack(String uuid, String inputPath, TransferProgressListener listener) {
@@ -373,59 +375,61 @@ public class FsStoryTellerAsyncDriver {
             return CompletableFuture.failedFuture(new StoryTellerException("No device plugged"));
         }
 
-        try {
-            // Check free space
-            int folderSize = (int) FileUtils.getFolderSize(inputPath);
-            LOGGER.finest("Pack folder size: " + folderSize);
-            String mdFile = this.partitionMountPoint + File.separator + DEVICE_METADATA_FILENAME;
-            File mdFd = new File(mdFile);
-            if (mdFd.getFreeSpace() < folderSize) {
-                throw new StoryTellerException("Not enough free space on the device");
-            }
-
-            // Generate folder name
-            String folderName = this.partitionMountPoint + File.separator + CONTENT_FOLDER + File.separator + computePackFolderName(uuid);
-            LOGGER.fine("Uploading pack to folder: " + folderName);
-
+        return CompletableFuture.supplyAsync(() -> {
             try {
-                // Create destination folder
-                File destFolder = new File(folderName);
-                destFolder.mkdirs();
-                // Copy folder with progress tracking
-                return CompletableFuture.completedFuture(copyPackFolder(inputPath, destFolder, new TransferProgressListener() {
-                    @Override
-                    public void onProgress(TransferStatus status) {
-                        if (listener != null) {
-                            listener.onProgress(status);
+                // Check free space
+                int folderSize = (int) FileUtils.getFolderSize(inputPath);
+                LOGGER.finest("Pack folder size: " + folderSize);
+                String mdFile = this.partitionMountPoint + File.separator + DEVICE_METADATA_FILENAME;
+                File mdFd = new File(mdFile);
+                if (mdFd.getFreeSpace() < folderSize) {
+                    throw new StoryTellerException("Not enough free space on the device");
+                }
+
+                // Generate folder name
+                String folderName = this.partitionMountPoint + File.separator + CONTENT_FOLDER + File.separator + computePackFolderName(uuid);
+                LOGGER.fine("Uploading pack to folder: " + folderName);
+
+                try {
+                    // Create destination folder
+                    File destFolder = new File(folderName);
+                    destFolder.mkdirs();
+                    // Copy folder with progress tracking
+                    return copyPackFolder(inputPath, destFolder, new TransferProgressListener() {
+                        @Override
+                        public void onProgress(TransferStatus status) {
+                            if (listener != null) {
+                                listener.onProgress(status);
+                            }
                         }
-                    }
-                    @Override
-                    public void onComplete(TransferStatus status) {
-                        // When transfer is complete, add pack UUID to index
-                        readPackIndex()
-                                .thenCompose(packUUIDs -> {
-                                    try {
-                                        // Add UUID in packs index
-                                        packUUIDs.add(UUID.fromString(uuid));
-                                        // Write pack index
-                                        return writePackIndex(packUUIDs)
-                                            .thenAccept(ok -> {
-                                                if (listener != null) {
-                                                    listener.onComplete(status);
-                                                }
-                                            });
-                                    } catch (Exception e) {
-                                        throw new StoryTellerException("Failed to write pack metadata on device partition", e);
-                                    }
-                                });
-                    }
-                }));
+                        @Override
+                        public void onComplete(TransferStatus status) {
+                            // When transfer is complete, add pack UUID to index
+                            readPackIndex()
+                                    .thenCompose(packUUIDs -> {
+                                        try {
+                                            // Add UUID in packs index
+                                            packUUIDs.add(UUID.fromString(uuid));
+                                            // Write pack index
+                                            return writePackIndex(packUUIDs)
+                                                    .thenAccept(ok -> {
+                                                        if (listener != null) {
+                                                            listener.onComplete(status);
+                                                        }
+                                                    });
+                                        } catch (Exception e) {
+                                            throw new StoryTellerException("Failed to write pack metadata on device partition", e);
+                                        }
+                                    });
+                        }
+                    });
+                } catch (IOException e) {
+                    throw new StoryTellerException("Failed to copy pack from device", e);
+                }
             } catch (IOException e) {
-                throw new StoryTellerException("Failed to copy pack from device", e);
+                throw new StoryTellerException("Failed to copy pack to device", e);
             }
-        } catch (IOException e) {
-            throw new StoryTellerException("Failed to copy pack to device", e);
-        }
+        });
     }
 
     private TransferStatus copyPackFolder(String sourceFolder, File destFolder, TransferProgressListener listener) throws IOException {
@@ -449,15 +453,16 @@ public class FsStoryTellerAsyncDriver {
                             LOGGER.finer("Copying file " + s.toString() + " to " + d.toString() + " (" + fileSize + " bytes)");
                             Files.copy(s, d);
 
+                            // Compute progress and speed
+                            int xferred = transferred.addAndGet(fileSize);
+                            long elapsed = System.currentTimeMillis() - startTime;
+                            double speed = ((double) xferred) / ((double) elapsed / 1000.0);
+                            LOGGER.finer("Transferred " + xferred + " bytes in " + elapsed + " ms");
+                            LOGGER.finer("Average speed = " + speed + " bytes/sec");
+                            TransferStatus status = new TransferStatus(xferred == folderSize, xferred, folderSize, speed);
+
                             // Call (optional) listener with transfer status
                             if (listener != null) {
-                                int xferred = transferred.addAndGet(fileSize);
-                                // Compute speed
-                                long elapsed = System.currentTimeMillis() - startTime;
-                                double speed = ((double) xferred) / ((double) elapsed / 1000.0);
-                                LOGGER.finer("Transferred " + xferred + " bytes in " + elapsed + " ms");
-                                LOGGER.finer("Average speed = " + speed + " bytes/sec");
-                                TransferStatus status = new TransferStatus(xferred == folderSize, xferred, folderSize, speed);
                                 CompletableFuture.runAsync(() -> listener.onProgress(status));
                                 if (status.isDone()) {
                                     CompletableFuture.runAsync(() -> listener.onComplete(status));
@@ -468,7 +473,7 @@ public class FsStoryTellerAsyncDriver {
                         e.printStackTrace();
                     }
                 });
-        return new TransferStatus(false, transferred.get(), folderSize, 0.0);
+        return new TransferStatus(true, transferred.get(), folderSize, 0.0);
     }
 
     public String computePackFolderName(String uuid) {
