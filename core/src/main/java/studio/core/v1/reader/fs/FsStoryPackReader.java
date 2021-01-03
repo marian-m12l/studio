@@ -30,13 +30,6 @@ public class FsStoryPackReader {
     private static final String IMAGE_FOLDER = "rf" + File.separator;
     private static final String SOUND_INDEX_FILENAME = "si";
     private static final String SOUND_FOLDER = "sf" + File.separator;
-    private static final String BOOT_FILENAME = "bt";
-
-    private final byte[] commonKey;
-
-    public FsStoryPackReader(byte[] commonKey) {
-        this.commonKey = commonKey;
-    }
 
     public StoryPackMetadata readMetadata(Path inputFolder) throws IOException {
         // Pack metadata model
@@ -197,7 +190,7 @@ public class FsStoryPackReader {
     private byte[] decipherFirstBlockCommonKey(byte[] data) {
         byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
         int[] dataInt = XXTEACipher.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
-        int[] decryptedInt = XXTEACipher.btea(dataInt, -(Math.min(128, data.length/4)), XXTEACipher.toIntArray(commonKey, ByteOrder.BIG_ENDIAN));
+        int[] decryptedInt = XXTEACipher.btea(dataInt, -(Math.min(128, data.length/4)), XXTEACipher.toIntArray(XXTEACipher.COMMON_KEY, ByteOrder.BIG_ENDIAN));
         byte[] decryptedBlock = XXTEACipher.toByteArray(decryptedInt, ByteOrder.LITTLE_ENDIAN);
         ByteBuffer bb = ByteBuffer.allocate(data.length);
         bb.put(decryptedBlock);

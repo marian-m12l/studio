@@ -34,11 +34,9 @@ public class FsStoryPackWriter {
     private static final String BOOT_FILENAME = "bt";
 
     private final byte[] deviceUuid;
-    private final byte[] commonKey;
 
-    public FsStoryPackWriter(byte[] deviceUuid, byte[] commonKey) {
+    public FsStoryPackWriter(byte[] deviceUuid) {
         this.deviceUuid = deviceUuid;
-        this.commonKey = commonKey;
     }
 
     // TODO Enriched metadata in a dedicated file (pack's title, description and thumbnail, nodes' name, group, type and position)
@@ -321,7 +319,7 @@ public class FsStoryPackWriter {
     private byte[] cipherFirstBlockCommonKey(byte[] data) {
         byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
         int[] dataInt = XXTEACipher.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
-        int[] encryptedInt = XXTEACipher.btea(dataInt, Math.min(128, data.length/4), XXTEACipher.toIntArray(commonKey, ByteOrder.BIG_ENDIAN));
+        int[] encryptedInt = XXTEACipher.btea(dataInt, Math.min(128, data.length/4), XXTEACipher.toIntArray(XXTEACipher.COMMON_KEY, ByteOrder.BIG_ENDIAN));
         byte[] encryptedBlock = XXTEACipher.toByteArray(encryptedInt, ByteOrder.LITTLE_ENDIAN);
         ByteBuffer bb = ByteBuffer.allocate(data.length);
         bb.put(encryptedBlock);
@@ -333,7 +331,7 @@ public class FsStoryPackWriter {
     private byte[] decipherFirstBlockCommonKey(byte[] data) {
         byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
         int[] dataInt = XXTEACipher.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
-        int[] decryptedInt = XXTEACipher.btea(dataInt, -(Math.min(128, data.length/4)), XXTEACipher.toIntArray(commonKey, ByteOrder.BIG_ENDIAN));
+        int[] decryptedInt = XXTEACipher.btea(dataInt, -(Math.min(128, data.length/4)), XXTEACipher.toIntArray(XXTEACipher.COMMON_KEY, ByteOrder.BIG_ENDIAN));
         byte[] decryptedBlock = XXTEACipher.toByteArray(decryptedInt, ByteOrder.LITTLE_ENDIAN);
         ByteBuffer bb = ByteBuffer.allocate(data.length);
         bb.put(decryptedBlock);

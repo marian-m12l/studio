@@ -40,7 +40,6 @@ public class LibraryService {
 
     public static final String LOCAL_LIBRARY_PROP = "studio.library";
     public static final String LOCAL_LIBRARY_PATH = "/.studio/library/";
-    public static final String COMMON_KEY_FILE = "/.studio/key";
 
     private final Logger LOGGER = LoggerFactory.getLogger(LibraryService.class);
 
@@ -60,12 +59,6 @@ public class LibraryService {
                 throw new IllegalStateException("Failed to initialize local library");
             }
         }
-    }
-
-    public byte[] getCommonKey() throws Exception {
-        String commonKeyFilePath = System.getProperty("user.home") + COMMON_KEY_FILE;
-        String hexString = Files.readString(Paths.get(commonKeyFilePath)).trim();
-        return Hex.decodeHex(hexString);
     }
 
     public JsonObject libraryInfos() {
@@ -165,7 +158,7 @@ public class LibraryService {
                 LOGGER.warn("Pack is in FS folder format. Converting to binary format and storing in temporary file: " + tmp.getAbsolutePath());
 
                 LOGGER.warn("Reading FS folder format pack");
-                FsStoryPackReader packReader = new FsStoryPackReader(getCommonKey());
+                FsStoryPackReader packReader = new FsStoryPackReader();
                 StoryPack storyPack = packReader.read(Paths.get(libraryPath() + packPath));
 
                 // Uncompress pack assets
@@ -229,7 +222,7 @@ public class LibraryService {
                 LOGGER.warn("Pack is in FS folder format. Converting to archive format and storing in temporary file: " + tmp.getAbsolutePath());
 
                 LOGGER.warn("Reading FS folder format pack");
-                FsStoryPackReader packReader = new FsStoryPackReader(getCommonKey());
+                FsStoryPackReader packReader = new FsStoryPackReader();
                 StoryPack storyPack = packReader.read(Paths.get(libraryPath() + packPath));
 
                 // TODO Compress pack assets ?
@@ -269,7 +262,7 @@ public class LibraryService {
                 StoryPack packWithPreparedAssets = PackAssetsCompression.withPreparedAssetsFirmware2dot4(storyPack);
 
                 LOGGER.warn("Writing FS folder format pack");
-                FsStoryPackWriter writer = new FsStoryPackWriter(Hex.decodeHex(deviceUuid), getCommonKey());
+                FsStoryPackWriter writer = new FsStoryPackWriter(Hex.decodeHex(deviceUuid));
                 Path folderPath = writer.write(packWithPreparedAssets, tmp);
 
                 return Optional.of(folderPath.toFile());
@@ -365,7 +358,7 @@ public class LibraryService {
         } else if (Files.isDirectory(path)) {
             try {
                 LOGGER.debug("Reading FS folder pack metadata.");
-                FsStoryPackReader packReader = new FsStoryPackReader(getCommonKey());
+                FsStoryPackReader packReader = new FsStoryPackReader();
                 Optional<StoryPackMetadata> metadata = Optional.of(packReader.readMetadata(path));
                 metadata.map(meta -> {
                     int packSectorSize = (int)Math.ceil((double)path.toFile().length() / 512d);
