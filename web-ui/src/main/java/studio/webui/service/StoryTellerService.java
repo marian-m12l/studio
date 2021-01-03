@@ -420,7 +420,7 @@ public class StoryTellerService implements IStoryTellerService {
     private CompletableFuture<Optional<String>> extractPackV2(String uuid, File destFile) {
         String transferId = UUID.randomUUID().toString();
         // Check that the destination is available
-        if (new File(destFile, fsDriver.computePackFolderName(uuid)).exists()) {
+        if (new File(destFile, uuid).exists()) {
             LOGGER.error("Cannot extract pack from device because the destination file already exists");
             return CompletableFuture.completedFuture(Optional.empty());
         }

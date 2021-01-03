@@ -44,7 +44,7 @@ public class FsStoryPackReader {
         niDis.close();
         niFis.close();
 
-        // Folder name is the end of the uuid
+        // Folder name is the uuid
         metadata.setUuid(inputFolder.getFileName().toString());
 
         return metadata;
@@ -54,6 +54,9 @@ public class FsStoryPackReader {
         TreeMap<Integer, StageNode> stageNodes = new TreeMap<>();                   // Keep stage nodes
         TreeMap<Integer, Integer> actionNodesOptionsCount = new TreeMap<>();        // Keep action nodes' options count
         TreeMap<Integer, List<Transition>> transitionsWithAction = new TreeMap<>(); // Transitions must be updated with the actual ActionNode
+
+        // Folder name is the uuid
+        String uuid = inputFolder.getFileName().toString();
 
         File packFolder = inputFolder.toFile();
 
@@ -143,7 +146,7 @@ public class FsStoryPackReader {
             }
 
             StageNode stageNode = new StageNode(
-                    i == 0 ? packFolder.getName() : "stage-"+i, // FIXME uuid ???
+                    i == 0 ? uuid : UUID.randomUUID().toString(), // First node should have the same UUID as the story pack FIXME node uuids from metadata file
                     image,
                     audio,
                     okTransition,
@@ -179,7 +182,7 @@ public class FsStoryPackReader {
             transitionsWithAction.get(offset).forEach(transition -> transition.setActionNode(actionNode));
         }
 
-        return new StoryPack(factoryDisabled, version, List.copyOf(stageNodes.values()), null);
+        return new StoryPack(uuid, factoryDisabled, version, List.copyOf(stageNodes.values()), null);
     }
 
     private byte[] readCipheredFile(Path path) throws IOException {

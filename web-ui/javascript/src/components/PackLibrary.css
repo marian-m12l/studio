@@ -27,6 +27,12 @@
     padding: 10px;
 }
 
+.header .header-uuid {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .pack-library .plugged-device .header {
     background-color: #f6b54d;
 }
