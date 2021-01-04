@@ -159,3 +159,6 @@ fichier `LICENSE`.
 
 La bibliothèque `vorbis-java`, ainsi que la classe `VorbisEncoder` sont distribuées par Xiph.org Foundation. Les termes
 de la licence se trouvent dans le fichier `LICENSE.vorbis-java`.
+
+Le package `com.jhlabs.image` est distribué par Jerry Huxtable sous la licence Apache License 2.0. Les termes
+de la licence se trouvent dans le fichier `LICENSE.jhlabs`.

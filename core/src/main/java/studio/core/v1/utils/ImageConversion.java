@@ -6,6 +6,8 @@
 
 package studio.core.v1.utils;
 
+import com.jhlabs.image.QuantizeFilter;
+
 import javax.imageio.IIOImage;
 import javax.imageio.ImageIO;
 import javax.imageio.ImageWriteParam;
@@ -16,6 +18,7 @@ import java.awt.image.IndexColorModel;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.util.Arrays;
 
 public class ImageConversion {
 
@@ -72,30 +75,23 @@ public class ImageConversion {
     }
 
     private static BufferedImage redrawIndexedImage(BufferedImage inputImage) {
-        // TODO Use the known color palette from the existing pack's base image
-        // TODO Auto-generate palette ?
-        int[] cmap = new int[16];
-        cmap[0] = 0x00ffffff;
-        cmap[1] = 0x00dddddd;
-        cmap[2] = 0x00bbbbbb;
-        cmap[3] = 0x00999999;
-        cmap[4] = 0x00777777;
-        cmap[5] = 0x00555555;
-        cmap[6] = 0x00333333;
-        cmap[7] = 0x00111111;
-        cmap[8] = 0x00000000;
-        cmap[9] = 0x00ffffff;
-        cmap[10] = 0x00ffffff;
-        cmap[11] = 0x00ffffff;
-        cmap[12] = 0x00ffffff;
-        cmap[13] = 0x00ffffff;
-        cmap[14] = 0x00ffffff;
-        cmap[15] = 0x00ffffff;
-        BufferedImage redrawn = new BufferedImage(inputImage.getWidth(), inputImage.getHeight(), BufferedImage.TYPE_BYTE_INDEXED, new IndexColorModel(4, 16, cmap, 0, false, -1, 0));
+        // Quantize image to 16 colors max
+        QuantizeFilter quantizeFilter = new QuantizeFilter();
+        quantizeFilter.setNumColors(16);
+        quantizeFilter.setDither(true);
+        quantizeFilter.setSerpentine(true);
+        BufferedImage outputImage = quantizeFilter.filter(inputImage, null);
+
+        // Extract palette from quantized image
+        int[] rgb = outputImage.getRGB(0, 0, outputImage.getWidth(), outputImage.getHeight(), null, 0, outputImage.getWidth());
+        int[] cmap = Arrays.stream(rgb).distinct().toArray();
+
+        // Create indexed image with palette
+        BufferedImage redrawn = new BufferedImage(outputImage.getWidth(), outputImage.getHeight(), BufferedImage.TYPE_BYTE_INDEXED, new IndexColorModel(4, cmap.length, cmap, 0, false, -1, 0));
         Graphics2D g2d = redrawn.createGraphics();
         g2d.setColor(Color.BLACK);
         g2d.fillRect(0, 0, redrawn.getWidth(), redrawn.getHeight());
-        g2d.drawImage(inputImage, 0, 0, null);
+        g2d.drawImage(outputImage, 0, 0, null);
         g2d.dispose();
         return redrawn;
     }
