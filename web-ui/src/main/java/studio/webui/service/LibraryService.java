@@ -121,6 +121,7 @@ public class LibraryService {
         if (packPath.endsWith(".zip")) {
             try {
                 File tmp = File.createTempFile(packPath, ".pack");
+                tmp.deleteOnExit();
 
                 LOGGER.warn("Pack is in archive format. Converting to binary format and storing in temporary file: " + tmp.getAbsolutePath());
 
@@ -154,6 +155,7 @@ public class LibraryService {
         } else {
             try {
                 File tmp = File.createTempFile(packPath, ".pack");
+                tmp.deleteOnExit();
 
                 LOGGER.warn("Pack is in FS folder format. Converting to binary format and storing in temporary file: " + tmp.getAbsolutePath());
 
@@ -190,6 +192,7 @@ public class LibraryService {
         } else if (packPath.endsWith(".pack")) {
             try {
                 File tmp = File.createTempFile(packPath, ".zip");
+                tmp.deleteOnExit();
 
                 LOGGER.warn("Pack is in binary format. Converting to archive format and storing in temporary file: " + tmp.getAbsolutePath());
 
@@ -218,6 +221,7 @@ public class LibraryService {
         } else {
             try {
                 File tmp = File.createTempFile(packPath, ".zip");
+                tmp.deleteOnExit();
 
                 LOGGER.warn("Pack is in FS folder format. Converting to archive format and storing in temporary file: " + tmp.getAbsolutePath());
 
@@ -249,6 +253,7 @@ public class LibraryService {
         if (packPath.endsWith(".zip")) {
             try {
                 Path tmp = Files.createTempDirectory(packPath);
+                FileUtils.forceDeleteOnExit(tmp.toFile());
 
                 LOGGER.warn("Pack to transfer is in archive format. Converting to FS folder format and storing in temporary folder: " + tmp.toAbsolutePath().toString());
 
