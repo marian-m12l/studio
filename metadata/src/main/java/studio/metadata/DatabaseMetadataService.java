@@ -95,7 +95,7 @@ public class DatabaseMetadataService {
         return cachedOfficialDatabase.containsKey(uuid);
     }
 
-    public Optional<DatabasePackMetadata> getUnofficialMetadata(String uuid) {
+    public synchronized Optional<DatabasePackMetadata> getUnofficialMetadata(String uuid) {
         LOGGER.fine("Fetching metadata from unofficial database for pack: " + uuid);
         // Fetch from unofficial metadata database file (path may be overridden by system property `studio.db.unofficial`)
         try {
@@ -188,7 +188,7 @@ public class DatabaseMetadataService {
         }
     }
 
-    private void writeDatabaseFile(String databasePath, JsonObject json) throws IOException {
+    private synchronized void writeDatabaseFile(String databasePath, JsonObject json) throws IOException {
         Gson gson = new GsonBuilder()
                 .setPrettyPrinting()
                 .create();
