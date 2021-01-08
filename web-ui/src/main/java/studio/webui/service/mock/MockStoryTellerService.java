@@ -54,7 +54,6 @@ public class MockStoryTellerService implements IStoryTellerService {
                 Files.createDirectories(Paths.get(devicePath()));
             } catch (IOException e) {
                 LOGGER.error("Failed to initialize mocked device", e);
-                e.printStackTrace();
                 throw new IllegalStateException("Failed to initialize mocked device");
             }
         }
@@ -124,7 +123,6 @@ public class MockStoryTellerService implements IStoryTellerService {
                 return metadata;
             } catch (IOException e) {
                 LOGGER.error("Failed to read binary-format pack " + path.toString() + " from mocked device", e);
-                e.printStackTrace();
                 return Optional.empty();
             }
         } else if (path.toString().endsWith(".zip")) {
@@ -175,7 +173,6 @@ public class MockStoryTellerService implements IStoryTellerService {
                         eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", true));
                     } catch (IOException e) {
                         LOGGER.error("Failed to add pack to mocked device", e);
-                        e.printStackTrace();
                         // Send event on eventbus to signal transfer failure
                         eventBus.send("storyteller.transfer." + transferId + ".done", new JsonObject().put("success", false));
                     }
@@ -202,7 +199,6 @@ public class MockStoryTellerService implements IStoryTellerService {
                 }
             } catch (IOException e) {
                 LOGGER.error("Failed to remove pack from mocked device", e);
-                e.printStackTrace();
                 return CompletableFuture.completedFuture(false);
             }
         }
@@ -253,7 +249,6 @@ public class MockStoryTellerService implements IStoryTellerService {
                             eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", true));
                         } catch (IOException e) {
                             LOGGER.error("Failed to extract pack from mocked device", e);
-                            e.printStackTrace();
                             // Send event on eventbus to signal transfer failure
                             eventBus.send("storyteller.transfer." + transferId + ".done", new JsonObject().put("success", false));
                         }

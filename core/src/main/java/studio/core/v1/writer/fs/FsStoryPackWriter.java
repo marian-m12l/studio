@@ -9,8 +9,11 @@ package studio.core.v1.writer.fs;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import studio.core.v1.model.*;
+import studio.core.v1.utils.AudioConversion;
 import studio.core.v1.utils.XXTEACipher;
 
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioSystem;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -129,9 +132,15 @@ public class FsStoryPackWriter {
             byte[] audioData = audio.getRawData();
             String audioHash = DigestUtils.sha1Hex(audioData);
             if (!audioHashOrdered.contains(audioHash)) {
-                // TODO Check that the file is in MONO / 44100Hz
                 if (!"audio/mp3".equals(audio.getMimeType()) && !"audio/mpeg".equals(audio.getMimeType())) {
                     throw new IllegalArgumentException("FS pack file requires audio assets to be MP3.");
+                } else {
+                    // Check that the file is MONO / 44100Hz
+                    AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat(new ByteArrayInputStream(audioData));
+                    if (audioFileFormat.getFormat().getChannels() != AudioConversion.CHANNELS
+                            || audioFileFormat.getFormat().getSampleRate() != AudioConversion.MP3_SAMPLE_RATE) {
+                        throw new IllegalArgumentException("FS pack file requires MP3 audio assets to be MONO / 44100Hz.");
+                    }
                 }
                 audioIndex = audioHashOrdered.size();
                 audioHashOrdered.add(audioHash);

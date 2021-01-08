@@ -55,7 +55,6 @@ public class LibraryService {
                 Files.createDirectories(Paths.get(libraryPath()));
             } catch (IOException e) {
                 LOGGER.error("Failed to initialize local library", e);
-                e.printStackTrace();
                 throw new IllegalStateException("Failed to initialize local library");
             }
         }
@@ -145,9 +144,8 @@ public class LibraryService {
                 fos.close();
 
                 return Optional.of(tmp);
-            } catch (IOException e) {
-                LOGGER.error("Failed to convert archive format pack to binary format");
-                e.printStackTrace();
+            } catch (Exception e) {
+                LOGGER.error("Failed to convert archive format pack to binary format", e);
                 return Optional.empty();
             }
         } else if (packPath.endsWith(".pack")) {
@@ -178,8 +176,7 @@ public class LibraryService {
 
                 return Optional.of(tmp);
             } catch (Exception e) {
-                LOGGER.error("Failed to convert binary format pack to archive format");
-                e.printStackTrace();
+                LOGGER.error("Failed to convert binary format pack to archive format", e);
                 return Optional.empty();
             }
         }
@@ -213,9 +210,8 @@ public class LibraryService {
                 fos.close();
 
                 return Optional.of(tmp);
-            } catch (IOException e) {
-                LOGGER.error("Failed to convert binary format pack to archive format");
-                e.printStackTrace();
+            } catch (Exception e) {
+                LOGGER.error("Failed to convert binary format pack to archive format", e);
                 return Optional.empty();
             }
         } else {
@@ -229,9 +225,7 @@ public class LibraryService {
                 FsStoryPackReader packReader = new FsStoryPackReader();
                 StoryPack storyPack = packReader.read(Paths.get(libraryPath() + packPath));
 
-                // TODO Compress pack assets ?
-                /*LOGGER.warn("Compressing pack assets");
-                StoryPack compressedPack = PackAssetsCompression.withCompressedAssets(storyPack);*/
+                // No need to compress pack assets
 
                 LOGGER.warn("Writing archive format pack");
                 ArchiveStoryPackWriter packWriter = new ArchiveStoryPackWriter();
@@ -241,8 +235,7 @@ public class LibraryService {
 
                 return Optional.of(tmp);
             } catch (Exception e) {
-                LOGGER.error("Failed to convert FS folder format pack to archive format");
-                e.printStackTrace();
+                LOGGER.error("Failed to convert FS folder format pack to archive format", e);
                 return Optional.empty();
             }
         }
@@ -253,7 +246,6 @@ public class LibraryService {
         if (packPath.endsWith(".zip")) {
             try {
                 Path tmp = Files.createTempDirectory(packPath);
-                FileUtils.forceDeleteOnExit(tmp.toFile());
 
                 LOGGER.warn("Pack to transfer is in archive format. Converting to FS folder format and storing in temporary folder: " + tmp.toAbsolutePath().toString());
 
@@ -264,21 +256,47 @@ public class LibraryService {
                 fis.close();
 
                 // Prepare assets (RLE-encoded BMP, audio must already be MP3)
+                LOGGER.warn("Converting assets if necessary");
                 StoryPack packWithPreparedAssets = PackAssetsCompression.withPreparedAssetsFirmware2dot4(storyPack);
 
                 LOGGER.warn("Writing FS folder format pack");
                 FsStoryPackWriter writer = new FsStoryPackWriter(Hex.decodeHex(deviceUuid));
                 Path folderPath = writer.write(packWithPreparedAssets, tmp);
 
+                FileUtils.forceDeleteOnExit(tmp.toFile());
+
                 return Optional.of(folderPath.toFile());
             } catch (Exception e) {
-                LOGGER.error("Failed to convert archive format pack to binary format");
-                e.printStackTrace();
+                LOGGER.error("Failed to convert archive format pack to FS folder format", e);
                 return Optional.empty();
             }
         } else if (packPath.endsWith(".pack")) {
-            // FIXME Support converting from binary pack to FS folder pack
-            return Optional.empty();
+            try {
+                Path tmp = Files.createTempDirectory(packPath);
+
+                LOGGER.warn("Pack is in binary format. Converting to FS folder format and storing in temporary folder: " + tmp.toAbsolutePath().toString());
+
+                LOGGER.warn("Reading binary format pack");
+                BinaryStoryPackReader packReader = new BinaryStoryPackReader();
+                FileInputStream fis = new FileInputStream(libraryPath() + packPath);
+                StoryPack storyPack = packReader.read(fis);
+                fis.close();
+
+                // Prepare assets (RLE-encoded BMP, audio must already be MP3)
+                LOGGER.warn("Converting assets if necessary");
+                StoryPack packWithPreparedAssets = PackAssetsCompression.withPreparedAssetsFirmware2dot4(storyPack);
+
+                LOGGER.warn("Writing FS folder format pack");
+                FsStoryPackWriter writer = new FsStoryPackWriter(Hex.decodeHex(deviceUuid));
+                Path folderPath = writer.write(packWithPreparedAssets, tmp);
+
+                FileUtils.forceDeleteOnExit(tmp.toFile());
+
+                return Optional.of(folderPath.toFile());
+            } catch (Exception e) {
+                LOGGER.error("Failed to convert binary format pack to FS folder format", e);
+                return Optional.empty();
+            }
         } else {
             return getRawPackFile(packPath);
         }
@@ -320,7 +338,6 @@ public class LibraryService {
                 }
             } catch (IOException e) {
                 LOGGER.error("Failed to remove pack from library", e);
-                e.printStackTrace();
                 return false;
             }
         }
@@ -341,7 +358,6 @@ public class LibraryService {
                 return Optional.ofNullable(packReader.readMetadata(fis));
             } catch (IOException e) {
                 LOGGER.error("Failed to read archive-format pack " + path.toString() + " from local library", e);
-                e.printStackTrace();
                 return Optional.empty();
             }
         } else if (path.toString().endsWith(".pack")) {
@@ -357,7 +373,6 @@ public class LibraryService {
                 return metadata;
             } catch (IOException e) {
                 LOGGER.error("Failed to read binary-format pack " + path.toString() + " from local library", e);
-                e.printStackTrace();
                 return Optional.empty();
             }
         } else if (Files.isDirectory(path)) {
@@ -373,7 +388,6 @@ public class LibraryService {
                 return metadata;
             } catch (Exception e) {
                 LOGGER.error("Failed to read FS folder format pack " + path.toString() + " from local library", e);
-                e.printStackTrace();
                 return Optional.empty();
             }
         }
