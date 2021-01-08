@@ -129,8 +129,11 @@ public class ImageConversion {
         int[] rgb = outputImage.getRGB(0, 0, outputImage.getWidth(), outputImage.getHeight(), null, 0, outputImage.getWidth());
         int[] cmap = Arrays.stream(rgb).distinct().toArray();
 
+        // Force 16-colors palette
+        int[] cmap16 = Arrays.copyOf(cmap, 16);
+
         // Create indexed image with palette
-        BufferedImage redrawn = new BufferedImage(outputImage.getWidth(), outputImage.getHeight(), BufferedImage.TYPE_BYTE_INDEXED, new IndexColorModel(4, cmap.length, cmap, 0, false, -1, 0));
+        BufferedImage redrawn = new BufferedImage(outputImage.getWidth(), outputImage.getHeight(), BufferedImage.TYPE_BYTE_INDEXED, new IndexColorModel(4, cmap16.length, cmap16, 0, false, -1, 0));
         Graphics2D g2d = redrawn.createGraphics();
         g2d.fillRect(0, 0, redrawn.getWidth(), redrawn.getHeight());
         g2d.drawImage(outputImage, 0, 0, null);

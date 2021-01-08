@@ -56,6 +56,11 @@
             <scope>system</scope>
             <systemPath>${project.basedir}/../libs/vorbis-java-1.0.0-beta.jar</systemPath>
         </dependency>
+        <dependency>
+            <groupId>de.sciss</groupId>
+            <artifactId>jump3r</artifactId>
+            <version>1.0.5</version>
+        </dependency>
     </dependencies>
 
 </project>

@@ -159,8 +159,7 @@ public class PackAssetsCompression {
                 String assetHash = DigestUtils.sha1Hex(audioData);
                 if (assets.get(assetHash) == null) {
                     if (!"audio/mp3".equals(node.getAudio().getMimeType()) && !"audio/mpeg".equals(node.getAudio().getMimeType())) {
-                        // FIXME Cannot convert to MP3, story pack MUST ALREADY be using MP3 audio files
-                        throw new RuntimeException("Cannot convert to MP3, story pack MUST ALREADY be using MP3 audio files");
+                        audioData = AudioConversion.anyToMp3(audioData);
                     }
                     assets.put(assetHash, audioData);
                 }
