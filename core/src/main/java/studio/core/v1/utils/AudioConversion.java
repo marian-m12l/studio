@@ -125,7 +125,7 @@ public class AudioConversion {
         );
         AudioInputStream pcm44100 = AudioSystem.getAudioInputStream(pcm44100Format, pcmOverSampled);
 
-        LameEncoder encoder = new LameEncoder(pcm44100.getFormat(), 64, MPEGMode.MONO.ordinal(), 1, false);
+        LameEncoder encoder = new LameEncoder(pcm44100.getFormat(), LameEncoder.BITRATE_AUTO, MPEGMode.MONO.ordinal(), 4, true);
 
         ByteArrayOutputStream mp3 = new ByteArrayOutputStream();
         byte[] inputBuffer = new byte[encoder.getPCMBufferSize()];
