@@ -138,6 +138,8 @@ public class AudioConversion {
             bytesWritten = encoder.encodeBuffer(inputBuffer, 0, bytesRead, outputBuffer);
             mp3.write(outputBuffer, 0, bytesWritten);
         }
+        bytesWritten = encoder.encodeFinish(outputBuffer);
+        mp3.write(outputBuffer, 0, bytesWritten);
 
         encoder.close();
         return mp3.toByteArray();
