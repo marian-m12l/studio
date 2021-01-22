@@ -272,6 +272,22 @@ class PackDiagramWidget extends React.Component {
                     }
                     errors[node.getID()].assets = t('editor.verify.errors.assets');
                 }
+                // OK and HOME transitions cannot link to the same stage node
+                if ((node.getControls().ok || node.getControls().autoplay) && node.onOk(model)[0] === node) {
+                    console.log('Invalid link on OK port: ' + (node.okPort && node.okPort.getName()));
+                    if (!errors[node.getID()]) {
+                        errors[node.getID()] = {};
+                    }
+                    errors[node.getID()].okPort = t('editor.verify.errors.invalidOkPort');
+                }
+                if (node.getControls().home && node.onHome(model)[0] === node) {
+                    console.log('Invalid link on HOME port: ' + (node.homePort && node.homePort.getName()));
+                    if (!errors[node.getID()]) {
+                        errors[node.getID()] = {};
+                    }
+                    errors[node.getID()].homePort = t('editor.verify.errors.invalidHomePort');
+                }
+
             } else if (node instanceof ActionNodeModel) {
                 let optionsIn = node.optionsIn || [];
                 optionsIn = node.randomOptionIn ? optionsIn.concat([node.randomOptionIn]) : optionsIn;
