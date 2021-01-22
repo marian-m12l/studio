@@ -64,8 +64,8 @@ public class DeviceController {
                     });
         });
 
-        // Add pack from library to device
-        router.post("/addFromLibrary").blockingHandler(ctx -> {
+        // Prepare pack from library for device
+        router.post("/preparePackForDevice").blockingHandler(ctx -> {
             String uuid = ctx.getBodyAsJson().getString("uuid");
             String packPath = ctx.getBodyAsJson().getString("path");
             Boolean allowEnriched = ctx.getBodyAsJson().getBoolean("allowEnriched", false);
@@ -106,32 +106,43 @@ public class DeviceController {
             }
             futureConvertedPack.onComplete(maybeConvertedPack -> {
                 if (maybeConvertedPack.succeeded()) {
-                    // Then, start transfer to device
-                    storyTellerService.addPack(uuid, maybeConvertedPack.result())
-                            .whenComplete((maybeTransferId, e) -> {
-                                if (e != null) {
-                                    LOGGER.error("Failed to transfer pack to device", e);
-                                    ctx.fail(500, e);
-                                } else {
-                                    maybeTransferId
-                                            .ifPresentOrElse(
-                                                    transferId ->
-                                                            // Return the transfer id, which is used to monitor transfer progress
-                                                            ctx.response()
-                                                                    .putHeader("content-type", "application/json")
-                                                                    .end(Json.encode(new JsonObject().put("transferId", transferId))),
-                                                    () -> {
-                                                        LOGGER.error("Failed to transfer pack to device");
-                                                        ctx.fail(500);
-                                                    }
-                                            );
-                                }
-                            });
+                    // Return path to temporary converted file or to untouched pack within library
+                    ctx.response()
+                            .putHeader("content-type", "application/json")
+                            .end(Json.encode(new JsonObject().put("path", maybeConvertedPack.result().getAbsolutePath())));
                 } else {
                     LOGGER.error("Failed to read or convert pack");
                     ctx.fail(500, maybeConvertedPack.cause());
                 }
             });
+        });
+
+        // Add pack from library to device
+        router.post("/addFromLibrary").blockingHandler(ctx -> {
+            String uuid = ctx.getBodyAsJson().getString("uuid");
+            String packPath = ctx.getBodyAsJson().getString("path");
+            File packFile = new File(packPath);
+            // Start transfer to device
+            storyTellerService.addPack(uuid, packFile)
+                    .whenComplete((maybeTransferId, e) -> {
+                        if (e != null) {
+                            LOGGER.error("Failed to transfer pack to device", e);
+                            ctx.fail(500, e);
+                        } else {
+                            maybeTransferId
+                                    .ifPresentOrElse(
+                                            transferId ->
+                                                    // Return the transfer id, which is used to monitor transfer progress
+                                                    ctx.response()
+                                                            .putHeader("content-type", "application/json")
+                                                            .end(Json.encode(new JsonObject().put("transferId", transferId))),
+                                            () -> {
+                                                LOGGER.error("Failed to transfer pack to device");
+                                                ctx.fail(500);
+                                            }
+                                    );
+                        }
+                    });
         });
 
         // Remove pack from device

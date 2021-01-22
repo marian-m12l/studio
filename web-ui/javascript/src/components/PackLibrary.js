@@ -97,7 +97,7 @@ class PackLibrary extends React.Component {
 
     doAddToDevice = (data, allow) => {
         // Transfer pack and show progress
-        this.props.addFromLibrary(data.uuid, data.path, allow, this.state.device.metadata.driver, this.state.device.metadata.uuid, this.context);
+        this.props.addFromLibrary(data.uuid, data.path, data.format, allow, this.state.device.metadata.driver, this.state.device.metadata.uuid, this.context);
     };
 
     dismissEnrichedDialog = (allow) => {
@@ -457,7 +457,7 @@ const mapStateToProps = (state, ownProps) => ({
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-    addFromLibrary: (uuid, path, allowEnriched, driver, deviceUuid, context) => dispatch(actionAddFromLibrary(uuid, path, allowEnriched, driver, deviceUuid, context, ownProps.t)),
+    addFromLibrary: (uuid, path, format, allowEnriched, driver, deviceUuid, context) => dispatch(actionAddFromLibrary(uuid, path, format, allowEnriched, driver, deviceUuid, context, ownProps.t)),
     removeFromDevice: (uuid) => dispatch(actionRemoveFromDevice(uuid, ownProps.t)),
     reorderOnDevice: (uuids) => dispatch(actionReorderOnDevice(uuids, ownProps.t)),
     addToLibrary: (uuid, driver, context) => dispatch(actionAddToLibrary(uuid, driver, context, ownProps.t)),
