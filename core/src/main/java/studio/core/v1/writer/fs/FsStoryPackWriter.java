@@ -10,6 +10,7 @@ import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 import studio.core.v1.model.*;
 import studio.core.v1.utils.AudioConversion;
+import studio.core.v1.utils.ID3Tags;
 import studio.core.v1.utils.XXTEACipher;
 
 import javax.sound.sampled.AudioFileFormat;
@@ -144,6 +145,10 @@ public class FsStoryPackWriter {
                 if (!"audio/mp3".equals(audio.getMimeType()) && !"audio/mpeg".equals(audio.getMimeType())) {
                     throw new IllegalArgumentException("FS pack file requires audio assets to be MP3.");
                 } else {
+                    // Check ID3 tags
+                    if (ID3Tags.hasID3v1Tag(audioData) || ID3Tags.hasID3v2Tag(audioData)) {
+                        throw new IllegalArgumentException("FS pack file does not support ID3 tags in MP3 files.");
+                    }
                     // Check that the file is MONO / 44100Hz
                     AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat(new ByteArrayInputStream(audioData));
                     if (audioFileFormat.getFormat().getChannels() != AudioConversion.CHANNELS

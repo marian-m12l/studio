@@ -175,6 +175,9 @@ public class PackAssetsCompression {
                         LOGGER.fine("Converting audio asset into MP3");
                         audioData = AudioConversion.anyToMp3(audioData);
                     } else {
+                        // Remove potential ID3 tags
+                        audioData = ID3Tags.removeID3v1Tag(audioData);
+                        audioData = ID3Tags.removeID3v2Tag(audioData);
                         // Check that the file is MONO / 44100Hz
                         AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat(new ByteArrayInputStream(audioData));
                         if (audioFileFormat.getFormat().getChannels() != AudioConversion.CHANNELS
