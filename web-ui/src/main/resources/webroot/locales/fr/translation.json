@@ -123,6 +123,8 @@
       "errors": {
         "fromPort": "Il manque le lien entrant (port FROM).",
         "okPort": "Il manque le lien sortant (port OK).",
+        "invalidOkPort": "Le lien sortant ne doit pas arriver sur le même nœud de scène (port OK).",
+        "invalidHomePort": "Le lien sortant ne doit pas arriver sur le même nœud de scène (port MAISON).",
         "assets": "Image ou son manquant.",
         "optionsIn": "Il manque le lien entrant vers (au moins) une option.",
         "optionsOut": "Il manque le lien sortant pour l'option #{{index}}.",
@@ -220,7 +222,9 @@
       "missingPrev": "Impossible de trouver l'option précédente.",
       "missingNext": "Impossible de trouver l'option suivante.",
       "missingOk": "Impossible de trouver le nœud pour la transition OK.",
-      "missingHome": "Impossible de trouver le nœud pour la transition MAISON."
+      "missingHome": "Impossible de trouver le nœud pour la transition MAISON.",
+      "invalidOk": "La transition OK ne doit pas arriver sur le même nœud de scène.",
+      "invalidHome": "La transition MAISON ne doit pas arriver sur le même nœud de scène."
     },
     "evergreen": {
       "loading": "Chargement de la version actuelle...",

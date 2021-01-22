@@ -289,7 +289,7 @@ class StageNodeWidget extends React.Component {
                             <div className="output-port">
                                 {this.props.node.homePort && <>
                                     <span title={t('editor.diagram.stage.transitions.home')} className={'glyphicon glyphicon-home'}/>
-                                    <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.homePort} className="home-port"/>
+                                    <StudioPortWidget engine={this.props.diagramEngine} model={this.props.node.homePort} className={`home-port ${this.getNodeError('homePort') ? 'error' : ''}`}/>
                                 </>}
                             </div>
                         </div>}

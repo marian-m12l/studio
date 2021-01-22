@@ -80,8 +80,12 @@ class EditorPackViewer extends React.Component {
         const { t } = this.props;
         const [stage, action] = this.props.viewer.stage.onOk(this.props.viewer.diagram);
         if (stage && action) {
-            this.props.setViewerStage(stage);
-            this.props.setViewerAction(action);
+            if (stage === this.props.viewer.stage) {
+                toast.error(t('toasts.viewer.invalidOk'));
+            } else {
+                this.props.setViewerStage(stage);
+                this.props.setViewerAction(action);
+            }
         } else {
             toast.error(t('toasts.viewer.missingOk'));
         }
@@ -91,8 +95,12 @@ class EditorPackViewer extends React.Component {
         const { t } = this.props;
         const [stage, action] = this.props.viewer.stage.onHome(this.props.viewer.diagram);
         if (stage && action) {
-            this.props.setViewerStage(stage);
-            this.props.setViewerAction(action);
+            if (stage === this.props.viewer.stage) {
+                toast.error(t('toasts.viewer.invalidHome'));
+            } else {
+                this.props.setViewerStage(stage);
+                this.props.setViewerAction(action);
+            }
         } else {
             toast.error(t('toasts.viewer.missingHome'));
         }

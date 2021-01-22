@@ -123,6 +123,8 @@
       "errors": {
         "fromPort": "Incoming link is missing (FROM port).",
         "okPort": "Outgoing link is missing (OK port).",
+        "invalidOkPort": "Outgoing link must not lead to the same stage node (OK port).",
+        "invalidHomePort": "Outgoing link must not lead to the same stage node (HOME port).",
         "assets": "Missing asset.",
         "optionsIn": "Incoming link is missing to (at least) one option.",
         "optionsOut": "Outgoing link is missing for option #{{index}}.",
@@ -220,7 +222,9 @@
       "missingPrev": "Cannot find previous option.",
       "missingNext": "Cannot find next option.",
       "missingOk": "Cannot find node for OK transition.",
-      "missingHome": "Cannot find node for HOME transition."
+      "missingHome": "Cannot find node for HOME transition.",
+      "invalidOk": "OK transition must not lead to the same stage node.",
+      "invalidHome": "HOME transition must not lead to the same stage node."
     },
     "evergreen": {
       "loading": "Loading current version...",
