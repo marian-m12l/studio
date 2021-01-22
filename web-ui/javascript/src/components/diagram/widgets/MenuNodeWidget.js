@@ -175,9 +175,19 @@ class MenuNodeWidget extends React.Component {
         let reader = new FileReader();
         let that = this;
         reader.addEventListener("load", function () {
-            that.props.node.setOptionImage(idx, reader.result);
-            that.props.updateCanvas();
-            that.forceUpdate();
+            let image = new Image();
+            image.onload = function() {
+                // Check image dimensions
+                if(image.width !== 320 || image.height !== 240) {
+                    toast.error(t('toasts.editor.imageAssetWrongDimensions'));
+                    return;
+                }
+                // Update option image
+                that.props.node.setOptionImage(idx, reader.result);
+                that.props.updateCanvas();
+                that.forceUpdate();
+            };
+            image.src = reader.result;
         }, false);
         reader.readAsDataURL(file);
     };

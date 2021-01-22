@@ -203,6 +203,7 @@
       "loadingFailed": "Échec du chargement du pack d'histoires.",
       "thumbWrongType": "La miniature doit être au format PNG.",
       "imageAssetWrongType": "Les formats d'image supportés sont : BMP, JPEG, PNG.",
+      "imageAssetWrongDimensions": "Les dimensions de l'image doivent être 320x240 pixels.",
       "audioAssetWrongType": "Les formats audio supportés sont : WAV, MP3, OGG.",
       "tooManyEntryPoints": "Un pack d'histoires ne peut avoir qu'un seul point d'entrée.",
       "cannotCloneCoverNode": "Le nœud départ ne peut pas être dupliqué.",

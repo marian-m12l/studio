@@ -203,6 +203,7 @@
       "loadingFailed": "Failed to load story pack.",
       "thumbWrongType": "Thumbnail must be in PNG format.",
       "imageAssetWrongType": "Supported image asset formats are: BMP, JPEG, PNG.",
+      "imageAssetWrongDimensions": "Image must be 320x240 pixels.",
       "audioAssetWrongType": "Supported audio asset formats are: WAV, MP3, OGG.",
       "tooManyEntryPoints": "A story pack can only have one entry point.",
       "cannotCloneCoverNode": "The cover node cannot be duplicated.",
