@@ -172,6 +172,7 @@
         "unplugged": "Story Teller unplugged.",
         "failure": "Story Teller failure."
       },
+      "busy": "Device is busy. Wait for any other device-related operation to finish.",
       "checking": "Checking device...",
       "plugged": "Device is plugged.",
       "checkingFailed": "Failed to check device.",

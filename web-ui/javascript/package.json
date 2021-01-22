@@ -11,6 +11,7 @@
     "@emotion/styled": "^10.0.23",
     "@projectstorm/react-diagrams": "^6.0.1-beta.6",
     "@projectstorm/react-diagrams-defaults": "^6.0.1-beta.6",
+    "async-mutex": "^0.2.6",
     "closest": "^0.0.1",
     "dagre": "^0.8.4",
     "i18next": "^17.0.4",

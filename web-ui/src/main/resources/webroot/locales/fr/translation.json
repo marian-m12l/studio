@@ -172,6 +172,7 @@
         "unplugged": "Fabrique à histoires débranchée.",
         "failure": "Échec d'accès à la fabrique à histoires."
       },
+      "busy": "L'appareil n'est pas disponible. Attendez la fin de toute autre opération liée à l'appareil.",
       "checking": "Vérification de l'appareil...",
       "plugged": "L'appareil est branché.",
       "checkingFailed": "Échec de la vérification de l'appareil.",
