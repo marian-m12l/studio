@@ -112,9 +112,18 @@ public class FsStoryPackWriter {
                 byte[] imageData = image.getRawData();
                 String imageHash = DigestUtils.sha1Hex(imageData);
                 if (!imageHashOrdered.contains(imageHash)) {
+                    if (!"image/bmp".equals(image.getMimeType())) {
+                        throw new IllegalArgumentException("FS pack file requires image assets to be BMP.");
+                    }
+                    ByteBuffer bmpBuffer = ByteBuffer.wrap(imageData);
+                    bmpBuffer.order(ByteOrder.LITTLE_ENDIAN);
                     // Make sure the BMP file is RLE-compressed / 4-bits depth
-                    if (!"image/bmp".equals(image.getMimeType()) || imageData[28] != 0x04 || imageData[30] != 0x02) {
+                    if (bmpBuffer.getShort(28) != 0x0004 || bmpBuffer.getInt(30) != 0x00000002) {
                         throw new IllegalArgumentException("FS pack file requires image assets to use 4-bit depth and RLE encoding.");
+                    }
+                    // Check image dimensions
+                    if (bmpBuffer.getInt(18) != 320 || bmpBuffer.getInt(22) != 240) {
+                        throw new IllegalArgumentException("FS pack file requires image assets to be 320x240 pixels.");
                     }
                     imageIndex = imageHashOrdered.size();
                     imageHashOrdered.add(imageHash);
