@@ -16,11 +16,20 @@ export const fetchDevicePacks = () => {
         .then(handleJsonOrError);
 };
 
-export const addFromLibrary = (uuid, path, allowEnriched, driver, deviceUuid) => {
-    return fetch('http://localhost:8080/api/device/addFromLibrary', {
+export const preparePackForDevice = (uuid, path, allowEnriched, driver, deviceUuid) => {
+    return fetch('http://localhost:8080/api/device/preparePackForDevice', {
         method: "POST",
         headers: { "Content-Type" : "application/json" },
         body: JSON.stringify({uuid, path, allowEnriched, driver, deviceUuid})
+    })
+        .then(handleJsonOrError);
+};
+
+export const addFromLibrary = (uuid, path) => {
+    return fetch('http://localhost:8080/api/device/addFromLibrary', {
+        method: "POST",
+        headers: { "Content-Type" : "application/json" },
+        body: JSON.stringify({uuid, path})
     })
         .then(handleJsonOrError);
 };
