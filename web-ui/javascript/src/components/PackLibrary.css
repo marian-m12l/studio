@@ -47,7 +47,7 @@
 
 .pack-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     padding: 10px;
 }
 
@@ -178,6 +178,7 @@
 
 .pack-grid .pack-tile .pack-title {
     flex-grow: 0;
+    overflow-wrap: anywhere;
 }
 
 .pack-grid .pack-tile .pack-actions {
