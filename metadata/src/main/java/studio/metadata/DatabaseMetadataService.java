@@ -33,9 +33,12 @@ public class DatabaseMetadataService {
                 LOGGER.fine("Reading and caching official metadata database");
                 // Read official metadata database file (path may be overridden by system property `studio.db.official`)
                 String databasePath = System.getProperty(OFFICIAL_DB_PROP, System.getProperty("user.home") + OFFICIAL_DB_JSON_PATH);
-                JsonObject officialRoot = new JsonParser().parse(new FileReader(databasePath)).getAsJsonObject();
+                JsonObject officialRoot = new JsonParser().parse(new FileReader(databasePath)).getAsJsonObject();   // throws IllegalStateException
                 // Support newer file format which has an additional wrapper: { "code": "0.0", "response": { ...
                 final JsonObject packsRoot = (officialRoot.keySet().contains("response")) ? officialRoot.getAsJsonObject("response") : officialRoot;
+                if (packsRoot == null) {
+                    throw new IllegalStateException("Failed to get json root node");
+                }
                 // Go through all packs
                 packsRoot.keySet().forEach(key -> {
                     JsonObject packMetadata = packsRoot.getAsJsonObject(key);
@@ -44,6 +47,9 @@ public class DatabaseMetadataService {
                 });
             } catch (FileNotFoundException e) {
                 LOGGER.log(Level.SEVERE, "Missing official metadata database file", e);
+            } catch (JsonParseException|IllegalStateException e) {
+                // Graceful failure on invalid file content
+                LOGGER.log(Level.SEVERE, "Official metadata database file is invalid", e);
             }
         }
         // Initialize empty unofficial database if needed
