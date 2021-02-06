@@ -59,7 +59,7 @@ public class FsStoryTellerAsyncDriver {
                     public void onDevicePlugged(Device device) {
                         // Use configuration to determine mount point
                         partitionMountPoint = System.getProperty(FS_MOUNTPOINT_PROP);
-                        if (partitionMountPoint == null) {
+                        if (partitionMountPoint == null || partitionMountPoint.isBlank()) {
                             throw new StoryTellerException("FS device partition must be defined with system property " + FS_MOUNTPOINT_PROP);
                         }
                         LOGGER.fine("Lunii FS mount point: " + partitionMountPoint);
