@@ -29,10 +29,9 @@ To run the application:
 * On Windows, this application requires the _libusb_ driver to be installed. The easiest way to achieve this is to have
 the official Luniistore\* software installed.
 
-### Download and launch STUdio  
+### Quick Install
 
-* Download STUdio ([check the latest release](https://github.com/marian-m12l/studio/releases/latest) (alternativaly you can Build from the code source, see below)
-* Unzip the distribution archive
+* Download and Unzip STUdio ([check the latest release](https://github.com/marian-m12l/studio/releases/latest) (alternativaly you can Build from the code source, see below)
 * **For firmware 2.x only:** configure the mount point of your device in the launch script using `FS_MOUNTPOINT`.
 * Run the launcher script: either `studio-linux.sh`, `studio-macos.sh` or `studio-windows.bat` depending on your platform. You may need to make them executable first.
 If run in a terminal, it should display some logs, ending with `INFOS: Succeeded in deploying verticle`.
@@ -40,7 +39,9 @@ If run in a terminal, it should display some logs, ending with `INFOS: Succeeded
 
 Note: aavoid running the script as superuser/administrator, as this may create permissions issues.
 
-#### Get the official pack metadata database
+#### Display the official pack metadata (optional)
+
+By default, STUdio displays question marks and numeric identifiers to represent the official story packs already present on the Lunii. Here are the steps to display the real information. This is optional for creating and uploading your own stories.
 
 1) Copy from the official Luniistore\* software the requiere assets;
 
