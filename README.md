@@ -1,103 +1,90 @@
-:bangbang: **IMPORTANT:** The Lunii firmware has been updated this summer, and STUdio does **NOT** support the new firmware. You can follow the progress on issue [#122](https://github.com/marian-m12l/studio/issues/122)
+:bangbang: The Lunii firmware has been updated this summer, initial support is avaible with [version > 0.0.3 (beta)](https://github.com/marian-m12l/studio/releases). You can follow the progress on issue [#122](https://github.com/marian-m12l/studio/issues/122)
 :---:
 
 [![Release](https://img.shields.io/github/v/release/marian-m12l/studio)](https://github.com/marian-m12l/studio/releases/latest)
 [![Gitter](https://badges.gitter.im/STUdio-Story-Teller-Unleashed/general.svg)](https://gitter.im/STUdio-Story-Teller-Unleashed/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
 
-STUdio - Story Teller Unleashed
-===============================
+# STUdio - Story Teller Unleashed
 
-[Ce README en français](README_fr.md)
+
+[Instruction en Français](README_fr.md)
 
 A set of tools to read, create and transfer story packs from and to the Lunii\* story teller device.
 
 
-DISCLAIMER
-----------
+## DISCLAIMER
 
-This software relies on my own reverse engineering research, which is limited to gathering the information necessary to ensure interoperability with the Lunii\* story teller device, and does not distribute any protected content.
+> **USE AT YOUR OWN RISK:** This software relies on reverse engineering research, which is limited to gathering the information necessary to ensure interoperability with the Lunii\* story teller device, and does not distribute any protected content.
+> The software is still in an early stage of development, and as such has not yet been thoroughly tested. In particular, it has only been used on a very small number of devices, and may brick your device.
 
-This software is still in an early stage of development, and as such has not yet been thoroughly tested. In particular, it has only been used on a very small number of devices, and may brick your device. USE AT YOUR OWN RISK.
-
-\* Lunii is a registered trademark of Lunii SAS. I am (and this work is) in no way affiliated with Lunii SAS.
+> \* Lunii is a registered trademark of Lunii SAS. I am (and this work is) in no way affiliated with Lunii SAS.
 
 
-USAGE
------
+## Installation
 
 ### Prerequisite
 
 To run the application:
-* JDK 11+
-
-To build the application:
-* Maven 3+
-
-#### Luniistore\* software
-
-On Windows, this application requires the _libusb_ driver to be installed. The easiest way to achieve this is to have
+* [Java JDK 11+](https://www.oracle.com/java/technologies/javase-downloads.html)
+* On Windows, this application requires the _libusb_ driver to be installed. The easiest way to achieve this is to have
 the official Luniistore\* software installed.
 
-#### Official pack metadata database
+### Download and launch STUdio  
 
-In order to display story pack metadata, this application requires some assets from the official Luniistore\* software,
-which must be downloaded and stored on a local database file.
-
-* The assets we need are stored in a user-specific folder, referred to as `$LOCAL_LUNIITHEQUE` in the remainder of this documentation. Its path depends on your platform:
-  * On Linux, it is located at `~/.local/share/Luniitheque`
-  * On macOS, it is located at `~/Library/Application\ Support/Luniitheque`
-  * On Windows, it is located at `%UserProfile%\AppData\Roaming\Luniitheque`
-* The assets must be copied to a newly-created user-specific folder (referred to as `$DOT_STUDIO`) in order to be read by this application. Its expected path depends on your platform:
-  * On Linux and macOS, `~/.studio`
-  * On Windows, `%UserProfile%\.studio`
-
-To fetch the story pack metadata:
-
-* Start the official Luniistore\* software to get a fresh authentication token (valid for one hour)
-* Open `$LOCAL_LUNIITHEQUE/.local.properties` in a text editor, and note the value of the token:
-  * If your are logged in on the Luniistore\* software, the token is located on the `tokens` property, `tokens.access_tokens.data.server` attribute
-  * If your are not logged in on the Luniistore\* software, the token is located on the `token` property, `server` attribute
-* Using a tool such as curl, query `https://server-data-prod.lunii.com/v2/packs` with the following HTTP headers:
-  * `Accept: application/json`
-  * `Content-Type: application/json; charset=UTF-8`
-  * `X-AUTH-TOKEN: value_of_your_jwt_token`
-  
-  and save the result as `$DOT_STUDIO/db/official.json`.
-
-Here is an example for curl command to retrieve the database:
-```
-curl -o ~/.studio/db/official.json -v -X GET -H 'Accept: application/json' -H 'Content-Type: application/json; charset=UTF-8' -H 'X-AUTH-TOKEN: value_of_your_jwt_token' https://server-data-prod.lunii.com/v2/packs
-```
-
-### [Optional] Building the application
-
-Once you have cloned this repository, execute `mvn clean install` to build the application. This will produce the **distribution archive** in `web-ui/target/`.
-
-### Starting the application
-
-Your must first build the application or download a distribution archive ([check the latest release](https://github.com/marian-m12l/studio/releases/latest)).
-
-To start the application: 
+* Download STUdio ([check the latest release](https://github.com/marian-m12l/studio/releases/latest) (alternativaly you can Build from the code source, see below)
 * Unzip the distribution archive
 * **For firmware 2.x only:** configure the mount point of your device in the launch script using `FS_MOUNTPOINT`.
 * Run the launcher script: either `studio-linux.sh`, `studio-macos.sh` or `studio-windows.bat` depending on your platform. You may need to make them executable first.
 If run in a terminal, it should display some logs, ending with `INFOS: Succeeded in deploying verticle`.
 * If it does not open automatically, open a browser and type the url `http://localhost:8080` to load the web UI.
 
-Note: You should avoid running the script as superuser/administrator, as this may create permissions issues.
+Note: aavoid running the script as superuser/administrator, as this may create permissions issues.
 
-### Using the application
+#### Get the official pack metadata database
+
+1) Copy from the official Luniistore\* software the requiere assets;
+
+  * On Linux run `cp ~/.local/share/Luniitheque/* ~/.local/share/Luniitheque`
+  * On macOS run `cp ~/Library/Application\ Support/Luniitheque/* ~/.studio`
+  * On Windows run `cp %UserProfile%\AppData\Roaming\Luniitheque/* %UserProfile%\.studio`
+
+2) Fetch the story pack metadata
+
+Start the official Luniistore\* software to get a fresh authentication token (valid for one hour).
+
+Open `.local.properties` in a text editor located in:
+  * On Linux `~/.local/share/Luniitheque/.local.properties`
+  * On macOS `~/Library/Application\ Support/Luniitheque/.local.properties`
+  * On Windows `%UserProfile%\AppData\Roaming\Luniitheque/.local.properties`
+
+Mote the token value :
+  * If your are logged in on the Luniistore\* software, the token is located on the `tokens` property, `tokens.access_tokens.data.server` attribute
+  * If your are not logged in on the Luniistore\* software, the token is located on the `token` property, `server` attribute
+  
+Using curl, query `https://server-data-prod.lunii.com/v2/packs` with the following HTTP headers:
+  * `Accept: application/json`
+  * `Content-Type: application/json; charset=UTF-8`
+  * `X-AUTH-TOKEN: value_of_your_jwt_token`
+  
+and save the result as `$DOT_STUDIO/db/official.json`.
+
+Here is an example for curl command to retrieve the database (replace VALUE_OF_YOUR_TOKEN with your token):
+```
+curl -o ~/.studio/db/official.json -v -X GET -H 'Accept: application/json' -H 'Content-Type: application/json; charset=UTF-8' -H 'X-AUTH-TOKEN: VALUE_OF_YOUR_TOKEN' https://server-data-prod.lunii.com/v2/packs
+```
+
+## Usage of the application
 
 The web UI is made of two screens:
 
 * The pack library, to manage your local library and transfer to / from your device
 * The pack editor, to create or edit a story pack
 
-#### Pack library
+#### Local library and transfer to the device
 
-The pack library screen always shows the story packs in your local library. These are the packs located in `$DOT_STUDIO/library`. The packs may be either in binary format (the official format, understood by the device) or archive format (the unofficial format, used for story pack creation and edition).
+The pack library screen always shows the story packs in your local library. The packs may be either in binary format (the official format, understood by the device) or archive format (the unofficial format, used for story pack creation and edition).
 
-When the device is plugged, another pane will appear on the left side, showing the device metadata and story packs. Dragging and dropping a pack from or to the device will initiate the transfer.
+When the device is plugged, the the left side pane appear, showing the device metadata and story packs. Dragging and dropping a pack from or to the device will initiate the transfer.
 
 #### Pack editor
 
@@ -151,6 +138,17 @@ even on Windows):
 ```
 
 
+## Devloppement
+
+### Build from the code source
+
+* Install [Maven 3+](https://maven.apache.org/index.html)
+* Clone this repository `git clone git@github.com:marian-m12l/studio.git`
+* Build the application `mvn clean install`
+
+This will produce the **distribution archive** in `web-ui/target/`.
+
+
 LICENSE
 -------
 
@@ -161,4 +159,4 @@ The `vorbis-java` library, as well as the `VorbisEncoder` class are licensed by
 the license can found in the `LICENSE.vorbis-java` file.
 
 The `com.jhlabs.image` package is licensed by Jerry Huxtable under the terms of the Apache License 2.0. The terms of
-the license can found in the `LICENSE.jhlabs` file.
+the license can be found in the `LICENSE.jhlabs` file.
