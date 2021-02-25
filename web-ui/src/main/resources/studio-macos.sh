@@ -1,10 +1,10 @@
 #!/bin/sh
 
 STUDIO_PATH="`dirname \"$0\"`"
-DOT_STUDIO=$HOME/.studio
+DOT_STUDIO="$HOME/.studio"
 
 # Configure mount point of the device
-FS_MOUNTPOINT=
+FS_MOUNTPOINT=/Volumes/LUNII
 
 # Make sure the .studio subdirectories exist
 if [ ! -d $DOT_STUDIO/agent ]; then mkdir -p $DOT_STUDIO/agent; fi
