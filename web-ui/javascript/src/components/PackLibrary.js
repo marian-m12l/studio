@@ -521,25 +521,25 @@ class PackLibrary extends React.Component {
                                         {group.packs.map((p,idx) => {
                                             return <div key={p.path} title={p.path} className={`pack-entry pack-${p.format} ${idx === 0 && 'latest'}`}>
                                                 <div className="pack-filename">
-                                                    {p.format === 'archive' && <span title={t('library.local.format.archive')}>&#x1f5dc;</span>}
-                                                    {p.format === 'raw' && <span title={t('library.local.format.raw')}>&#x1f4e6;</span>}
-                                                    {p.format === 'fs' && <span title={t('library.local.format.fs')}>&#x1f4c2;</span>}
+                                                    {p.format === 'archive' && <span role="img" aria-label="archive" title={t('library.local.format.archive')}>&#x1f5dc;</span>}
+                                                    {p.format === 'raw' && <span role="img" aria-label="raw" title={t('library.local.format.raw')}>&#x1f4e6;</span>}
+                                                    {p.format === 'fs' && <span role="img" aria-label="fs" title={t('library.local.format.fs')}>&#x1f4c2;</span>}
                                                     {p.path}
                                                 </div>
                                                 <div className="pack-version"><span>{`v${p.version}`}</span></div>
                                                 <div className="pack-actions">
                                                     {p.format !== 'archive' && <button className="pack-action" onClick={this.onConvertLibraryPack(p, 'archive')}>
-                                                        <span title={t('library.local.convertPackToArchive')}>&#10132;&#x1f5dc;</span>
+                                                        <span role="img" aria-label="to archive" title={t('library.local.convertPackToArchive')}>&#10132;&#x1f5dc;</span>
                                                     </button>}
                                                     {p.format === 'archive' && <>
                                                         <button className="pack-action" onClick={this.onEditLibraryPack(p)}>
                                                             <span className="glyphicon glyphicon-edit" title={t('library.local.editPack')} />
                                                         </button>
                                                         <button className="pack-action" onClick={this.onConvertLibraryPack(p, 'raw')}>
-                                                            <span title={t('library.local.convertPackToRaw')}>&#10132;&#x1f4e6;</span>
+                                                            <span role="img" aria-label="to raw" title={t('library.local.convertPackToRaw')}>&#10132;&#x1f4e6;</span>
                                                         </button>
                                                         <button className="pack-action" onClick={this.onConvertLibraryPack(p, 'fs')}>
-                                                            <span title={t('library.local.convertPackToFs')}>&#10132;&#x1f4c2;</span>
+                                                            <span role="img" aria-label="to fs" title={t('library.local.convertPackToFs')}>&#10132;&#x1f4c2;</span>
                                                         </button>
                                                     </>}
                                                     <button className="pack-action" onClick={this.onRemovePackFromLibrary(p.path)}>
