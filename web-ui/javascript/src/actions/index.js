@@ -10,7 +10,7 @@ import {Mutex, withTimeout} from 'async-mutex';
 
 import IssueReportToast from "../components/IssueReportToast";
 import PackDiagramModel from "../components/diagram/models/PackDiagramModel";
-import {fetchDeviceInfos, fetchDevicePacks, preparePackForDevice, addFromLibrary, removeFromDevice, reorderPacks, addToLibrary} from '../services/device';
+import {fetchDeviceInfos, fetchDevicePacks, addFromLibrary, removeFromDevice, reorderPacks, addToLibrary} from '../services/device';
 import {fetchLibraryInfos, fetchLibraryPacks, downloadFromLibrary, uploadToLibrary, convertInLibrary, removeFromLibrary} from '../services/library';
 import {fetchEvergreenInfos, fetchEvergreenLatestRelease, fetchEvergreenAnnounce} from '../services/evergreen';
 import {generateFilename, sortPacks} from "../utils/packs";
@@ -138,68 +138,49 @@ export const actionRefreshDevice = (t) => {
             });
 };
 
-export const actionAddFromLibrary = (uuid, path, format, allowEnriched, driver, deviceUuid, context, t) => {
+export const actionAddFromLibrary = (uuid, path, format, driver, context, t) => {
     return dispatch => mutex.acquire()
         .then(
             release => {
                 // First, make sure the story pack is in the right format.
-                let conversionToastId = null;
-                if ((driver === 'raw' && format !== 'binary') || driver === 'fs' && format !== 'fs') {
-                    console.log("Story pack in format `" + format + "` requires conversion for device driver `" + driver + "`");
-                    conversionToastId = toast(t('toasts.device.converting'), { autoClose: false });
-                }
-                // Convert story pack if needed
-                return preparePackForDevice(uuid, path, allowEnriched, driver, deviceUuid)
-                    .then(
-                        pathResp => {
-                            let packPath = pathResp.path;
-                            if (conversionToastId) {
-                                console.log("Story pack converted. Path is: " + packPath);
-                                toast.update(conversionToastId, {type: toast.TYPE.SUCCESS, render: t('toasts.device.converted'), autoClose: 5000});
-                            }
-                            // Then start transfer
-                            let toastId = toast(t('toasts.device.adding'), { autoClose: false });
-                            return addFromLibrary(uuid, packPath)
-                                .then(resp => {
-                                    // Monitor transfer progress
-                                    let transferId = resp.transferId;
-                                    context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.progress', (error, message) => {
-                                        console.log("Received `storyteller.transfer."+transferId+".progress` event from vert.x event bus.");
-                                        console.log(message.body);
-                                        toast.update(toastId, {progress: message.body.progress, autoClose: false});
-                                    });
-                                    context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.done', (error, message) => {
-                                        console.log("Received `storyteller.transfer."+transferId+".done` event from vert.x event bus.");
-                                        console.log(message.body);
-                                        if (message.body.success) {
-                                            toast.update(toastId, {progress: null, type: toast.TYPE.SUCCESS, render: t('toasts.device.added'), autoClose: 5000});
-                                            // Refresh device metadata and packs list
-                                            dispatch(actionRefreshDevice(t));
-                                        } else {
-                                            toast.update(toastId, {progress: null, type: toast.TYPE.ERROR, render: <IssueReportToast content={<>{t('toasts.device.addingFailed')}</>} />, autoClose: false });
-                                        }
-                                        // Always release the mutex
-                                        release();
-                                    });
-                                })
-                                .catch(e => {
-                                    console.error('failed to add pack to device', e);
-                                    toast.update(toastId, { type: toast.TYPE.ERROR, render: <IssueReportToast content={<>{t('toasts.device.addingFailed')}</>} error={e} />, autoClose: false });
-                                    // Always release the mutex
-                                    release();
-                                });
-                        },
-                        e => {
-                            console.error('failed to get or convert pack for device', e);
-                            if (conversionToastId) {
-                                toast.update(conversionToastId, { type: toast.TYPE.ERROR, render: <IssueReportToast content={<>{t('toasts.device.convertingFailed')}</>} error={e}/>, autoClose: false });
-                            } else {
-                                toast.error(<IssueReportToast content={<>{t('toasts.device.noConvertingFailed')}</>} error={e}/>, {autoClose: false});
-                            }
+                if (driver !== format) {
+                    console.error('pack format is not compatible with the device');
+                    toast.error(t('toasts.device.notCompatible'));
+                    // Always release the mutex
+                    release();
+                } else {
+                    // Then start transfer
+                    let toastId = toast(t('toasts.device.adding'), { autoClose: false });
+                    return addFromLibrary(uuid, path)
+                        .then(resp => {
+                            // Monitor transfer progress
+                            let transferId = resp.transferId;
+                            context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.progress', (error, message) => {
+                                console.log("Received `storyteller.transfer."+transferId+".progress` event from vert.x event bus.");
+                                console.log(message.body);
+                                toast.update(toastId, {progress: message.body.progress, autoClose: false});
+                            });
+                            context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.done', (error, message) => {
+                                console.log("Received `storyteller.transfer."+transferId+".done` event from vert.x event bus.");
+                                console.log(message.body);
+                                if (message.body.success) {
+                                    toast.update(toastId, {progress: null, type: toast.TYPE.SUCCESS, render: t('toasts.device.added'), autoClose: 5000});
+                                    // Refresh device metadata and packs list
+                                    dispatch(actionRefreshDevice(t));
+                                } else {
+                                    toast.update(toastId, {progress: null, type: toast.TYPE.ERROR, render: <IssueReportToast content={<>{t('toasts.device.addingFailed')}</>} />, autoClose: false });
+                                }
+                                // Always release the mutex
+                                release();
+                            });
+                        })
+                        .catch(e => {
+                            console.error('failed to add pack to device', e);
+                            toast.update(toastId, { type: toast.TYPE.ERROR, render: <IssueReportToast content={<>{t('toasts.device.addingFailed')}</>} error={e} />, autoClose: false });
                             // Always release the mutex
                             release();
-                        }
-                    );
+                        });
+                }
             },
             e => {
                 // Device is busy
@@ -431,12 +412,13 @@ export const actionUploadToLibrary = (uuid, path, packData, t) => {
     }
 };
 
-export const actionConvertInLibrary = (uuid, path, t) => {
+export const actionConvertInLibrary = (uuid, path, format, allowEnriched, deviceUuid, context, t) => {
     return dispatch => {
         let toastId = toast(t('toasts.library.converting'), { autoClose: false });
-        return convertInLibrary(uuid, path)
+        return convertInLibrary(uuid, path, format, allowEnriched, deviceUuid)
             .then(resp => {
                 if (resp.success) {
+                    console.log("Story pack converted. Path is: " + resp.path);
                     toast.update(toastId, {
                         progress: null,
                         type: toast.TYPE.SUCCESS,
@@ -445,6 +427,7 @@ export const actionConvertInLibrary = (uuid, path, t) => {
                     });
                     // Refresh device metadata and packs list
                     dispatch(actionRefreshLibrary(t));
+                    return resp.path;
                 } else {
                     toast.update(toastId, { type: toast.TYPE.ERROR, render: <IssueReportToast content={<>{t('toasts.library.convertingFailed')}</>} />, autoClose: false });
                 }

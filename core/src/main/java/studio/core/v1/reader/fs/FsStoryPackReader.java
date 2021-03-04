@@ -44,8 +44,9 @@ public class FsStoryPackReader {
         niDis.close();
         niFis.close();
 
-        // Folder name is the uuid
-        metadata.setUuid(inputFolder.getFileName().toString());
+        // Folder name is the uuid (minus the eventual timestamp, so we just trim everything starting at the dot)
+        String uuid = inputFolder.getFileName().toString().split("\\.", 2)[0];
+        metadata.setUuid(uuid);
 
         return metadata;
     }
@@ -55,8 +56,8 @@ public class FsStoryPackReader {
         TreeMap<Integer, Integer> actionNodesOptionsCount = new TreeMap<>();        // Keep action nodes' options count
         TreeMap<Integer, List<Transition>> transitionsWithAction = new TreeMap<>(); // Transitions must be updated with the actual ActionNode
 
-        // Folder name is the uuid
-        String uuid = inputFolder.getFileName().toString();
+        // Folder name is the uuid (minus the eventual timestamp, so we just trim everything starting at the dot)
+        String uuid = inputFolder.getFileName().toString().split("\\.", 2)[0];
 
         File packFolder = inputFolder.toFile();
 

@@ -26,7 +26,7 @@ public class BinaryStoryPackReader {
         DataInputStream dis = new DataInputStream(inputStream);
 
         // Pack metadata model
-        StoryPackMetadata metadata = new StoryPackMetadata(Constants.PACK_FORMAT_BINARY);
+        StoryPackMetadata metadata = new StoryPackMetadata(Constants.PACK_FORMAT_RAW);
 
         // Read sector 1
         dis.skipBytes(3);   // Skip to version

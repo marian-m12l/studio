@@ -43,11 +43,11 @@ export const uploadToLibrary = async (uuid, path, packData, progressHandler) => 
     });
 };
 
-export const convertInLibrary = async (uuid, path) => {
+export const convertInLibrary = async (uuid, path, format, allowEnriched, deviceUuid) => {
     return await fetch('http://localhost:8080/api/library/convert', {
         method: "POST",
         headers: {"Content-Type": "application/json"},
-        body: JSON.stringify({uuid, path})
+        body: JSON.stringify({uuid, path, format, allowEnriched, deviceUuid})
     })
         .then(handleJsonOrError);
 };

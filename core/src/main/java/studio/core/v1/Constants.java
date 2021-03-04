@@ -80,7 +80,7 @@ public class Constants {
     };
 
     public static final String PACK_FORMAT_ARCHIVE = "archive";
-    public static final String PACK_FORMAT_BINARY = "binary";
+    public static final String PACK_FORMAT_RAW = "raw";
     public static final String PACK_FORMAT_FS= "fs";
 
     public static final int BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING = 11 + 48;

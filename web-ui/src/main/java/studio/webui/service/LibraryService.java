@@ -23,6 +23,7 @@ import studio.core.v1.writer.binary.BinaryStoryPackWriter;
 import studio.core.v1.writer.fs.FsStoryPackWriter;
 import studio.metadata.DatabaseMetadataService;
 import studio.metadata.DatabasePackMetadata;
+import studio.webui.model.LibraryPack;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -32,6 +33,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.Base64;
+import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -76,17 +79,28 @@ public class LibraryService {
                 paths
                         .filter(Files::isRegularFile)
                         .filter(path -> path.toString().endsWith(".zip"))
-                        .forEach(path -> this.readPackFile(path).ifPresent(
-                                meta -> databaseMetadataService.refreshUnofficialMetadata(
-                                        new DatabasePackMetadata(
-                                                meta.getUuid(),
-                                                meta.getTitle(),
-                                                meta.getDescription(),
-                                                Optional.ofNullable(meta.getThumbnail()).map(thumb -> "data:image/png;base64," + Base64.getEncoder().encodeToString(thumb)).orElse(null),
-                                                false
-                                        )
-                                )
-                        ));
+                        .map(this::readPackFile)
+                        .filter(Optional::isPresent)
+                        .map(Optional::get)
+                        // Group packs by UUID
+                        .collect(Collectors.groupingBy(p -> p.getMetadata().getUuid()))
+                        .entrySet()
+                        .forEach(entry -> {
+                            List<LibraryPack> packs = entry.getValue();
+                            packs.sort((a, b) -> Long.compare(b.getTimestamp(), a.getTimestamp()));
+                            LOGGER.debug("Refreshing metadata for pack `" + entry.getKey() + "` from file `" + packs.get(0).getPath() + "`");
+                            this.readPackFile(packs.get(0).getPath()).ifPresent(
+                                    meta -> databaseMetadataService.refreshUnofficialMetadata(
+                                            new DatabasePackMetadata(
+                                                    meta.getMetadata().getUuid(),
+                                                    meta.getMetadata().getTitle(),
+                                                    meta.getMetadata().getDescription(),
+                                                    Optional.ofNullable(meta.getMetadata().getThumbnail()).map(thumb -> "data:image/png;base64," + Base64.getEncoder().encodeToString(thumb)).orElse(null),
+                                                    false
+                                            )
+                                    )
+                            );
+                        });
             } catch (IOException e) {
                 LOGGER.error("Failed to read packs from local library", e);
                 throw new RuntimeException(e);
@@ -97,11 +111,24 @@ public class LibraryService {
                 return new JsonArray(
                         paths
                                 .filter(path -> !path.equals(Paths.get(libraryPath())))
-                                .map(path -> this.readPackFile(path).map(
-                                        meta -> this.getPackMetadata(meta, path.getFileName().toString())
-                                ))
+                                .map(this::readPackFile)
                                 .filter(Optional::isPresent)
                                 .map(Optional::get)
+                                // Group packs by UUID
+                                .collect(Collectors.groupingBy(p -> p.getMetadata().getUuid()))
+                                .entrySet().stream()
+                                .collect(Collectors.toMap(
+                                        Map.Entry::getKey,
+                                        entry -> new JsonArray(
+                                                entry.getValue().stream()
+                                                        // Sort packs by timestamp descending
+                                                        .sorted((a,b) -> Long.compare(b.getTimestamp(), a.getTimestamp()))
+                                                        .map(this::getPackMetadata)
+                                                        .collect(Collectors.toList())
+                                        )
+                                ))
+                                .entrySet().stream()
+                                .map(entry -> new JsonObject().put("uuid", entry.getKey()).put("packs", entry.getValue()))
                                 .collect(Collectors.toList())
                 );
             } catch (IOException e) {
@@ -115,16 +142,15 @@ public class LibraryService {
         return Optional.of(new File(libraryPath() + packPath));
     }
 
-    public Optional<File> getBinaryPackFile(String packPath, Boolean allowEnriched) {
-        // Archive format packs must first be converted to binary format
+    public Optional<Path> addConvertedRawPackFile(String packPath, Boolean allowEnriched) {
+        // Archive format packs must first be converted to raw format
         if (packPath.endsWith(".zip")) {
             try {
                 File tmp = File.createTempFile(packPath, ".pack");
-                tmp.deleteOnExit();
 
-                LOGGER.warn("Pack is in archive format. Converting to binary format and storing in temporary file: " + tmp.getAbsolutePath());
+                LOGGER.info("Pack is in archive format. Converting to raw format and storing in temporary file: " + tmp.getAbsolutePath());
 
-                LOGGER.warn("Reading archive format pack");
+                LOGGER.info("Reading archive format pack");
                 ArchiveStoryPackReader packReader = new ArchiveStoryPackReader();
                 FileInputStream fis = new FileInputStream(libraryPath() + packPath);
                 StoryPack storyPack = packReader.read(fis);
@@ -133,172 +159,198 @@ public class LibraryService {
                 // Uncompress pack assets
                 StoryPack uncompressedPack = storyPack;
                 if (PackAssetsCompression.hasCompressedAssets(storyPack)) {
-                    LOGGER.warn("Uncompressing pack assets");
+                    LOGGER.info("Uncompressing pack assets");
                     uncompressedPack = PackAssetsCompression.withUncompressedAssets(storyPack);
                 }
 
-                LOGGER.warn("Writing binary format pack");
+                LOGGER.info("Writing raw format pack");
                 BinaryStoryPackWriter packWriter = new BinaryStoryPackWriter();
                 FileOutputStream fos = new FileOutputStream(tmp);
                 packWriter.write(uncompressedPack, fos, allowEnriched);
                 fos.close();
 
-                return Optional.of(tmp);
+                String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis() + ".pack";
+                Path destinationPath = Paths.get(libraryPath() + destinationFileName);
+                LOGGER.info("Moving raw format pack into local library: " + destinationPath);
+                Files.move(tmp.toPath(), destinationPath);
+
+                return Optional.of(Paths.get(destinationFileName));
             } catch (Exception e) {
-                LOGGER.error("Failed to convert archive format pack to binary format", e);
-                return Optional.empty();
+                LOGGER.error("Failed to convert archive format pack to raw format", e);
+                throw new RuntimeException("Failed to convert archive format pack to raw format", e);
             }
         } else if (packPath.endsWith(".pack")) {
-            return getRawPackFile(packPath);
+            LOGGER.error("Pack is already in raw format");
+            throw new RuntimeException("Pack is already in raw format");
         } else {
             try {
                 File tmp = File.createTempFile(packPath, ".pack");
-                tmp.deleteOnExit();
 
-                LOGGER.warn("Pack is in FS folder format. Converting to binary format and storing in temporary file: " + tmp.getAbsolutePath());
+                LOGGER.info("Pack is in FS format. Converting to raw format and storing in temporary file: " + tmp.getAbsolutePath());
 
-                LOGGER.warn("Reading FS folder format pack");
+                LOGGER.info("Reading FS format pack");
                 FsStoryPackReader packReader = new FsStoryPackReader();
                 StoryPack storyPack = packReader.read(Paths.get(libraryPath() + packPath));
 
                 // Uncompress pack assets
                 StoryPack uncompressedPack = storyPack;
                 if (PackAssetsCompression.hasCompressedAssets(storyPack)) {
-                    LOGGER.warn("Uncompressing pack assets");
+                    LOGGER.info("Uncompressing pack assets");
                     uncompressedPack = PackAssetsCompression.withUncompressedAssets(storyPack);
                 }
 
-                LOGGER.warn("Writing binary format pack");
+                LOGGER.info("Writing raw format pack");
                 BinaryStoryPackWriter packWriter = new BinaryStoryPackWriter();
                 FileOutputStream fos = new FileOutputStream(tmp);
                 packWriter.write(uncompressedPack, fos, allowEnriched);
                 fos.close();
 
-                return Optional.of(tmp);
+                String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis() + ".pack";
+                Path destinationPath = Paths.get(libraryPath() + destinationFileName);
+                LOGGER.info("Moving raw format pack into local library: " + destinationPath);
+                Files.move(tmp.toPath(), destinationPath);
+
+                return Optional.of(Paths.get(destinationFileName));
             } catch (Exception e) {
-                LOGGER.error("Failed to convert binary format pack to archive format", e);
-                return Optional.empty();
+                LOGGER.error("Failed to convert FS format pack to raw format", e);
+                throw new RuntimeException("Failed to convert FS format pack to raw format", e);
             }
         }
     }
 
-    public Optional<File> getArchivePackFile(String packPath) {
+    public Optional<Path> addConvertedArchivePackFile(String packPath) {
         // Binary format packs must first be converted to archive format
         if (packPath.endsWith(".zip")) {
-            return getRawPackFile(packPath);
+            LOGGER.error("Pack is already in archive format");
+            throw new RuntimeException("Pack is already in archive format");
         } else if (packPath.endsWith(".pack")) {
             try {
                 File tmp = File.createTempFile(packPath, ".zip");
-                tmp.deleteOnExit();
 
-                LOGGER.warn("Pack is in binary format. Converting to archive format and storing in temporary file: " + tmp.getAbsolutePath());
+                LOGGER.info("Pack is in raw format. Converting to archive format and storing in temporary file: " + tmp.getAbsolutePath());
 
-                LOGGER.warn("Reading binary format pack");
+                LOGGER.info("Reading raw format pack");
                 BinaryStoryPackReader packReader = new BinaryStoryPackReader();
                 FileInputStream fis = new FileInputStream(libraryPath() + packPath);
                 StoryPack storyPack = packReader.read(fis);
                 fis.close();
 
                 // Compress pack assets
-                LOGGER.warn("Compressing pack assets");
+                LOGGER.info("Compressing pack assets");
                 StoryPack compressedPack = PackAssetsCompression.withCompressedAssets(storyPack);
 
-                LOGGER.warn("Writing archive format pack");
+                LOGGER.info("Writing archive format pack");
                 ArchiveStoryPackWriter packWriter = new ArchiveStoryPackWriter();
                 FileOutputStream fos = new FileOutputStream(tmp);
                 packWriter.write(compressedPack, fos);
                 fos.close();
 
-                return Optional.of(tmp);
+                String destinationFileName = compressedPack.getUuid() + ".converted_" + System.currentTimeMillis() + ".zip";
+                Path destinationPath = Paths.get(libraryPath() + destinationFileName);
+                LOGGER.info("Moving archive format pack into local library: " + destinationPath);
+                Files.move(tmp.toPath(), destinationPath);
+
+                return Optional.of(Paths.get(destinationFileName));
             } catch (Exception e) {
-                LOGGER.error("Failed to convert binary format pack to archive format", e);
-                return Optional.empty();
+                LOGGER.error("Failed to convert raw format pack to archive format", e);
+                throw new RuntimeException("Failed to convert raw format pack to archive format", e);
             }
         } else {
             try {
                 File tmp = File.createTempFile(packPath, ".zip");
-                tmp.deleteOnExit();
 
-                LOGGER.warn("Pack is in FS folder format. Converting to archive format and storing in temporary file: " + tmp.getAbsolutePath());
+                LOGGER.info("Pack is in FS format. Converting to archive format and storing in temporary file: " + tmp.getAbsolutePath());
 
-                LOGGER.warn("Reading FS folder format pack");
+                LOGGER.info("Reading FS format pack");
                 FsStoryPackReader packReader = new FsStoryPackReader();
                 StoryPack storyPack = packReader.read(Paths.get(libraryPath() + packPath));
 
                 // No need to compress pack assets
 
-                LOGGER.warn("Writing archive format pack");
+                LOGGER.info("Writing archive format pack");
                 ArchiveStoryPackWriter packWriter = new ArchiveStoryPackWriter();
                 FileOutputStream fos = new FileOutputStream(tmp);
                 packWriter.write(storyPack, fos);
                 fos.close();
 
-                return Optional.of(tmp);
+                String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis() + ".zip";
+                Path destinationPath = Paths.get(libraryPath() + destinationFileName);
+                LOGGER.info("Moving archive format pack into local library: " + destinationPath);
+                Files.move(tmp.toPath(), destinationPath);
+
+                return Optional.of(Paths.get(destinationFileName));
             } catch (Exception e) {
-                LOGGER.error("Failed to convert FS folder format pack to archive format", e);
-                return Optional.empty();
+                LOGGER.error("Failed to convert FS format pack to archive format", e);
+                throw new RuntimeException("Failed to convert FS format pack to archive format", e);
             }
         }
     }
 
-    public Optional<File> getFsPackFile(String packPath, String deviceUuid, Boolean allowEnriched) {
-        // Archive format packs must first be converted to FS folder format
+    public Optional<Path> addConvertedFsPackFile(String packPath, String deviceUuid, Boolean allowEnriched) {
+        // Archive format packs must first be converted to FS format
         if (packPath.endsWith(".zip")) {
             try {
                 Path tmp = Files.createTempDirectory(packPath);
 
-                LOGGER.warn("Pack to transfer is in archive format. Converting to FS folder format and storing in temporary folder: " + tmp.toAbsolutePath().toString());
+                LOGGER.info("Pack to transfer is in archive format. Converting to FS format and storing in temporary folder: " + tmp.toAbsolutePath().toString());
 
-                LOGGER.warn("Reading archive format pack");
+                LOGGER.info("Reading archive format pack");
                 ArchiveStoryPackReader packReader = new ArchiveStoryPackReader();
                 FileInputStream fis = new FileInputStream(libraryPath() + packPath);
                 StoryPack storyPack = packReader.read(fis);
                 fis.close();
 
                 // Prepare assets (RLE-encoded BMP, audio must already be MP3)
-                LOGGER.warn("Converting assets if necessary");
+                LOGGER.info("Converting assets if necessary");
                 StoryPack packWithPreparedAssets = PackAssetsCompression.withPreparedAssetsFirmware2dot4(storyPack);
 
-                LOGGER.warn("Writing FS folder format pack");
+                LOGGER.info("Writing FS format pack");
                 FsStoryPackWriter writer = new FsStoryPackWriter(Hex.decodeHex(deviceUuid));
                 Path folderPath = writer.write(packWithPreparedAssets, tmp);
 
-                FileUtils.forceDeleteOnExit(tmp.toFile());
+                String destinationFolder = packWithPreparedAssets.getUuid() + ".converted_" + System.currentTimeMillis();
+                Path destinationPath = Paths.get(libraryPath() + destinationFolder);
+                LOGGER.info("Moving FS format pack into local library: " + destinationPath);
+                Files.move(folderPath, destinationPath);
 
-                return Optional.of(folderPath.toFile());
+                return Optional.of(Paths.get(destinationFolder));
             } catch (Exception e) {
-                LOGGER.error("Failed to convert archive format pack to FS folder format", e);
-                return Optional.empty();
+                LOGGER.error("Failed to convert archive format pack to FS format", e);
+                throw new RuntimeException("Failed to convert archive format pack to FS format", e);
             }
         } else if (packPath.endsWith(".pack")) {
             try {
                 Path tmp = Files.createTempDirectory(packPath);
 
-                LOGGER.warn("Pack is in binary format. Converting to FS folder format and storing in temporary folder: " + tmp.toAbsolutePath().toString());
+                LOGGER.info("Pack is in raw format. Converting to FS format and storing in temporary folder: " + tmp.toAbsolutePath().toString());
 
-                LOGGER.warn("Reading binary format pack");
+                LOGGER.info("Reading raw format pack");
                 BinaryStoryPackReader packReader = new BinaryStoryPackReader();
                 FileInputStream fis = new FileInputStream(libraryPath() + packPath);
                 StoryPack storyPack = packReader.read(fis);
                 fis.close();
 
                 // Prepare assets (RLE-encoded BMP, audio must already be MP3)
-                LOGGER.warn("Converting assets if necessary");
+                LOGGER.info("Converting assets if necessary");
                 StoryPack packWithPreparedAssets = PackAssetsCompression.withPreparedAssetsFirmware2dot4(storyPack);
 
-                LOGGER.warn("Writing FS folder format pack");
+                LOGGER.info("Writing FS format pack");
                 FsStoryPackWriter writer = new FsStoryPackWriter(Hex.decodeHex(deviceUuid));
                 Path folderPath = writer.write(packWithPreparedAssets, tmp);
 
-                FileUtils.forceDeleteOnExit(tmp.toFile());
+                String destinationFolder = packWithPreparedAssets.getUuid() + ".converted_" + System.currentTimeMillis();
+                Path destinationPath = Paths.get(libraryPath() + destinationFolder);
+                LOGGER.info("Moving FS format pack into local library: " + destinationPath);
+                Files.move(folderPath, destinationPath);
 
-                return Optional.of(folderPath.toFile());
+                return Optional.of(Paths.get(destinationFolder));
             } catch (Exception e) {
-                LOGGER.error("Failed to convert binary format pack to FS folder format", e);
-                return Optional.empty();
+                LOGGER.error("Failed to convert raw format pack to FS format", e);
+                throw new RuntimeException("Failed to convert raw format pack to FS format", e);
             }
         } else {
-            return getRawPackFile(packPath);
+            LOGGER.error("Pack is already in FS format");
+            throw new RuntimeException("Pack is already in FS format");
         }
     }
 
@@ -348,46 +400,50 @@ public class LibraryService {
         return System.getProperty(LOCAL_LIBRARY_PROP, System.getProperty("user.home") + LOCAL_LIBRARY_PATH);
     }
 
-    private Optional<StoryPackMetadata> readPackFile(Path path) {
+    private Optional<LibraryPack> readPackFile(Path path) {
         LOGGER.debug("Reading pack file: " + path.toString());
-        // Handle both binary and archive file formats
+        // Handle all file formats
         if (path.toString().endsWith(".zip")) {
             try (FileInputStream fis = new FileInputStream(path.toFile())) {
                 LOGGER.debug("Reading archive pack metadata.");
                 ArchiveStoryPackReader packReader = new ArchiveStoryPackReader();
-                return Optional.ofNullable(packReader.readMetadata(fis));
+                StoryPackMetadata meta = packReader.readMetadata(fis);
+                if (meta != null) {
+                    return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
+                }
+                return Optional.empty();
             } catch (IOException e) {
                 LOGGER.error("Failed to read archive-format pack " + path.toString() + " from local library", e);
                 return Optional.empty();
             }
         } else if (path.toString().endsWith(".pack")) {
             try (FileInputStream fis = new FileInputStream(path.toFile())) {
-                LOGGER.debug("Reading binary pack metadata.");
+                LOGGER.debug("Reading raw pack metadata.");
                 BinaryStoryPackReader packReader = new BinaryStoryPackReader();
-                Optional<StoryPackMetadata> metadata = Optional.of(packReader.readMetadata(fis));
-                metadata.map(meta -> {
+                StoryPackMetadata meta = packReader.readMetadata(fis);
+                if (meta != null) {
                     int packSectorSize = (int)Math.ceil((double)path.toFile().length() / 512d);
                     meta.setSectorSize(packSectorSize);
-                    return meta;
-                });
-                return metadata;
+                    return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
+                }
+                return Optional.empty();
             } catch (IOException e) {
-                LOGGER.error("Failed to read binary-format pack " + path.toString() + " from local library", e);
+                LOGGER.error("Failed to read raw format pack " + path.toString() + " from local library", e);
                 return Optional.empty();
             }
         } else if (Files.isDirectory(path)) {
             try {
-                LOGGER.debug("Reading FS folder pack metadata.");
+                LOGGER.debug("Reading FS pack metadata.");
                 FsStoryPackReader packReader = new FsStoryPackReader();
-                Optional<StoryPackMetadata> metadata = Optional.of(packReader.readMetadata(path));
-                metadata.map(meta -> {
+                StoryPackMetadata meta = packReader.readMetadata(path);
+                if (meta != null) {
                     int packSectorSize = (int)Math.ceil((double)path.toFile().length() / 512d);
                     meta.setSectorSize(packSectorSize);
-                    return meta;
-                });
-                return metadata;
+                    return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
+                }
+                return Optional.empty();
             } catch (Exception e) {
-                LOGGER.error("Failed to read FS folder format pack " + path.toString() + " from local library", e);
+                LOGGER.error("Failed to read FS format pack " + path.toString() + " from local library", e);
                 return Optional.empty();
             }
         }
@@ -396,17 +452,18 @@ public class LibraryService {
         return Optional.empty();
     }
 
-    private JsonObject getPackMetadata(StoryPackMetadata packMetadata, String path) {
+    private JsonObject getPackMetadata(LibraryPack pack) {
         JsonObject json = new JsonObject()
-                .put("format", packMetadata.getFormat())
-                .put("uuid", packMetadata.getUuid())
-                .put("version", packMetadata.getVersion())
-                .put("path", path);
-        Optional.ofNullable(packMetadata.getTitle()).ifPresent(title -> json.put("title", title));
-        Optional.ofNullable(packMetadata.getDescription()).ifPresent(desc -> json.put("description", desc));
-        Optional.ofNullable(packMetadata.getThumbnail()).ifPresent(thumb -> json.put("image", "data:image/png;base64," + Base64.getEncoder().encodeToString(thumb)));
-        Optional.ofNullable(packMetadata.getSectorSize()).ifPresent(size -> json.put("sectorSize", size));
-        return databaseMetadataService.getPackMetadata(packMetadata.getUuid())
+                .put("format", pack.getMetadata().getFormat())
+                .put("uuid", pack.getMetadata().getUuid())
+                .put("version", pack.getMetadata().getVersion())
+                .put("path", pack.getPath().getFileName().toString())
+                .put("timestamp", pack.getTimestamp());
+        Optional.ofNullable(pack.getMetadata().getTitle()).ifPresent(title -> json.put("title", title));
+        Optional.ofNullable(pack.getMetadata().getDescription()).ifPresent(desc -> json.put("description", desc));
+        Optional.ofNullable(pack.getMetadata().getThumbnail()).ifPresent(thumb -> json.put("image", "data:image/png;base64," + Base64.getEncoder().encodeToString(thumb)));
+        Optional.ofNullable(pack.getMetadata().getSectorSize()).ifPresent(size -> json.put("sectorSize", size));
+        return databaseMetadataService.getPackMetadata(pack.getMetadata().getUuid())
                 .map(metadata -> json
                         .put("title", metadata.getTitle())
                         .put("description", metadata.getDescription())
