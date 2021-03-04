@@ -54,6 +54,10 @@ class PackLibrary extends React.Component {
             allowEnrichedDialog: {
                 show: false,
                 data: null
+            },
+            confirmConversionDialog: {
+                show: false,
+                data: null
             }
         };
     }
@@ -82,34 +86,97 @@ class PackLibrary extends React.Component {
         }
         var data = JSON.parse(packData);
 
-        // If transferring an archive pack (which needs conversion), and allowEnriched settings is not set yet, ask whether to use enriched binary format or not
-        if (data.format !== 'binary' && localStorage.getItem(LOCAL_STORAGE_ALLOW_ENRICHED_BINARY_FORMAT) === null) {
+        // Get the latest pack
+        var latestPack = data.packs[0];
+        console.log('latest pack: %o', latestPack);
+        // Get the latest device-compatible pack
+        var compatiblePack = data.packs.find(p => p.format === this.state.device.metadata.driver);
+        console.log('device-compatible pack: %o', compatiblePack);
+
+        if (compatiblePack == null) {   // No compatible pack: convert latest pack
+            console.log('latest pack must be converted for driver: %s', this.state.device.metadata.driver);
+            // Ask for enriched raw format preference
+            if (this.state.device.metadata.driver === 'raw' && localStorage.getItem(LOCAL_STORAGE_ALLOW_ENRICHED_BINARY_FORMAT) === null) {
+                this.setState({
+                    allowEnrichedDialog: {
+                        show: true,
+                        data: { pack: {...latestPack, format: this.state.device.metadata.driver}, format: this.state.device.metadata.driver, addToDevice: true }
+                    }
+                });
+            } else {
+                // Pack is converted and stored in the local library, then transferred to the device
+                let deviceUuid = this.state.device.metadata.uuid || '';
+                this.props.convertPackInLibrary(latestPack.uuid, latestPack.path, this.state.device.metadata.driver, this.props.settings.allowEnriched, deviceUuid, this.context)
+                    .then(path => {
+                        this.doAddToDevice({...latestPack, format: this.state.device.metadata.driver}, path);
+                    });
+            }
+        } else if (latestPack.timestamp > compatiblePack.timestamp) {   // Compatible pack is not the latest pack: confirm re-conversion
+            // Ask for conversion confirmation
+            console.log('pack is out of date. re-convert from latest ?');
             this.setState({
-                allowEnrichedDialog: {
+                confirmConversionDialog: {
                     show: true,
-                    data
+                    data: { pack: {...latestPack, format: this.state.device.metadata.driver}, format: this.state.device.metadata.driver }
                 }
             });
         } else {
-            this.doAddToDevice(data, this.props.settings.allowEnriched);
+            console.log('OK, transferring pack: %o', compatiblePack);
+            // OK, go on and transfer pack
+            this.doAddToDevice(compatiblePack, compatiblePack.path);
         }
     };
 
-    doAddToDevice = (data, allow) => {
+    doAddToDevice = (data, path) => {
         // Transfer pack and show progress
-        this.props.addFromLibrary(data.uuid, data.path, data.format, allow, this.state.device.metadata.driver, this.state.device.metadata.uuid, this.context);
+        this.props.addFromLibrary(data.uuid, path, data.format, this.state.device.metadata.driver, this.context);
     };
 
     dismissEnrichedDialog = (allow) => {
         return () => {
             this.props.setAllowEnriched(allow);
-            this.doAddToDevice(this.state.allowEnrichedDialog.data, allow);
-            this.setState({
-                allowEnrichedDialog: {
-                    show: false,
-                    data: null
-                }
-            });
+            // Pack is converted and stored in the local library, then transferred to the device
+            let deviceUuid = this.state.device.metadata.uuid || '';
+            this.props.convertPackInLibrary(this.state.allowEnrichedDialog.data.pack.uuid, this.state.allowEnrichedDialog.data.pack.path, this.state.allowEnrichedDialog.data.format, allow, deviceUuid, this.context)
+                .then(path => {
+                    if (this.state.allowEnrichedDialog.data.addToDevice) {
+                        return this.doAddToDevice(this.state.allowEnrichedDialog.data.pack, path);
+                    }
+                })
+                .then(() => {
+                    this.setState({
+                        allowEnrichedDialog: {
+                            show: false,
+                            data: null
+                        }
+                    });
+                });
+        }
+    };
+
+    dismissConfirmConversionDialog = (answer) => {
+        return () => {
+            if (answer) {
+                // Pack is converted and stored in the local library, then transferred to the device
+                let deviceUuid = this.state.device.metadata.uuid || '';
+                this.props.convertPackInLibrary(this.state.confirmConversionDialog.data.pack.uuid, this.state.confirmConversionDialog.data.pack.path, this.state.confirmConversionDialog.data.format, this.props.settings.allowEnriched, deviceUuid, this.context)
+                    .then(path => this.doAddToDevice(this.state.confirmConversionDialog.data.pack, path))
+                    .then(() => {
+                        this.setState({
+                            confirmConversionDialog: {
+                                show: false,
+                                data: null
+                            }
+                        });
+                    });
+            } else {
+                this.setState({
+                    confirmConversionDialog: {
+                        show: false,
+                        data: null
+                    }
+                });
+            }
         }
     };
 
@@ -200,10 +267,26 @@ class PackLibrary extends React.Component {
         this.props.uploadPackToLibrary(file.name, file);
     };
 
-    onConvertLibraryPack = (pack) => {
+    onConvertLibraryPack = (pack, format) => {
+        const { t } = this.props;
         return () => {
-            // Pack is converted into archive format and added to library
-            this.props.convertPackInLibrary(pack.uuid, pack.path);
+            if (format === 'fs' && !this.state.device.metadata) {
+                toast.error(t('toasts.library.conversionRequiresDevice'));
+                return;
+            }
+            if (format === 'raw' && localStorage.getItem(LOCAL_STORAGE_ALLOW_ENRICHED_BINARY_FORMAT) === null) {
+                // Ask for enriched raw format preference
+                this.setState({
+                    allowEnrichedDialog: {
+                        show: true,
+                        data: { pack, format, addToDevice: false }
+                    }
+                });
+                return;
+            }
+            // Pack is converted and stored in the local library
+            let deviceUuid = (this.state.device.metadata && this.state.device.metadata.uuid) || '';
+            this.props.convertPackInLibrary(pack.uuid, pack.path, format, this.props.settings.allowEnriched, deviceUuid, this.context);
         }
     };
 
@@ -294,6 +377,16 @@ class PackLibrary extends React.Component {
                            { label: t('dialogs.shared.yes'), onClick: this.dismissEnrichedDialog(true)}
                        ]}
                        onClose={this.dismissEnrichedDialog(false)}
+                />}
+                {this.state.confirmConversionDialog.show && // TODO i18n labels !!!
+                <Modal id="ask-confirm-conversion"
+                       title={t('dialogs.library.askConfirmConversion.title')}
+                       content={<div dangerouslySetInnerHTML={{__html: t('dialogs.library.askConfirmConversion.content')}} ></div>}
+                       buttons={[
+                           { label: t('dialogs.shared.no'), onClick: this.dismissConfirmConversionDialog(false)},
+                           { label: t('dialogs.shared.yes'), onClick: this.dismissConfirmConversionDialog(true)}
+                       ]}
+                       onClose={this.dismissConfirmConversionDialog(false)}
                 />}
 
                 {/* Device view, if plugged */}
@@ -405,38 +498,56 @@ class PackLibrary extends React.Component {
                             <p><button className="library-action" onClick={this.onCreateNewPackInEditor}>{t('library.local.empty.link1')}</button> <button className="library-action" onClick={this.onOpenSamplePackInEditor}>{t('library.local.empty.link2')}</button> {t('library.local.empty.suffix')}</p>
                         </div>}
                         {this.state.library.packs.length > 0 && <div className="pack-grid">
-                            {this.state.library.packs.map(pack =>
-                                <div key={pack.path}
-                                     title={pack.path}
-                                     draggable={this.isPackDraggable(pack)}
-                                     className={this.isPackDraggable(pack) ? `pack-tile pack-${pack.format} pack-draggable` : `pack-tile pack-${pack.format}  pack-not-draggable`}
+                            {this.state.library.packs.map(group =>
+                                <div key={group.uuid}
+                                     title={group.uuid}
+                                     draggable={this.isPackDraggable(group.packs[0])}
+                                     className={this.isPackDraggable(group.packs[0]) ? `pack-tile pack-draggable` : `pack-tile pack-not-draggable`}
                                      onDragStart={event => {
-                                         event.dataTransfer.setData("local-library-pack", JSON.stringify(pack));
+                                         // Drag first pack
+                                         event.dataTransfer.setDragImage(event.target.querySelector('.pack-entry'), 0, 0);
+                                         event.dataTransfer.setData("local-library-pack", JSON.stringify(group));
                                      }}>
-                                    <div className="pack-format">
-                                        <span>{t(`library.format.${pack.format}`)}</span>
+                                    <div className="pack-left">
+                                        <div className="pack-title">
+                                            <span>{group.packs[0].title || group.uuid}</span>&nbsp;
+                                        </div>
+                                        <div className="pack-thumb">
+                                            <img src={group.packs[0].image || defaultImage} alt="" width="128" height="128" draggable={false} />
+                                            {group.packs[0].official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
+                                        </div>
                                     </div>
-                                    <div className="pack-thumb">
-                                        <img src={pack.image || defaultImage} alt="" width="128" height="128" draggable={false} />
-                                        <div className="pack-version"><span>{`v${pack.version}`}</span></div>
-                                        {pack.official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
-                                    </div>
-                                    <div className="pack-title">
-                                        <span title={pack.uuid}>{pack.title || pack.uuid}</span>&nbsp;
-                                    </div>
-                                    <div className="pack-actions">
-                                        {pack.format !== 'archive' && <button className="pack-action" onClick={this.onConvertLibraryPack(pack)}>
-                                            <span className="glyphicon glyphicon-cog"
-                                                  title={t('library.local.convertPack')} />
-                                        </button>}
-                                        {pack.format === 'archive' && <button className="pack-action" onClick={this.onEditLibraryPack(pack)}>
-                                            <span className="glyphicon glyphicon-edit"
-                                                  title={t('library.local.editPack')} />
-                                        </button>}
-                                        <button className="pack-action" onClick={this.onRemovePackFromLibrary(pack.path)}>
-                                            <span className="glyphicon glyphicon-trash"
-                                                  title={t('library.local.removePack')} />
-                                        </button>
+                                    <div className="pack-right">
+                                        {group.packs.map((p,idx) => {
+                                            return <div key={p.path} title={p.path} className={`pack-entry pack-${p.format} ${idx === 0 && 'latest'}`}>
+                                                <div className="pack-filename">
+                                                    {p.format === 'archive' && <span title={t('library.local.format.archive')}>&#x1f5dc;</span>}
+                                                    {p.format === 'raw' && <span title={t('library.local.format.raw')}>&#x1f4e6;</span>}
+                                                    {p.format === 'fs' && <span title={t('library.local.format.fs')}>&#x1f4c2;</span>}
+                                                    {p.path}
+                                                </div>
+                                                <div className="pack-version"><span>{`v${p.version}`}</span></div>
+                                                <div className="pack-actions">
+                                                    {p.format !== 'archive' && <button className="pack-action" onClick={this.onConvertLibraryPack(p, 'archive')}>
+                                                        <span title={t('library.local.convertPackToArchive')}>&#10132;&#x1f5dc;</span>
+                                                    </button>}
+                                                    {p.format === 'archive' && <>
+                                                        <button className="pack-action" onClick={this.onEditLibraryPack(p)}>
+                                                            <span className="glyphicon glyphicon-edit" title={t('library.local.editPack')} />
+                                                        </button>
+                                                        <button className="pack-action" onClick={this.onConvertLibraryPack(p, 'raw')}>
+                                                            <span title={t('library.local.convertPackToRaw')}>&#10132;&#x1f4e6;</span>
+                                                        </button>
+                                                        <button className="pack-action" onClick={this.onConvertLibraryPack(p, 'fs')}>
+                                                            <span title={t('library.local.convertPackToFs')}>&#10132;&#x1f4c2;</span>
+                                                        </button>
+                                                    </>}
+                                                    <button className="pack-action" onClick={this.onRemovePackFromLibrary(p.path)}>
+                                                        <span className="glyphicon glyphicon-trash" title={t('library.local.removePack')} />
+                                                    </button>
+                                                </div>
+                                            </div>;
+                                        })}
                                     </div>
                                 </div>
                             )}
@@ -457,13 +568,13 @@ const mapStateToProps = (state, ownProps) => ({
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-    addFromLibrary: (uuid, path, format, allowEnriched, driver, deviceUuid, context) => dispatch(actionAddFromLibrary(uuid, path, format, allowEnriched, driver, deviceUuid, context, ownProps.t)),
+    addFromLibrary: (uuid, path, format, driver, context) => dispatch(actionAddFromLibrary(uuid, path, format, driver, context, ownProps.t)),
     removeFromDevice: (uuid) => dispatch(actionRemoveFromDevice(uuid, ownProps.t)),
     reorderOnDevice: (uuids) => dispatch(actionReorderOnDevice(uuids, ownProps.t)),
     addToLibrary: (uuid, driver, context) => dispatch(actionAddToLibrary(uuid, driver, context, ownProps.t)),
     downloadPackFromLibrary: (uuid, path) => dispatch(actionDownloadFromLibrary(uuid, path, ownProps.t)),
     loadPackInEditor: (packData, filename) => dispatch(actionLoadPackInEditor(packData, filename, ownProps.t)),
-    convertPackInLibrary: (uuid, path) => dispatch(actionConvertInLibrary(uuid, path, ownProps.t)),
+    convertPackInLibrary: (uuid, path, format, allowEnriched, deviceUuid, context) => dispatch(actionConvertInLibrary(uuid, path, format, allowEnriched, deviceUuid, context, ownProps.t)),
     removeFromLibrary: (path) => dispatch(actionRemoveFromLibrary(path, ownProps.t)),
     uploadPackToLibrary: (path, packData) => dispatch(actionUploadToLibrary(null, path, packData, ownProps.t)),
     createPackInEditor: () => dispatch(actionCreatePackInEditor(ownProps.t)),

@@ -14,9 +14,10 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
+import studio.core.v1.Constants;
 import studio.webui.service.LibraryService;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -73,37 +74,64 @@ public class LibraryController {
             }
         });
 
-        // Local library pack convert to archive
+        // Local library pack conversion
         router.post("/convert").blockingHandler(ctx -> {
             String uuid = ctx.getBodyAsJson().getString("uuid");
             String packPath = ctx.getBodyAsJson().getString("path");
-            // First, get the pack file, potentially converted from binary format to archive format
-            // Perform conversion/compression asynchronously
-            Future<File> futureConvertedPack = Future.future();
-            Timer timer = new Timer();
-            timer.schedule(new TimerTask() {
-                @Override
-                public void run() {
-                    libraryService.getArchivePackFile(packPath)
-                            .ifPresentOrElse(
-                                    packFile -> futureConvertedPack.tryComplete(packFile),
-                                    () -> futureConvertedPack.tryFail("Failed to read or convert pack"));
-                    futureConvertedPack.tryComplete();
-                }
-            }, 1000);
-
+            Boolean allowEnriched = ctx.getBodyAsJson().getBoolean("allowEnriched", false);
+            String format = ctx.getBodyAsJson().getString("format");
+            String deviceUuid = ctx.getBodyAsJson().getString("deviceUuid", null);
+            // Perform conversion/uncompression asynchronously
+            Future<Path> futureConvertedPack = Future.future();
+            if (Constants.PACK_FORMAT_RAW.equalsIgnoreCase(format)) {
+                Timer timer = new Timer();
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        libraryService.addConvertedRawPackFile(packPath, allowEnriched)
+                                .ifPresentOrElse(
+                                        packPath -> futureConvertedPack.tryComplete(packPath),
+                                        () -> futureConvertedPack.tryFail("Failed to read or convert pack to raw format"));
+                        futureConvertedPack.tryComplete();
+                    }
+                }, 1000);
+            } else if (Constants.PACK_FORMAT_FS.equalsIgnoreCase(format)) {
+                Timer timer = new Timer();
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        libraryService.addConvertedFsPackFile(packPath, deviceUuid, allowEnriched)
+                                .ifPresentOrElse(
+                                        packPath -> futureConvertedPack.tryComplete(packPath),
+                                        () -> futureConvertedPack.tryFail("Failed to read or convert pack to folder format"));
+                        futureConvertedPack.tryComplete();
+                    }
+                }, 1000);
+            } else if (Constants.PACK_FORMAT_ARCHIVE.equalsIgnoreCase(format)) {
+                Timer timer = new Timer();
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        libraryService.addConvertedArchivePackFile(packPath)
+                                .ifPresentOrElse(
+                                        packPath -> futureConvertedPack.tryComplete(packPath),
+                                        () -> futureConvertedPack.tryFail("Failed to read or convert pack to folder format"));
+                        futureConvertedPack.tryComplete();
+                    }
+                }, 1000);
+            } else {
+                ctx.fail(400);
+                return;
+            }
             futureConvertedPack.onComplete(maybeConvertedPack -> {
                 if (maybeConvertedPack.succeeded()) {
-                    // Then, add converted pack to library
-                    boolean added = libraryService.addPackFile(packPath + ".zip", maybeConvertedPack.result().getAbsolutePath());
-                    if (added) {
-                        ctx.response()
-                                .putHeader("content-type", "application/json")
-                                .end(Json.encode(new JsonObject().put("success", true)));
-                    } else {
-                        LOGGER.error("Converted pack was not added to library");
-                        ctx.fail(500);
-                    }
+                    // Return path to converted file within library
+                    ctx.response()
+                            .putHeader("content-type", "application/json")
+                            .end(Json.encode(new JsonObject()
+                                    .put("success", true)
+                                    .put("path", maybeConvertedPack.result().toString())
+                            ));
                 } else {
                     LOGGER.error("Failed to read or convert pack");
                     ctx.fail(500, maybeConvertedPack.cause());

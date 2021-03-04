@@ -27,7 +27,9 @@
         "link2": "or view an example pack",
         "suffix": " in the editor."
       },
-      "convertPack": "Convert this story pack to (editable) archive format",
+      "convertPackToArchive": "Convert this story pack to (editable) archive format",
+      "convertPackToRaw": "Convert this story pack to raw format (v1.x)",
+      "convertPackToFs": "Convert this story pack to FS format (v2.x)",
       "editPack": "Open this story pack in editor",
       "removePack": "Remove this story pack from library",
       "addPack": "Add a story pack to the library"
@@ -35,7 +37,7 @@
     "official": "Official",
     "format": {
       "archive": "Archive (editable)",
-      "binary": "Binary (v1.x)",
+      "raw": "Raw (v1.x)",
       "fs": "FS (v2.x)"
     }
   },
@@ -163,6 +165,7 @@
       "converting": "Converting pack in library...",
       "converted": "Pack converted in library.",
       "convertingFailed": "Failed to convert pack in library.",
+      "conversionRequiresDevice": "Device must be plugged for conversion to FS format",
       "removing": "Removing pack from library...",
       "removed": "Pack removed from library.",
       "removingFailed": "Failed to remove pack from library.",
@@ -195,7 +198,8 @@
       "removingFailed": "Failed to remove pack from device.",
       "reordering": "Reordering packs on device...",
       "reordered": "Packs reordered on device.",
-      "reorderingFailed": "Failed to reorder packs on device."
+      "reorderingFailed": "Failed to reorder packs on device.",
+      "notCompatible": "The story pack is not compatible with the plugged device."
     },
     "editor": {
       "saving": "Saving story pack to library...",
@@ -298,8 +302,12 @@
         "content": "Remove pack from library?"
       },
       "askAllowEnriched": {
-        "title": "Enabled enriched binary format?",
+        "title": "Enable enriched binary format?",
         "content": "<p>The so-called enriched binary format <strong>leverages empty spaces within binary packs to store metadata</strong> (pack's title and description, as well each node's type, name and position).</p><p>This avoids loss of information (except for the pack thumbnail) and the pack can be converted back to archive format, then opened in the editor with all information intact (although potentially truncated).</p><p>However, this is a deviation from the original / official pack format understood by the device, and the packs may not be read correctly at some point.</p><p><em>You will be able to change this behaviour in the Settings panel.</em></p><p>Do you want to enable the enriched binary format (select No if you prefer to stick to the original / official format for maximum compatibility)?</p>"
+      },
+      "askConfirmConversion": {
+        "title": "Convert story pack?",
+        "content": "<p>The device-compatible instance of the story pack is outdated. Convert latest instance?</p><p>(The converted pack will be stored in the local library)</p>"
       }
     },
     "settings": {

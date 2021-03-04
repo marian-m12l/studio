@@ -7,10 +7,10 @@
 export function sortPacks(packs) {
     return packs.sort((a,b) => {
         // Official packs last, alphabetic order except for missing titles (uuids, last)
-        let titleA = (a.title && a.title.toUpperCase()) || '__'+a.uuid.toUpperCase();
-        let titleB = (b.title && b.title.toUpperCase()) || '__'+b.uuid.toUpperCase();
-        let officialA = a.official || false;
-        let officialB = b.official || false;
+        let titleA = (a.packs[0].title && a.packs[0].title.toUpperCase()) || '__'+a.uuid.toUpperCase();
+        let titleB = (b.packs[0].title && b.packs[0].title.toUpperCase()) || '__'+b.uuid.toUpperCase();
+        let officialA = a.packs[0].official || false;
+        let officialB = b.packs[0].official || false;
         if (officialA === officialB) {
             return (titleA < titleB) ? -1 : (titleA > titleB) ? 1 : 0;
         } else {

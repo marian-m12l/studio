@@ -47,8 +47,13 @@
 
 .pack-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
     padding: 10px;
+}
+.plugged-device .pack-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+.local-library .pack-grid {
+    grid-template-columns: repeat(auto-fit, minmax(365px, 1fr));
 }
 
 .empty p:first-child {
@@ -60,7 +65,6 @@
 
 .pack-grid .pack-tile {
     display: flex;
-    flex-direction: column;
     width: min-content;
     height: auto;
     padding-top: 5px;
@@ -69,16 +73,54 @@
     padding-right: 10px;
     margin: 2px;
     border-radius: 5px;
+    background-color: #aaaaaa;
+    border: 3px solid #282c34;
 }
-.pack-grid .pack-tile.pack-archive {
+.plugged-device .pack-grid .pack-tile {
+    flex-direction: column;
+}
+.local-library .pack-grid .pack-tile {
+    flex-direction: row;
+}
+
+.local-library .pack-grid .pack-tile .pack-left {
+    display: flex;
+    flex-direction: column;
+    margin-right: 5px;
+    flex: 1;
+    flex-grow: 0;
+}
+
+.local-library .pack-grid .pack-tile .pack-right {
+    display: flex;
+    flex-direction: column;
+    padding-left: 5px;
+    border-left: solid 1px #282c34;
+    width: 200px;
+}
+
+.local-library .pack-grid .pack-tile .pack-right .pack-entry {
+    border-radius: 5px;
+    padding: 1px;
+    position: relative;
+}
+
+.local-library .pack-grid .pack-tile .pack-right .pack-entry.latest {
+    border: solid 3px #282c34 !important;
+}
+
+.pack-grid .pack-tile.pack-archive,
+.pack-grid .pack-tile .pack-right .pack-entry.pack-archive {
     background-color: #ebcb42;
     border: 3px solid #b89f33;
 }
-.pack-grid .pack-tile.pack-binary {
+.pack-grid .pack-tile.pack-raw,
+.pack-grid .pack-tile .pack-right .pack-entry.pack-raw {
     background-color: #56d3ca;
     border: 3px solid #26807a;
 }
-.pack-grid .pack-tile.pack-fs {
+.pack-grid .pack-tile.pack-fs,
+.pack-grid .pack-tile .pack-right .pack-entry.pack-fs {
     background-color: #b55ba8;
     border: 3px solid #824178;
 }
@@ -110,7 +152,7 @@
 
 .pack-grid .pack-tile .pack-version {
     position: absolute;
-    right: 2px; bottom: 2px;
+    left: 2px; bottom: 2px;
     z-index: 1;
     overflow: hidden;
     width: 20px; height: 20px;
@@ -181,8 +223,15 @@
     overflow-wrap: anywhere;
 }
 
+.pack-grid .pack-tile .pack-entry .pack-filename {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
 .pack-grid .pack-tile .pack-actions {
     flex-grow: 0;
+    text-align: right;
 }
 
 .pack-grid .pack-tile button.pack-action,button.library-action {
@@ -198,9 +247,11 @@
 }
 
 .device-dropzone {
-    min-height: 200px;
+    height: calc(100vh - 160px - 48px);
+    overflow-y: scroll;
 }
 
 .library-dropzone {
-    min-height: 200px;
+    height: calc(100vh - 160px - 48px);
+    overflow-y: scroll;
 }

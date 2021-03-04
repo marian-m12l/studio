@@ -6,7 +6,6 @@
 
 package studio.webui.api;
 
-import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
@@ -18,8 +17,6 @@ import studio.webui.service.LibraryService;
 
 import java.io.File;
 import java.util.List;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class DeviceController {
 
@@ -64,64 +61,11 @@ public class DeviceController {
                     });
         });
 
-        // Prepare pack from library for device
-        router.post("/preparePackForDevice").blockingHandler(ctx -> {
-            String uuid = ctx.getBodyAsJson().getString("uuid");
-            String packPath = ctx.getBodyAsJson().getString("path");
-            Boolean allowEnriched = ctx.getBodyAsJson().getBoolean("allowEnriched", false);
-            String driver = ctx.getBodyAsJson().getString("driver");
-            String deviceUuid = ctx.getBodyAsJson().getString("deviceUuid", null);
-            Future<File> futureConvertedPack = Future.future();
-            if ("raw".equalsIgnoreCase(driver)) {
-                // First, get the pack file, potentially converted from archive format to pack format
-                // Perform conversion/uncompression asynchronously
-                Timer timer = new Timer();
-                timer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        libraryService.getBinaryPackFile(packPath, allowEnriched)
-                                .ifPresentOrElse(
-                                        packFile -> futureConvertedPack.tryComplete(packFile),
-                                        () -> futureConvertedPack.tryFail("Failed to read or convert pack to binary format"));
-                        futureConvertedPack.tryComplete();
-                    }
-                }, 1000);
-            } else if ("fs".equalsIgnoreCase(driver)) {
-                // First, get the pack file, potentially converted from archive format to pack format
-                // Perform conversion/uncompression asynchronously
-                Timer timer = new Timer();
-                timer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        libraryService.getFsPackFile(packPath, deviceUuid, allowEnriched)
-                                .ifPresentOrElse(
-                                        packFile -> futureConvertedPack.tryComplete(packFile),
-                                        () -> futureConvertedPack.tryFail("Failed to read or convert pack to folder format"));
-                        futureConvertedPack.tryComplete();
-                    }
-                }, 1000);
-            } else {
-                ctx.fail(400);
-                return;
-            }
-            futureConvertedPack.onComplete(maybeConvertedPack -> {
-                if (maybeConvertedPack.succeeded()) {
-                    // Return path to temporary converted file or to untouched pack within library
-                    ctx.response()
-                            .putHeader("content-type", "application/json")
-                            .end(Json.encode(new JsonObject().put("path", maybeConvertedPack.result().getAbsolutePath())));
-                } else {
-                    LOGGER.error("Failed to read or convert pack");
-                    ctx.fail(500, maybeConvertedPack.cause());
-                }
-            });
-        });
-
         // Add pack from library to device
         router.post("/addFromLibrary").blockingHandler(ctx -> {
             String uuid = ctx.getBodyAsJson().getString("uuid");
             String packPath = ctx.getBodyAsJson().getString("path");
-            File packFile = new File(packPath);
+            File packFile = new File(libraryService.libraryPath() + packPath);
             // Start transfer to device
             storyTellerService.addPack(uuid, packFile)
                     .whenComplete((maybeTransferId, e) -> {

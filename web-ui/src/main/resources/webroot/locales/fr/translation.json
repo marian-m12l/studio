@@ -27,7 +27,9 @@
         "link2": "ou ouvrez un pack d'exemple",
         "suffix": " dans l'éditeur."
       },
-      "convertPack": "Convertir ce pack d'histoires au format archive (éditable)",
+      "convertPackToArchive": "Convertir ce pack d'histoires au format archive (éditable)",
+      "convertPackToRaw": "Convertir ce pack d'histoires au format brut (v1.x)",
+      "convertPackToFs": "Convertir ce pack d'histoires au format FS (v2.x)",
       "editPack": "Ouvrir ce pack d'histoires dans l'éditeur",
       "removePack": "Supprimer ce pack d'histoires de la bibliothèque",
       "addPack": "Ajouter un pack d'histoires à la bibliothèque"
@@ -35,7 +37,7 @@
     "official": "Officiel",
     "format": {
       "archive": "Archive (éditable)",
-      "binary": "Binaire (v1.x)",
+      "raw": "Brut (v1.x)",
       "fs": "FS (v2.x)"
     }
   },
@@ -163,6 +165,7 @@
       "converting": "Conversion du pack dans la bibliothèque...",
       "converted": "Pack d'histoires converti.",
       "convertingFailed": "Échec de la conversion du pack d'histoires dans la bibliothèque.",
+      "conversionRequiresDevice": "Un appareil doit être branché pour convertir au format FS",
       "removing": "Retrait du pack de la bibliothèque...",
       "removed": "Pack retiré de la bibliothèque.",
       "removingFailed": "Échec du retrait du pack de la bibliothèque.",
@@ -195,7 +198,8 @@
       "removingFailed": "Échec du retrait du pack de l'appareil.",
       "reordering": "Réorganisation des packs de l'appareil...",
       "reordered": "Packs réorganisés sur l'appareil.",
-      "reorderingFailed": "Échec de la réorganisation des packs de l'appareil."
+      "reorderingFailed": "Échec de la réorganisation des packs de l'appareil.",
+      "notCompatible": "Le pack d'histoires n'est pas compatible avec cet appareil."
     },
     "editor": {
       "saving": "Enregistrement du pack d'histoires dans la bibliothèque...",
@@ -300,6 +304,10 @@
       "askAllowEnriched": {
         "title": "Activer le format binaire enrichi ?",
         "content": "<p>Le format binaire dit \"enrichi\" <strong>utilise les espaces vides des packs au format binaire pour enregistrer les métadonnées</strong> (titre et description du pack, ainsi que les type, nom et position de chaque nœud).</p><p>Cela permet d'éviter la perte de ces informations (à l'exception la miniature du pack), et le pack peut donc être à nouveau converti au format archive puis ouvert dans l'éditeur avec toutes ces informations intactes (bien que potentiellement tronquées).</p><p>Cependant, cela ne fait pas partie du format original / officiel compris par l'appareil, et les packs d'histoires pourraient ne pas être lus correctement à l'avenir.</p><p><em>Vous pourrez modifier ce comportement dans le panneau Paramètres.</em></p><p>Voulez-vous activer le format binaire enrichi (choisissez Non si vous préférez utiliser le format original / officiel pour une compatibilité maximale)?</p>"
+      },
+      "askConfirmConversion": {
+        "title": "Convertir le pack d'histoires ?",
+        "content": "<p>L'instance de ce pack d'histoires compatible avec l'appareil n'est pas à jour. Convertir la dernière instance ?</p><p>(Le pack converti sera conservé dans la bibliothèque locale)</p>"
       }
     },
     "settings": {

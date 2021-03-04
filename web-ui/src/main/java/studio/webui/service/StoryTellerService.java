@@ -471,7 +471,7 @@ public class StoryTellerService implements IStoryTellerService {
         return databaseMetadataService.getPackMetadata(pack.getUuid().toString())
                 .map(metadata -> new JsonObject()
                         .put("uuid", pack.getUuid().toString())
-                        .put("format", Constants.PACK_FORMAT_BINARY)
+                        .put("format", Constants.PACK_FORMAT_RAW)
                         .put("version", pack.getVersion())
                         .put("title", metadata.getTitle())
                         .put("description", metadata.getDescription())
@@ -481,7 +481,7 @@ public class StoryTellerService implements IStoryTellerService {
                 )
                 .orElse(new JsonObject()
                         .put("uuid", pack.getUuid().toString())
-                        .put("format", Constants.PACK_FORMAT_BINARY)
+                        .put("format", Constants.PACK_FORMAT_RAW)
                         .put("version", pack.getVersion())
                         .put("sectorSize", pack.getSizeInSectors())
                 );
