@@ -103,10 +103,12 @@
     border-radius: 5px;
     padding: 1px;
     position: relative;
+    filter: brightness(70%);
 }
 
 .local-library .pack-grid .pack-tile .pack-right .pack-entry.latest {
     border: solid 3px #282c34 !important;
+    filter: brightness(100%) !important;
 }
 
 .pack-grid .pack-tile.pack-archive,
