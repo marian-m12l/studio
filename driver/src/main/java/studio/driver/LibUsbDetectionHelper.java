@@ -115,10 +115,18 @@ public class LibUsbDetectionHelper {
                     LOGGER.info(String.format("Hotplug event callback (%04x:%04x): " + event, vendorId, productId));
                     switch (event) {
                         case LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED:
-                            CompletableFuture.runAsync(() -> listener.onDevicePlugged(device));
+                            CompletableFuture.runAsync(() -> listener.onDevicePlugged(device))
+                                    .exceptionally(e -> {
+                                        LOGGER.log(Level.SEVERE, "An error occurred while handling device plug event", e);
+                                        return null;
+                                    });
                             break;
                         case LibUsb.HOTPLUG_EVENT_DEVICE_LEFT:
-                            CompletableFuture.runAsync(() -> listener.onDeviceUnplugged(device));
+                            CompletableFuture.runAsync(() -> listener.onDeviceUnplugged(device))
+                                    .exceptionally(e -> {
+                                        LOGGER.log(Level.SEVERE, "An error occurred while handling device unplug event", e);
+                                        return null;
+                                    });
                             break;
                     }
                     return 0;   // Do not deregister the callback

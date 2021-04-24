@@ -41,7 +41,6 @@ public class FsStoryTellerAsyncDriver {
     private static final String CONTENT_FOLDER = ".content";
     private static final String NODE_INDEX_FILENAME = "ni";
 
-    private static final String FS_MOUNTPOINT_PROP = "studio.fs.mountpoint";
     private static final long FS_MOUNTPOINT_POLL_DELAY = 1000L;
     private static final long FS_MOUNTPOINT_RETRY = 10;
 
@@ -57,32 +56,26 @@ public class FsStoryTellerAsyncDriver {
         LibUsbDetectionHelper.initializeLibUsb(DeviceVersion.DEVICE_VERSION_2, new DeviceHotplugEventListener() {
                     @Override
                     public void onDevicePlugged(Device device) {
-                        // Use configuration to determine mount point
-                        partitionMountPoint = System.getProperty(FS_MOUNTPOINT_PROP);
-                        if (partitionMountPoint == null || partitionMountPoint.isBlank()) {
-                            throw new StoryTellerException("FS device partition must be defined with system property " + FS_MOUNTPOINT_PROP);
-                        }
-                        LOGGER.fine("Lunii FS mount point: " + partitionMountPoint);
-
-                        // Wait for partition to be available
-                        String mdFile = partitionMountPoint + File.separator + DEVICE_METADATA_FILENAME;
-                        boolean mounted = false;
-                        try {
-                            for (int i = 0; i < FS_MOUNTPOINT_RETRY && !mounted; i++) {
-                                File folder = new File(mdFile);
-                                if (folder.exists()) {
-                                    LOGGER.info("FS device partition is mounted.");
-                                    mounted = true;
-                                } else {
-                                    Thread.sleep(FS_MOUNTPOINT_POLL_DELAY);
-                                }
+                        // Wait for a partition to be mounted which contains the .md file
+                        LOGGER.fine("Waiting for device partition...");
+                        for (int i = 0; i < FS_MOUNTPOINT_RETRY && partitionMountPoint==null; i++) {
+                            try {
+                                Thread.sleep(FS_MOUNTPOINT_POLL_DELAY);
+                                DeviceUtils.listMountPoints().forEach(path -> {
+                                    LOGGER.finest("Looking for .md file on mount point / drive: " + path);
+                                    File mdFile = new File(path, DEVICE_METADATA_FILENAME);
+                                    if (mdFile.exists()) {
+                                        partitionMountPoint = path;
+                                        LOGGER.info("FS device partition located: " + partitionMountPoint);
+                                    }
+                                });
+                            } catch (InterruptedException e) {
+                                LOGGER.log(Level.SEVERE, "Failed to locate device partition", e);
                             }
-                        } catch (InterruptedException e) {
-                            LOGGER.log(Level.SEVERE, "Failed to open device partition", e);
                         }
 
-                        if (!mounted) {
-                            throw new StoryTellerException("FS device partition is not mounted: " + partitionMountPoint);
+                        if (partitionMountPoint == null) {
+                            throw new StoryTellerException("Could not locate device partition");
                         }
 
                         // Update device reference
