@@ -32,12 +32,12 @@
             <AppenderRef ref="RollingFile"/>
         </Logger>
 
-        <Logger name="studio.driver" level="ALL" additivity="false">
+        <Logger name="studio.driver" level="TRACE" additivity="false">
             <AppenderRef ref="STDOUT"/>
             <AppenderRef ref="RollingFile"/>
         </Logger>
 
-        <Logger name="studio.core" level="ALL" additivity="false">
+        <Logger name="studio.core" level="TRACE" additivity="false">
             <AppenderRef ref="STDOUT"/>
             <AppenderRef ref="RollingFile"/>
         </Logger>
