@@ -13,7 +13,7 @@
     <parent>
         <artifactId>studio-parent</artifactId>
         <groupId>studio</groupId>
-        <version>0.3.0-beta.3-SNAPSHOT</version>
+        <version>0.3.0-beta.3</version>
     </parent>
 
     <artifactId>studio-core</artifactId>
