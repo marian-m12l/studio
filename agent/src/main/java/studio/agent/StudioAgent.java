@@ -68,13 +68,6 @@ public class StudioAgent {
                                 .include(UnofficialImageAdvice.class.getClassLoader())
                                 .advice(ElementMatchers.<MethodDescription>nameEndsWith("getImageUrl"), UnofficialImageAdvice.class.getName())
                 )
-                // Transform AuthState#getDataServerToken to fetch official database with a valid token
-                .type(ElementMatchers.<TypeDescription>named("com.lunii.sdk.feature.auth.AuthState"))
-                .transform(
-                        new AgentBuilder.Transformer.ForAdvice()
-                                .include(OfficialDatabaseAdvice.class.getClassLoader())
-                                .advice(ElementMatchers.<MethodDescription>nameEndsWith("getDataServerToken"), OfficialDatabaseAdvice.class.getName())
-                )
                 .installOn(instrumentation);
     }
 

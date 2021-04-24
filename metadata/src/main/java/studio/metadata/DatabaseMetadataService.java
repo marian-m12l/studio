@@ -7,8 +7,12 @@
 package studio.metadata;
 
 import com.google.gson.*;
+import com.google.gson.stream.JsonReader;
 
 import java.io.*;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
@@ -20,6 +24,8 @@ public class DatabaseMetadataService {
     public static final String OFFICIAL_DB_PROP = "studio.db.official";
     public static final String OFFICIAL_DB_JSON_PATH = "/.studio/db/official.json";
     public static final String THUMBNAILS_STORAGE_ROOT = "https://storage.googleapis.com/lunii-data-prod";
+    public static final String LUNII_GUEST_TOKEN_URL = "https://server-auth-prod.lunii.com/guest/create";
+    public static final String LUNII_PACKS_DATABASE_URL = "https://server-data-prod.lunii.com/v2/packs";
     public static final String UNOFFICIAL_DB_PROP = "studio.db.unofficial";
     public static final String UNOFFICIAL_DB_JSON_PATH = "/.studio/db/unofficial.json";
 
@@ -46,10 +52,12 @@ public class DatabaseMetadataService {
                     cachedOfficialDatabase.put(uuid, packMetadata);
                 });
             } catch (FileNotFoundException e) {
-                LOGGER.log(Level.SEVERE, "Missing official metadata database file", e);
+                LOGGER.log(Level.WARNING, "Missing official metadata database file", e);
+                this.fetchOfficialDatabase();
             } catch (JsonParseException|IllegalStateException e) {
                 // Graceful failure on invalid file content
-                LOGGER.log(Level.SEVERE, "Official metadata database file is invalid", e);
+                LOGGER.log(Level.WARNING, "Official metadata database file is invalid", e);
+                this.fetchOfficialDatabase();
             }
         }
         // Initialize empty unofficial database if needed
@@ -125,13 +133,73 @@ public class DatabaseMetadataService {
         return Optional.empty();
     }
 
-    public void replaceOfficialDatabase(JsonObject json) {
+    private void replaceOfficialDatabase(JsonObject json) {
         // Update official database
         try {
             String databasePath = System.getProperty(OFFICIAL_DB_PROP, System.getProperty("user.home") + OFFICIAL_DB_JSON_PATH);
             writeDatabaseFile(databasePath, json);
+
+            // Go through all packs to update cache
+            json.keySet().forEach(key -> {
+                JsonObject packMetadata = json.getAsJsonObject(key);
+                String uuid = packMetadata.get("uuid").getAsString();
+                cachedOfficialDatabase.put(uuid, packMetadata);
+            });
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Failed to update official metadata database file", e);
+        }
+    }
+
+    private void fetchOfficialDatabase() {
+        try {
+            LOGGER.fine("Fetching official metadata database");
+            // Get a guest token
+            URL tokenUrl = new URL(LUNII_GUEST_TOKEN_URL);
+            HttpURLConnection tokenConnection = (HttpURLConnection) tokenUrl.openConnection();
+            tokenConnection.setRequestMethod("GET");
+            tokenConnection.setConnectTimeout(10000);
+            tokenConnection.setReadTimeout(10000);
+            int tokenStatusCode = tokenConnection.getResponseCode();
+            if (tokenStatusCode == 200) {
+                // OK, read response body
+                InputStream inputStream = tokenConnection.getInputStream();
+                BufferedReader bufferedReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+                // Extract token from response body
+                JsonParser parser = new JsonParser();
+                JsonObject tokenJson = parser.parse(new JsonReader(bufferedReader)).getAsJsonObject();
+                String token = tokenJson.getAsJsonObject("response").getAsJsonObject("token").get("server").getAsString();
+                bufferedReader.close();
+                LOGGER.fine("Guest token: " + token);
+
+                // Call service to fetch metadata for all packs
+                URL url = new URL(LUNII_PACKS_DATABASE_URL);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.setRequestMethod("GET");
+                connection.setConnectTimeout(10000);
+                connection.setReadTimeout(10000);
+                connection.setRequestProperty("Accept", "application/json");
+                connection.setRequestProperty("X-AUTH-TOKEN", token);
+                int statusCode = connection.getResponseCode();
+                if (statusCode == 200) {
+                    // OK, read response body
+                    inputStream = connection.getInputStream();
+                    bufferedReader = new BufferedReader(new InputStreamReader(inputStream, StandardCharsets.UTF_8));
+                    // Extract metadata database from response body
+                    JsonObject json = parser.parse(new JsonReader(bufferedReader)).getAsJsonObject();
+                    JsonObject response = json.get("response").getAsJsonObject();
+                    bufferedReader.close();
+
+                    // Try and update official database
+                    LOGGER.info("Fetched metadata, updating local database");
+                    this.replaceOfficialDatabase(response);
+                } else {
+                    LOGGER.log(Level.SEVERE, "Failed to fetch official metadata database. Status code: " + statusCode);
+                }
+            } else {
+                LOGGER.log(Level.SEVERE, "Failed to fetch guest token. Status code: " + tokenStatusCode);
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Failed to fetch official metadata database.", e);
         }
     }
 
