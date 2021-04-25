@@ -43,6 +43,8 @@ public class LibraryService {
 
     public static final String LOCAL_LIBRARY_PROP = "studio.library";
     public static final String LOCAL_LIBRARY_PATH = "/.studio/library/";
+    public static final String TMP_DIR_PROP = "studio.tmpdir";
+    public static final String TMP_DIR_PATH = "/.studio/tmp/";
 
     private final Logger LOGGER = LoggerFactory.getLogger(LibraryService.class);
 
@@ -59,6 +61,17 @@ public class LibraryService {
             } catch (IOException e) {
                 LOGGER.error("Failed to initialize local library", e);
                 throw new IllegalStateException("Failed to initialize local library");
+            }
+        }
+
+        // Create the temp folder if needed
+        File tmpFolder = new File(tmpDirPath());
+        if (!tmpFolder.exists() || !tmpFolder.isDirectory()) {
+            try {
+                Files.createDirectories(Paths.get(tmpDirPath()));
+            } catch (IOException e) {
+                LOGGER.error("Failed to initialize temp folder", e);
+                throw new IllegalStateException("Failed to initialize temp folder");
             }
         }
     }
@@ -146,7 +159,7 @@ public class LibraryService {
         // Archive format packs must first be converted to raw format
         if (packPath.endsWith(".zip")) {
             try {
-                File tmp = File.createTempFile(packPath, ".pack");
+                File tmp = createTempFile(packPath, ".pack").toFile();
 
                 LOGGER.info("Pack is in archive format. Converting to raw format and storing in temporary file: " + tmp.getAbsolutePath());
 
@@ -184,7 +197,7 @@ public class LibraryService {
             throw new RuntimeException("Pack is already in raw format");
         } else {
             try {
-                File tmp = File.createTempFile(packPath, ".pack");
+                File tmp = createTempFile(packPath, ".pack").toFile();
 
                 LOGGER.info("Pack is in FS format. Converting to raw format and storing in temporary file: " + tmp.getAbsolutePath());
 
@@ -225,7 +238,7 @@ public class LibraryService {
             throw new RuntimeException("Pack is already in archive format");
         } else if (packPath.endsWith(".pack")) {
             try {
-                File tmp = File.createTempFile(packPath, ".zip");
+                File tmp = createTempFile(packPath, ".zip").toFile();
 
                 LOGGER.info("Pack is in raw format. Converting to archive format and storing in temporary file: " + tmp.getAbsolutePath());
 
@@ -257,7 +270,7 @@ public class LibraryService {
             }
         } else {
             try {
-                File tmp = File.createTempFile(packPath, ".zip");
+                File tmp = createTempFile(packPath, ".zip").toFile();
 
                 LOGGER.info("Pack is in FS format. Converting to archive format and storing in temporary file: " + tmp.getAbsolutePath());
 
@@ -290,7 +303,7 @@ public class LibraryService {
         // Archive format packs must first be converted to FS format
         if (packPath.endsWith(".zip")) {
             try {
-                Path tmp = Files.createTempDirectory(packPath);
+                Path tmp = createTempDirectory(packPath);
 
                 LOGGER.info("Pack to transfer is in archive format. Converting to FS format and storing in temporary folder: " + tmp.toAbsolutePath().toString());
 
@@ -320,7 +333,7 @@ public class LibraryService {
             }
         } else if (packPath.endsWith(".pack")) {
             try {
-                Path tmp = Files.createTempDirectory(packPath);
+                Path tmp = createTempDirectory(packPath);
 
                 LOGGER.info("Pack is in raw format. Converting to FS format and storing in temporary folder: " + tmp.toAbsolutePath().toString());
 
@@ -398,6 +411,19 @@ public class LibraryService {
     public String libraryPath() {
         // Path may be overridden by system property `studio.library`
         return System.getProperty(LOCAL_LIBRARY_PROP, System.getProperty("user.home") + LOCAL_LIBRARY_PATH);
+    }
+
+    private String tmpDirPath() {
+        // Path may be overridden by system property `studio.tmpdir`
+        return System.getProperty(TMP_DIR_PROP, System.getProperty("user.home") + TMP_DIR_PATH);
+    }
+
+    private Path createTempFile(String prefix, String suffix) throws IOException {
+        return Files.createTempFile(Paths.get(tmpDirPath()), prefix, suffix);
+    }
+
+    private Path createTempDirectory(String prefix) throws IOException {
+        return Files.createTempDirectory(Paths.get(tmpDirPath()), prefix);
     }
 
     private Optional<LibraryPack> readPackFile(Path path) {
