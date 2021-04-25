@@ -265,7 +265,6 @@ class PackLibrary extends React.Component {
     };
 
     onConvertLibraryPack = (pack, format) => {
-        const { t } = this.props;
         return () => {
             if (format === 'raw' && localStorage.getItem(LOCAL_STORAGE_ALLOW_ENRICHED_BINARY_FORMAT) === null) {
                 // Ask for enriched raw format preference
