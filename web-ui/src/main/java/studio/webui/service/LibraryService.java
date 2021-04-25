@@ -299,7 +299,7 @@ public class LibraryService {
         }
     }
 
-    public Optional<Path> addConvertedFsPackFile(String packPath, String deviceUuid, Boolean allowEnriched) {
+    public Optional<Path> addConvertedFsPackFile(String packPath, Boolean allowEnriched) {
         // Archive format packs must first be converted to FS format
         if (packPath.endsWith(".zip")) {
             try {
@@ -318,7 +318,7 @@ public class LibraryService {
                 StoryPack packWithPreparedAssets = PackAssetsCompression.withPreparedAssetsFirmware2dot4(storyPack);
 
                 LOGGER.info("Writing FS format pack");
-                FsStoryPackWriter writer = new FsStoryPackWriter(Hex.decodeHex(deviceUuid));
+                FsStoryPackWriter writer = new FsStoryPackWriter();
                 Path folderPath = writer.write(packWithPreparedAssets, tmp);
 
                 String destinationFolder = packWithPreparedAssets.getUuid() + ".converted_" + System.currentTimeMillis();
@@ -348,7 +348,7 @@ public class LibraryService {
                 StoryPack packWithPreparedAssets = PackAssetsCompression.withPreparedAssetsFirmware2dot4(storyPack);
 
                 LOGGER.info("Writing FS format pack");
-                FsStoryPackWriter writer = new FsStoryPackWriter(Hex.decodeHex(deviceUuid));
+                FsStoryPackWriter writer = new FsStoryPackWriter();
                 Path folderPath = writer.write(packWithPreparedAssets, tmp);
 
                 String destinationFolder = packWithPreparedAssets.getUuid() + ".converted_" + System.currentTimeMillis();

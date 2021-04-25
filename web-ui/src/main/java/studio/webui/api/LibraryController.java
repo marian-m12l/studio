@@ -80,7 +80,6 @@ public class LibraryController {
             String packPath = ctx.getBodyAsJson().getString("path");
             Boolean allowEnriched = ctx.getBodyAsJson().getBoolean("allowEnriched", false);
             String format = ctx.getBodyAsJson().getString("format");
-            String deviceUuid = ctx.getBodyAsJson().getString("deviceUuid", null);
             // Perform conversion/uncompression asynchronously
             Future<Path> futureConvertedPack = Future.future();
             if (Constants.PACK_FORMAT_RAW.equalsIgnoreCase(format)) {
@@ -100,7 +99,7 @@ public class LibraryController {
                 timer.schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        libraryService.addConvertedFsPackFile(packPath, deviceUuid, allowEnriched)
+                        libraryService.addConvertedFsPackFile(packPath, allowEnriched)
                                 .ifPresentOrElse(
                                         packPath -> futureConvertedPack.tryComplete(packPath),
                                         () -> futureConvertedPack.tryFail("Failed to read or convert pack to folder format"));

@@ -8,6 +8,7 @@ package studio.driver.fs;
 
 import org.apache.commons.codec.binary.Hex;
 import org.usb4java.Device;
+import studio.core.v1.writer.fs.FsStoryPackWriter;
 import studio.driver.DeviceVersion;
 import studio.driver.LibUsbDetectionHelper;
 import studio.driver.model.fs.FsDeviceInfos;
@@ -415,7 +416,19 @@ public class FsStoryTellerAsyncDriver {
                     throw new StoryTellerException("Failed to copy pack from device", e);
                 }
             }).thenCompose(status -> {
-                // When transfer is complete, add pack UUID to index
+                // When transfer is complete, generate device-specific boot file from device UUID
+                LOGGER.fine("Generating device-specific boot file");
+                return getDeviceInfos().thenApply(deviceInfos -> {
+                    try {
+                        FsStoryPackWriter writer = new FsStoryPackWriter();
+                        writer.addBootFile(destFolder.toPath(), deviceInfos.getUuid());
+                        return status;
+                    } catch (IOException e) {
+                        throw new StoryTellerException("Failed to generate device-specific boot file", e);
+                    }
+                });
+            }).thenCompose(status -> {
+                // Finally, add pack UUID to index
                 return readPackIndex()
                         .thenCompose(packUUIDs -> {
                             try {

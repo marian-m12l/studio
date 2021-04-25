@@ -105,8 +105,7 @@ class PackLibrary extends React.Component {
                 });
             } else {
                 // Pack is converted and stored in the local library, then transferred to the device
-                let deviceUuid = this.state.device.metadata.uuid || '';
-                this.props.convertPackInLibrary(latestPack.uuid, latestPack.path, this.state.device.metadata.driver, this.props.settings.allowEnriched, deviceUuid, this.context)
+                this.props.convertPackInLibrary(latestPack.uuid, latestPack.path, this.state.device.metadata.driver, this.props.settings.allowEnriched, this.context)
                     .then(path => {
                         this.doAddToDevice({...latestPack, format: this.state.device.metadata.driver}, path);
                     });
@@ -136,8 +135,7 @@ class PackLibrary extends React.Component {
         return () => {
             this.props.setAllowEnriched(allow);
             // Pack is converted and stored in the local library, then transferred to the device
-            let deviceUuid = this.state.device.metadata.uuid || '';
-            this.props.convertPackInLibrary(this.state.allowEnrichedDialog.data.pack.uuid, this.state.allowEnrichedDialog.data.pack.path, this.state.allowEnrichedDialog.data.format, allow, deviceUuid, this.context)
+            this.props.convertPackInLibrary(this.state.allowEnrichedDialog.data.pack.uuid, this.state.allowEnrichedDialog.data.pack.path, this.state.allowEnrichedDialog.data.format, allow, this.context)
                 .then(path => {
                     if (this.state.allowEnrichedDialog.data.addToDevice) {
                         return this.doAddToDevice(this.state.allowEnrichedDialog.data.pack, path);
@@ -158,8 +156,7 @@ class PackLibrary extends React.Component {
         return () => {
             if (answer) {
                 // Pack is converted and stored in the local library, then transferred to the device
-                let deviceUuid = this.state.device.metadata.uuid || '';
-                this.props.convertPackInLibrary(this.state.confirmConversionDialog.data.pack.uuid, this.state.confirmConversionDialog.data.pack.path, this.state.confirmConversionDialog.data.format, this.props.settings.allowEnriched, deviceUuid, this.context)
+                this.props.convertPackInLibrary(this.state.confirmConversionDialog.data.pack.uuid, this.state.confirmConversionDialog.data.pack.path, this.state.confirmConversionDialog.data.format, this.props.settings.allowEnriched, this.context)
                     .then(path => this.doAddToDevice(this.state.confirmConversionDialog.data.pack, path))
                     .then(() => {
                         this.setState({
@@ -270,10 +267,6 @@ class PackLibrary extends React.Component {
     onConvertLibraryPack = (pack, format) => {
         const { t } = this.props;
         return () => {
-            if (format === 'fs' && !this.state.device.metadata) {
-                toast.error(t('toasts.library.conversionRequiresDevice'));
-                return;
-            }
             if (format === 'raw' && localStorage.getItem(LOCAL_STORAGE_ALLOW_ENRICHED_BINARY_FORMAT) === null) {
                 // Ask for enriched raw format preference
                 this.setState({
@@ -285,8 +278,7 @@ class PackLibrary extends React.Component {
                 return;
             }
             // Pack is converted and stored in the local library
-            let deviceUuid = (this.state.device.metadata && this.state.device.metadata.uuid) || '';
-            this.props.convertPackInLibrary(pack.uuid, pack.path, format, this.props.settings.allowEnriched, deviceUuid, this.context);
+            this.props.convertPackInLibrary(pack.uuid, pack.path, format, this.props.settings.allowEnriched, this.context);
         }
     };
 
@@ -521,9 +513,9 @@ class PackLibrary extends React.Component {
                                         {group.packs.map((p,idx) => {
                                             return <div key={p.path} title={p.path} className={`pack-entry pack-${p.format} ${idx === 0 && 'latest'}`}>
                                                 <div className="pack-filename">
-                                                    {p.format === 'archive' && <span role="img" aria-label="archive" title={t('library.local.format.archive')}>&#x1f5dc;</span>}
-                                                    {p.format === 'raw' && <span role="img" aria-label="raw" title={t('library.local.format.raw')}>&#x1f4e6;</span>}
-                                                    {p.format === 'fs' && <span role="img" aria-label="fs" title={t('library.local.format.fs')}>&#x1f4c2;</span>}
+                                                    {p.format === 'archive' && <span role="img" aria-label="archive" title={t('library.format.archive')}>&#x1f5dc;</span>}
+                                                    {p.format === 'raw' && <span role="img" aria-label="raw" title={t('library.format.raw')}>&#x1f4e6;</span>}
+                                                    {p.format === 'fs' && <span role="img" aria-label="fs" title={t('library.format.fs')}>&#x1f4c2;</span>}
                                                     {p.path}
                                                 </div>
                                                 <div className="pack-version"><span>{`v${p.version}`}</span></div>
@@ -574,7 +566,7 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     addToLibrary: (uuid, driver, context) => dispatch(actionAddToLibrary(uuid, driver, context, ownProps.t)),
     downloadPackFromLibrary: (uuid, path) => dispatch(actionDownloadFromLibrary(uuid, path, ownProps.t)),
     loadPackInEditor: (packData, filename) => dispatch(actionLoadPackInEditor(packData, filename, ownProps.t)),
-    convertPackInLibrary: (uuid, path, format, allowEnriched, deviceUuid, context) => dispatch(actionConvertInLibrary(uuid, path, format, allowEnriched, deviceUuid, context, ownProps.t)),
+    convertPackInLibrary: (uuid, path, format, allowEnriched, context) => dispatch(actionConvertInLibrary(uuid, path, format, allowEnriched, context, ownProps.t)),
     removeFromLibrary: (path) => dispatch(actionRemoveFromLibrary(path, ownProps.t)),
     uploadPackToLibrary: (path, packData) => dispatch(actionUploadToLibrary(null, path, packData, ownProps.t)),
     createPackInEditor: () => dispatch(actionCreatePackInEditor(ownProps.t)),

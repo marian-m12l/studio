@@ -158,7 +158,9 @@ export const actionAddFromLibrary = (uuid, path, format, driver, context, t) => 
                             context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.progress', (error, message) => {
                                 console.log("Received `storyteller.transfer."+transferId+".progress` event from vert.x event bus.");
                                 console.log(message.body);
-                                toast.update(toastId, {progress: message.body.progress, autoClose: false});
+                                if (message.body.progress < 1) {
+                                    toast.update(toastId, {progress: message.body.progress, autoClose: false});
+                                }
                             });
                             context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.done', (error, message) => {
                                 console.log("Received `storyteller.transfer."+transferId+".done` event from vert.x event bus.");
@@ -260,7 +262,9 @@ export const actionAddToLibrary = (uuid, driver, context, t) => {
                         context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.progress', (error, message) => {
                             console.log("Received `storyteller.transfer."+transferId+".progress` event from vert.x event bus.");
                             console.log(message.body);
-                            toast.update(toastId, {progress: message.body.progress, autoClose: false});
+                            if (message.body.progress < 1) {
+                                toast.update(toastId, {progress: message.body.progress, autoClose: false});
+                            }
                         });
                         context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.done', (error, message) => {
                             console.log("Received `storyteller.transfer."+transferId+".done` event from vert.x event bus.");
@@ -412,10 +416,10 @@ export const actionUploadToLibrary = (uuid, path, packData, t) => {
     }
 };
 
-export const actionConvertInLibrary = (uuid, path, format, allowEnriched, deviceUuid, context, t) => {
+export const actionConvertInLibrary = (uuid, path, format, allowEnriched, context, t) => {
     return dispatch => {
         let toastId = toast(t('toasts.library.converting'), { autoClose: false });
-        return convertInLibrary(uuid, path, format, allowEnriched, deviceUuid)
+        return convertInLibrary(uuid, path, format, allowEnriched)
             .then(resp => {
                 if (resp.success) {
                     console.log("Story pack converted. Path is: " + resp.path);

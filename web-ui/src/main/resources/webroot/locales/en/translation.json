@@ -165,7 +165,6 @@
       "converting": "Converting pack in library...",
       "converted": "Pack converted in library.",
       "convertingFailed": "Failed to convert pack in library.",
-      "conversionRequiresDevice": "Device must be plugged for conversion to FS format",
       "removing": "Removing pack from library...",
       "removed": "Pack removed from library.",
       "removingFailed": "Failed to remove pack from library.",
