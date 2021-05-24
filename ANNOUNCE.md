@@ -1,17 +1,12 @@
-### Give a try to the new beta version
+### New version 0.3.0 with support for the latest firmware
 
-You may have already noticed it, or even tried it: a beta release has been available for a few weeks. The main feature of this version is **a completely rewritten USB driver**. All the feedback I've gotten have been really good, so I'm considering rolling it as the main release.
-
-Which brings me to a little request I'm asking you: **[please give it a try](https://github.com/marian-m12l/studio/releases/tag/0.2.0-beta.2)**, make sure everything is fine for you (there are a variety of devices and firmwares to support) and more importantly **let me know if you find anything that is broken** by commenting on [this issue](https://github.com/marian-m12l/studio/issues/97).
-
-Thanks for all your great feedback!
+Last year, the Lunii firmware has seen a complete overhaul, affecting deeply the format and transfer of story packs.
+Thanks to the community and after a few months of beta testing, STUdio is now ready to support this new firmware!
 
 -----
 
-### Essayez la nouvelle version bêta
+### La nouvelle version 0.3.0 supporte le nouveau firmware
 
-Vous l'aviez peut-être déjà remarquée, voire essayée : une version bêta est disponible depuis quelques semaines. La principale fonctionnalité de cette version est **un pilote USB totalement réécrit**. Tous les retours que j'ai eus ont été très bons, j'envisage donc d'en faire la version principale.
-
-Ce qui m'amène à ma petite requête : **[essayez-la s'il vous plaît](https://github.com/marian-m12l/studio/releases/tag/0.2.0-beta.2)**, assurez-vous que tout fonctionne pour vous (le pilote doit supporter plusieurs appareils et firmwares) et surtout **faites-moi savoir si vous trouvez une anomalie** en commentant sur [cette issue](https://github.com/marian-m12l/studio/issues/97).
-
-Merci pour tous vos retours !
+L'année dernière, le firmware Lunii (le "micrologiciel" embarqué dans l'appareil) a connu des évolutions majeures, qui
+ont impacté en particulier le format et le transfert des packs d'histoires. Grâce à la communauté, et après quelques
+mois de bêta-test, STUdio supporte maintenant ce nouveau firmware !
