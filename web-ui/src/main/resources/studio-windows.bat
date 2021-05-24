@@ -1,7 +1,7 @@
 @echo off
 
-set STUDIO_PATH=%~dp0
-set DOT_STUDIO=%UserProfile%\.studio
+set STUDIO_PATH="%~dp0"
+set DOT_STUDIO="%UserProfile%\.studio"
 
 :: Make sure the .studio subdirectories exist
 if not exist %DOT_STUDIO%\agent\* mkdir %DOT_STUDIO%\agent

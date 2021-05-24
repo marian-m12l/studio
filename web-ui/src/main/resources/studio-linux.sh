@@ -1,7 +1,7 @@
 #!/bin/sh
 
 STUDIO_PATH="`dirname \"$0\"`"
-DOT_STUDIO=$HOME/.studio
+DOT_STUDIO="$HOME/.studio"
 
 # Make sure the .studio subdirectories exist
 if [ ! -d $DOT_STUDIO/agent ]; then mkdir -p $DOT_STUDIO/agent; fi
