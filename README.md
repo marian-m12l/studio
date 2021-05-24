@@ -106,7 +106,7 @@ FOR DEVELOPERS
 
 ### Building the application
 
-* Clone this repository: `git clone git@github.com:marian-m12l/studio.git`
+* Clone this repository: `git clone https://github.com/marian-m12l/studio.git`
 * Build the application: `mvn clean install`
 
 This will produce the **distribution archive** in `web-ui/target/`.

@@ -33,7 +33,7 @@ UTILISATION
 ### Installation
 
 * **Téléchargez** [la dernière release](https://github.com/marian-m12l/studio/releases/latest) (ou
-[construisez l'application](#for-developers)).
+[construisez l'application](#pour-les-développeurs)).
 * **Décompressez** l'archive de distribution
 * **Exécutez le script de lancement** : `studio-linux.sh`, `studio-macos.sh` ou `studio-windows.bat` selon votre
 plate-forme. Vous devrez probablement rendre ce fichier exécutable d'abord.
@@ -55,7 +55,7 @@ L'écran de la bibliothèque d'histoires affiche toujours votre bibliothèque lo
 sur votre ordinateur (dans un répertoire `.studio` spécifique à chaque utilisateur). **Trois formats de fichier** peuvent
 être présents dans votre bibliothèque :
 * `Brut` est le format officiel supporté par les **appareils plus anciens** (firmware v1.x -- ces appareils utilisent un protocole USB bas-niveau)
-* `FS` est le format officiel supporté apr les **nouveaux appareils** (firmware v2.x -- ces appareils apparaîssent comme un stockage amovible)
+* `FS` est le format officiel supporté par les **nouveaux appareils** (firmware v2.x -- ces appareils apparaîssent comme un stockage amovible)
 * `Archive` est un format officieux, utilisé uniquement par STUdio dans l'**éditeur** d'histoires
 
 La **conversion** d'un pack d'histoires est automatique lors d'un transfert, ou peut être invoquée manuellement.
@@ -108,7 +108,7 @@ POUR LES DÉVELOPPEURS
 
 ### Building the application
 
-* Cloner ce dépôt : `git clone git@github.com:marian-m12l/studio.git`
+* Cloner ce dépôt : `git clone https://github.com/marian-m12l/studio.git`
 * Construire l'application : `mvn clean install`
 
 Ceci créera **l'archive de distribution** dans `web-ui/target/`.
