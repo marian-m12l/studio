@@ -96,6 +96,11 @@ to the device) :
 
 MP3 and OGG files are expected to be sampled at 44100Hz.
 
+#### Wiki
+
+More information, including an illustrated usage guide courtesy of [@appenzellois](https://github.com/appenzellois),
+available [in the project wiki](https://github.com/marian-m12l/studio/wiki/Documentation).
+
 
 FOR DEVELOPERS
 --------------

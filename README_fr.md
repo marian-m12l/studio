@@ -98,6 +98,12 @@ convertis lors du transfert vers l'appareil) :
 
 Les fichiers MP3 et OGG doivent, eux, être échantillonnés à 44100Hz.
 
+#### Wiki
+
+Pour plus d'informations, y compris un guide d'utilisation illustré (merci à
+[@appenzellois](https://github.com/appenzellois)), consultez
+[le wiki du projet](https://github.com/marian-m12l/studio/wiki/Documentation).
+
 
 POUR LES DÉVELOPPEURS
 ---------------------
