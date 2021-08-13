@@ -36,9 +36,6 @@ public class FsStoryTellerAsyncDriver {
     private static final Logger LOGGER = Logger.getLogger(FsStoryTellerAsyncDriver.class.getName());
 
     private static final String DEVICE_METADATA_FILENAME = ".md";
-    private static final short DEVICE_METADATA_FORMAT_VERSION_1 = 1;
-    private static final short DEVICE_METADATA_FORMAT_VERSION_2 = 2;
-    private static final short DEVICE_METADATA_FORMAT_VERSION_3 = 3;
     private static final String PACK_INDEX_FILENAME = ".pi";
     private static final String CONTENT_FOLDER = ".content";
     private static final String NODE_INDEX_FILENAME = "ni";
@@ -117,10 +114,10 @@ public class FsStoryTellerAsyncDriver {
             LOGGER.finest("Reading device infos from file: " + mdFile);
             FileInputStream deviceMetadataFis = new FileInputStream(mdFile);
 
-            // MD file format version (expect 1 or 2)
+            // MD file format version
             short mdVersion = readLittleEndianShort(deviceMetadataFis);
             LOGGER.finest("Device metadata format version: " + mdVersion);
-            if (mdVersion != DEVICE_METADATA_FORMAT_VERSION_1 && mdVersion != DEVICE_METADATA_FORMAT_VERSION_2  && mdVersion != DEVICE_METADATA_FORMAT_VERSION_3 ) {
+            if (mdVersion < 1 || mdVersion > 3) {
                 return CompletableFuture.failedFuture(new StoryTellerException("Unsupported device metadata format version: " + mdVersion));
             }
 
