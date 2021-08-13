@@ -49,7 +49,7 @@ L'interface web est composée de deux écrans :
 * La bibliothèque d'histoires, qui permet de gérer la bibliothèque locale et de transférer de / vers la Fabrique à Histoire\* 
 * L'éditeur d'histoire, pour créer ou modifier un pack d'histoire
 
-#### Bibliothèque locale d'histoires et transfert de/vers l'apparail
+#### Bibliothèque locale d'histoires et transfert de/vers l'appareil
 
 L'écran de la bibliothèque d'histoires affiche toujours votre bibliothèque locale. Il s'agit des packs d'histoires situés
 sur votre ordinateur (dans un répertoire `.studio` spécifique à chaque utilisateur). **Trois formats de fichier** peuvent
@@ -98,7 +98,7 @@ convertis lors du transfert vers l'appareil) :
 
 Les fichiers MP3 et OGG doivent, eux, être échantillonnés à 44100Hz.
 
-#### Wiki
+#### Wiki
 
 Pour plus d'informations, y compris un guide d'utilisation illustré (merci à
 [@appenzellois](https://github.com/appenzellois)), consultez
