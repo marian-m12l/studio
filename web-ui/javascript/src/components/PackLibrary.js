@@ -480,13 +480,15 @@ class PackLibrary extends React.Component {
                         {this.state.library.metadata && <div><strong>{t('library.local.path')}</strong> {this.state.library.metadata.path}</div>}
                         <input type="file" id="upload" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.packAddFileSelected} />
                         <span title={t('library.local.addPack')} className="btn btn-default glyphicon glyphicon-import" onClick={this.showAddFileSelector}/>
+                        <div className="editor-actions">
+                            <p><button className="library-action" onClick={this.onCreateNewPackInEditor}>{t('library.local.empty.link1')}</button> <button className="library-action" onClick={this.onOpenSamplePackInEditor}>{t('library.local.empty.link2')}</button> {t('library.local.empty.suffix')}</p>
+                        </div>
                     </div>
                     <div className="library-dropzone"
                          onDrop={this.onDropPackIntoLibrary}
                          onDragOver={event => { event.preventDefault(); }}>
                         {this.state.library.packs.length === 0 && <div className="empty">
                             <p>{t('library.local.empty.header')}</p>
-                            <p><button className="library-action" onClick={this.onCreateNewPackInEditor}>{t('library.local.empty.link1')}</button> <button className="library-action" onClick={this.onOpenSamplePackInEditor}>{t('library.local.empty.link2')}</button> {t('library.local.empty.suffix')}</p>
                         </div>}
                         {this.state.library.packs.length > 0 && <div className="pack-grid">
                             {this.state.library.packs.map(group =>
