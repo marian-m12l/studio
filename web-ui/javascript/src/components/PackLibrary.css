@@ -56,6 +56,10 @@
     grid-template-columns: repeat(auto-fit, minmax(365px, 1fr));
 }
 
+.editor-actions {
+    padding: 10px;
+}
+
 .empty p:first-child {
     text-align: center;
     font-weight: bold;
