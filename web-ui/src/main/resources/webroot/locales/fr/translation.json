@@ -56,7 +56,8 @@
       "filename": "Nom de fichier :",
       "uuid": "UUID :",
       "desc": "Description :",
-      "nightMode": "Mode nuit :",
+      "nightMode": "Mode nuit* :",
+      "nightModeWarning": "Le mode nuit joue automatiquement jusqu'à 10 histoires dans le même nœud d'action. Incompatible avec les nœuds simplifiés.",
       "thumb": "Miniature :"
     },
     "tray": {
@@ -221,7 +222,8 @@
       "cannotCloneCoverNode": "Le nœud départ ne peut pas être dupliqué.",
       "verifyDiagramErrors": "Le diagramme contient {{count}} nœud en erreur.",
       "verifyDiagramErrors_plural": "Le diagramme contient {{count}} nœuds en erreur.",
-      "verifyDiagramOK": "Le diagramme est valide."
+      "verifyDiagramOK": "Le diagramme est valide.",
+      "verifyDiagramNightModeNoActionNodes": "Le mode nuit est activé mais le diagramme ne contient aucun nœud d'action."
     },
     "viewer": {
       "missingPrev": "Impossible de trouver l'option précédente.",
