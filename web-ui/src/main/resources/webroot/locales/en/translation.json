@@ -56,7 +56,8 @@
       "filename": "Filename:",
       "uuid": "UUID:",
       "desc": "Description:",
-      "nightMode": "Night mode:",
+      "nightMode": "Night mode*:",
+      "nightModeWarning": "Night mode automatically plays up to 10 stories in the same action node. Not compatible with simplified nodes.",
       "thumb": "Thumbnail:"
     },
     "tray": {
@@ -221,7 +222,8 @@
       "cannotCloneCoverNode": "The cover node cannot be duplicated.",
       "verifyDiagramErrors": "The diagram contains {{count}} node with errors.",
       "verifyDiagramErrors_plural": "The diagram contains {{count}} nodes with errors.",
-      "verifyDiagramOK": "The diagram is valid."
+      "verifyDiagramOK": "The diagram is valid.",
+      "verifyDiagramNightModeNoActionNodes": "Night mode is enabled but the diagram does not contain any action node."
     },
     "viewer": {
       "missingPrev": "Cannot find previous option.",
