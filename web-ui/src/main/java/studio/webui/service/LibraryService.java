@@ -484,7 +484,8 @@ public class LibraryService {
                 .put("uuid", pack.getMetadata().getUuid())
                 .put("version", pack.getMetadata().getVersion())
                 .put("path", pack.getPath().getFileName().toString())
-                .put("timestamp", pack.getTimestamp());
+                .put("timestamp", pack.getTimestamp())
+                .put("nightModeAvailable", pack.getMetadata().isNightModeAvailable());
         Optional.ofNullable(pack.getMetadata().getTitle()).ifPresent(title -> json.put("title", title));
         Optional.ofNullable(pack.getMetadata().getDescription()).ifPresent(desc -> json.put("description", desc));
         Optional.ofNullable(pack.getMetadata().getThumbnail()).ifPresent(thumb -> json.put("image", "data:image/png;base64," + Base64.getEncoder().encodeToString(thumb)));

@@ -17,16 +17,18 @@ public class StoryPack {
     private short version;
     private List<StageNode> stageNodes;
     private EnrichedPackMetadata enriched;
+    private boolean nightModeAvailable = false;
 
     public StoryPack() {
     }
 
-    public StoryPack(String uuid, boolean factoryDisabled, short version, List<StageNode> stageNodes, EnrichedPackMetadata enriched) {
+    public StoryPack(String uuid, boolean factoryDisabled, short version, List<StageNode> stageNodes, EnrichedPackMetadata enriched, boolean nightModeAvailable) {
         this.uuid = uuid;
         this.factoryDisabled = factoryDisabled;
         this.version = version;
         this.stageNodes = stageNodes;
         this.enriched = enriched;
+        this.nightModeAvailable = nightModeAvailable;
     }
 
     public String getUuid() {
@@ -67,5 +69,13 @@ public class StoryPack {
 
     public void setEnriched(EnrichedPackMetadata enriched) {
         this.enriched = enriched;
+    }
+
+    public boolean isNightModeAvailable() {
+        return nightModeAvailable;
+    }
+
+    public void setNightModeAvailable(boolean nightModeAvailable) {
+        this.nightModeAvailable = nightModeAvailable;
     }
 }

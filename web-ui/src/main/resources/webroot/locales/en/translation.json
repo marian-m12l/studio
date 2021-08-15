@@ -39,7 +39,8 @@
       "archive": "Archive (editable)",
       "raw": "Raw (v1.x)",
       "fs": "FS (v2.x)"
-    }
+    },
+    "nightMode": "Night mode available"
   },
 
   "editor": {
@@ -55,6 +56,7 @@
       "filename": "Filename:",
       "uuid": "UUID:",
       "desc": "Description:",
+      "nightMode": "Night mode:",
       "thumb": "Thumbnail:"
     },
     "tray": {

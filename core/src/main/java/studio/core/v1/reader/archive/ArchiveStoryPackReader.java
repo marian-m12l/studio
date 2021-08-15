@@ -56,6 +56,9 @@ public class ArchiveStoryPackReader {
                 );
                 // TODO Thumbnail?
 
+                // Night mode
+                metadata.setNightModeAvailable(Optional.ofNullable(root.get("nightModeAvailable")).map(JsonElement::getAsBoolean).orElse(false));
+
                 // Read first stage node
                 JsonObject mainStageNode = root.getAsJsonArray("stageNodes").get(0).getAsJsonObject();
                 metadata.setUuid(mainStageNode.get("uuid").getAsString());
@@ -94,9 +97,10 @@ public class ArchiveStoryPackReader {
         StageNode squareOne = null;
         // Enriched pack metadata
         EnrichedPackMetadata enrichedPack = null;
+        boolean nightModeAvailable = false;
 
 
-        ZipEntry entry;
+                ZipEntry entry;
         while((entry = zis.getNextEntry()) != null) {
             // Story descriptor file: story.json
             if (!entry.isDirectory() && entry.getName().equalsIgnoreCase("story.json")) {
@@ -112,6 +116,9 @@ public class ArchiveStoryPackReader {
                 if (maybeTitle.isPresent() || maybeDescription.isPresent()) {
                     enrichedPack = new EnrichedPackMetadata(maybeTitle.orElse(null), maybeDescription.orElse(null));
                 }
+
+                // Night mode
+                nightModeAvailable = Optional.ofNullable(root.get("nightModeAvailable")).map(JsonElement::getAsBoolean).orElse(false);
 
                 // Read action nodes
                 TreeMap<String, ActionNode> actionNodes = new TreeMap<>();
@@ -249,7 +256,7 @@ public class ArchiveStoryPackReader {
             nodes.add(0, squareOne);
         }
 
-        return new StoryPack(nodes.get(0).getUuid(), factoryDisabled, version, nodes, enrichedPack);
+        return new StoryPack(nodes.get(0).getUuid(), factoryDisabled, version, nodes, enrichedPack, nightModeAvailable);
     }
 
     private EnrichedNodeMetadata readEnrichedNodeMetadata(JsonObject node) {

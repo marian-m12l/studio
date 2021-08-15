@@ -257,7 +257,7 @@ public class BinaryStoryPackReader {
 
         dis.close();
 
-        return new StoryPack(stageNodes.get(new SectorAddr(0)).getUuid(), factoryDisabled, version, List.copyOf(stageNodes.values()), enrichedPack);
+        return new StoryPack(stageNodes.get(new SectorAddr(0)).getUuid(), factoryDisabled, version, List.copyOf(stageNodes.values()), enrichedPack, false);
     }
 
     private Optional<String> readString(DataInputStream dis, int maxChars) throws IOException {

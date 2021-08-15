@@ -262,6 +262,7 @@ export async function writeToArchive(diagramModel) {
         title: diagramModel.title,
         version: diagramModel.version,
         description: diagramModel.description,
+        nightModeAvailable: diagramModel.nightModeAvailable,
         stageNodes,
         actionNodes
     };

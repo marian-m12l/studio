@@ -24,7 +24,7 @@ export function readFromArchive(file) {
             return archive.file("story.json").async('string').then(storyJson => {
                 let json = JSON.parse(storyJson);
 
-                var loadedModel = new PackDiagramModel(json.title, json.version, (json.description || ''));
+                var loadedModel = new PackDiagramModel(json.title, json.version, (json.description || ''), (json.nightModeAvailable || false));
 
                 let links = [];
 
