@@ -30,6 +30,7 @@ public class FsStoryPackReader {
     private static final String IMAGE_FOLDER = "rf" + File.separator;
     private static final String SOUND_INDEX_FILENAME = "si";
     private static final String SOUND_FOLDER = "sf" + File.separator;
+    private static final String NIGHT_MODE_FILENAME = "nm";
 
     public StoryPackMetadata readMetadata(Path inputFolder) throws IOException {
         // Pack metadata model
@@ -48,6 +49,9 @@ public class FsStoryPackReader {
         String uuid = inputFolder.getFileName().toString().split("\\.", 2)[0];
         metadata.setUuid(uuid);
 
+        // Night mode is available if file 'nm' exists
+        metadata.setNightModeAvailable(new File(packFolder, NIGHT_MODE_FILENAME).exists());
+
         return metadata;
     }
 
@@ -60,6 +64,9 @@ public class FsStoryPackReader {
         String uuid = inputFolder.getFileName().toString().split("\\.", 2)[0];
 
         File packFolder = inputFolder.toFile();
+
+        // Night mode is available if file 'nm' exists
+        boolean nightModeAvailable = new File(packFolder, NIGHT_MODE_FILENAME).exists();
 
         // Load ri, si and li files
         byte[] riContent = readCipheredFile(new File(packFolder, IMAGE_INDEX_FILENAME).toPath());
@@ -183,7 +190,7 @@ public class FsStoryPackReader {
             transitionsWithAction.get(offset).forEach(transition -> transition.setActionNode(actionNode));
         }
 
-        return new StoryPack(uuid, factoryDisabled, version, List.copyOf(stageNodes.values()), null);
+        return new StoryPack(uuid, factoryDisabled, version, List.copyOf(stageNodes.values()), null, nightModeAvailable);
     }
 
     private byte[] readCipheredFile(Path path) throws IOException {

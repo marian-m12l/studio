@@ -151,6 +151,23 @@
     width: 128px;
     height: 128px;
 }
+.pack-grid .pack-tile.pack-night-mode .pack-thumb:after {
+    content: "\1F319";
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-bottom: 0;
+    background: linear-gradient(135deg, rgba(0,0,0,0) 50%, rgba(42,42,187,0.5) 50%, rgba(42,42,187,0.15));
+    -webkit-background-origin: border-box;
+    -moz-background-origin: border;
+    background-origin: border-box;
+    padding-top: 40%;
+    padding-left: 40%;
+    font-size: 300%;
+}
 
 .pack-grid .pack-tile .pack-version {
     position: absolute;

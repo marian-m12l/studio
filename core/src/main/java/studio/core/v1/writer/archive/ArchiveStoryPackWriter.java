@@ -63,6 +63,9 @@ public class ArchiveStoryPackWriter {
         // Write metadata
         writer.name("version").value(pack.getVersion());
 
+        // Write night mode
+        writer.name("nightModeAvailable").value(pack.isNightModeAvailable());
+
         // Write stage nodes and keep track of action nodes and assets
         Map<ActionNode, String> actionNodeToId = new HashMap<>();
         writer.name("stageNodes");

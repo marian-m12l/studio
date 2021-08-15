@@ -369,7 +369,7 @@ class PackLibrary extends React.Component {
                        ]}
                        onClose={this.dismissEnrichedDialog(false)}
                 />}
-                {this.state.confirmConversionDialog.show && // TODO i18n labels !!!
+                {this.state.confirmConversionDialog.show &&
                 <Modal id="ask-confirm-conversion"
                        title={t('dialogs.library.askConfirmConversion.title')}
                        content={<div dangerouslySetInnerHTML={{__html: t('dialogs.library.askConfirmConversion.content')}} ></div>}
@@ -414,7 +414,7 @@ class PackLibrary extends React.Component {
                             {this.state.device.packs.map((pack,idx) =>
                                 <div key={pack.uuid}
                                      draggable={true}
-                                     className={this.isPackDraggable(pack) ? `pack-tile pack-${pack.format} pack-draggable` : `pack-tile pack-${pack.format} pack-not-draggable`}
+                                     className={`pack-tile pack-${pack.format} ${this.isPackDraggable(pack) ? 'pack-draggable' : 'pack-not-draggable'} ${pack.nightModeAvailable && 'pack-night-mode'}`}
                                      onDragStart={event => {
                                          event.dataTransfer.setData("device-pack", JSON.stringify(pack));
                                          this.setState({reordering: pack, beforeReordering: [...this.state.device.packs]});
@@ -454,7 +454,7 @@ class PackLibrary extends React.Component {
                                     <div className="pack-format">
                                         <span>{t(`library.format.${pack.format}`)}</span>
                                     </div>
-                                    <div className="pack-thumb">
+                                    <div className="pack-thumb" title={pack.nightModeAvailable && t('library.nightMode')}>
                                         <img src={pack.image || defaultImage} alt="" width="128" height="128" draggable={false} />
                                         <div className="pack-version"><span>{`v${pack.version}`}</span></div>
                                         {pack.official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
@@ -493,7 +493,7 @@ class PackLibrary extends React.Component {
                                 <div key={group.uuid}
                                      title={group.uuid}
                                      draggable={this.isPackDraggable(group.packs[0])}
-                                     className={this.isPackDraggable(group.packs[0]) ? `pack-tile pack-draggable` : `pack-tile pack-not-draggable`}
+                                     className={`pack-tile ${this.isPackDraggable(group.packs[0]) ? 'pack-draggable' : 'pack-not-draggable'} ${group.packs[0].nightModeAvailable && 'pack-night-mode'}`}
                                      onDragStart={event => {
                                          // Drag first pack
                                          event.dataTransfer.setDragImage(event.target.querySelector('.pack-entry'), 0, 0);
@@ -503,7 +503,7 @@ class PackLibrary extends React.Component {
                                         <div className="pack-title">
                                             <span>{group.packs[0].title || group.uuid}</span>&nbsp;
                                         </div>
-                                        <div className="pack-thumb">
+                                        <div className="pack-thumb" title={group.packs[0].nightModeAvailable && t('library.nightMode')}>
                                             <img src={group.packs[0].image || defaultImage} alt="" width="128" height="128" draggable={false} />
                                             {group.packs[0].official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
                                         </div>

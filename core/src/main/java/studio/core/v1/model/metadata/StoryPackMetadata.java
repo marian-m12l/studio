@@ -15,6 +15,7 @@ public class StoryPackMetadata {
     private String description;
     private byte[] thumbnail;
     private Integer sectorSize;
+    private boolean nightModeAvailable = false;
 
     public StoryPackMetadata() {
     }
@@ -23,7 +24,7 @@ public class StoryPackMetadata {
         this.format = format;
     }
 
-    public StoryPackMetadata(String format, String uuid, short version, String title, String description, byte[] thumbnail, Integer sectorSize) {
+    public StoryPackMetadata(String format, String uuid, short version, String title, String description, byte[] thumbnail, Integer sectorSize, boolean nightModeAvailable) {
         this.format = format;
         this.uuid = uuid;
         this.version = version;
@@ -31,6 +32,7 @@ public class StoryPackMetadata {
         this.description = description;
         this.thumbnail = thumbnail;
         this.sectorSize = sectorSize;
+        this.nightModeAvailable = nightModeAvailable;
     }
 
     public String getFormat() {
@@ -87,5 +89,13 @@ public class StoryPackMetadata {
 
     public void setSectorSize(Integer sectorSize) {
         this.sectorSize = sectorSize;
+    }
+
+    public boolean isNightModeAvailable() {
+        return nightModeAvailable;
+    }
+
+    public void setNightModeAvailable(boolean nightModeAvailable) {
+        this.nightModeAvailable = nightModeAvailable;
     }
 }

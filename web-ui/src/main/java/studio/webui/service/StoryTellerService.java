@@ -498,6 +498,7 @@ public class StoryTellerService implements IStoryTellerService {
                         .put("folderName", pack.getFolderName())
                         .put("sizeInBytes", pack.getSizeInBytes())
                         .put("official", metadata.isOfficial())
+                        .put("nightModeAvailable", pack.isNightModeAvailable())
                 )
                 .orElse(new JsonObject()
                         .put("uuid", pack.getUuid().toString())

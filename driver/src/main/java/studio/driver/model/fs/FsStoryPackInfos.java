@@ -14,15 +14,17 @@ public class FsStoryPackInfos {
     private String folderName;
     private short version;
     private long sizeInBytes;
+    private boolean nightModeAvailable;
 
     public FsStoryPackInfos() {
     }
 
-    public FsStoryPackInfos(UUID uuid, String folderName, short version, long sizeInBytes) {
+    public FsStoryPackInfos(UUID uuid, String folderName, short version, long sizeInBytes, boolean nightModeAvailable) {
         this.uuid = uuid;
         this.folderName = folderName;
         this.version = version;
         this.sizeInBytes = sizeInBytes;
+        this.nightModeAvailable = nightModeAvailable;
     }
 
     public UUID getUuid() {
@@ -57,6 +59,14 @@ public class FsStoryPackInfos {
         this.sizeInBytes = sizeInBytes;
     }
 
+    public boolean isNightModeAvailable() {
+        return nightModeAvailable;
+    }
+
+    public void setNightModeAvailable(boolean nightModeAvailable) {
+        this.nightModeAvailable = nightModeAvailable;
+    }
+
     @Override
     public String toString() {
         return "FsStoryPackInfos{" +
@@ -64,6 +74,7 @@ public class FsStoryPackInfos {
                 ", folderName=" + folderName +
                 ", version=" + version +
                 ", sizeInBytes=" + sizeInBytes +
+                ", nightModeAvailable=" + nightModeAvailable +
                 '}';
     }
 }

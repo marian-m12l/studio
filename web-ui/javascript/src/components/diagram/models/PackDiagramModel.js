@@ -12,13 +12,14 @@ import CoverNodeModel from "./CoverNodeModel";
 
 class PackDiagramModel extends DiagramModel {
 
-    constructor(title = 'Pack title', version = 1, description = '', thumbnail = '') {
+    constructor(title = 'Pack title', version = 1, description = '', nightModeAvailable = false, thumbnail = '') {
         super({
             type: 'pack'
         });
         this.title = title;
         this.version = version;
         this.description = description;
+        this.nightModeAvailable = nightModeAvailable;
         this.thumbnail = thumbnail;
     }
 
@@ -32,6 +33,7 @@ class PackDiagramModel extends DiagramModel {
         this.title = event.data.title;
         this.version = event.data.version;
         this.description = event.data.description;
+        this.nightModeAvailable = event.data.nightModeAvailable;
         this.thumbnail = event.data.thumbnail;
     }
 
@@ -41,6 +43,7 @@ class PackDiagramModel extends DiagramModel {
             title: this.title,
             version: this.version,
             description: this.description,
+            nightModeAvailable: this.nightModeAvailable,
             thumbnail: this.thumbnail
         };
     }

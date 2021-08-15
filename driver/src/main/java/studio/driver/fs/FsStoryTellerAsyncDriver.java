@@ -39,6 +39,7 @@ public class FsStoryTellerAsyncDriver {
     private static final String PACK_INDEX_FILENAME = ".pi";
     private static final String CONTENT_FOLDER = ".content";
     private static final String NODE_INDEX_FILENAME = "ni";
+    private static final String NIGHT_MODE_FILENAME = "nm";
 
     private static final long FS_MOUNTPOINT_POLL_DELAY = 1000L;
     private static final long FS_MOUNTPOINT_RETRY = 10;
@@ -210,6 +211,9 @@ public class FsStoryTellerAsyncDriver {
                             LOGGER.fine("Pack version: " + version);
                             niDis.close();
                             niFis.close();
+
+                            // Night mode is available if file 'nm' exists
+                            packInfos.setNightModeAvailable(new File(packFolder, NIGHT_MODE_FILENAME).exists());
 
                             // Compute folder size
                             packInfos.setSizeInBytes((int) FileUtils.getFolderSize(packFolderPath));

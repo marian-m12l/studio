@@ -1113,8 +1113,13 @@
 
 .custom-pack-editor .pack-diagram-widget .metadata textarea {
     width: 350px;
-    height: 100px;
+    height: 75px;
     vertical-align: top;
+}
+
+.custom-pack-editor .pack-diagram-widget .metadata .metadata-night-mode {
+    width: 350px;
+    margin-top: 5px;
 }
 
 .custom-pack-editor .pack-diagram-widget .metadata img {
