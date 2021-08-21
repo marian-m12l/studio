@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-.pack-library {
+ .pack-library {
     display: flex;
     flex-grow: 1;
 }
@@ -45,6 +45,13 @@
     background-color: #30acaa;
 }
 
+.progress-bar.warning { 
+    background-color: #aca430;
+}
+
+.progress-bar.critical {
+    background-color: #ac3430;
+}
 .pack-grid {
     display: grid;
     padding: 10px;

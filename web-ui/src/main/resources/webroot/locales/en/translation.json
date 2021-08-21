@@ -16,7 +16,9 @@
       "serial": "Serial number:",
       "firmware": "Firmware version:",
       "empty": "No story packs in device, yet.",
-      "removePack": "Remove this story pack from device"
+      "removePack": "Remove this story pack from device",
+      "sdcardsize": "SD card size:",
+      "sdcardunit": "GB"
     },
     "local": {
       "title": "LOCAL LIBRARY",
