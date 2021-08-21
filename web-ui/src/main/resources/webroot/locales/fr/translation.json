@@ -16,7 +16,9 @@
       "serial": "Numéro de série :",
       "firmware": "Version firmware :",
       "empty": "Aucun pack d'histoires dans l'appareil.",
-      "removePack": "Supprimer ce pack d'histoires de l'appareil"
+      "removePack": "Supprimer ce pack d'histoires de l'appareil",
+      "sdcardsize": "Taile Carte SD :",
+      "sdcardunit": "Go"      
     },
     "local": {
       "title": "BIBLIOTHÈQUE LOCALE",
