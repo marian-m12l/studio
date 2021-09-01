@@ -17,12 +17,18 @@
       "firmware": "Version firmware :",
       "empty": "Aucun pack d'histoires dans l'appareil.",
       "removePack": "Supprimer ce pack d'histoires de l'appareil",
-      "sdcardsize": "Taile Carte SD :",
-      "sdcardunit": "Go"      
+      "sdcardsize": "Taille Carte SD :",
+      "sdcardunit": "Go",
+      "packs": {
+        "length" : "Nombre de packs :"
+      }      
     },
     "local": {
       "title": "BIBLIOTHÈQUE LOCALE",
       "path": "Chemin :",
+      "packs": {
+        "length" : "Nombre de packs :"
+      },
       "empty": {
         "header": "Aucun pack d'histoires dans la bibliothèque.",
         "link1": "Créez un nouveau pack d'histoires",

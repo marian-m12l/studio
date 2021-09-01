@@ -18,11 +18,17 @@
       "empty": "No story packs in device, yet.",
       "removePack": "Remove this story pack from device",
       "sdcardsize": "SD card size:",
-      "sdcardunit": "GB"
+      "sdcardunit": "GB",
+      "packs": {
+        "length" : "Number of packs:"
+      }
     },
     "local": {
       "title": "LOCAL LIBRARY",
       "path": "Path:",
+      "packs": {
+        "length" : "Number of packs:"
+      },
       "empty": {
         "header": "No story packs in library, yet.",
         "link1": "Create a new story pack",
