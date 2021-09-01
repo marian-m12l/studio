@@ -23,7 +23,7 @@
 }
 
 .header {
-    height: 160px;
+    height: 185px;
     padding: 10px;
 }
 
@@ -39,6 +39,10 @@
 
 .pack-library .local-library .header {
     background-color: #aaaaaa;
+}
+
+.progress {
+    margin-top: 5px;
 }
 
 .progress-bar {
