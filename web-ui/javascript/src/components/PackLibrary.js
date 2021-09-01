@@ -394,7 +394,8 @@ class PackLibrary extends React.Component {
                         <div className="header-uuid" title={this.state.device.metadata.uuid}><strong>{t('library.device.uuid')}</strong> {this.state.device.metadata.uuid}</div>
                         <div><strong>{t('library.device.serial')}</strong> {this.state.device.metadata.serial || '-'}</div>
                         <div><strong>{t('library.device.firmware')}</strong> {this.state.device.metadata.firmware || '-'}</div>
-                        <div><strong>{t('library.device.sdcardsize')}</strong> { (this.state.device.metadata.storage.size / 1073741824 ).toFixed(0) || '-'} {t('library.device.sdcardunit')}</div>
+                        <div><strong>{t('library.device.sdcardsize')}</strong> { (this.state.device.metadata.storage.size / 1073741824 ).toFixed(1) || '-'} {t('library.device.sdcardunit')}</div>
+                        <div><strong>{t('library.device.packs.length')}</strong> { this.state.device.packs.length || '-' }</div>
                         {this.state.device.metadata.error && <p><strong>DEVICE HAS ERRORS</strong></p>}
                         <div className="progress">
                             <div className={`progress-bar ${storageStatus}`} role="progressbar" style={{width: storagePercentage}} aria-valuenow={this.state.device.metadata.storage.taken} aria-valuemin="0" aria-valuemax={this.state.device.metadata.storage.size}>{storagePercentage}</div>
@@ -486,6 +487,7 @@ class PackLibrary extends React.Component {
                     <div className="header">
                         <h4>{t('library.local.title')}</h4>
                         {this.state.library.metadata && <div><strong>{t('library.local.path')}</strong> {this.state.library.metadata.path}</div>}
+                        <div><strong>{t('library.local.packs.length')}</strong> { this.state.library.packs.length || '-' }</div>
                         <input type="file" id="upload" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.packAddFileSelected} />
                         <span title={t('library.local.addPack')} className="btn btn-default glyphicon glyphicon-import" onClick={this.showAddFileSelector}/>
                         <div className="editor-actions">
