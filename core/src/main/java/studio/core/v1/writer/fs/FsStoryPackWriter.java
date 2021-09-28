@@ -276,15 +276,17 @@ public class FsStoryPackWriter {
         // Compute specific key
         byte[] specificKey = computeSpecificKeyFromUUID(deviceUuid);
         // Read ciphered block of ri file
-        FileInputStream riFis = new FileInputStream(new File(packFolder.toFile(), IMAGE_INDEX_FILENAME));
-        byte[] riCipheredBlock = riFis.readNBytes(64);
-        riFis.close();
-        // Add boot file: bt
-        FileOutputStream btFos = new FileOutputStream(new File(packFolder.toFile(), BOOT_FILENAME));
-        // The first **scrambled** 64 bytes of 'ri' file must be ciphered with the device-specific key into 'bt' file
-        byte[] btCiphered = cipherFirstBlockSpecificKey(riCipheredBlock, specificKey);
-        btFos.write(btCiphered);
-        btFos.close();
+        try(
+                FileInputStream riFis = new FileInputStream(new File(packFolder.toFile(), IMAGE_INDEX_FILENAME));
+                FileOutputStream btFos = new FileOutputStream(new File(packFolder.toFile(), BOOT_FILENAME));
+        ) {
+            byte[] riCipheredBlock = riFis.readNBytes(64);
+
+            // Add boot file: bt
+            // The first **scrambled** 64 bytes of 'ri' file must be ciphered with the device-specific key into 'bt' file
+            byte[] btCiphered = cipherFirstBlockSpecificKey(riCipheredBlock, specificKey);
+            btFos.write(btCiphered);
+        }
     }
 
     private static String transformUuid(UUID uuid) {
