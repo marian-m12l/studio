@@ -63,8 +63,7 @@ public class FsStoryTellerAsyncDriver {
                                 Thread.sleep(FS_MOUNTPOINT_POLL_DELAY);
                                 DeviceUtils.listMountPoints().forEach(path -> {
                                     LOGGER.finest("Looking for .md file on mount point / drive: " + path);
-                                    File mdFile = new File(path, DEVICE_METADATA_FILENAME);
-                                    if (mdFile.exists()) {
+                                    if (Files.exists(Path.of(path, DEVICE_METADATA_FILENAME))) {
                                         partitionMountPoint = path;
                                         LOGGER.info("FS device partition located: " + partitionMountPoint);
                                     }

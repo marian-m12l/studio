@@ -6,13 +6,14 @@
 
 package studio.driver.fs;
 
-import org.apache.commons.lang3.SystemUtils;
-import studio.driver.StoryTellerException;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.InputStreamReader;
+import java.nio.file.FileStore;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -22,14 +23,47 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+import org.apache.commons.lang3.SystemUtils;
+
+import studio.driver.StoryTellerException;
+
 public class DeviceUtils {
 
+    @Deprecated
     private static final Logger LOGGER = Logger.getLogger(DeviceUtils.class.getName());
 
+    /** Simple OS test. */
+    public static boolean isWindows() {
+        return '/' != File.separatorChar;
+    }
+
+    /** List root mount points. */
     public static List<String> listMountPoints() {
+        List<String> l = new ArrayList<>();
+        FileSystem fs = FileSystems.getDefault();
+        // Windows
+        if (isWindows()) {
+            for (Path p : fs.getRootDirectories()) {
+                l.add(p.toString());
+            }
+            return l;
+        }
+        // Unix & Mac
+        for (FileStore f : fs.getFileStores()) {
+            // Mounted devices only (without Fuse)
+            if (f.name().startsWith("/dev/s")) {
+                // find mount path in toString()
+                l.add(f.toString().split(" ")[0]);
+            }
+        }
+        return l;
+    }
+
+    @Deprecated
+    public static List<String> listMountPoints0() {
         if (SystemUtils.IS_OS_WINDOWS) {
-            return Arrays.stream(File.listRoots())
-                    .map(root -> root.toPath().toString())
+            return Arrays.stream(File.listRoots()) //
+                    .map(root -> root.toPath().toString()) //
                     .collect(Collectors.toList());
         } else {
             final String CMD_DF = "df -l";
