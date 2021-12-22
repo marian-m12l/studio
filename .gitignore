@@ -1,4 +1,14 @@
+# Maven
+target/
+web-ui/javascript/build/
+
+# IntelliJ
 .idea
 *.iml
 *node_modules
-*target
+
+# Eclipse
+.classpath
+.project
+.settings/
+
