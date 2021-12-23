@@ -16,8 +16,8 @@ limitations under the License.
 
 package com.jhlabs.image;
 
-import java.util.*;
 import java.awt.Color;
+import java.security.SecureRandom;
 
 /**
  * Some more useful math functions for image processing.
@@ -47,7 +47,8 @@ public class PixelUtils {
     public final static int ALPHA = 19;
     public final static int ALPHA_TO_GRAY = 20;
 
-    private static Random randomGenerator = new Random();
+    // Sonar Fix : SecureRandom
+    private static SecureRandom PRNG = new SecureRandom();
 
     /**
      * Clamp a value to the range 0..255
@@ -139,7 +140,7 @@ public class PixelUtils {
                 b1 = clamp(b1*b2/255);
                 break;
             case DISSOLVE:
-                if ((randomGenerator.nextInt() & 0xff) <= a1) {
+                if ((PRNG.nextInt() & 0xff) <= a1) {
                     r1 = r2;
                     g1 = g2;
                     b1 = b2;
