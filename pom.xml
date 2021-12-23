@@ -16,6 +16,11 @@
 
     <packaging>pom</packaging>
 
+    <properties>
+        <sonar.organization>kairoh</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+    </properties>
+
     <modules>
         <module>agent</module>
         <module>core</module>
