@@ -95,6 +95,7 @@ public class LibUsbDetectionHelper {
                             asyncEventHandlerWorker.join();
                         } catch (InterruptedException e) {
                             LOGGER.log(Level.SEVERE, "Failed to stop async event handling worker thread", e);
+                            Thread.currentThread().interrupt();
                         }
                     }
                     LOGGER.info("Exiting libusb...");
