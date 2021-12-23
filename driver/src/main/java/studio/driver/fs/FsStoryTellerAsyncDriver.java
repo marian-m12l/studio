@@ -80,6 +80,7 @@ public class FsStoryTellerAsyncDriver {
                                 });
                             } catch (InterruptedException e) {
                                 LOGGER.log(Level.SEVERE, "Failed to locate device partition", e);
+                                Thread.currentThread().interrupt();
                             }
                         }
 

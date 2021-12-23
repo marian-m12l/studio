@@ -11,11 +11,12 @@ import com.google.gson.JsonObject;
 import net.bytebuddy.asm.Advice;
 import studio.metadata.DatabaseMetadataService;
 import studio.metadata.DatabasePackMetadata;
-import sun.net.www.protocol.http.HttpURLConnection;
 
 import java.io.ByteArrayInputStream;
-import java.io.FileOutputStream;
 import java.io.InputStream;
+import java.net.HttpURLConnection;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Base64;
 import java.util.Optional;
 import java.util.UUID;
@@ -56,10 +57,8 @@ public class UnofficialMetadataAdvice {
                         String cacheFilePath = luniitheque + "/images/" + UUID.nameUUIDFromBytes(("http:/" + imagePath).getBytes()).toString();
                         logger.info("Storing unofficial metadata image into local filesystem with path: " + cacheFilePath);
 
-                        FileOutputStream fos = new FileOutputStream(cacheFilePath);
                         byte[] bytes = Base64.getDecoder().decode(meta.getThumbnail().substring(meta.getThumbnail().indexOf(";base64,") + 8));
-                        fos.write(bytes);
-                        fos.close();
+                        Files.write(Path.of(cacheFilePath), bytes);
                     }
 
                     // Generate JSON document with unofficial metadata

@@ -6,9 +6,6 @@
 
 package studio.driver.raw;
 
-import org.usb4java.*;
-import studio.driver.StoryTellerException;
-
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -17,6 +14,14 @@ import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.logging.Logger;
+
+import org.usb4java.Device;
+import org.usb4java.DeviceHandle;
+import org.usb4java.LibUsb;
+import org.usb4java.LibUsbException;
+import org.usb4java.Transfer;
+
+import studio.driver.StoryTellerException;
 
 /**
  * Helper methods to manipulate the Story Teller device via USB Mass Storage Bulk-Only protocol with vendor-specific
@@ -192,8 +197,7 @@ public class LibUsbMassStorageHelper {
     public static final short SECTOR_SIZE = 512;
 
     // To generate random packet tags
-    private static final SecureRandom prng = new SecureRandom();
-
+    private static final SecureRandom PRNG = new SecureRandom();
 
     /**
      * Execute the given function on a libusb handle for the given device. Opens and frees the handle and interface.
@@ -415,7 +419,7 @@ public class LibUsbMassStorageHelper {
         bb.put(MASS_STORAGE_CBW_SIGNATURE);
         // Random Command Block Tag (4 bytes)
         byte[] random = new byte[4];
-        prng.nextBytes(random);
+        PRNG.nextBytes(random);
         bb.put(random);
         // Expected number of bytes (to read or write) (4 bytes)
         bb.order(ByteOrder.LITTLE_ENDIAN);

@@ -1,8 +1,17 @@
 package studio.core.v1.utils;
 
-import java.io.*;
-import org.xiph.libvorbis.*;
-import org.xiph.libogg.*;
+import java.io.ByteArrayOutputStream;
+import java.io.InputStream;
+import java.security.SecureRandom;
+
+import org.xiph.libogg.ogg_packet;
+import org.xiph.libogg.ogg_page;
+import org.xiph.libogg.ogg_stream_state;
+import org.xiph.libvorbis.vorbis_block;
+import org.xiph.libvorbis.vorbis_comment;
+import org.xiph.libvorbis.vorbis_dsp_state;
+import org.xiph.libvorbis.vorbis_info;
+import org.xiph.libvorbis.vorbisenc;
 
 /**
  * This class is *heavily* inspired by the OggVorbis software codec source code, which is
@@ -45,6 +54,9 @@ public class VorbisEncoder {
     private static final int READ = 1024;
     private static byte[] BUFFER = new byte[READ*4+44];
 
+    // need to randomize seed
+    private static final SecureRandom PRNG = new SecureRandom();
+    
     public static byte[] encode(InputStream pcmInputStream) throws VorbisEncodingException {
 
         boolean eos = false;
@@ -72,9 +84,8 @@ public class VorbisEncoder {
         // local working space for packet->PCM decode
         vorbis_block vb = new vorbis_block( vd );
 
-        java.util.Random generator = new java.util.Random();  // need to randomize seed
         // take physical pages, weld into a logical stream of packets
-        ogg_stream_state os = new ogg_stream_state( generator.nextInt(256) );
+        ogg_stream_state os = new ogg_stream_state( PRNG.nextInt(256) );
 
         // Writing header
         ogg_packet header = new ogg_packet();

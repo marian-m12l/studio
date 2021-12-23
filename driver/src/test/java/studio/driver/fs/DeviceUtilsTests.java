@@ -24,7 +24,7 @@ class DeviceUtilsTests {
     }
 
     @Test
-    void testMountPoints() throws IOException, InterruptedException {
+    void testMountPoints() throws IOException {
         // Unix only
         if (DeviceUtils.isWindows()) {
             return;
@@ -44,7 +44,7 @@ class DeviceUtilsTests {
     }
 
     /** Replace Runtime.exec with ProcessBuilder */
-    private List<Path> dfCommand() throws IOException, InterruptedException {
+    private List<Path> dfCommand() throws IOException {
         final Process p = new ProcessBuilder("df", "-l").start();
         final Pattern dfPattern = Pattern.compile("^(\\/[^ ]+)[^/]+(/.*)$");
 
