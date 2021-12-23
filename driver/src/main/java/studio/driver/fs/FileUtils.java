@@ -6,21 +6,35 @@
 
 package studio.driver.fs;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
+import java.nio.file.Path;
+import java.util.Comparator;
+import java.util.stream.Stream;
 
 public class FileUtils {
 
-    public static long getFolderSize(String path) throws IOException {
-        return Files.walk(Paths.get(path))
-                .filter(p -> p.toFile().isFile())
-                .mapToLong(p -> p.toFile().length())
-                .sum();
+    public static long getFolderSize(Path path) throws IOException {
+        try (Stream<Path> paths = Files.walk(path)) {
+            return paths.map(Path::toFile) //
+                    .filter(File::isFile) //
+                    .mapToLong(File::length) //
+                    .sum();
+        }
     }
 
-    public static long getFileSize(String path) throws IOException {
-        return Files.size(Paths.get(path));
+    // deprecated?
+    public static long getFileSize(Path path) throws IOException {
+        return Files.size(path);
+    }
+
+    public static void deleteDirectory(Path path) throws IOException {
+        try (Stream<Path> paths = Files.walk(path)) {
+            paths.sorted(Comparator.reverseOrder()) //
+                    .map(Path::toFile) //
+                    .forEach(File::delete);
+        }
     }
 
 }

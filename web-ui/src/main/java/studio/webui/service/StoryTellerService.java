@@ -303,8 +303,8 @@ public class StoryTellerService implements IStoryTellerService {
                     } else {
                         String transferId = UUID.randomUUID().toString();
                         try {
-                            LOGGER.info("Transferring pack folder to device: " + packFile.getAbsolutePath());
-                            fsDriver.uploadPack(uuid, packFile.getAbsolutePath(), new TransferProgressListener() {
+                            LOGGER.info("Transferring pack folder to device: " + packFile.toPath());
+                            fsDriver.uploadPack(uuid, packFile.toPath(), new TransferProgressListener() {
                                 @Override
                                 public void onProgress(TransferStatus status) {
                                     // Send event on eventbus to monitor progress
