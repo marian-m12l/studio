@@ -26,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import org.apache.commons.codec.binary.Hex;
 import org.usb4java.Device;
@@ -470,8 +471,8 @@ public class FsStoryTellerAsyncDriver {
         int folderSize = (int) FileUtils.getFolderSize(sourceFolder);
         LOGGER.finest("Pack folder size: " + folderSize);
         // Copy folders and files
-        Files.walk(sourceFolder)
-                .forEach(s -> {
+        try(Stream<Path> paths = Files.walk(sourceFolder)) {
+            paths.forEach(s -> {
                     try {
                         Path d = destFolder.resolve(sourceFolder.relativize(s));
                         if (Files.isDirectory(s)) {
@@ -504,6 +505,7 @@ public class FsStoryTellerAsyncDriver {
                         throw new StoryTellerException("Failed to copy pack folder", e);
                     }
                 });
+        }
         return new TransferStatus(transferred.get() == folderSize, transferred.get(), folderSize, 0.0);
     }
 
