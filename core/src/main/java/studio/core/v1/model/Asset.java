@@ -6,4 +6,33 @@
 
 package studio.core.v1.model;
 
-public interface Asset {}
+public abstract class Asset {
+
+    private String mimeType;
+    private byte[] rawData;
+
+    public Asset() {
+        super();
+    }
+
+    public Asset(String mimeType, byte[] rawData) {
+        this.mimeType = mimeType;
+        this.rawData = rawData;
+    }
+
+    public String getMimeType() {
+        return mimeType;
+    }
+
+    public void setMimeType(String mimeType) {
+        this.mimeType = mimeType;
+    }
+
+    public byte[] getRawData() {
+        return rawData;
+    }
+
+    public void setRawData(byte[] rawData) {
+        this.rawData = rawData;
+    }
+}
