@@ -6,10 +6,9 @@
 
 package studio.webui.service;
 
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
@@ -227,7 +226,7 @@ public class StoryTellerService implements IStoryTellerService {
                 );
     }
 
-    public CompletableFuture<Optional<String>> addPack(String uuid, File packFile) {
+    public CompletableFuture<Optional<String>> addPack(String uuid, Path packFile) {
         if (device != null) {
             return addPackV1(uuid, packFile);
         } else if (fsDevice != null) {
@@ -236,7 +235,7 @@ public class StoryTellerService implements IStoryTellerService {
             return CompletableFuture.completedFuture(Optional.empty());
         }
     }
-    private CompletableFuture<Optional<String>> addPackV1(String uuid, File packFile) {
+    private CompletableFuture<Optional<String>> addPackV1(String uuid, Path packFile) {
         // Check that the pack is not already on the device
         return driver.getPacksList()
                 .thenApply(packs -> {
@@ -250,42 +249,38 @@ public class StoryTellerService implements IStoryTellerService {
                         String transferId = UUID.randomUUID().toString();
                         try {
                             // Create stream on file
-                            FileInputStream fis = new FileInputStream(packFile);
-                            LOGGER.info("Transferring pack to device: " + packFile.length() + " bytes");
-                            int fileSizeInSectors = (int) (packFile.length() / LibUsbMassStorageHelper.SECTOR_SIZE);
-                            LOGGER.info("Transferring pack to device: " + fileSizeInSectors + " sectors");
-                            driver.uploadPack(fis, fileSizeInSectors, new TransferProgressListener() {
-                                @Override
-                                public void onProgress(TransferStatus status) {
-                                    // Send event on eventbus to monitor progress
-                                    double p = (double) status.getTransferred() / (double) status.getTotal();
-                                    LOGGER.debug("Pack add progress... " + status.getTransferred() + " / " + status.getTransferred() + " (" + p + ")");
-                                    eventBus.send("storyteller.transfer." + transferId + ".progress", new JsonObject().put("progress", p));
-                                }
+                            LOGGER.info("Transferring pack to device: " + Files.size(packFile) + " bytes");
+                            int fileSizeInSectors = (int) (Files.size(packFile) / LibUsbMassStorageHelper.SECTOR_SIZE);
 
-                                @Override
-                                public void onComplete(TransferStatus status) {
-                                    LOGGER.info("Pack added.");
-                                }
-                            }).whenComplete((status, t) -> {
-                                // Close source file in all cases
-                                try {
-                                    fis.close();
-                                } catch (IOException e) {
-                                    LOGGER.error("Failed to close source file.", e);
-                                }
-                                // Handle failure
-                                if (t != null) {
-                                    LOGGER.error("Failed to add pack to device", t);
-                                    // Send event on eventbus to signal transfer failure
-                                    eventBus.send("storyteller.transfer." + transferId + ".done", new JsonObject().put("success", false));
-                                }
-                                // Handle success
-                                else {
-                                    // Send event on eventbus to signal end of transfer
-                                    eventBus.send("storyteller.transfer." + transferId + ".done", new JsonObject().put("success", true));
-                                }
-                            });
+                            LOGGER.info("Transferring pack to device: " + fileSizeInSectors + " sectors");
+                            try(InputStream is = Files.newInputStream(packFile) ){
+                                driver.uploadPack(is, fileSizeInSectors, new TransferProgressListener() {
+                                    @Override
+                                    public void onProgress(TransferStatus status) {
+                                        // Send event on eventbus to monitor progress
+                                        double p = (double) status.getTransferred() / (double) status.getTotal();
+                                        LOGGER.debug("Pack add progress... " + status.getTransferred() + " / " + status.getTransferred() + " (" + p + ")");
+                                        eventBus.send("storyteller.transfer." + transferId + ".progress", new JsonObject().put("progress", p));
+                                    }
+    
+                                    @Override
+                                    public void onComplete(TransferStatus status) {
+                                        LOGGER.info("Pack added.");
+                                    }
+                                }).whenComplete((status, t) -> {
+                                    // Handle failure
+                                    if (t != null) {
+                                        LOGGER.error("Failed to add pack to device", t);
+                                        // Send event on eventbus to signal transfer failure
+                                        eventBus.send("storyteller.transfer." + transferId + ".done", new JsonObject().put("success", false));
+                                    }
+                                    // Handle success
+                                    else {
+                                        // Send event on eventbus to signal end of transfer
+                                        eventBus.send("storyteller.transfer." + transferId + ".done", new JsonObject().put("success", true));
+                                    }
+                                });
+                            }
                         } catch (Exception e) {
                             LOGGER.error("Failed to add pack to device", e);
                             // Send event on eventbus to signal transfer failure
@@ -295,7 +290,7 @@ public class StoryTellerService implements IStoryTellerService {
                     }
                 });
     }
-    private CompletableFuture<Optional<String>> addPackV2(String uuid, File packFile) {
+    private CompletableFuture<Optional<String>> addPackV2(String uuid, Path packFile) {
         // Check that the pack is not already on the device
         return fsDriver.getPacksList()
                 .thenApply(packs -> {
@@ -307,8 +302,8 @@ public class StoryTellerService implements IStoryTellerService {
                     } else {
                         String transferId = UUID.randomUUID().toString();
                         try {
-                            LOGGER.info("Transferring pack folder to device: " + packFile.toPath());
-                            fsDriver.uploadPack(uuid, packFile.toPath(), new TransferProgressListener() {
+                            LOGGER.info("Transferring pack folder to device: " + packFile);
+                            fsDriver.uploadPack(uuid, packFile, new TransferProgressListener() {
                                 @Override
                                 public void onProgress(TransferStatus status) {
                                     // Send event on eventbus to monitor progress
@@ -364,7 +359,7 @@ public class StoryTellerService implements IStoryTellerService {
         }
     }
 
-    public CompletableFuture<Optional<String>> extractPack(String uuid, File packFile) {
+    public CompletableFuture<Optional<String>> extractPack(String uuid, Path packFile) {
         if (device != null) {
             return extractPackV1(uuid, packFile);
         } else if (fsDevice != null) {
@@ -373,16 +368,15 @@ public class StoryTellerService implements IStoryTellerService {
             return CompletableFuture.completedFuture(Optional.empty());
         }
     }
-    private CompletableFuture<Optional<String>> extractPackV1(String uuid, File destFile) {
+    private CompletableFuture<Optional<String>> extractPackV1(String uuid, Path destFile) {
         String transferId = UUID.randomUUID().toString();
         // Check that the destination is available
-        if (destFile.exists()) {
+        if (Files.exists(destFile)) {
             LOGGER.error("Cannot extract pack from device because the destination file already exists");
             return CompletableFuture.completedFuture(Optional.empty());
         }
-        try {
-            // Open destination file
-            FileOutputStream fos = new FileOutputStream(destFile);
+        // Open destination file
+        try (OutputStream fos = Files.newOutputStream(destFile) ){
             driver.downloadPack(uuid, fos, new TransferProgressListener() {
                 @Override
                 public void onProgress(TransferStatus status) {
@@ -396,12 +390,6 @@ public class StoryTellerService implements IStoryTellerService {
                     LOGGER.info("Pack extracted.");
                 }
             }).whenComplete((status,t) -> {
-                // Close destination file in all cases
-                try {
-                    fos.close();
-                } catch (IOException e) {
-                    LOGGER.error("Failed to close destination file.", e);
-                }
                 // Handle failure
                 if (t != null) {
                     LOGGER.error("Failed to extract pack from device", t);
@@ -421,15 +409,15 @@ public class StoryTellerService implements IStoryTellerService {
         }
         return CompletableFuture.completedFuture(Optional.of(transferId));
     }
-    private CompletableFuture<Optional<String>> extractPackV2(String uuid, File destFile) {
+    private CompletableFuture<Optional<String>> extractPackV2(String uuid, Path destFile) {
         String transferId = UUID.randomUUID().toString();
         // Check that the destination is available
-        if (new File(destFile, uuid).exists()) {
+        if (Files.exists(destFile.resolve(uuid))) {
             LOGGER.error("Cannot extract pack from device because the destination file already exists");
             return CompletableFuture.completedFuture(Optional.empty());
         }
         try {
-            fsDriver.downloadPack(uuid, destFile.getAbsolutePath(), new TransferProgressListener() {
+            fsDriver.downloadPack(uuid, destFile.toAbsolutePath().toString(), new TransferProgressListener() {
                 @Override
                 public void onProgress(TransferStatus status) {
                     // Send event on eventbus to monitor progress

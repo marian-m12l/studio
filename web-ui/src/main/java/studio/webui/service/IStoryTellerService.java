@@ -6,14 +6,13 @@
 
 package studio.webui.service;
 
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-
-import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
+
+import io.vertx.core.json.JsonArray;
+import io.vertx.core.json.JsonObject;
 
 public interface IStoryTellerService {
 
@@ -21,13 +20,13 @@ public interface IStoryTellerService {
 
     CompletableFuture<JsonArray> packs();
 
-    CompletableFuture<Optional<String>> addPack(String uuid, File packFile);
+    CompletableFuture<Optional<String>> addPack(String uuid, Path packFile);
 
     CompletableFuture<Boolean> deletePack(String uuid);
 
     CompletableFuture<Boolean> reorderPacks(List<String> uuids);
 
-    CompletableFuture<Optional<String>> extractPack(String uuid, File destFile);
+    CompletableFuture<Optional<String>> extractPack(String uuid, Path destFile);
 
     CompletableFuture<Void> dump(Path outputPath);
 }

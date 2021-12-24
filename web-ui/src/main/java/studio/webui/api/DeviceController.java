@@ -15,7 +15,6 @@ import io.vertx.ext.web.Router;
 import studio.webui.service.IStoryTellerService;
 import studio.webui.service.LibraryService;
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
 
@@ -66,7 +65,7 @@ public class DeviceController {
         router.post("/addFromLibrary").blockingHandler(ctx -> {
             String uuid = ctx.getBodyAsJson().getString("uuid");
             String packPath = ctx.getBodyAsJson().getString("path");
-            File packFile = new File(libraryService.libraryPath() + packPath);
+            Path packFile = libraryService.libraryPath().resolve(packPath);
             // Start transfer to device
             storyTellerService.addPack(uuid, packFile) //
                     .whenComplete((maybeTransferId, e) -> {
@@ -146,7 +145,7 @@ public class DeviceController {
                 ctx.fail(400);
                 return;
             }
-            storyTellerService.extractPack(uuid, path.toFile()) //
+            storyTellerService.extractPack(uuid, path) //
                     .whenComplete((maybeTransferId, e) -> {
                         if (e != null) {
                             LOGGER.error("Failed to transfer pack from device", e);
