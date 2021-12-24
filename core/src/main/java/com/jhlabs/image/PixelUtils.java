@@ -171,6 +171,8 @@ public class PixelUtils {
                         hsb2[0] = hsb1[0];
                         hsb2[1] = hsb1[1];
                         break;
+                    default:
+                        break;
                 }
                 rgb1 = Color.HSBtoRGB(hsb2[0], hsb2[1], hsb2[2]);
                 r1 = (rgb1 >> 16) & 0xff;
@@ -209,6 +211,8 @@ public class PixelUtils {
             case ALPHA_TO_GRAY:
                 int na = 255-a1;
                 return (a1 << 24) | (na << 16) | (na << 8) | na;
+            default:
+                break;
         }
         if (extraAlpha != 0xff || a1 != 0xff) {
             a1 = a1*extraAlpha/255;
