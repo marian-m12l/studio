@@ -138,14 +138,16 @@ public class ArchiveStoryPackReader {
                     JsonObject node = stagesIter.next().getAsJsonObject();
                     String uuid = node.get("uuid").getAsString();
                     Transition okTransition = null;
-                    if (node.get("okTransition") != null && node.get("okTransition").isJsonObject()) {
-                        ActionNode actionNode = actionNodes.get(node.getAsJsonObject("okTransition").get("actionNode").getAsString());
-                        okTransition = new Transition(actionNode, node.getAsJsonObject("okTransition").get("optionIndex").getAsShort());
+                    JsonObject okNode = node.getAsJsonObject("okTransition");
+                    if (okNode != null && okNode.isJsonObject()) {
+                        ActionNode actionNode = actionNodes.get(okNode.get("actionNode").getAsString());
+                        okTransition = new Transition(actionNode, okNode.get("optionIndex").getAsShort());
                     }
+                    JsonObject homeNode = node.getAsJsonObject("homeTransition");
                     Transition homeTransition = null;
-                    if (node.get("homeTransition") != null && node.get("homeTransition").isJsonObject()) {
-                        ActionNode actionNode = actionNodes.get(node.getAsJsonObject("homeTransition").get("actionNode").getAsString());
-                        homeTransition = new Transition(actionNode, node.getAsJsonObject("homeTransition").get("optionIndex").getAsShort());
+                    if (homeNode != null && homeNode.isJsonObject()) {
+                        ActionNode actionNode = actionNodes.get(homeNode.get("actionNode").getAsString());
+                        homeTransition = new Transition(actionNode, homeNode.get("optionIndex").getAsShort());
                     }
                     JsonObject controlSettings = node.getAsJsonObject("controlSettings");
 
@@ -171,15 +173,16 @@ public class ArchiveStoryPackReader {
                     if (node.get("squareOne") != null && node.get("squareOne").getAsBoolean()) {
                         squareOne = stageNode;
                     }
-
-                    if (node.get("image") != null && !node.get("image").isJsonNull()) {
-                        String imageAssetName = node.get("image").getAsString();
+                    JsonElement imageNode = node.get("image");
+                    if (imageNode != null && !imageNode.isJsonNull()) {
+                        String imageAssetName = imageNode.getAsString();
                         List<StageNode> atsn = assetToStageNodes.getOrDefault(imageAssetName, new ArrayList<>());
                         atsn.add(stageNode);
                         assetToStageNodes.put(imageAssetName, atsn);
                     }
-                    if (node.get("audio") != null && !node.get("audio").isJsonNull()) {
-                        String audioAssetName = node.get("audio").getAsString();
+                    JsonElement audioNode = node.get("audio"); 
+                    if (audioNode != null && !audioNode.isJsonNull()) {
+                        String audioAssetName = audioNode.getAsString();
                         List<StageNode> atsn = assetToStageNodes.getOrDefault(audioAssetName, new ArrayList<>());
                         atsn.add(stageNode);
                         assetToStageNodes.put(audioAssetName, atsn);

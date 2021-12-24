@@ -68,8 +68,8 @@ public class MockStoryTellerService implements IStoryTellerService {
 
     public CompletableFuture<Optional<JsonObject>> deviceInfos() {
         Path deviceFolder = Path.of(devicePath());
-        try {
-            long files = Files.list(deviceFolder).count();
+        try(Stream<Path> paths = Files.list(deviceFolder)) {
+            long files = paths.count();
             return CompletableFuture.completedFuture(
                     Optional.of(new JsonObject()
                             .put("uuid", "mocked-device")
