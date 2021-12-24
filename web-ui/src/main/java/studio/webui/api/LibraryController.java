@@ -6,6 +6,10 @@
 
 package studio.webui.api;
 
+import java.nio.file.Path;
+import java.util.Timer;
+import java.util.TimerTask;
+
 import io.vertx.core.Future;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
@@ -16,10 +20,6 @@ import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import studio.core.v1.Constants;
 import studio.webui.service.LibraryService;
-
-import java.nio.file.Path;
-import java.util.Timer;
-import java.util.TimerTask;
 
 public class LibraryController {
 
@@ -49,9 +49,9 @@ public class LibraryController {
             String packPath = ctx.getBodyAsJson().getString("path");
             libraryService.getRawPackFile(packPath)
                     .ifPresentOrElse(
-                            file -> ctx.response()
-                                    .putHeader("Content-Length", "" + file.length())
-                                    .sendFile(file.getAbsolutePath()),
+                            path -> ctx.response()
+                                    .putHeader("Content-Length", "" + path.toFile().length())
+                                    .sendFile(path.toAbsolutePath().toString()),
                             () -> {
                                 LOGGER.error("Failed to download pack from library");
                                 ctx.fail(500);

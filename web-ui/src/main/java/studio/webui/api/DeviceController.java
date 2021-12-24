@@ -137,16 +137,16 @@ public class DeviceController {
             String uuid = ctx.getBodyAsJson().getString("uuid");
             String driver = ctx.getBodyAsJson().getString("driver");
             // Transfer pack file to library file
-            String path = null;
+            Path path = null;
             if ("raw".equalsIgnoreCase(driver)) {
-                path = libraryService.libraryPath() + uuid + ".pack";
+                path = libraryService.libraryPath().resolve(uuid + ".pack");
             } else if ("fs".equalsIgnoreCase(driver)) {
                 path = libraryService.libraryPath();
             } else {
                 ctx.fail(400);
                 return;
             }
-            storyTellerService.extractPack(uuid, new File(path)) //
+            storyTellerService.extractPack(uuid, path.toFile()) //
                     .whenComplete((maybeTransferId, e) -> {
                         if (e != null) {
                             LOGGER.error("Failed to transfer pack from device", e);
