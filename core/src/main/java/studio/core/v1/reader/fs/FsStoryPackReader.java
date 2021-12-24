@@ -20,6 +20,7 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.*;
 
 public class FsStoryPackReader {
@@ -37,20 +38,19 @@ public class FsStoryPackReader {
         StoryPackMetadata metadata = new StoryPackMetadata(Constants.PACK_FORMAT_FS);
 
         // Open 'ni' file
-        File packFolder = inputFolder.toFile();
-        FileInputStream niFis = new FileInputStream(new File(packFolder, NODE_INDEX_FILENAME));
-        DataInputStream niDis = new DataInputStream(niFis);
-        ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
-        metadata.setVersion(bb.getShort(2));
-        niDis.close();
-        niFis.close();
+        Path niPath = inputFolder.resolve(NODE_INDEX_FILENAME);
+        try(DataInputStream niDis = new DataInputStream(Files.newInputStream(niPath, StandardOpenOption.READ)) ) {
+            ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
+            metadata.setVersion(bb.getShort(2));
+        }
 
         // Folder name is the uuid (minus the eventual timestamp, so we just trim everything starting at the dot)
         String uuid = inputFolder.getFileName().toString().split("\\.", 2)[0];
         metadata.setUuid(uuid);
 
         // Night mode is available if file 'nm' exists
-        metadata.setNightModeAvailable(new File(packFolder, NIGHT_MODE_FILENAME).exists());
+        Path nmPath = inputFolder.resolve(NIGHT_MODE_FILENAME);
+        metadata.setNightModeAvailable(Files.exists(nmPath));
 
         return metadata;
     }
@@ -63,116 +63,120 @@ public class FsStoryPackReader {
         // Folder name is the uuid (minus the eventual timestamp, so we just trim everything starting at the dot)
         String uuid = inputFolder.getFileName().toString().split("\\.", 2)[0];
 
-        File packFolder = inputFolder.toFile();
-
         // Night mode is available if file 'nm' exists
-        boolean nightModeAvailable = new File(packFolder, NIGHT_MODE_FILENAME).exists();
+        Path nmPath = inputFolder.resolve(NIGHT_MODE_FILENAME);
+        boolean nightModeAvailable = Files.exists(nmPath);
 
         // Load ri, si and li files
-        byte[] riContent = readCipheredFile(new File(packFolder, IMAGE_INDEX_FILENAME).toPath());
-        byte[] siContent = readCipheredFile(new File(packFolder, SOUND_INDEX_FILENAME).toPath());
-        byte[] liContent = readCipheredFile(new File(packFolder, LIST_INDEX_FILENAME).toPath());
+        byte[] riContent = readCipheredFile(inputFolder.resolve(IMAGE_INDEX_FILENAME));
+        byte[] siContent = readCipheredFile(inputFolder.resolve(SOUND_INDEX_FILENAME));
+        byte[] liContent = readCipheredFile(inputFolder.resolve(LIST_INDEX_FILENAME));
+
+        // Story pack version
+        short version;
+        // Is factory pack (boolean) set to true to avoid pack inspection by official Luniistore application
+        boolean factoryDisabled;
 
         // Open 'ni' file
-        FileInputStream niFis = new FileInputStream(new File(packFolder, NODE_INDEX_FILENAME));
-        DataInputStream niDis = new DataInputStream(niFis);
-        ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
-        // Nodes index file format version (1)
-        bb.getShort();
-        // Story pack version
-        short version = bb.getShort();
-        // Start of actual nodes list in this file (0x200 / 512)
-        int nodesList = bb.getInt();
-        // Size of a stage node in this file (0x2C / 44)
-        int nodeSize = bb.getInt();
-        // Number of stage nodes in this file
-        int stageNodesCount = bb.getInt();
-        // Number of images (in RI file and rf/ folder)
-        int imageAssetsCount = bb.getInt();
-        // Number of sounds (in SI file and sf/ folder)
-        int soundAssetsCount = bb.getInt();
-        // Is factory pack (boolean) set to true to avoid pack inspection by official Luniistore application
-        boolean factoryDisabled = bb.get() != 0x00;
-
-        // Read stage nodes
-        for (int i=0; i<stageNodesCount; i++) {
-            bb = ByteBuffer.wrap(niDis.readNBytes(nodeSize)).order(ByteOrder.LITTLE_ENDIAN);
-            int imageAssetIndexInRI = bb.getInt();
-            int soundAssetIndexInSI = bb.getInt();
-            int okTransitionActionNodeIndexInLI = bb.getInt();
-            int okTransitionNumberOfOptions = bb.getInt();
-            int okTransitionSelectedOptionIndex = bb.getInt();
-            int homeTransitionActionNodeIndexInLI = bb.getInt();
-            int homeTransitionNumberOfOptions = bb.getInt();
-            int homeTransitionSelectedOptionIndex = bb.getInt();
-            boolean wheel = bb.getShort() != 0;
-            boolean ok = bb.getShort() != 0;
-            boolean home = bb.getShort() != 0;
-            boolean pause = bb.getShort() != 0;
-            boolean autoplay = bb.getShort() != 0;
-
-            // Transition will be updated later with the actual action nodes
-            Transition okTransition = null;
-            if (okTransitionActionNodeIndexInLI != -1 && okTransitionNumberOfOptions != -1 && okTransitionSelectedOptionIndex != -1) {
-                if (!actionNodesOptionsCount.containsKey(okTransitionActionNodeIndexInLI)) {
-                    actionNodesOptionsCount.put(okTransitionActionNodeIndexInLI, okTransitionNumberOfOptions);
+        Path niPath = inputFolder.resolve(NODE_INDEX_FILENAME);
+        try(DataInputStream niDis = new DataInputStream(Files.newInputStream(niPath))) {
+            ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
+            // Nodes index file format version (1)
+            bb.getShort();
+            // Story pack version
+            version = bb.getShort();
+            // Start of actual nodes list in this file (0x200 / 512)
+            int nodesList = bb.getInt();
+            // Size of a stage node in this file (0x2C / 44)
+            int nodeSize = bb.getInt();
+            // Number of stage nodes in this file
+            int stageNodesCount = bb.getInt();
+            // Number of images (in RI file and rf/ folder)
+            int imageAssetsCount = bb.getInt();
+            // Number of sounds (in SI file and sf/ folder)
+            int soundAssetsCount = bb.getInt();
+            // Is factory pack (boolean) set to true to avoid pack inspection by official Luniistore application
+            factoryDisabled = bb.get() != 0x00;
+    
+            // Read stage nodes
+            for (int i=0; i<stageNodesCount; i++) {
+                bb = ByteBuffer.wrap(niDis.readNBytes(nodeSize)).order(ByteOrder.LITTLE_ENDIAN);
+                int imageAssetIndexInRI = bb.getInt();
+                int soundAssetIndexInSI = bb.getInt();
+                int okTransitionActionNodeIndexInLI = bb.getInt();
+                int okTransitionNumberOfOptions = bb.getInt();
+                int okTransitionSelectedOptionIndex = bb.getInt();
+                int homeTransitionActionNodeIndexInLI = bb.getInt();
+                int homeTransitionNumberOfOptions = bb.getInt();
+                int homeTransitionSelectedOptionIndex = bb.getInt();
+                boolean wheel = bb.getShort() != 0;
+                boolean ok = bb.getShort() != 0;
+                boolean home = bb.getShort() != 0;
+                boolean pause = bb.getShort() != 0;
+                boolean autoplay = bb.getShort() != 0;
+    
+                // Transition will be updated later with the actual action nodes
+                Transition okTransition = null;
+                if (okTransitionActionNodeIndexInLI != -1 && okTransitionNumberOfOptions != -1 && okTransitionSelectedOptionIndex != -1) {
+                    if (!actionNodesOptionsCount.containsKey(okTransitionActionNodeIndexInLI)) {
+                        actionNodesOptionsCount.put(okTransitionActionNodeIndexInLI, okTransitionNumberOfOptions);
+                    }
+                    okTransition = new Transition(null, (short) okTransitionSelectedOptionIndex);
+                    List<Transition> twa = transitionsWithAction.getOrDefault(okTransitionActionNodeIndexInLI, new ArrayList<>());
+                    twa.add(okTransition);
+                    transitionsWithAction.put(okTransitionActionNodeIndexInLI, twa);
                 }
-                okTransition = new Transition(null, (short) okTransitionSelectedOptionIndex);
-                List<Transition> twa = transitionsWithAction.getOrDefault(okTransitionActionNodeIndexInLI, new ArrayList<>());
-                twa.add(okTransition);
-                transitionsWithAction.put(okTransitionActionNodeIndexInLI, twa);
-            }
-            Transition homeTransition = null;
-            if (homeTransitionActionNodeIndexInLI != -1 && homeTransitionNumberOfOptions != -1 && homeTransitionSelectedOptionIndex != -1) {
-                if (!actionNodesOptionsCount.containsKey(homeTransitionActionNodeIndexInLI)) {
-                    actionNodesOptionsCount.put(homeTransitionActionNodeIndexInLI, homeTransitionNumberOfOptions);
+                Transition homeTransition = null;
+                if (homeTransitionActionNodeIndexInLI != -1 && homeTransitionNumberOfOptions != -1 && homeTransitionSelectedOptionIndex != -1) {
+                    if (!actionNodesOptionsCount.containsKey(homeTransitionActionNodeIndexInLI)) {
+                        actionNodesOptionsCount.put(homeTransitionActionNodeIndexInLI, homeTransitionNumberOfOptions);
+                    }
+                    homeTransition = new Transition(null, (short) homeTransitionSelectedOptionIndex);
+                    List<Transition> twa = transitionsWithAction.getOrDefault(homeTransitionActionNodeIndexInLI, new ArrayList<>());
+                    twa.add(homeTransition);
+                    transitionsWithAction.put(homeTransitionActionNodeIndexInLI, twa);
                 }
-                homeTransition = new Transition(null, (short) homeTransitionSelectedOptionIndex);
-                List<Transition> twa = transitionsWithAction.getOrDefault(homeTransitionActionNodeIndexInLI, new ArrayList<>());
-                twa.add(homeTransition);
-                transitionsWithAction.put(homeTransitionActionNodeIndexInLI, twa);
-            }
+    
+                // Read Image and audio assets
+                ImageAsset image = null;
+                if (imageAssetIndexInRI != -1) {
+                    // Read image path
+                    byte[] imageEntry = Arrays.copyOfRange(riContent, imageAssetIndexInRI*12, imageAssetIndexInRI*12+12);   // Each entry takes 12 bytes
+                    String imageName = new String(imageEntry, StandardCharsets.UTF_8).replaceAll("\\\\", "/");
+                    // Read image file
+                    Path imagePath = inputFolder.resolve(IMAGE_FOLDER + imageName);
+                    byte[] rfContent = readCipheredFile(imagePath);
+                    image = new ImageAsset("image/bmp", rfContent);
+                }
+                AudioAsset audio = null;
+                if (soundAssetIndexInSI != -1) {
+                    // Read audio path
+                    byte[] audioEntry = Arrays.copyOfRange(siContent, soundAssetIndexInSI*12, soundAssetIndexInSI*12+12);    // Each entry takes 12 bytes
+                    String audioName = new String(audioEntry, StandardCharsets.UTF_8).replaceAll("\\\\", "/");
+                    // Read audio file
+                    Path audioPath = inputFolder.resolve(SOUND_FOLDER + audioName);
+                    byte[] sfContent = readCipheredFile(inputFolder.resolve(SOUND_FOLDER + audioName));
+                    audio = new AudioAsset("audio/mpeg", sfContent);
+                }
 
-            // Read Image and audio assets
-            ImageAsset image = null;
-            if (imageAssetIndexInRI != -1) {
-                // Read image path
-                byte[] imagePath = Arrays.copyOfRange(riContent, imageAssetIndexInRI*12, imageAssetIndexInRI*12+12);   // Each entry takes 12 bytes
-                String path = new String(imagePath, StandardCharsets.UTF_8);
-                // Read image file
-                byte[] rfContent = readCipheredFile(new File(packFolder, IMAGE_FOLDER+path.replaceAll("\\\\", "/")).toPath());
-                image = new ImageAsset("image/bmp", rfContent);
+                StageNode stageNode = new StageNode(
+                        i == 0 ? uuid : UUID.randomUUID().toString(), // First node should have the same UUID as the story pack FIXME node uuids from metadata file
+                        image,
+                        audio,
+                        okTransition,
+                        homeTransition,
+                        new ControlSettings(
+                                wheel,
+                                ok,
+                                home,
+                                pause,
+                                autoplay
+                        ),
+                        null
+                );
+                stageNodes.put(i, stageNode);
             }
-            AudioAsset audio = null;
-            if (soundAssetIndexInSI != -1) {
-                // Read audio path
-                byte[] audioPath = Arrays.copyOfRange(siContent, soundAssetIndexInSI*12, soundAssetIndexInSI*12+12);    // Each entry takes 12 bytes
-                String path = new String(audioPath, StandardCharsets.UTF_8);
-                // Read audio file
-                byte[] sfContent = readCipheredFile(new File(packFolder, SOUND_FOLDER+path.replaceAll("\\\\", "/")).toPath());
-                audio = new AudioAsset("audio/mpeg", sfContent);
-            }
-
-            StageNode stageNode = new StageNode(
-                    i == 0 ? uuid : UUID.randomUUID().toString(), // First node should have the same UUID as the story pack FIXME node uuids from metadata file
-                    image,
-                    audio,
-                    okTransition,
-                    homeTransition,
-                    new ControlSettings(
-                            wheel,
-                            ok,
-                            home,
-                            pause,
-                            autoplay
-                    ),
-                    null
-            );
-            stageNodes.put(i, stageNode);
         }
-
-        niDis.close();
-        niFis.close();
 
         // Read action nodes from 'li' file
         ByteBuffer liBb = ByteBuffer.wrap(liContent).order(ByteOrder.LITTLE_ENDIAN);

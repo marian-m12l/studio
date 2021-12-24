@@ -6,22 +6,36 @@
 
 package studio.driver.raw;
 
+import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
+import static java.nio.file.StandardOpenOption.WRITE;
+
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.nio.channels.SeekableByteChannel;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.logging.Level;
+import java.util.logging.Logger;
+
 import org.usb4java.Device;
 import org.usb4java.DeviceHandle;
+
 import studio.driver.DeviceVersion;
 import studio.driver.LibUsbDetectionHelper;
 import studio.driver.StoryTellerException;
 import studio.driver.event.DeviceHotplugEventListener;
 import studio.driver.event.TransferProgressListener;
+import studio.driver.model.TransferStatus;
 import studio.driver.model.raw.RawDeviceInfos;
 import studio.driver.model.raw.RawStoryPackInfos;
-import studio.driver.model.TransferStatus;
-
-import java.io.*;
-import java.nio.ByteBuffer;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.logging.Logger;
 
 public class RawStoryTellerAsyncDriver {
 
@@ -473,11 +487,17 @@ public class RawStoryTellerAsyncDriver {
                 });
     }
 
-    public CompletableFuture<Void> dump(String outputPath) {
+    public CompletableFuture<Void> dump(Path outputPath) {
         if (this.device == null) {
             return CompletableFuture.failedFuture(new StoryTellerException("No device plugged"));
         }
-
+        try {
+            if(Files.notExists(outputPath)) {
+                Files.createDirectory(outputPath);
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Fail to create dir", e);
+        }
         return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, (handle) -> {
             return dumpSector(handle, DEVICE_INFOS_SD_SECTOR_0, outputPath)
                     .thenCompose(__ -> dumpSector(handle, DEVICE_INFOS_SD_SECTOR_2, outputPath))
@@ -507,25 +527,17 @@ public class RawStoryTellerAsyncDriver {
         });
     }
 
-    private CompletableFuture<Void> dumpSector(DeviceHandle handle, int sector, String outputPath) {
-        String dest = outputPath + File.separator + "sector" + sector + ".bin";
-        LOGGER.info("Dumping sector " + sector + " into " + dest);
-        return LibUsbMassStorageHelper.asyncReadSDSectors(handle, sector, (short) 1)
+    private CompletableFuture<Void> dumpSector(DeviceHandle handle, int sector, Path outputPath) {
+        Path destPath = outputPath.resolve("sector" + sector + ".bin");
+        LOGGER.info("Dumping sector " + sector + " into " + destPath.getFileName());
+        return LibUsbMassStorageHelper.asyncReadSDSectors(handle, sector, (short) 1) //
                 .thenAccept(read -> {
-                    try {
-                        FileOutputStream sectorOutputStream = new FileOutputStream(dest);
-                        writeByteBufferToStream(read, sectorOutputStream);
-                        sectorOutputStream.close();
+                    try (SeekableByteChannel sbc = Files.newByteChannel(destPath, WRITE, TRUNCATE_EXISTING)) {
+                        sbc.write(read);
                     } catch (IOException e) {
                         throw new StoryTellerException("Failed to dump sector " + sector + " from SD card.", e);
                     }
                 });
     }
 
-    private void writeByteBufferToStream(ByteBuffer bb, OutputStream output) throws IOException {
-        // TODO Write directly from ByteBuffer to output stream ?
-        byte[] bytes = new byte[bb.remaining()];
-        bb.get(bytes);
-        output.write(bytes);
-    }
 }

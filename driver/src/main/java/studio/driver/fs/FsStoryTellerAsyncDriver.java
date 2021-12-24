@@ -10,7 +10,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -27,6 +26,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+import java.util.stream.Stream;
 
 import org.apache.commons.codec.binary.Hex;
 import org.usb4java.Device;
@@ -329,22 +329,20 @@ public class FsStoryTellerAsyncDriver {
         try {
             Path piFile = this.partitionMountPoint.resolve(PACK_INDEX_FILENAME);
             Path newPiFile = piFile.resolveSibling(PACK_INDEX_FILENAME + ".new");
-            LOGGER.finest("Writing pack index to temporary file: " + newPiFile);
 
-            FileOutputStream packIndexFos = new FileOutputStream(newPiFile.toFile());
-            DataOutputStream packIndexDos = new DataOutputStream(packIndexFos);
-            for (UUID packUUID : packUUIDs) {
-                packIndexDos.writeLong(packUUID.getMostSignificantBits());
-                packIndexDos.writeLong(packUUID.getLeastSignificantBits());
+            LOGGER.finest("Writing pack index to temporary file: " + newPiFile);
+            try(DataOutputStream packIndexDos = new DataOutputStream(Files.newOutputStream(newPiFile))) {
+                for (UUID packUUID : packUUIDs) {
+                    packIndexDos.writeLong(packUUID.getMostSignificantBits());
+                    packIndexDos.writeLong(packUUID.getLeastSignificantBits());
+                }
             }
-            packIndexDos.close();
-            packIndexFos.close();
 
             // Then replace file
             LOGGER.finest("Replacing pack index file");
-            Files.copy(newPiFile, piFile, StandardCopyOption.REPLACE_EXISTING);
-            LOGGER.finest("Deleting temporary pack index file");
-            Files.delete(newPiFile);
+            Files.move(newPiFile, piFile, StandardCopyOption.REPLACE_EXISTING);
+//            LOGGER.finest("Deleting temporary pack index file");
+//            Files.delete(newPiFile);
 
             return CompletableFuture.completedFuture(true);
         } catch (Exception e) {
@@ -473,8 +471,8 @@ public class FsStoryTellerAsyncDriver {
         int folderSize = (int) FileUtils.getFolderSize(sourceFolder);
         LOGGER.finest("Pack folder size: " + folderSize);
         // Copy folders and files
-        Files.walk(sourceFolder)
-                .forEach(s -> {
+        try(Stream<Path> paths = Files.walk(sourceFolder)) {
+            paths.forEach(s -> {
                     try {
                         Path d = destFolder.resolve(sourceFolder.relativize(s));
                         if (Files.isDirectory(s)) {
@@ -507,6 +505,7 @@ public class FsStoryTellerAsyncDriver {
                         throw new StoryTellerException("Failed to copy pack folder", e);
                     }
                 });
+        }
         return new TransferStatus(transferred.get() == folderSize, transferred.get(), folderSize, 0.0);
     }
 
