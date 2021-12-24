@@ -10,12 +10,12 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
 public interface IStoryTellerService {
-
 
     CompletableFuture<Optional<JsonObject>> deviceInfos();
 
@@ -29,5 +29,5 @@ public interface IStoryTellerService {
 
     CompletableFuture<Optional<String>> extractPack(String uuid, File destFile);
 
-    CompletableFuture<Void> dump(String outputPath);
+    CompletableFuture<Void> dump(Path outputPath);
 }

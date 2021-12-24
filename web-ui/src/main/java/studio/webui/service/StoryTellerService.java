@@ -6,31 +6,35 @@
 
 package studio.webui.service;
 
+import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Optional;
+import java.util.UUID;
+import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
+
+import org.apache.commons.codec.binary.Hex;
+import org.usb4java.Device;
+
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import org.apache.commons.codec.binary.Hex;
-import org.usb4java.Device;
 import studio.core.v1.Constants;
-import studio.driver.model.fs.FsStoryPackInfos;
-import studio.driver.model.raw.RawStoryPackInfos;
-import studio.driver.raw.LibUsbMassStorageHelper;
-import studio.driver.raw.RawStoryTellerAsyncDriver;
 import studio.driver.event.DeviceHotplugEventListener;
 import studio.driver.event.TransferProgressListener;
 import studio.driver.fs.FsStoryTellerAsyncDriver;
 import studio.driver.model.TransferStatus;
+import studio.driver.model.fs.FsStoryPackInfos;
+import studio.driver.model.raw.RawStoryPackInfos;
+import studio.driver.raw.LibUsbMassStorageHelper;
+import studio.driver.raw.RawStoryTellerAsyncDriver;
 import studio.metadata.DatabaseMetadataService;
-
-import java.io.File;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
-import java.util.*;
-import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 public class StoryTellerService implements IStoryTellerService {
 
@@ -458,13 +462,11 @@ public class StoryTellerService implements IStoryTellerService {
         return CompletableFuture.completedFuture(Optional.of(transferId));
     }
 
-    public CompletableFuture<Void> dump(String outputPath) {
+    public CompletableFuture<Void> dump(Path outputPath) {
         if (this.device == null) {
             return CompletableFuture.completedFuture(null);
-        } else {
-            new File(outputPath).mkdirs();
-            return driver.dump(outputPath);
         }
+        return driver.dump(outputPath);
     }
 
     private JsonObject getRawPackMetadata(RawStoryPackInfos pack) {

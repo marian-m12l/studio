@@ -282,7 +282,7 @@ public class MockStoryTellerService implements IStoryTellerService {
                 .orElse(json);
     }
 
-    public CompletableFuture<Void> dump(String outputPath) {
+    public CompletableFuture<Void> dump(Path outputPath) {
         // Not supported
         return CompletableFuture.completedFuture(null);
     }

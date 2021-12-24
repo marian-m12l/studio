@@ -16,6 +16,7 @@ import studio.webui.service.IStoryTellerService;
 import studio.webui.service.LibraryService;
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.List;
 
 public class DeviceController {
@@ -28,7 +29,7 @@ public class DeviceController {
 
         // Plugged device metadata
         router.get("/infos").handler(ctx -> {
-            storyTellerService.deviceInfos()
+            storyTellerService.deviceInfos() //
                     .whenComplete((maybeDeviceInfos, e) -> {
                         if (e != null) {
                             LOGGER.error("Failed to read device infos", e);
@@ -48,7 +49,7 @@ public class DeviceController {
 
         // Plugged device packs list
         router.get("/packs").handler(ctx -> {
-            storyTellerService.packs()
+            storyTellerService.packs() //
                     .whenComplete((devicePacks, e) -> {
                         if (e != null) {
                             LOGGER.error("Failed to read packs from device", e);
@@ -67,7 +68,7 @@ public class DeviceController {
             String packPath = ctx.getBodyAsJson().getString("path");
             File packFile = new File(libraryService.libraryPath() + packPath);
             // Start transfer to device
-            storyTellerService.addPack(uuid, packFile)
+            storyTellerService.addPack(uuid, packFile) //
                     .whenComplete((maybeTransferId, e) -> {
                         if (e != null) {
                             LOGGER.error("Failed to transfer pack to device", e);
@@ -92,7 +93,7 @@ public class DeviceController {
         // Remove pack from device
         router.post("/removeFromDevice").handler(ctx -> {
             String uuid = ctx.getBodyAsJson().getString("uuid");
-            storyTellerService.deletePack(uuid)
+            storyTellerService.deletePack(uuid) //
                     .whenComplete((removed, e) -> {
                         if (e != null) {
                             LOGGER.error("Failed to remove pack from device", e);
@@ -113,7 +114,7 @@ public class DeviceController {
         // Reorder packs on device
         router.post("/reorder").handler(ctx -> {
             List<String> uuids = ctx.getBodyAsJson().getJsonArray("uuids").getList();
-            storyTellerService.reorderPacks(uuids)
+            storyTellerService.reorderPacks(uuids) //
                     .whenComplete((reordered, e) -> {
                         if (e != null) {
                             LOGGER.error("Failed to reorder packs on device", e);
@@ -145,7 +146,7 @@ public class DeviceController {
                 ctx.fail(400);
                 return;
             }
-            storyTellerService.extractPack(uuid, new File(path))
+            storyTellerService.extractPack(uuid, new File(path)) //
                     .whenComplete((maybeTransferId, e) -> {
                         if (e != null) {
                             LOGGER.error("Failed to transfer pack from device", e);
@@ -171,7 +172,7 @@ public class DeviceController {
         router.post("/dump").handler(ctx -> {
             String outputPath = ctx.getBodyAsJson().getString("outputPath");
             // Dump important sector into outputPath
-            storyTellerService.dump(outputPath)
+            storyTellerService.dump(Path.of(outputPath)) //
                     .whenComplete((done, e) -> {
                         if (e != null) {
                             LOGGER.error("Failed to dump important sectors from device", e);

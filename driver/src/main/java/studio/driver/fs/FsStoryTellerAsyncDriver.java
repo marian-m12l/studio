@@ -10,7 +10,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -329,22 +328,20 @@ public class FsStoryTellerAsyncDriver {
         try {
             Path piFile = this.partitionMountPoint.resolve(PACK_INDEX_FILENAME);
             Path newPiFile = piFile.resolveSibling(PACK_INDEX_FILENAME + ".new");
-            LOGGER.finest("Writing pack index to temporary file: " + newPiFile);
 
-            FileOutputStream packIndexFos = new FileOutputStream(newPiFile.toFile());
-            DataOutputStream packIndexDos = new DataOutputStream(packIndexFos);
-            for (UUID packUUID : packUUIDs) {
-                packIndexDos.writeLong(packUUID.getMostSignificantBits());
-                packIndexDos.writeLong(packUUID.getLeastSignificantBits());
+            LOGGER.finest("Writing pack index to temporary file: " + newPiFile);
+            try(DataOutputStream packIndexDos = new DataOutputStream(Files.newOutputStream(newPiFile))) {
+                for (UUID packUUID : packUUIDs) {
+                    packIndexDos.writeLong(packUUID.getMostSignificantBits());
+                    packIndexDos.writeLong(packUUID.getLeastSignificantBits());
+                }
             }
-            packIndexDos.close();
-            packIndexFos.close();
 
             // Then replace file
             LOGGER.finest("Replacing pack index file");
-            Files.copy(newPiFile, piFile, StandardCopyOption.REPLACE_EXISTING);
-            LOGGER.finest("Deleting temporary pack index file");
-            Files.delete(newPiFile);
+            Files.move(newPiFile, piFile, StandardCopyOption.REPLACE_EXISTING);
+//            LOGGER.finest("Deleting temporary pack index file");
+//            Files.delete(newPiFile);
 
             return CompletableFuture.completedFuture(true);
         } catch (Exception e) {
