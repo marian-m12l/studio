@@ -6,23 +6,43 @@
 
 package studio.core.v1.writer.fs;
 
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.digest.DigestUtils;
-import studio.core.v1.model.*;
-import studio.core.v1.utils.AudioConversion;
-import studio.core.v1.utils.ID3Tags;
-import studio.core.v1.utils.XXTEACipher;
-
-import javax.sound.sampled.AudioFileFormat;
-import javax.sound.sampled.AudioSystem;
-import java.io.*;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
+import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
+import java.util.UUID;
+
+import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioSystem;
+
+import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.codec.digest.DigestUtils;
+
+import studio.core.v1.MimeType;
+import studio.core.v1.model.ActionNode;
+import studio.core.v1.model.AudioAsset;
+import studio.core.v1.model.ImageAsset;
+import studio.core.v1.model.StageNode;
+import studio.core.v1.model.StoryPack;
+import studio.core.v1.model.Transition;
+import studio.core.v1.utils.AudioConversion;
+import studio.core.v1.utils.ID3Tags;
+import studio.core.v1.utils.XXTEACipher;
 
 /*
 Writer for the new binary format coming with firmware 2.4
@@ -113,7 +133,7 @@ public class FsStoryPackWriter {
                     byte[] imageData = image.getRawData();
                     String imageHash = DigestUtils.sha1Hex(imageData);
                     if (!imageHashOrdered.contains(imageHash)) {
-                        if (!"image/bmp".equals(image.getMimeType())) {
+                        if (!MimeType.IMAGE_BMP.equals(image.getMimeType())) {
                             throw new IllegalArgumentException("FS pack file requires image assets to be BMP.");
                         }
                         ByteBuffer bmpBuffer = ByteBuffer.wrap(imageData);
@@ -137,12 +157,12 @@ public class FsStoryPackWriter {
                 AudioAsset audio = node.getAudio();
                 // If audio is missing, add a blank audio to satisfy the device
                 if (audio == null) {
-                    audio = new AudioAsset("audio/mp3", Hex.decodeHex(BLANK_MP3_FILE));
+                    audio = new AudioAsset(MimeType.AUDIO_MP3, Hex.decodeHex(BLANK_MP3_FILE));
                 }
                 byte[] audioData = audio.getRawData();
                 String audioHash = DigestUtils.sha1Hex(audioData);
                 if (!audioHashOrdered.contains(audioHash)) {
-                    if (!"audio/mp3".equals(audio.getMimeType()) && !"audio/mpeg".equals(audio.getMimeType())) {
+                    if (!MimeType.AUDIO_MP3.equals(audio.getMimeType()) && !MimeType.AUDIO_MPEG.equals(audio.getMimeType())) {
                         throw new IllegalArgumentException("FS pack file requires audio assets to be MP3.");
                     } else {
                         // Check ID3 tags

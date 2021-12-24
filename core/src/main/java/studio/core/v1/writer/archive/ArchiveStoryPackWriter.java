@@ -6,22 +6,28 @@
 
 package studio.core.v1.writer.archive;
 
-import com.google.gson.stream.JsonWriter;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.io.OutputStreamWriter;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.UUID;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipOutputStream;
+
 import org.apache.commons.codec.digest.DigestUtils;
 import org.apache.commons.io.IOUtils;
+
+import com.google.gson.stream.JsonWriter;
+
+import studio.core.v1.MimeType;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.Node;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.enriched.EnrichedNodePosition;
 import studio.core.v1.model.enriched.EnrichedNodeType;
-
-import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 public class ArchiveStoryPackWriter {
 
@@ -207,17 +213,17 @@ public class ArchiveStoryPackWriter {
 
     private String extensionFromMimeType(String mimeType) {
         switch (mimeType) {
-            case "image/bmp":
+            case MimeType.IMAGE_BMP:
                 return ".bmp";
-            case "image/png":
+            case MimeType.IMAGE_PNG:
                 return ".png";
-            case "image/jpeg":
+            case MimeType.IMAGE_JPEG:
                 return ".jpg";
-            case "audio/x-wav":
+            case MimeType.AUDIO_WAV:
                 return ".wav";
-            case "audio/mpeg":
+            case MimeType.AUDIO_MPEG:
                 return ".mp3";
-            case "audio/ogg":
+            case MimeType.AUDIO_OGG:
                 return ".ogg";
             default:
                 return "";

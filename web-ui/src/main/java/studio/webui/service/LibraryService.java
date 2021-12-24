@@ -24,6 +24,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
+import studio.core.v1.Constants;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.reader.archive.ArchiveStoryPackReader;
@@ -161,12 +162,12 @@ public class LibraryService {
     }
     
     public Optional<Path> addConvertedRawPackFile(String packFile, Boolean allowEnriched) {
-        String outputFormat = "raw";
+        String outputFormat = Constants.PACK_FORMAT_RAW;
         if (packFile.endsWith(".pack")) {
             assertFormat(outputFormat);
         }
         // expected input format type
-        String inputFormat = packFile.endsWith(".zip") ? "archive" : "FS";
+        String inputFormat = packFile.endsWith(".zip") ? Constants.PACK_FORMAT_ARCHIVE : Constants.PACK_FORMAT_FS;
         LOGGER.info("Pack is in " + inputFormat + " format. Converting to " + outputFormat + " format");
         try {
             // Packs must first be converted to raw format
@@ -207,12 +208,12 @@ public class LibraryService {
     }
 
     public Optional<Path> addConvertedArchivePackFile(String packFile) {
-        String outputFormat = "archive";
+        String outputFormat = Constants.PACK_FORMAT_ARCHIVE;
         if (packFile.endsWith(".zip")) {
             assertFormat(outputFormat);
         } 
         // expected input format type
-        String inputFormat = packFile.endsWith(".pack") ? "raw" : "FS";
+        String inputFormat = packFile.endsWith(".pack") ? Constants.PACK_FORMAT_RAW : Constants.PACK_FORMAT_FS;
         LOGGER.info("Pack is in " + inputFormat + " format. Converting to " + outputFormat + " format");
         try {
             // Packs must first be converted to raw format
@@ -251,12 +252,12 @@ public class LibraryService {
     }
 
     public Optional<Path> addConvertedFsPackFile(String packFile, Boolean allowEnriched) {
-        String outputFormat = "FS";
+        String outputFormat = Constants.PACK_FORMAT_FS;
         if (!packFile.endsWith(".zip") && !packFile.endsWith(".pack")) {
             assertFormat(outputFormat);
         } 
         // expected input format type
-        String inputFormat = packFile.endsWith(".zip") ? "archive" : "raw";
+        String inputFormat = packFile.endsWith(".zip") ? Constants.PACK_FORMAT_ARCHIVE : Constants.PACK_FORMAT_RAW;
         LOGGER.info("Pack is in " + inputFormat + " format. Converting to " + outputFormat + " format");
         try {
             // Packs must first be converted to raw format
@@ -298,14 +299,6 @@ public class LibraryService {
             // Copy temporary file to local library
             Path src = Path.of(uploadedFilePath);
             Path dest = libraryPath().resolve(destPath);
-//            if (dest.exists()) {
-//                boolean deleted = dest.delete();
-//                // Handle failure
-//                if (!deleted) {
-//                    return false;
-//                }
-//            }
-            //FileUtils.moveFile(src, dest);
             Files.move(src, dest, StandardCopyOption.REPLACE_EXISTING);
             return true;
         } catch (IOException e) {
@@ -356,7 +349,7 @@ public class LibraryService {
     }
 
     private Optional<LibraryPack> readPackFile(Path path) {
-        LOGGER.debug("Reading pack file: " + path.toString());
+        LOGGER.debug("Reading pack file: " + path);
         // Handle all file formats
         if (path.toString().endsWith(".zip")) {
             try (InputStream is = Files.newInputStream(path)) {
@@ -365,10 +358,8 @@ public class LibraryService {
                 if (meta != null) {
                     return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
                 }
-                return Optional.empty();
             } catch (IOException e) {
                 LOGGER.error("Failed to read archive-format pack " + path + " from local library", e);
-                return Optional.empty();
             }
         } else if (path.toString().endsWith(".pack")) {
             try (InputStream is = Files.newInputStream(path)) {
@@ -379,10 +370,8 @@ public class LibraryService {
                     meta.setSectorSize(packSectorSize);
                     return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
                 }
-                return Optional.empty();
             } catch (IOException e) {
                 LOGGER.error("Failed to read raw format pack " + path + " from local library", e);
-                return Optional.empty();
             }
         } else if (Files.isDirectory(path)) {
             try {
@@ -393,13 +382,11 @@ public class LibraryService {
                     meta.setSectorSize(packSectorSize);
                     return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
                 }
-                return Optional.empty();
             } catch (Exception e) {
                 LOGGER.error("Failed to read FS format pack " + path + " from local library", e);
-                return Optional.empty();
             }
         }
-        // Ignore other files
+        // Ignore other files OR read error
         return Optional.empty();
     }
 
