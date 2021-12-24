@@ -6,19 +6,34 @@
 
 package studio.core.v1.reader.binary;
 
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.UUID;
+
 import studio.core.v1.Constants;
-import studio.core.v1.model.*;
+import studio.core.v1.MimeType;
+import studio.core.v1.model.ActionNode;
+import studio.core.v1.model.AssetType;
+import studio.core.v1.model.AudioAsset;
+import studio.core.v1.model.ControlSettings;
+import studio.core.v1.model.ImageAsset;
+import studio.core.v1.model.StageNode;
+import studio.core.v1.model.StoryPack;
+import studio.core.v1.model.Transition;
 import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 import studio.core.v1.model.enriched.EnrichedNodePosition;
 import studio.core.v1.model.enriched.EnrichedNodeType;
 import studio.core.v1.model.enriched.EnrichedPackMetadata;
 import studio.core.v1.model.metadata.StoryPackMetadata;
-
-import java.io.DataInputStream;
-import java.io.IOException;
-import java.io.InputStream;
-import java.nio.charset.StandardCharsets;
-import java.util.*;
 
 public class BinaryStoryPackReader {
 
@@ -243,11 +258,11 @@ public class BinaryStoryPackReader {
             // Update asset on stage nodes referencing this sector
             switch (assetAddr.getType()) {
                 case AUDIO:
-                    AudioAsset audioAsset = new AudioAsset("audio/x-wav", assetBytes);
+                    AudioAsset audioAsset = new AudioAsset(MimeType.AUDIO_WAV, assetBytes);
                     stagesWithAudio.get(assetAddr).forEach(stageNode -> stageNode.setAudio(audioAsset));
                     break;
                 case IMAGE:
-                    ImageAsset imageAsset = new ImageAsset("image/bmp", assetBytes);
+                    ImageAsset imageAsset = new ImageAsset(MimeType.IMAGE_BMP, assetBytes);
                     stagesWithImage.get(assetAddr).forEach(stageNode -> stageNode.setImage(imageAsset));
                     break;
             }
