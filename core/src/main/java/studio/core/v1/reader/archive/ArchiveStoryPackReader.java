@@ -11,6 +11,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.commons.io.IOUtils;
 import studio.core.v1.Constants;
+import studio.core.v1.MimeType;
 import studio.core.v1.model.*;
 import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 import studio.core.v1.model.enriched.EnrichedNodePosition;
@@ -224,24 +225,24 @@ public class ArchiveStoryPackReader {
                 for (StageNode stageNode : stageNodesReferencingAsset) {
                     switch (extension.toLowerCase()) {
                         case ".bmp":
-                            stageNode.setImage(new ImageAsset("image/bmp", assetEntry.getValue()));
+                            stageNode.setImage(new ImageAsset(MimeType.IMAGE_BMP, assetEntry.getValue()));
                             break;
                         case ".png":
-                            stageNode.setImage(new ImageAsset("image/png", assetEntry.getValue()));
+                            stageNode.setImage(new ImageAsset(MimeType.IMAGE_PNG, assetEntry.getValue()));
                             break;
                         case ".jpg":
                         case ".jpeg":
-                            stageNode.setImage(new ImageAsset("image/jpeg", assetEntry.getValue()));
+                            stageNode.setImage(new ImageAsset(MimeType.IMAGE_JPEG, assetEntry.getValue()));
                             break;
                         case ".wav":
-                            stageNode.setAudio(new AudioAsset("audio/x-wav", assetEntry.getValue()));
+                            stageNode.setAudio(new AudioAsset(MimeType.AUDIO_WAV, assetEntry.getValue()));
                             break;
                         case ".mp3":
-                            stageNode.setAudio(new AudioAsset("audio/mpeg", assetEntry.getValue()));
+                            stageNode.setAudio(new AudioAsset(MimeType.AUDIO_MPEG, assetEntry.getValue()));
                             break;
                         case ".ogg":
                         case ".oga":
-                            stageNode.setAudio(new AudioAsset("audio/ogg", assetEntry.getValue()));
+                            stageNode.setAudio(new AudioAsset(MimeType.AUDIO_OGG, assetEntry.getValue()));
                             break;
                         default:
                             // Unsupported asset

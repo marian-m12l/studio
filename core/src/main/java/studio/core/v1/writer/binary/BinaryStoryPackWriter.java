@@ -6,20 +6,29 @@
 
 package studio.core.v1.writer.binary;
 
-import org.apache.commons.codec.digest.DigestUtils;
-import studio.core.v1.Constants;
-import studio.core.v1.model.*;
-import studio.core.v1.model.enriched.EnrichedNodePosition;
-import studio.core.v1.model.enriched.EnrichedNodeType;
-import studio.core.v1.reader.binary.AssetAddr;
-import studio.core.v1.reader.binary.SectorAddr;
-
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+
+import org.apache.commons.codec.digest.DigestUtils;
+
+import studio.core.v1.Constants;
+import studio.core.v1.MimeType;
+import studio.core.v1.model.ActionNode;
+import studio.core.v1.model.AssetType;
+import studio.core.v1.model.AudioAsset;
+import studio.core.v1.model.ImageAsset;
+import studio.core.v1.model.Node;
+import studio.core.v1.model.StageNode;
+import studio.core.v1.model.StoryPack;
+import studio.core.v1.model.Transition;
+import studio.core.v1.model.enriched.EnrichedNodePosition;
+import studio.core.v1.model.enriched.EnrichedNodeType;
+import studio.core.v1.reader.binary.AssetAddr;
+import studio.core.v1.reader.binary.SectorAddr;
 
 public class BinaryStoryPackWriter {
 
@@ -61,7 +70,7 @@ public class BinaryStoryPackWriter {
                 byte[] imageData = image.getRawData();
                 String assetHash = DigestUtils.sha1Hex(imageData);
                 if (!assetsHashes.containsKey(assetHash)) {
-                    if (!"image/bmp".equals(image.getMimeType())) {
+                    if (!MimeType.IMAGE_BMP.equals(image.getMimeType())) {
                         throw new IllegalArgumentException("Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
                     }
                     int imageSize = imageData.length;
@@ -82,7 +91,7 @@ public class BinaryStoryPackWriter {
                 byte[] audioData = audio.getRawData();
                 String assetHash = DigestUtils.sha1Hex(audioData);
                 if (!assetsHashes.containsKey(assetHash)) {
-                    if (!"audio/x-wav".equals(audio.getMimeType())) {
+                    if (!MimeType.AUDIO_WAV.equals(audio.getMimeType())) {
                         throw new IllegalArgumentException("Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
                     }
                     int audioSize = audioData.length;

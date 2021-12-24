@@ -6,14 +6,8 @@
 
 package studio.core.v1.reader.fs;
 
-import studio.core.v1.Constants;
-import studio.core.v1.model.*;
-import studio.core.v1.model.metadata.StoryPackMetadata;
-import studio.core.v1.utils.XXTEACipher;
-
 import java.io.DataInputStream;
 import java.io.File;
-import java.io.FileInputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -21,7 +15,24 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.TreeMap;
+import java.util.UUID;
+
+import studio.core.v1.Constants;
+import studio.core.v1.MimeType;
+import studio.core.v1.model.ActionNode;
+import studio.core.v1.model.AudioAsset;
+import studio.core.v1.model.ControlSettings;
+import studio.core.v1.model.ImageAsset;
+import studio.core.v1.model.StageNode;
+import studio.core.v1.model.StoryPack;
+import studio.core.v1.model.Transition;
+import studio.core.v1.model.metadata.StoryPackMetadata;
+import studio.core.v1.utils.XXTEACipher;
 
 public class FsStoryPackReader {
 
@@ -146,7 +157,7 @@ public class FsStoryPackReader {
                     // Read image file
                     Path imagePath = inputFolder.resolve(IMAGE_FOLDER + imageName);
                     byte[] rfContent = readCipheredFile(imagePath);
-                    image = new ImageAsset("image/bmp", rfContent);
+                    image = new ImageAsset(MimeType.IMAGE_BMP, rfContent);
                 }
                 AudioAsset audio = null;
                 if (soundAssetIndexInSI != -1) {
@@ -156,7 +167,7 @@ public class FsStoryPackReader {
                     // Read audio file
                     Path audioPath = inputFolder.resolve(SOUND_FOLDER + audioName);
                     byte[] sfContent = readCipheredFile(inputFolder.resolve(SOUND_FOLDER + audioName));
-                    audio = new AudioAsset("audio/mpeg", sfContent);
+                    audio = new AudioAsset(MimeType.AUDIO_MPEG, sfContent);
                 }
 
                 StageNode stageNode = new StageNode(
