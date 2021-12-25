@@ -26,16 +26,13 @@ public class PackAssetsCompression {
     public static boolean hasCompressedAssets(StoryPack pack) {
         for (int i = 0; i < pack.getStageNodes().size(); i++) {
             StageNode node = pack.getStageNodes().get(i);
-
             if (node.getImage() != null && !MimeType.IMAGE_BMP.equals(node.getImage().getMimeType())) {
                 return true;
             }
-
             if (node.getAudio() != null && !MimeType.AUDIO_WAV.equals(node.getAudio().getMimeType())) {
                 return true;
             }
         }
-
         return false;
     }
 

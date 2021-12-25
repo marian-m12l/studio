@@ -16,9 +16,7 @@ limitations under the License.
 
 package com.jhlabs.image;
 
-import java.util.*;
-import java.awt.*;
-import java.awt.image.*;
+import java.awt.Rectangle;
 
 /**
  * A filter which quantizes an image to a set number of colors - useful for producing
@@ -34,7 +32,7 @@ public class QuantizeFilter extends WholeImageFilter {
     /**
      * Floyd-Steinberg dithering matrix.
      */
-    protected final static int[] matrix = {
+    protected static final int[] matrix = {
             0, 0, 0,
             0, 0, 7,
             3, 5, 1,

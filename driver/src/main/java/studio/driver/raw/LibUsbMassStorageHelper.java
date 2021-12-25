@@ -197,7 +197,7 @@ public class LibUsbMassStorageHelper {
     public static final short SECTOR_SIZE = 512;
 
     // To generate random packet tags
-    private static final SecureRandom PRNG = new SecureRandom();
+    private static final SecureRandom prng = new SecureRandom();
 
     /**
      * Execute the given function on a libusb handle for the given device. Opens and frees the handle and interface.
@@ -419,7 +419,7 @@ public class LibUsbMassStorageHelper {
         bb.put(MASS_STORAGE_CBW_SIGNATURE);
         // Random Command Block Tag (4 bytes)
         byte[] random = new byte[4];
-        PRNG.nextBytes(random);
+        prng.nextBytes(random);
         bb.put(random);
         // Expected number of bytes (to read or write) (4 bytes)
         bb.order(ByteOrder.LITTLE_ENDIAN);
