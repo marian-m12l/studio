@@ -55,7 +55,7 @@ public class VorbisEncoder {
     private static byte[] BUFFER = new byte[READ*4+44];
 
     // need to randomize seed
-    private static final SecureRandom PRNG = new SecureRandom();
+    private static final SecureRandom prng = new SecureRandom();
     
     public static byte[] encode(InputStream pcmInputStream) throws VorbisEncodingException {
 
@@ -85,7 +85,7 @@ public class VorbisEncoder {
         vorbis_block vb = new vorbis_block( vd );
 
         // take physical pages, weld into a logical stream of packets
-        ogg_stream_state os = new ogg_stream_state( PRNG.nextInt(256) );
+        ogg_stream_state os = new ogg_stream_state( prng.nextInt(256) );
 
         // Writing header
         ogg_packet header = new ogg_packet();
