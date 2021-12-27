@@ -7,6 +7,9 @@
 package studio.driver;
 
 public class StoryTellerException extends RuntimeException {
+
+    private static final long serialVersionUID = 3761810518036523174L;
+
     public StoryTellerException(String message) {
         super(message);
     }

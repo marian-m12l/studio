@@ -7,6 +7,9 @@
 package studio.core.v1.utils;
 
 public class VorbisEncodingException extends Exception {
+
+    private static final long serialVersionUID = -1441290951417402064L;
+
     public VorbisEncodingException(String message) {
         super(message);
     }
