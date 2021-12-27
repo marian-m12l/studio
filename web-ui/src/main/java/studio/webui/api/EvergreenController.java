@@ -50,7 +50,7 @@ public class EvergreenController {
 
         // Announce
         router.get("/announce").blockingHandler(ctx -> {
-            evergreenService.announce().setHandler(maybeJson -> {
+            evergreenService.announce().onComplete(maybeJson -> {
                 if (maybeJson.succeeded()) {
                     ctx.response()
                             .putHeader("content-type", "application/json")
