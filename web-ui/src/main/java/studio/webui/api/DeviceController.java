@@ -112,6 +112,7 @@ public class DeviceController {
 
         // Reorder packs on device
         router.post("/reorder").handler(ctx -> {
+            @SuppressWarnings("unchecked")
             List<String> uuids = ctx.getBodyAsJson().getJsonArray("uuids").getList();
             storyTellerService.reorderPacks(uuids) //
                     .whenComplete((reordered, e) -> {

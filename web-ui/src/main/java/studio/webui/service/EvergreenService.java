@@ -10,6 +10,7 @@ import io.vertx.config.ConfigRetriever;
 import io.vertx.config.ConfigRetrieverOptions;
 import io.vertx.config.ConfigStoreOptions;
 import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -45,35 +46,37 @@ public class EvergreenService {
     }
 
     public Future<JsonObject> infos() {
-        Future<JsonObject> future = Future.future();
+        Promise<JsonObject> promise = Promise.promise();
         configRetriever.getConfig(ar -> {
             if (ar.succeeded()) {
-                future.tryComplete(ar.result());
+                promise.tryComplete(ar.result());
             } else {
-                future.tryFail(ar.cause());
+                promise.tryFail(ar.cause());
             }
         });
-        return future;
+        return promise.future();
     }
 
     public Future<JsonObject> latest() {
+        LOGGER.debug("Search latest version");
         // Latest available release (from github)
-        Future<JsonObject> future = Future.future();
+        Promise<JsonObject> promise = Promise.promise();
         webClient
                 .get(443, GITHUB_API_FQDN, GITHUB_API_LATEST_RELEASE)
                 .ssl(true)
                 .send(ar -> {
                     if (ar.succeeded()) {
-                        future.tryComplete(ar.result().bodyAsJsonObject());
+                        promise.tryComplete(ar.result().bodyAsJsonObject());
                     } else {
-                        future.tryFail(ar.cause());
+                        promise.tryFail(ar.cause());
                     }
                 });
-        return future;
+        return promise.future();
     }
 
     public Future<JsonObject> announce() {
-        Future<JsonObject> future = Future.future();
+        Promise<JsonObject> promise = Promise.promise();
+        LOGGER.debug("Search announce");
         // Get announce's last modification date (from github)
         webClient
                 .get(443, GITHUB_API_FQDN, GITHUB_API_ANNOUNCE_COMMIT)
@@ -83,7 +86,7 @@ public class EvergreenService {
                         JsonArray commits = ar.result().bodyAsJsonArray();
                         if (commits.size() == 0) {
                              // First announce
-                            future.tryComplete(new JsonObject()
+                            promise.tryComplete(new JsonObject()
                                     .put("date", "2020-05-12T00:00:00.000Z")
                                     .put("content", GITHUB_API_BUILTIN_ANNOUNCE_CONTENT_EN + "\n\n-----\n\n" + GITHUB_API_BUILTIN_ANNOUNCE_CONTENT_FR)
                             );
@@ -96,17 +99,17 @@ public class EvergreenService {
                                     .send(ar2 -> {
                                         if (ar2.succeeded()) {
                                             String content = ar2.result().bodyAsString();
-                                            future.tryComplete(new JsonObject().put("date", commitDate).put("content", content));
+                                            promise.tryComplete(new JsonObject().put("date", commitDate).put("content", content));
                                         } else {
-                                            future.tryFail(ar2.cause());
+                                            promise.tryFail(ar2.cause());
                                         }
                                     });
                         }
                     } else {
-                        future.tryFail(ar.cause());
+                        promise.tryFail(ar.cause());
                     }
                 });
-        return future;
+        return promise.future();
     }
 
 }
