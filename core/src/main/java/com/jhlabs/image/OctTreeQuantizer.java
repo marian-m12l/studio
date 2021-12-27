@@ -17,7 +17,8 @@ limitations under the License.
 package com.jhlabs.image;
 
 import java.io.PrintStream;
-import java.util.Vector;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * An image Quantizer based on the Octree algorithm. This is a very basic implementation
@@ -41,9 +42,9 @@ public class OctTreeQuantizer implements Quantizer {
         OctTreeNode leaf[] = new OctTreeNode[8];
         boolean isLeaf;
         int count;
-        int	totalRed;
-        int	totalGreen;
-        int	totalBlue;
+        int totalRed;
+        int totalGreen;
+        int totalBlue;
         int index;
 
         /**
@@ -67,13 +68,15 @@ public class OctTreeQuantizer implements Quantizer {
     private int reduceColors;
     private int maximumColors;
     private int colors = 0;
-    private Vector[] colorList;
 
+    private List<OctTreeNode>[] colorList;
+
+    @SuppressWarnings("unchecked")
     public OctTreeQuantizer() {
         setup(256);
-        colorList = new Vector[MAX_LEVEL+1];
+        colorList = new List[MAX_LEVEL+1];
         for (int i = 0; i < MAX_LEVEL+1; i++)
-            colorList[i] = new Vector();
+            colorList[i] = new ArrayList<OctTreeNode>();
         root = new OctTreeNode();
     }
 
@@ -167,7 +170,7 @@ public class OctTreeQuantizer implements Quantizer {
                 node.leaf[index] = child;
                 node.isLeaf = false;
                 nodes++;
-                colorList[level].addElement(child);
+                colorList[level].add(child);
 
                 if (level == MAX_LEVEL) {
                     child.isLeaf = true;
@@ -195,10 +198,10 @@ public class OctTreeQuantizer implements Quantizer {
 
     private void reduceTree(int numColors) {
         for (int level = MAX_LEVEL-1; level >= 0; level--) {
-            Vector v = colorList[level];
+            List<OctTreeNode> v = colorList[level];
             if (v != null && v.size() > 0) {
                 for (int j = 0; j < v.size(); j++) {
-                    OctTreeNode node = (OctTreeNode)v.elementAt(j);
+                    OctTreeNode node = (OctTreeNode)v.get(j);
                     if (node.children > 0) {
                         for (int i = 0; i < 8; i++) {
                             OctTreeNode child = node.leaf[i];
@@ -213,7 +216,7 @@ public class OctTreeQuantizer implements Quantizer {
                                 node.children--;
                                 colors--;
                                 nodes--;
-                                colorList[level+1].removeElement(child);
+                                colorList[level+1].remove(child);
                             }
                         }
                         node.isLeaf = true;

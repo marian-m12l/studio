@@ -103,15 +103,11 @@ public class VorbisEncoder {
         // one raw packet of data for decode
         ogg_packet op = new ogg_packet();
 
-        try {
-
-            ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
 
             while( !eos ) {
-
                 if ( !os.ogg_stream_flush( og ) )
                     break;
-
                 baos.write( og.header, 0, og.header_len );
                 baos.write( og.body, 0, og.body_len );
             }
@@ -156,7 +152,6 @@ public class VorbisEncoder {
                 while ( vb.vorbis_analysis_blockout( vd ) ) {
 
                     // analysis, assume we want to use bitrate management
-
                     vb.vorbis_analysis( null );
                     vb.vorbis_bitrate_addblock();
 
@@ -185,8 +180,6 @@ public class VorbisEncoder {
                 }
                 // TODO notify progress (one more block of 1024 samples has been processed)
             }
-
-            baos.close();
 
             // TODO notify progress (done)
 

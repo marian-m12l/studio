@@ -166,7 +166,7 @@ public class FsStoryPackReader {
                     String audioName = new String(audioEntry, StandardCharsets.UTF_8).replaceAll("\\\\", "/");
                     // Read audio file
                     Path audioPath = inputFolder.resolve(SOUND_FOLDER + audioName);
-                    byte[] sfContent = readCipheredFile(inputFolder.resolve(SOUND_FOLDER + audioName));
+                    byte[] sfContent = readCipheredFile(audioPath);
                     audio = new AudioAsset(MimeType.AUDIO_MPEG, sfContent);
                 }
 

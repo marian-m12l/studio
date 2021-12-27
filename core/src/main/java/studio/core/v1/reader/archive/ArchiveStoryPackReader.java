@@ -30,200 +30,197 @@ public class ArchiveStoryPackReader {
 
     public StoryPackMetadata readMetadata(InputStream inputStream) throws IOException {
         // Zip archive contains a json file and separate assets
-        ZipInputStream zis = new ZipInputStream(inputStream);
+        try (ZipInputStream zis = new ZipInputStream(inputStream); InputStreamReader isr = new InputStreamReader(zis)) {
 
-        // Pack metadata model
-        StoryPackMetadata metadata = new StoryPackMetadata(Constants.PACK_FORMAT_ARCHIVE);
+            // Pack metadata model
+            StoryPackMetadata metadata = new StoryPackMetadata(Constants.PACK_FORMAT_ARCHIVE);
 
-        boolean hasStoryJsonEntry = false;
+            boolean hasStoryJsonEntry = false;
 
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                if (entry.isDirectory()) {
+                    continue;
+                }
+                // Story descriptor file: story.json
+                if (entry.getName().equalsIgnoreCase("story.json")) {
+                    hasStoryJsonEntry = true;
 
-        ZipEntry entry;
-        while((entry = zis.getNextEntry()) != null) {
-            // Story descriptor file: story.json
-            if (!entry.isDirectory() && entry.getName().equalsIgnoreCase("story.json")) {
-                hasStoryJsonEntry = true;
+                    JsonParser parser = new JsonParser();
+                    JsonObject root = parser.parse(isr).getAsJsonObject();
 
-                JsonParser parser = new JsonParser();
-                JsonObject root = parser.parse(new InputStreamReader(zis)).getAsJsonObject();
+                    // Read metadata
+                    metadata.setVersion(root.get("version").getAsShort());
+                    Optional.ofNullable(root.get("title")).filter(JsonElement::isJsonPrimitive)
+                            .ifPresent(title -> metadata.setTitle(title.getAsString()));
+                    Optional.ofNullable(root.get("description")).filter(JsonElement::isJsonPrimitive)
+                            .ifPresent(desc -> metadata.setDescription(desc.getAsString()));
+                    // TODO Thumbnail?
 
-                // Read metadata
-                metadata.setVersion(root.get("version").getAsShort());
-                Optional.ofNullable(root.get("title")).filter(JsonElement::isJsonPrimitive).ifPresent(title ->
-                        metadata.setTitle(title.getAsString())
-                );
-                Optional.ofNullable(root.get("description")).filter(JsonElement::isJsonPrimitive).ifPresent(desc ->
-                        metadata.setDescription(desc.getAsString())
-                );
-                // TODO Thumbnail?
+                    // Night mode
+                    metadata.setNightModeAvailable(Optional.ofNullable(root.get("nightModeAvailable"))
+                            .map(JsonElement::getAsBoolean).orElse(false));
 
-                // Night mode
-                metadata.setNightModeAvailable(Optional.ofNullable(root.get("nightModeAvailable")).map(JsonElement::getAsBoolean).orElse(false));
-
-                // Read first stage node
-                JsonObject mainStageNode = root.getAsJsonArray("stageNodes").get(0).getAsJsonObject();
-                metadata.setUuid(mainStageNode.get("uuid").getAsString());
+                    // Read first stage node
+                    JsonObject mainStageNode = root.getAsJsonArray("stageNodes").get(0).getAsJsonObject();
+                    metadata.setUuid(mainStageNode.get("uuid").getAsString());
+                }
+                // Pack thumbnail
+                else if (entry.getName().equalsIgnoreCase("thumbnail.png")) {
+                    metadata.setThumbnail(IOUtils.toByteArray(zis));
+                }
+                // Ignore asset files
+                else if (entry.getName().startsWith("assets/")) {
+                    // no-op
+                }
             }
-            // Pack thumbnail
-            else if (!entry.isDirectory() && entry.getName().equalsIgnoreCase("thumbnail.png")) {
-                metadata.setThumbnail(IOUtils.toByteArray(zis));
-            }
-            // Ignore asset files
-            else if (!entry.isDirectory() && entry.getName().startsWith("assets/")) {
-                // no-op
-            }
+            return hasStoryJsonEntry ? metadata : null;
         }
-
-        zis.close();
-
-        return hasStoryJsonEntry ? metadata : null;
     }
 
     public StoryPack read(InputStream inputStream) throws IOException {
 
         // Zip archive contains a json file and separate assets
-        ZipInputStream zis = new ZipInputStream(inputStream);
+        try (ZipInputStream zis = new ZipInputStream(inputStream); InputStreamReader isr = new InputStreamReader(zis)) {
 
-        // Store assets bytes
-        TreeMap<String, byte[]> assets = new TreeMap<>();
+            // Store assets bytes
+            TreeMap<String, byte[]> assets = new TreeMap<>();
 
-        // Story pack model
-        boolean factoryDisabled = false;
-        short version = 0;
-        // Keep stage nodes in the order they appear
-        LinkedHashMap<String, StageNode> stageNodes = new LinkedHashMap<>();
-        // Keep asset name to stage nodes map
-        Map<String, List<StageNode>> assetToStageNodes = new HashMap<>();
-        // Keep first node
-        StageNode squareOne = null;
-        // Enriched pack metadata
-        EnrichedPackMetadata enrichedPack = null;
-        boolean nightModeAvailable = false;
+            // Story pack model
+            boolean factoryDisabled = false;
+            short version = 0;
+            // Keep stage nodes in the order they appear
+            LinkedHashMap<String, StageNode> stageNodes = new LinkedHashMap<>();
+            // Keep asset name to stage nodes map
+            Map<String, List<StageNode>> assetToStageNodes = new HashMap<>();
+            // Keep first node
+            StageNode squareOne = null;
+            // Enriched pack metadata
+            EnrichedPackMetadata enrichedPack = null;
+            boolean nightModeAvailable = false;
 
+            ZipEntry entry;
+            while ((entry = zis.getNextEntry()) != null) {
+                // Story descriptor file: story.json
+                if (!entry.isDirectory() && entry.getName().equalsIgnoreCase("story.json")) {
+                    JsonParser parser = new JsonParser();
+                    JsonObject root = parser.parse(isr).getAsJsonObject();
 
-                ZipEntry entry;
-        while((entry = zis.getNextEntry()) != null) {
-            // Story descriptor file: story.json
-            if (!entry.isDirectory() && entry.getName().equalsIgnoreCase("story.json")) {
-                JsonParser parser = new JsonParser();
-                JsonObject root = parser.parse(new InputStreamReader(zis)).getAsJsonObject();
+                    // Read metadata
+                    version = root.get("version").getAsShort();
+                    // Read (optional) enriched pack metadata
+                    Optional<String> maybeTitle = Optional.ofNullable(root.get("title"))
+                            .filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
+                    Optional<String> maybeDescription = Optional.ofNullable(root.get("description"))
+                            .filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
+                    // TODO Thumbnail?
+                    if (maybeTitle.isPresent() || maybeDescription.isPresent()) {
+                        enrichedPack = new EnrichedPackMetadata(maybeTitle.orElse(null), maybeDescription.orElse(null));
+                    }
 
-                // Read metadata
-                version = root.get("version").getAsShort();
-                // Read (optional) enriched pack metadata
-                Optional<String> maybeTitle = Optional.ofNullable(root.get("title")).filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
-                Optional<String> maybeDescription = Optional.ofNullable(root.get("description")).filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
-                // TODO Thumbnail?
-                if (maybeTitle.isPresent() || maybeDescription.isPresent()) {
-                    enrichedPack = new EnrichedPackMetadata(maybeTitle.orElse(null), maybeDescription.orElse(null));
+                    // Night mode
+                    nightModeAvailable = Optional.ofNullable(root.get("nightModeAvailable"))
+                            .map(JsonElement::getAsBoolean).orElse(false);
+
+                    // Read action nodes
+                    TreeMap<String, ActionNode> actionNodes = new TreeMap<>();
+                    Iterator<JsonElement> actionsIter = root.getAsJsonArray("actionNodes").iterator();
+                    while (actionsIter.hasNext()) {
+                        JsonObject node = actionsIter.next().getAsJsonObject();
+
+                        // Read (optional) enriched node metadata
+                        EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(node);
+
+                        actionNodes.put(node.get("id").getAsString(), new ActionNode(enrichedNodeMetadata));
+                    }
+
+                    // Read stage nodes
+                    Iterator<JsonElement> stagesIter = root.getAsJsonArray("stageNodes").iterator();
+                    while (stagesIter.hasNext()) {
+                        JsonObject node = stagesIter.next().getAsJsonObject();
+                        String uuid = node.get("uuid").getAsString();
+                        Transition okTransition = null;
+                        Transition homeTransition = null;
+
+                        JsonElement okNode = node.get("okTransition");
+                        if (okNode != null && okNode.isJsonObject()) {
+                            JsonObject okObj = okNode.getAsJsonObject();
+                            ActionNode actionNode = actionNodes.get(okObj.get("actionNode").getAsString());
+                            okTransition = new Transition(actionNode, okObj.get("optionIndex").getAsShort());
+                        }
+                        JsonElement homeNode = node.get("homeTransition");
+                        if (homeNode != null && homeNode.isJsonObject()) {
+                            JsonObject homeObj = homeNode.getAsJsonObject();
+                            ActionNode actionNode = actionNodes.get(homeObj.get("actionNode").getAsString());
+                            homeTransition = new Transition(actionNode, homeObj.get("optionIndex").getAsShort());
+                        }
+
+                        JsonObject controlSettings = node.getAsJsonObject("controlSettings");
+
+                        // Read (optional) enriched node metadata
+                        EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(node);
+
+                        StageNode stageNode = new StageNode(uuid, null, null, okTransition, homeTransition,
+                                new ControlSettings(controlSettings.get("wheel").getAsBoolean(),
+                                        controlSettings.get("ok").getAsBoolean(),
+                                        controlSettings.get("home").getAsBoolean(),
+                                        controlSettings.get("pause").getAsBoolean(),
+                                        controlSettings.get("autoplay").getAsBoolean()),
+                                enrichedNodeMetadata);
+
+                        if (node.get("squareOne") != null && node.get("squareOne").getAsBoolean()) {
+                            squareOne = stageNode;
+                        }
+                        JsonElement imageNode = node.get("image");
+                        if (imageNode != null && !imageNode.isJsonNull()) {
+                            String imageAssetName = imageNode.getAsString();
+                            List<StageNode> atsn = assetToStageNodes.getOrDefault(imageAssetName, new ArrayList<>());
+                            atsn.add(stageNode);
+                            assetToStageNodes.put(imageAssetName, atsn);
+                        }
+                        JsonElement audioNode = node.get("audio");
+                        if (audioNode != null && !audioNode.isJsonNull()) {
+                            String audioAssetName = audioNode.getAsString();
+                            List<StageNode> atsn = assetToStageNodes.getOrDefault(audioAssetName, new ArrayList<>());
+                            atsn.add(stageNode);
+                            assetToStageNodes.put(audioAssetName, atsn);
+                        }
+
+                        stageNodes.put(uuid, stageNode);
+                    }
+
+                    // Link action nodes to stage nodes
+                    actionsIter = root.getAsJsonArray("actionNodes").iterator();
+                    while (actionsIter.hasNext()) {
+                        JsonObject node = actionsIter.next().getAsJsonObject();
+                        ActionNode actionNode = actionNodes.get(node.get("id").getAsString());
+                        List<StageNode> options = new ArrayList<>();
+                        Iterator<JsonElement> optionsIter = node.getAsJsonArray("options").iterator();
+                        while (optionsIter.hasNext()) {
+                            String stageUuid = optionsIter.next().getAsString();
+                            options.add(stageNodes.get(stageUuid));
+                        }
+                        actionNode.setOptions(options);
+                    }
+
                 }
-
-                // Night mode
-                nightModeAvailable = Optional.ofNullable(root.get("nightModeAvailable")).map(JsonElement::getAsBoolean).orElse(false);
-
-                // Read action nodes
-                TreeMap<String, ActionNode> actionNodes = new TreeMap<>();
-                Iterator<JsonElement> actionsIter = root.getAsJsonArray("actionNodes").iterator();
-                while (actionsIter.hasNext()) {
-                    JsonObject node = actionsIter.next().getAsJsonObject();
-
-                    // Read (optional) enriched node metadata
-                    EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(node);
-
-                    actionNodes.put(node.get("id").getAsString(), new ActionNode(enrichedNodeMetadata));
+                // Separate asset files
+                else if (!entry.isDirectory() && entry.getName().startsWith("assets/")) {
+                    assets.put(entry.getName().substring("assets/".length()), IOUtils.toByteArray(zis));
                 }
-
-                // Read stage nodes
-                Iterator<JsonElement> stagesIter = root.getAsJsonArray("stageNodes").iterator();
-                while (stagesIter.hasNext()) {
-                    JsonObject node = stagesIter.next().getAsJsonObject();
-                    String uuid = node.get("uuid").getAsString();
-                    Transition okTransition = null;
-                    JsonObject okNode = node.getAsJsonObject("okTransition");
-                    if (okNode != null && okNode.isJsonObject()) {
-                        ActionNode actionNode = actionNodes.get(okNode.get("actionNode").getAsString());
-                        okTransition = new Transition(actionNode, okNode.get("optionIndex").getAsShort());
-                    }
-                    JsonObject homeNode = node.getAsJsonObject("homeTransition");
-                    Transition homeTransition = null;
-                    if (homeNode != null && homeNode.isJsonObject()) {
-                        ActionNode actionNode = actionNodes.get(homeNode.get("actionNode").getAsString());
-                        homeTransition = new Transition(actionNode, homeNode.get("optionIndex").getAsShort());
-                    }
-                    JsonObject controlSettings = node.getAsJsonObject("controlSettings");
-
-                    // Read (optional) enriched node metadata
-                    EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(node);
-
-                    StageNode stageNode = new StageNode(
-                            uuid,
-                            null,
-                            null,
-                            okTransition,
-                            homeTransition,
-                            new ControlSettings(
-                                    controlSettings.get("wheel").getAsBoolean(),
-                                    controlSettings.get("ok").getAsBoolean(),
-                                    controlSettings.get("home").getAsBoolean(),
-                                    controlSettings.get("pause").getAsBoolean(),
-                                    controlSettings.get("autoplay").getAsBoolean()
-                            ),
-                            enrichedNodeMetadata
-                    );
-
-                    if (node.get("squareOne") != null && node.get("squareOne").getAsBoolean()) {
-                        squareOne = stageNode;
-                    }
-                    JsonElement imageNode = node.get("image");
-                    if (imageNode != null && !imageNode.isJsonNull()) {
-                        String imageAssetName = imageNode.getAsString();
-                        List<StageNode> atsn = assetToStageNodes.getOrDefault(imageAssetName, new ArrayList<>());
-                        atsn.add(stageNode);
-                        assetToStageNodes.put(imageAssetName, atsn);
-                    }
-                    JsonElement audioNode = node.get("audio"); 
-                    if (audioNode != null && !audioNode.isJsonNull()) {
-                        String audioAssetName = audioNode.getAsString();
-                        List<StageNode> atsn = assetToStageNodes.getOrDefault(audioAssetName, new ArrayList<>());
-                        atsn.add(stageNode);
-                        assetToStageNodes.put(audioAssetName, atsn);
-                    }
-
-                    stageNodes.put(uuid, stageNode);
-                }
-
-                // Link action nodes to stage nodes
-                actionsIter = root.getAsJsonArray("actionNodes").iterator();
-                while (actionsIter.hasNext()) {
-                    JsonObject node = actionsIter.next().getAsJsonObject();
-                    ActionNode actionNode = actionNodes.get(node.get("id").getAsString());
-                    List<StageNode> options = new ArrayList<>();
-                    Iterator<JsonElement> optionsIter = node.getAsJsonArray("options").iterator();
-                    while (optionsIter.hasNext()) {
-                        String stageUuid = optionsIter.next().getAsString();
-                        options.add(stageNodes.get(stageUuid));
-                    }
-                    actionNode.setOptions(options);
-                }
-
             }
-            // Separate asset files
-            else if (!entry.isDirectory() && entry.getName().startsWith("assets/")) {
-                assets.put(entry.getName().substring("assets/".length()), IOUtils.toByteArray(zis));
-            }
-        }
 
-        // Update assets in stage nodes
-        for (Map.Entry<String, byte[]> assetEntry : assets.entrySet()) {
-            String assetName = assetEntry.getKey();
-            int dotIndex = assetName.lastIndexOf(".");
-            String extension = assetName.substring(dotIndex).toLowerCase();
+            // Update assets in stage nodes
+            for (Map.Entry<String, byte[]> assetEntry : assets.entrySet()) {
+                String assetName = assetEntry.getKey();
+                int dotIndex = assetName.lastIndexOf(".");
+                String extension = assetName.substring(dotIndex).toLowerCase();
 
-            // Stage nodes explicitly reference their assets' filenames
-            List<StageNode> stageNodesReferencingAsset = assetToStageNodes.get(assetName);
-            if (stageNodesReferencingAsset != null && !stageNodesReferencingAsset.isEmpty()) {
-                for (StageNode stageNode : stageNodesReferencingAsset) {
-                    switch (extension.toLowerCase()) {
+                // Stage nodes explicitly reference their assets' filenames
+                List<StageNode> stageNodesReferencingAsset = assetToStageNodes.get(assetName);
+                if (stageNodesReferencingAsset != null && !stageNodesReferencingAsset.isEmpty()) {
+                    for (StageNode stageNode : stageNodesReferencingAsset) {
+                        switch (extension.toLowerCase()) {
                         case ".bmp":
                             stageNode.setImage(new ImageAsset(MimeType.IMAGE_BMP, assetEntry.getValue()));
                             break;
@@ -246,21 +243,20 @@ public class ArchiveStoryPackReader {
                             break;
                         default:
                             // Unsupported asset
+                        }
                     }
                 }
             }
+
+            // Make sure the first node is actually 'square one'
+            List<StageNode> nodes = new ArrayList<>(stageNodes.values());
+            if (squareOne != null) {
+                nodes.remove(squareOne);
+                nodes.add(0, squareOne);
+            }
+            return new StoryPack(nodes.get(0).getUuid(), factoryDisabled, version, nodes, enrichedPack,
+                    nightModeAvailable);
         }
-
-        zis.close();
-
-        // Make sure the first node is actually 'square one'
-        List<StageNode> nodes = new ArrayList<>(stageNodes.values());
-        if (squareOne != null) {
-            nodes.remove(squareOne);
-            nodes.add(0, squareOne);
-        }
-
-        return new StoryPack(nodes.get(0).getUuid(), factoryDisabled, version, nodes, enrichedPack, nightModeAvailable);
     }
 
     private EnrichedNodeMetadata readEnrichedNodeMetadata(JsonObject node) {
