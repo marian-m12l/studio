@@ -16,6 +16,8 @@ import javax.sound.sampled.AudioSystem;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import studio.core.v1.MimeType;
+import studio.core.v1.model.AudioAsset;
+import studio.core.v1.model.ImageAsset;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
 
@@ -23,6 +25,10 @@ public class PackAssetsCompression {
 
     private static final Logger LOGGER = Logger.getLogger(PackAssetsCompression.class.getName());
 
+    private PackAssetsCompression() {
+        throw new IllegalStateException("Utility class");
+    }
+    
     public static boolean hasCompressedAssets(StoryPack pack) {
         for (int i = 0; i < pack.getStageNodes().size(); i++) {
             StageNode node = pack.getStageNodes().get(i);
@@ -43,38 +49,40 @@ public class PackAssetsCompression {
         for (int i = 0; i < pack.getStageNodes().size(); i++) {
             StageNode node = pack.getStageNodes().get(i);
 
-            if (node.getImage() != null) {
-                byte[] imageData = node.getImage().getRawData();
+            ImageAsset ia = node.getImage(); 
+            if (ia != null) {
+                byte[] imageData = ia.getRawData();
                 String assetHash = DigestUtils.sha1Hex(imageData);
-                if (assets.get(assetHash) == null) {
-                    if (MimeType.IMAGE_BMP.equals(node.getImage().getMimeType())) {
+                if (!assets.containsKey(assetHash)) {
+                    if (MimeType.IMAGE_BMP.equals(ia.getMimeType())) {
                         LOGGER.fine("Compressing BMP image asset into PNG");
                         imageData = ImageConversion.bitmapToPng(imageData);
                     }
                     assets.put(assetHash, imageData);
                 }
                 // Use asset (already compressed) bytes from map
-                node.getImage().setRawData(assets.get(assetHash));
-                if (MimeType.IMAGE_BMP.equals(node.getImage().getMimeType())) {
-                    node.getImage().setMimeType(MimeType.IMAGE_PNG);
+                ia.setRawData(assets.get(assetHash));
+                if (MimeType.IMAGE_BMP.equals(ia.getMimeType())) {
+                    ia.setMimeType(MimeType.IMAGE_PNG);
                 }
             }
 
-            if (node.getAudio() != null) {
-                byte[] audioData = node.getAudio().getRawData();
+            AudioAsset aa = node.getAudio(); 
+            if (aa != null) {
+                byte[] audioData = aa.getRawData();
                 String assetHash = DigestUtils.sha1Hex(audioData);
-                if (assets.get(assetHash) == null) {
-                    if (MimeType.AUDIO_WAV.equals(node.getAudio().getMimeType())) {
+                if (!assets.containsKey(assetHash)) {
+                    if (MimeType.AUDIO_WAV.equals(aa.getMimeType())) {
                         LOGGER.fine("Compressing WAV audio asset into OGG");
                         audioData = AudioConversion.waveToOgg(audioData);
-                        node.getAudio().setMimeType(MimeType.AUDIO_OGG);
+                        aa.setMimeType(MimeType.AUDIO_OGG);
                     }
                     assets.put(assetHash, audioData);
                 }
                 // Use asset (already compressed) bytes from map
-                node.getAudio().setRawData(assets.get(assetHash));
-                if (MimeType.AUDIO_WAV.equals(node.getAudio().getMimeType())) {
-                    node.getAudio().setMimeType(MimeType.AUDIO_OGG);
+                aa.setRawData(assets.get(assetHash));
+                if (MimeType.AUDIO_WAV.equals(aa.getMimeType())) {
+                    aa.setMimeType(MimeType.AUDIO_OGG);
                 }
             }
         }
@@ -89,55 +97,50 @@ public class PackAssetsCompression {
         for (int i = 0; i < pack.getStageNodes().size(); i++) {
             StageNode node = pack.getStageNodes().get(i);
 
-            if (node.getImage() != null) {
-                byte[] imageData = node.getImage().getRawData();
+            ImageAsset ia = node.getImage();
+            if (ia != null) {
+                byte[] imageData = ia.getRawData();
                 String assetHash = DigestUtils.sha1Hex(imageData);
-                if (assets.get(assetHash) == null) {
-                    switch (node.getImage().getMimeType()) {
-                        case MimeType.IMAGE_PNG:
-                            LOGGER.fine("Uncompressing PNG image asset into BMP");
-                            imageData = ImageConversion.anyToBitmap(imageData);
-                            break;
-                        case MimeType.IMAGE_JPEG:
-                            LOGGER.fine("Uncompressing JPG image asset into BMP");
-                            imageData = ImageConversion.anyToBitmap(imageData);
-                            break;
-                        case MimeType.IMAGE_BMP:
-                            // Convert from 4-bits depth / RLE encoding BMP
-                            if (imageData[28] == 0x04 && imageData[30] == 0x02) {
-                                LOGGER.fine("Uncompressing 4-bits/RLE BMP image asset into BMP");
-                                imageData = ImageConversion.anyToBitmap(imageData);
-                            }
-                            break;
+                if (!assets.containsKey(assetHash)) {
+                    // Convert from 4-bits depth / RLE encoding BMP
+                    if (MimeType.IMAGE_BMP.equals(ia.getMimeType()) && imageData[28] == 0x04 && imageData[30] == 0x02) {
+                        LOGGER.fine("Uncompressing 4-bits/RLE BMP image asset into BMP");
+                        imageData = ImageConversion.anyToBitmap(imageData);
+                    }
+                    if (MimeType.IMAGE_JPEG.equals(ia.getMimeType())) {
+                        LOGGER.fine("Uncompressing JPG image asset into BMP");
+                        imageData = ImageConversion.anyToBitmap(imageData);
+                    }
+                    if (MimeType.IMAGE_PNG.equals(ia.getMimeType())) {
+                        LOGGER.fine("Uncompressing PNG image asset into BMP");
+                        imageData = ImageConversion.anyToBitmap(imageData);
                     }
                     assets.put(assetHash, imageData);
                 }
                 // Use asset (already uncompressed) bytes from map
-                node.getImage().setRawData(assets.get(assetHash));
-                node.getImage().setMimeType(MimeType.IMAGE_BMP);
+                ia.setRawData(assets.get(assetHash));
+                ia.setMimeType(MimeType.IMAGE_BMP);
             }
 
-            if (node.getAudio() != null) {
-                byte[] audioData = node.getAudio().getRawData();
+            AudioAsset aa = node.getAudio();
+            if (aa != null) {
+                byte[] audioData = aa.getRawData();
                 String assetHash = DigestUtils.sha1Hex(audioData);
-                if (assets.get(assetHash) == null) {
-                    if (!MimeType.AUDIO_WAV.equals(node.getAudio().getMimeType())) {
-                        switch (node.getAudio().getMimeType()) {
-                            case MimeType.AUDIO_OGG:
-                                LOGGER.fine("Uncompressing OGG audio asset into WAV");
-                                audioData = AudioConversion.oggToWave(audioData);
-                                break;
-                            case MimeType.AUDIO_MPEG:
-                                LOGGER.fine("Uncompressing MP3 audio asset into WAV");
-                                audioData = AudioConversion.mp3ToWave(audioData);
-                                break;
-                        }
+                if (!assets.containsKey(assetHash)) {
+                    if (MimeType.AUDIO_OGG.equals(aa.getMimeType())) {
+                        LOGGER.fine("Uncompressing OGG audio asset into WAV");
+                        audioData = AudioConversion.oggToWave(audioData);
                     }
+                    if (MimeType.AUDIO_MPEG.equals(aa.getMimeType())) {
+                        LOGGER.fine("Uncompressing MP3 audio asset into WAV");
+                        audioData = AudioConversion.mp3ToWave(audioData);
+                    }
+                    // Nothing for MimeType.AUDIO_WAV
                     assets.put(assetHash, audioData);
                 }
                 // Use asset (already uncompressed) bytes from map
-                node.getAudio().setRawData(assets.get(assetHash));
-                node.getAudio().setMimeType(MimeType.AUDIO_WAV);
+                aa.setRawData(assets.get(assetHash));
+                aa.setMimeType(MimeType.AUDIO_WAV);
             }
         }
 
@@ -151,27 +154,29 @@ public class PackAssetsCompression {
         for (int i = 0; i < pack.getStageNodes().size(); i++) {
             StageNode node = pack.getStageNodes().get(i);
 
-            if (node.getImage() != null) {
-                byte[] imageData = node.getImage().getRawData();
+            ImageAsset ia = node.getImage();
+            if (ia != null) {
+                byte[] imageData = ia.getRawData();
                 String assetHash = DigestUtils.sha1Hex(imageData);
-                if (assets.get(assetHash) == null) {
+                if (!assets.containsKey(assetHash)) {
                     // Convert to 4-bits depth / RLE encoding BMP
-                    if (!MimeType.IMAGE_BMP.equals(node.getImage().getMimeType()) || imageData[28] != 0x04 || imageData[30] != 0x02) {
+                    if (!MimeType.IMAGE_BMP.equals(ia.getMimeType()) || imageData[28] != 0x04 || imageData[30] != 0x02) {
                         LOGGER.fine("Converting image asset into 4-bits/RLE BMP");
                         imageData = ImageConversion.anyToRLECompressedBitmap(imageData);
                     }
                     assets.put(assetHash, imageData);
                 }
                 // Use asset (already compressed) bytes from map
-                node.getImage().setRawData(assets.get(assetHash));
-                node.getImage().setMimeType(MimeType.IMAGE_BMP);
+                ia.setRawData(assets.get(assetHash));
+                ia.setMimeType(MimeType.IMAGE_BMP);
             }
 
-            if (node.getAudio() != null) {
-                byte[] audioData = node.getAudio().getRawData();
+            AudioAsset aa = node.getAudio();
+            if (aa != null) {
+                byte[] audioData = aa.getRawData();
                 String assetHash = DigestUtils.sha1Hex(audioData);
-                if (assets.get(assetHash) == null) {
-                    if (!MimeType.AUDIO_MP3.equals(node.getAudio().getMimeType()) && !MimeType.AUDIO_MPEG.equals(node.getAudio().getMimeType())) {
+                if (!assets.containsKey(assetHash)) {
+                    if (!MimeType.AUDIO_MP3.equals(aa.getMimeType()) && !MimeType.AUDIO_MPEG.equals(aa.getMimeType())) {
                         LOGGER.fine("Converting audio asset into MP3");
                         audioData = AudioConversion.anyToMp3(audioData);
                     } else {
@@ -189,8 +194,8 @@ public class PackAssetsCompression {
                     assets.put(assetHash, audioData);
                 }
                 // Use asset (already compressed) bytes from map
-                node.getAudio().setRawData(assets.get(assetHash));
-                node.getAudio().setMimeType(MimeType.AUDIO_MPEG);
+                aa.setRawData(assets.get(assetHash));
+                aa.setMimeType(MimeType.AUDIO_MPEG);
             }
         }
 
