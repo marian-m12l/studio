@@ -10,7 +10,7 @@ import java.nio.file.Path;
 import java.util.Timer;
 import java.util.TimerTask;
 
-import io.vertx.core.Future;
+import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
@@ -81,7 +81,7 @@ public class LibraryController {
             Boolean allowEnriched = ctx.getBodyAsJson().getBoolean("allowEnriched", false);
             String format = ctx.getBodyAsJson().getString("format");
             // Perform conversion/uncompression asynchronously
-            Future<Path> futureConvertedPack = Future.future();
+            Promise<Path> promisedPack = Promise.promise();
             if (Constants.PACK_FORMAT_RAW.equalsIgnoreCase(format)) {
                 Timer timer = new Timer();
                 timer.schedule(new TimerTask() {
@@ -89,9 +89,9 @@ public class LibraryController {
                     public void run() {
                         libraryService.addConvertedRawPackFile(packPath, allowEnriched)
                                 .ifPresentOrElse(
-                                        packPath -> futureConvertedPack.tryComplete(packPath),
-                                        () -> futureConvertedPack.tryFail("Failed to read or convert pack to raw format"));
-                        futureConvertedPack.tryComplete();
+                                        packPath -> promisedPack.tryComplete(packPath),
+                                        () -> promisedPack.tryFail("Failed to read or convert pack to raw format"));
+                        promisedPack.tryComplete();
                     }
                 }, 1000);
             } else if (Constants.PACK_FORMAT_FS.equalsIgnoreCase(format)) {
@@ -101,9 +101,9 @@ public class LibraryController {
                     public void run() {
                         libraryService.addConvertedFsPackFile(packPath, allowEnriched)
                                 .ifPresentOrElse(
-                                        packPath -> futureConvertedPack.tryComplete(packPath),
-                                        () -> futureConvertedPack.tryFail("Failed to read or convert pack to folder format"));
-                        futureConvertedPack.tryComplete();
+                                        packPath -> promisedPack.tryComplete(packPath),
+                                        () -> promisedPack.tryFail("Failed to read or convert pack to folder format"));
+                        promisedPack.tryComplete();
                     }
                 }, 1000);
             } else if (Constants.PACK_FORMAT_ARCHIVE.equalsIgnoreCase(format)) {
@@ -113,16 +113,16 @@ public class LibraryController {
                     public void run() {
                         libraryService.addConvertedArchivePackFile(packPath)
                                 .ifPresentOrElse(
-                                        packPath -> futureConvertedPack.tryComplete(packPath),
-                                        () -> futureConvertedPack.tryFail("Failed to read or convert pack to folder format"));
-                        futureConvertedPack.tryComplete();
+                                        packPath -> promisedPack.tryComplete(packPath),
+                                        () -> promisedPack.tryFail("Failed to read or convert pack to folder format"));
+                        promisedPack.tryComplete();
                     }
                 }, 1000);
             } else {
                 ctx.fail(400);
                 return;
             }
-            futureConvertedPack.onComplete(maybeConvertedPack -> {
+            promisedPack.future().onComplete(maybeConvertedPack -> {
                 if (maybeConvertedPack.succeeded()) {
                     // Return path to converted file within library
                     ctx.response()
