@@ -77,44 +77,42 @@ public class ImageConversion {
     }
 
     private static byte[] fixRLE4Padding(byte[] image) throws IOException {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        ByteBuffer bb = ByteBuffer.wrap(image);
-        // Copy header
-        for (int i=0; i<0x76; i++) {
-            baos.write(bb.get());
-        }
-        do {
-            // Copy 2-bytes chunk
-            byte b1 = bb.get();
-            byte b2 = bb.get();
-            baos.write(b1);
-            baos.write(b2);
-            // Handle absolute mode
-            if (b1 == 0x00 && (b2 & 0xff) > 0x02) {
-                int length = b2 & 0xff;
-                byte lengthInBytes = (byte) Math.ceil(length / 2.0);
-                // Copy pixels
-                for (int i=0; i<lengthInBytes; i++) {
-                    baos.write(bb.get());
-                }
-                // Fix wrong alignment
-                int wrongByteLength = (int) Math.ceil(length/2);
-                if (wrongByteLength % 2 == 0 && lengthInBytes % 2 == 1) {
-                    // Fix: Add missing padding byte
-                    baos.write(0x00);
-                } else if (wrongByteLength % 2 == 1 && lengthInBytes % 2 == 0) {
-                    // Fix: Remove unneeded padding byte
-                    bb.get();
-                } else if (lengthInBytes % 2 == 1) {
-                    // Copy legit padding byte
-                    baos.write(bb.get());
+        try(ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+            ByteBuffer bb = ByteBuffer.wrap(image);
+            // Copy header
+            for (int i=0; i<0x76; i++) {
+                baos.write(bb.get());
+            }
+            while (bb.hasRemaining()) {
+                // Copy 2-bytes chunk
+                byte b1 = bb.get();
+                byte b2 = bb.get();
+                baos.write(b1);
+                baos.write(b2);
+                // Handle absolute mode
+                if (b1 == 0x00 && (b2 & 0xff) > 0x02) {
+                    int length = b2 & 0xff;
+                    byte lengthInBytes = (byte) Math.ceil(length / 2.0);
+                    // Copy pixels
+                    for (int i=0; i<lengthInBytes; i++) {
+                        baos.write(bb.get());
+                    }
+                    // Fix wrong alignment
+                    int wrongByteLength = (int) Math.ceil(length/2);
+                    if (wrongByteLength % 2 == 0 && lengthInBytes % 2 == 1) {
+                        // Fix: Add missing padding byte
+                        baos.write(0x00);
+                    } else if (wrongByteLength % 2 == 1 && lengthInBytes % 2 == 0) {
+                        // Fix: Remove unneeded padding byte
+                        bb.get();
+                    } else if (lengthInBytes % 2 == 1) {
+                        // Copy legit padding byte
+                        baos.write(bb.get());
+                    }
                 }
             }
-        } while (bb.hasRemaining());
-
-        baos.close();
-
-        return baos.toByteArray();
+            return baos.toByteArray();
+        }
     }
 
     private static BufferedImage redrawIndexedImage(BufferedImage inputImage) {

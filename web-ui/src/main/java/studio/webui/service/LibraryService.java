@@ -78,7 +78,7 @@ public class LibraryService {
 
     public JsonObject libraryInfos() {
         return new JsonObject()
-                .put("path", libraryPath());
+                .put("path", libraryPath().toString());
     }
 
     public JsonArray packs() {

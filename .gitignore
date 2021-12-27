@@ -1,6 +1,5 @@
 # Maven
 target/
-web-ui/javascript/build/
 
 # IntelliJ
 .idea
@@ -11,4 +10,8 @@ web-ui/javascript/build/
 .classpath
 .project
 .settings/
+
+# Custom
+web-ui/javascript/build/
+web-ui/*.log
 
