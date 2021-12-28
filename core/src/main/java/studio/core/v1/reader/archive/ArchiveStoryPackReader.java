@@ -6,25 +6,41 @@
 
 package studio.core.v1.reader.archive;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.InputStreamReader;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.TreeMap;
+import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
+
+import org.apache.commons.io.IOUtils;
+
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
-import org.apache.commons.io.IOUtils;
+
 import studio.core.v1.Constants;
-import studio.core.v1.MimeType;
-import studio.core.v1.model.*;
+import studio.core.v1.model.ActionNode;
+import studio.core.v1.model.AudioAsset;
+import studio.core.v1.model.ControlSettings;
+import studio.core.v1.model.ImageAsset;
+import studio.core.v1.model.StageNode;
+import studio.core.v1.model.StoryPack;
+import studio.core.v1.model.Transition;
 import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 import studio.core.v1.model.enriched.EnrichedNodePosition;
 import studio.core.v1.model.enriched.EnrichedNodeType;
 import studio.core.v1.model.enriched.EnrichedPackMetadata;
 import studio.core.v1.model.metadata.StoryPackMetadata;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
-import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
+import studio.core.v1.model.mime.AudioType;
+import studio.core.v1.model.mime.ImageType;
 
 public class ArchiveStoryPackReader {
 
@@ -220,30 +236,19 @@ public class ArchiveStoryPackReader {
                 List<StageNode> stageNodesReferencingAsset = assetToStageNodes.get(assetName);
                 if (stageNodesReferencingAsset != null && !stageNodesReferencingAsset.isEmpty()) {
                     for (StageNode stageNode : stageNodesReferencingAsset) {
-                        switch (extension.toLowerCase()) {
-                        case ".bmp":
-                            stageNode.setImage(new ImageAsset(MimeType.IMAGE_BMP, assetEntry.getValue()));
-                            break;
-                        case ".png":
-                            stageNode.setImage(new ImageAsset(MimeType.IMAGE_PNG, assetEntry.getValue()));
-                            break;
-                        case ".jpg":
-                        case ".jpeg":
-                            stageNode.setImage(new ImageAsset(MimeType.IMAGE_JPEG, assetEntry.getValue()));
-                            break;
-                        case ".wav":
-                            stageNode.setAudio(new AudioAsset(MimeType.AUDIO_WAV, assetEntry.getValue()));
-                            break;
-                        case ".mp3":
-                            stageNode.setAudio(new AudioAsset(MimeType.AUDIO_MPEG, assetEntry.getValue()));
-                            break;
-                        case ".ogg":
-                        case ".oga":
-                            stageNode.setAudio(new AudioAsset(MimeType.AUDIO_OGG, assetEntry.getValue()));
-                            break;
-                        default:
-                            // Unsupported asset
+                        // supported images
+                        ImageType it = ImageType.fromExtension(extension);
+                        if(it != null) {
+                            stageNode.setImage(new ImageAsset(it.getMime(), assetEntry.getValue()));
+                            continue;
                         }
+                        // supported audio
+                        AudioType at = AudioType.fromExtension(extension);
+                        if(at != null) {
+                            stageNode.setAudio(new AudioAsset(at.getMime(), assetEntry.getValue()));
+                            continue;
+                        }
+                        // Unsupported asset
                     }
                 }
             }
