@@ -140,17 +140,21 @@ public class ArchiveStoryPackReader {
                         JsonObject node = stagesIter.next().getAsJsonObject();
                         String uuid = node.get("uuid").getAsString();
                         Transition okTransition = null;
-                        JsonObject okNode = node.getAsJsonObject("okTransition");
-                        if (okNode != null && okNode.isJsonObject()) {
-                            ActionNode actionNode = actionNodes.get(okNode.get("actionNode").getAsString());
-                            okTransition = new Transition(actionNode, okNode.get("optionIndex").getAsShort());
-                        }
-                        JsonObject homeNode = node.getAsJsonObject("homeTransition");
                         Transition homeTransition = null;
-                        if (homeNode != null && homeNode.isJsonObject()) {
-                            ActionNode actionNode = actionNodes.get(homeNode.get("actionNode").getAsString());
-                            homeTransition = new Transition(actionNode, homeNode.get("optionIndex").getAsShort());
+
+                        JsonElement okNode = node.get("okTransition");
+                        if (okNode != null && okNode.isJsonObject()) {
+                            JsonObject okObj = okNode.getAsJsonObject();
+                            ActionNode actionNode = actionNodes.get(okObj.get("actionNode").getAsString());
+                            okTransition = new Transition(actionNode, okObj.get("optionIndex").getAsShort());
                         }
+                        JsonElement homeNode = node.get("homeTransition");
+                        if (homeNode != null && homeNode.isJsonObject()) {
+                            JsonObject homeObj = homeNode.getAsJsonObject();
+                            ActionNode actionNode = actionNodes.get(homeObj.get("actionNode").getAsString());
+                            homeTransition = new Transition(actionNode, homeObj.get("optionIndex").getAsShort());
+                        }
+
                         JsonObject controlSettings = node.getAsJsonObject("controlSettings");
 
                         // Read (optional) enriched node metadata
