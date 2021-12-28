@@ -23,7 +23,6 @@ import java.util.TreeMap;
 import java.util.UUID;
 
 import studio.core.v1.Constants;
-import studio.core.v1.MimeType;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.AudioAsset;
 import studio.core.v1.model.ControlSettings;
@@ -32,6 +31,8 @@ import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.Transition;
 import studio.core.v1.model.metadata.StoryPackMetadata;
+import studio.core.v1.model.mime.AudioType;
+import studio.core.v1.model.mime.ImageType;
 import studio.core.v1.utils.XXTEACipher;
 
 public class FsStoryPackReader {
@@ -157,7 +158,7 @@ public class FsStoryPackReader {
                     // Read image file
                     Path imagePath = inputFolder.resolve(IMAGE_FOLDER + imageName);
                     byte[] rfContent = readCipheredFile(imagePath);
-                    image = new ImageAsset(MimeType.IMAGE_BMP, rfContent);
+                    image = new ImageAsset(ImageType.BMP.getMime(), rfContent);
                 }
                 AudioAsset audio = null;
                 if (soundAssetIndexInSI != -1) {
@@ -167,7 +168,7 @@ public class FsStoryPackReader {
                     // Read audio file
                     Path audioPath = inputFolder.resolve(SOUND_FOLDER + audioName);
                     byte[] sfContent = readCipheredFile(audioPath);
-                    audio = new AudioAsset(MimeType.AUDIO_MPEG, sfContent);
+                    audio = new AudioAsset(AudioType.MPEG.getMime(), sfContent);
                 }
 
                 StageNode stageNode = new StageNode(

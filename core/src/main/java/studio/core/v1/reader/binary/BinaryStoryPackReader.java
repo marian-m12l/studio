@@ -20,7 +20,6 @@ import java.util.TreeSet;
 import java.util.UUID;
 
 import studio.core.v1.Constants;
-import studio.core.v1.MimeType;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.AssetType;
 import studio.core.v1.model.AudioAsset;
@@ -34,6 +33,8 @@ import studio.core.v1.model.enriched.EnrichedNodePosition;
 import studio.core.v1.model.enriched.EnrichedNodeType;
 import studio.core.v1.model.enriched.EnrichedPackMetadata;
 import studio.core.v1.model.metadata.StoryPackMetadata;
+import studio.core.v1.model.mime.AudioType;
+import studio.core.v1.model.mime.ImageType;
 
 public class BinaryStoryPackReader {
 
@@ -255,11 +256,11 @@ public class BinaryStoryPackReader {
                 // Update asset on stage nodes referencing this sector
                 switch (assetAddr.getType()) {
                     case AUDIO:
-                        AudioAsset audioAsset = new AudioAsset(MimeType.AUDIO_WAV, assetBytes);
+                        AudioAsset audioAsset = new AudioAsset(AudioType.WAV.getMime(), assetBytes);
                         stagesWithAudio.get(assetAddr).forEach(stageNode -> stageNode.setAudio(audioAsset));
                         break;
                     case IMAGE:
-                        ImageAsset imageAsset = new ImageAsset(MimeType.IMAGE_BMP, assetBytes);
+                        ImageAsset imageAsset = new ImageAsset(ImageType.BMP.getMime(), assetBytes);
                         stagesWithImage.get(assetAddr).forEach(stageNode -> stageNode.setImage(imageAsset));
                         break;
                 }
