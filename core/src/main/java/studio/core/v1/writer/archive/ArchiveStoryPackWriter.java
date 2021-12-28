@@ -21,13 +21,14 @@ import org.apache.commons.io.IOUtils;
 
 import com.google.gson.stream.JsonWriter;
 
-import studio.core.v1.MimeType;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.Node;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.enriched.EnrichedNodePosition;
 import studio.core.v1.model.enriched.EnrichedNodeType;
+import studio.core.v1.model.mime.AudioType;
+import studio.core.v1.model.mime.ImageType;
 
 public class ArchiveStoryPackWriter {
 
@@ -208,22 +209,15 @@ public class ArchiveStoryPackWriter {
     }
 
     private String extensionFromMimeType(String mimeType) {
-        switch (mimeType) {
-            case MimeType.IMAGE_BMP:
-                return ".bmp";
-            case MimeType.IMAGE_PNG:
-                return ".png";
-            case MimeType.IMAGE_JPEG:
-                return ".jpg";
-            case MimeType.AUDIO_WAV:
-                return ".wav";
-            case MimeType.AUDIO_MPEG:
-                return ".mp3";
-            case MimeType.AUDIO_OGG:
-                return ".ogg";
-            default:
-                return "";
+        ImageType it = ImageType.fromMime(mimeType);
+        if(it != null) {
+            return it.getExtensions().get(0);
         }
+        AudioType at = AudioType.fromMime(mimeType);
+        if(at != null) {
+            return at.getExtensions().get(0);
+        }
+        return "";
     }
 
 }

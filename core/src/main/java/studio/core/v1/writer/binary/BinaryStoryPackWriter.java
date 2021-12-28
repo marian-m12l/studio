@@ -16,7 +16,6 @@ import java.util.UUID;
 import org.apache.commons.codec.digest.DigestUtils;
 
 import studio.core.v1.Constants;
-import studio.core.v1.MimeType;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.AssetType;
 import studio.core.v1.model.AudioAsset;
@@ -27,6 +26,8 @@ import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.Transition;
 import studio.core.v1.model.enriched.EnrichedNodePosition;
 import studio.core.v1.model.enriched.EnrichedNodeType;
+import studio.core.v1.model.mime.AudioType;
+import studio.core.v1.model.mime.ImageType;
 import studio.core.v1.reader.binary.AssetAddr;
 import studio.core.v1.reader.binary.SectorAddr;
 
@@ -70,7 +71,7 @@ public class BinaryStoryPackWriter {
                 byte[] imageData = image.getRawData();
                 String assetHash = DigestUtils.sha1Hex(imageData);
                 if (!assetsHashes.containsKey(assetHash)) {
-                    if (!MimeType.IMAGE_BMP.equals(image.getMimeType())) {
+                    if (!ImageType.BMP.is(image.getMimeType())) {
                         throw new IllegalArgumentException("Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
                     }
                     int imageSize = imageData.length;
@@ -91,7 +92,7 @@ public class BinaryStoryPackWriter {
                 byte[] audioData = audio.getRawData();
                 String assetHash = DigestUtils.sha1Hex(audioData);
                 if (!assetsHashes.containsKey(assetHash)) {
-                    if (!MimeType.AUDIO_WAV.equals(audio.getMimeType())) {
+                    if (!AudioType.WAV.is(audio.getMimeType())) {
                         throw new IllegalArgumentException("Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
                     }
                     int audioSize = audioData.length;

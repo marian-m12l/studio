@@ -33,13 +33,14 @@ import javax.sound.sampled.AudioSystem;
 import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.codec.digest.DigestUtils;
 
-import studio.core.v1.MimeType;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.AudioAsset;
 import studio.core.v1.model.ImageAsset;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.Transition;
+import studio.core.v1.model.mime.AudioType;
+import studio.core.v1.model.mime.ImageType;
 import studio.core.v1.utils.AudioConversion;
 import studio.core.v1.utils.ID3Tags;
 import studio.core.v1.utils.XXTEACipher;
@@ -133,7 +134,7 @@ public class FsStoryPackWriter {
                     byte[] imageData = image.getRawData();
                     String imageHash = DigestUtils.sha1Hex(imageData);
                     if (!imageHashOrdered.contains(imageHash)) {
-                        if (!MimeType.IMAGE_BMP.equals(image.getMimeType())) {
+                        if (!ImageType.BMP.is(image.getMimeType())) {
                             throw new IllegalArgumentException("FS pack file requires image assets to be BMP.");
                         }
                         ByteBuffer bmpBuffer = ByteBuffer.wrap(imageData);
@@ -157,12 +158,12 @@ public class FsStoryPackWriter {
                 AudioAsset audio = node.getAudio();
                 // If audio is missing, add a blank audio to satisfy the device
                 if (audio == null) {
-                    audio = new AudioAsset(MimeType.AUDIO_MP3, Hex.decodeHex(BLANK_MP3_FILE));
+                    audio = new AudioAsset(AudioType.MP3.getMime(), Hex.decodeHex(BLANK_MP3_FILE));
                 }
                 byte[] audioData = audio.getRawData();
                 String audioHash = DigestUtils.sha1Hex(audioData);
                 if (!audioHashOrdered.contains(audioHash)) {
-                    if (!MimeType.AUDIO_MP3.equals(audio.getMimeType()) && !MimeType.AUDIO_MPEG.equals(audio.getMimeType())) {
+                    if (!AudioType.MP3.is(audio.getMimeType()) && !AudioType.MPEG.is(audio.getMimeType())) {
                         throw new IllegalArgumentException("FS pack file requires audio assets to be MP3.");
                     } else {
                         // Check ID3 tags
