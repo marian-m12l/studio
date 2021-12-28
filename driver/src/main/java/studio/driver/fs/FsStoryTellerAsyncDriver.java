@@ -11,6 +11,7 @@ import java.io.DataOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.file.FileStore;
@@ -120,11 +121,10 @@ public class FsStoryTellerAsyncDriver {
             return CompletableFuture.failedFuture(new StoryTellerException("No device plugged"));
         }
         FsDeviceInfos infos = new FsDeviceInfos();
-        try {
-            Path mdFile = this.partitionMountPoint.resolve(DEVICE_METADATA_FILENAME);
-            LOGGER.finest("Reading device infos from file: " + mdFile);
-            FileInputStream deviceMetadataFis = new FileInputStream(mdFile.toFile());
+        Path mdFile = this.partitionMountPoint.resolve(DEVICE_METADATA_FILENAME);
+        LOGGER.finest("Reading device infos from file: " + mdFile);
 
+        try(InputStream deviceMetadataFis = Files.newInputStream(mdFile) ) {
             // MD file format version
             short mdVersion = readLittleEndianShort(deviceMetadataFis);
             LOGGER.finest("Device metadata format version: " + mdVersion);
@@ -157,8 +157,6 @@ public class FsStoryTellerAsyncDriver {
             infos.setUuid(uuid);
             LOGGER.fine("UUID: " + Hex.encodeHexString(uuid));
 
-            deviceMetadataFis.close();
-
             // SD card size and used space
             FileStore mdFd = Files.getFileStore(mdFile); 
             long sdCardTotalSpace = mdFd.getTotalSpace();
@@ -174,7 +172,7 @@ public class FsStoryTellerAsyncDriver {
         return CompletableFuture.completedFuture(infos);
     }
 
-    private short readLittleEndianShort(FileInputStream fis) throws IOException {
+    private short readLittleEndianShort(InputStream fis) throws IOException {
         byte[] buffer = new byte[2];
         fis.read(buffer);
         ByteBuffer bb = ByteBuffer.wrap(buffer);
@@ -182,7 +180,7 @@ public class FsStoryTellerAsyncDriver {
         return bb.getShort();
     }
 
-    private long readBigEndianLong(FileInputStream fis) throws IOException {
+    private long readBigEndianLong(InputStream fis) throws IOException {
         byte[] buffer = new byte[8];
         fis.read(buffer);
         ByteBuffer bb = ByteBuffer.wrap(buffer);
@@ -208,25 +206,23 @@ public class FsStoryTellerAsyncDriver {
 
                             // Compute .content folder (last 4 bytes of UUID)
                             String folderName = computePackFolderName(packUUID.toString());
-                            Path packFolderPath =this.partitionMountPoint.resolve(CONTENT_FOLDER).resolve(folderName);
+                            Path packPath = this.partitionMountPoint.resolve(CONTENT_FOLDER).resolve(folderName);
                             packInfos.setFolderName(folderName);
 
                             // Open 'ni' file
-                            File packFolder = packFolderPath.toFile();
-                            FileInputStream niFis = new FileInputStream(new File(packFolder, NODE_INDEX_FILENAME));
-                            DataInputStream niDis = new DataInputStream(niFis);
-                            ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
-                            short version = bb.getShort(2);
-                            packInfos.setVersion(version);
-                            LOGGER.fine("Pack version: " + version);
-                            niDis.close();
-                            niFis.close();
+                            Path niPath = packPath.resolve(NODE_INDEX_FILENAME);
+                            try( DataInputStream niDis = new DataInputStream(Files.newInputStream(niPath))) {
+                                ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
+                                short version = bb.getShort(2);
+                                packInfos.setVersion(version);
+                                LOGGER.fine("Pack version: " + version);
+                            }
 
                             // Night mode is available if file 'nm' exists
-                            packInfos.setNightModeAvailable(new File(packFolder, NIGHT_MODE_FILENAME).exists());
+                            packInfos.setNightModeAvailable(Files.exists(packPath.resolve(NIGHT_MODE_FILENAME)));
 
                             // Compute folder size
-                            packInfos.setSizeInBytes(FileUtils.getFolderSize(packFolderPath));
+                            packInfos.setSizeInBytes(FileUtils.getFolderSize(packPath));
 
                             packs.add(packInfos);
                         }
@@ -240,12 +236,10 @@ public class FsStoryTellerAsyncDriver {
     private CompletableFuture<List<UUID>> readPackIndex() {
         return CompletableFuture.supplyAsync(() -> {
             List<UUID> packUUIDs = new ArrayList<>();
-            try {
-                Path piFile = this.partitionMountPoint.resolve(PACK_INDEX_FILENAME);
+            Path piFile = this.partitionMountPoint.resolve(PACK_INDEX_FILENAME);
+            LOGGER.finest("Reading packs index from file: " + piFile);
 
-                LOGGER.finest("Reading packs index from file: " + piFile);
-                FileInputStream packIndexFis = new FileInputStream(piFile.toFile());
-
+            try (InputStream packIndexFis = Files.newInputStream(piFile) ) {
                 byte[] packUuid = new byte[16];
                 while (packIndexFis.read(packUuid) > 0) {
                     ByteBuffer bb = ByteBuffer.wrap(packUuid);
@@ -253,9 +247,6 @@ public class FsStoryTellerAsyncDriver {
                     long low = bb.getLong();
                     packUUIDs.add(new UUID(high, low));
                 }
-
-                packIndexFis.close();
-
                 return packUUIDs;
             } catch (Exception e) {
                 throw new StoryTellerException("Failed to read pack index on device partition", e);
@@ -355,34 +346,31 @@ public class FsStoryTellerAsyncDriver {
         if (this.device == null || this.partitionMountPoint == null) {
             return CompletableFuture.failedFuture(new StoryTellerException("No device plugged"));
         }
-
         return readPackIndex()
                 .thenCompose(packUUIDs -> CompletableFuture.supplyAsync(() -> {
                     // Look for UUID in packs index
                     Optional<UUID> matched = packUUIDs.stream().filter(p -> p.equals(UUID.fromString(uuid))).findFirst();
-                    if (matched.isPresent()) {
-                        LOGGER.fine("Found pack with uuid: " + uuid);
-
-                        // Generate folder name
-                        String folderName = computePackFolderName(uuid);
-                        Path sourceFolder = this.partitionMountPoint.resolve(CONTENT_FOLDER).resolve(folderName);
-                        LOGGER.finest("Downloading pack folder: " + sourceFolder);
-
-                        if (Files.exists(sourceFolder)) {
-                            try {
-                                // Create destination folder
-                                Path destFolder = Path.of(outputPath, uuid);
-                                Files.createDirectories(destFolder);
-                                // Copy folder with progress tracking
-                                return copyPackFolder(sourceFolder, destFolder, listener);
-                            } catch (IOException e) {
-                                throw new StoryTellerException("Failed to copy pack from device", e);
-                            }
-                        } else {
-                            throw new StoryTellerException("Pack folder not found");
-                        }
-                    } else {
+                    if (matched.isEmpty()) {
                         throw new StoryTellerException("Pack not found");
+                    }
+                    LOGGER.fine("Found pack with uuid: " + uuid);
+
+                    // Generate folder name
+                    String folderName = computePackFolderName(uuid);
+                    Path sourceFolder = this.partitionMountPoint.resolve(CONTENT_FOLDER).resolve(folderName);
+                    LOGGER.finest("Downloading pack folder: " + sourceFolder);
+                    if (Files.notExists(sourceFolder)) {
+                        throw new StoryTellerException("Pack folder not found");
+                    }
+
+                    try {
+                        // Create destination folder
+                        Path destFolder = Path.of(outputPath, uuid);
+                        Files.createDirectories(destFolder);
+                        // Copy folder with progress tracking
+                        return copyPackFolder(sourceFolder, destFolder, listener);
+                    } catch (IOException e) {
+                        throw new StoryTellerException("Failed to copy pack from device", e);
                     }
                 }));
     }

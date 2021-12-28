@@ -125,23 +125,25 @@ public class AudioConversion {
         );
         AudioInputStream pcm44100 = AudioSystem.getAudioInputStream(pcm44100Format, pcmOverSampled);
 
-        LameEncoder encoder = new LameEncoder(pcm44100.getFormat(), LameEncoder.BITRATE_AUTO, MPEGMode.MONO.ordinal(), 4, true);
+        LameEncoder encoder = new LameEncoder(pcm44100.getFormat(), LameEncoder.BITRATE_AUTO, MPEGMode.MONO.ordinal(),
+                4, true);
 
-        ByteArrayOutputStream mp3 = new ByteArrayOutputStream();
-        byte[] inputBuffer = new byte[encoder.getPCMBufferSize()];
-        byte[] outputBuffer = new byte[encoder.getPCMBufferSize()];
+        try (LameEncoderWrapper lameEncoderWrapper = new LameEncoderWrapper(encoder);
+                ByteArrayOutputStream mp3 = new ByteArrayOutputStream() ) {
 
-        int bytesRead;
-        int bytesWritten;
+            byte[] inputBuffer = new byte[encoder.getPCMBufferSize()];
+            byte[] outputBuffer = new byte[encoder.getPCMBufferSize()];
 
-        while (0 < (bytesRead = pcm44100.read(inputBuffer))) {
-            bytesWritten = encoder.encodeBuffer(inputBuffer, 0, bytesRead, outputBuffer);
+            int bytesRead;
+            int bytesWritten;
+
+            while (0 < (bytesRead = pcm44100.read(inputBuffer))) {
+                bytesWritten = encoder.encodeBuffer(inputBuffer, 0, bytesRead, outputBuffer);
+                mp3.write(outputBuffer, 0, bytesWritten);
+            }
+            bytesWritten = encoder.encodeFinish(outputBuffer);
             mp3.write(outputBuffer, 0, bytesWritten);
+            return mp3.toByteArray();
         }
-        bytesWritten = encoder.encodeFinish(outputBuffer);
-        mp3.write(outputBuffer, 0, bytesWritten);
-
-        encoder.close();
-        return mp3.toByteArray();
     }
 }
