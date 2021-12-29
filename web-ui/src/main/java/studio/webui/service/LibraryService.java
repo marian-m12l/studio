@@ -50,14 +50,16 @@ public class LibraryService {
 
     private final DatabaseMetadataService databaseMetadataService;
 
+    private static final Path libraryPath = libraryPath();
+    private static final Path tmpDirPath = tmpDirPath();
+    
     public LibraryService(DatabaseMetadataService databaseMetadataService) {
         this.databaseMetadataService = databaseMetadataService;
 
         // Create the local library folder if needed
-        Path libraryFolder = libraryPath();
-        if (Files.notExists(libraryFolder) || !Files.isDirectory(libraryFolder)) {
+        if (Files.notExists(libraryPath) || !Files.isDirectory(libraryPath)) {
             try {
-                Files.createDirectories(libraryFolder);
+                Files.createDirectories(libraryPath);
             } catch (IOException e) {
                 LOGGER.error("Failed to initialize local library", e);
                 throw new IllegalStateException("Failed to initialize local library");
@@ -65,10 +67,9 @@ public class LibraryService {
         }
 
         // Create the temp folder if needed
-        Path tmpFolder = tmpDirPath();
-        if (Files.notExists(tmpFolder) || !Files.isDirectory(tmpFolder)) {
+        if (Files.notExists(tmpDirPath) || !Files.isDirectory(tmpDirPath)) {
             try {
-                Files.createDirectories(tmpFolder);
+                Files.createDirectories(tmpDirPath);
             } catch (IOException e) {
                 LOGGER.error("Failed to initialize temp folder", e);
                 throw new IllegalStateException("Failed to initialize temp folder");
@@ -78,17 +79,16 @@ public class LibraryService {
 
     public JsonObject libraryInfos() {
         return new JsonObject()
-                .put("path", libraryPath().toString());
+                .put("path", libraryPath.toString());
     }
 
     public JsonArray packs() {
         // Check that local library folder exists
-        Path libraryFolder = libraryPath();
-        if (Files.notExists(libraryFolder) || !Files.isDirectory(libraryFolder)) {
+        if (Files.notExists(libraryPath) || !Files.isDirectory(libraryPath)) {
             return new JsonArray();
         } else {
             // First, refresh unofficial database with metadata from archive packs
-            try (Stream<Path> paths = Files.walk(libraryPath(), 1)) {
+            try (Stream<Path> paths = Files.walk(libraryPath, 1)) {
                 paths
                         .filter(Files::isRegularFile)
                         .filter(path -> path.toString().endsWith(".zip"))
@@ -120,10 +120,10 @@ public class LibraryService {
             }
 
             // List pack files in library folder
-            try (Stream<Path> paths = Files.walk(libraryPath(), 1)) {
+            try (Stream<Path> paths = Files.walk(libraryPath, 1)) {
                 return new JsonArray(
                         paths
-                                .filter(path -> !path.equals(libraryPath()))
+                                .filter(path -> !path.equals(libraryPath))
                                 .map(this::readPackFile)
                                 .filter(Optional::isPresent)
                                 .map(Optional::get)
@@ -152,7 +152,7 @@ public class LibraryService {
     }
 
     public Optional<Path> getRawPackFile(String packPath) {
-        return Optional.of(libraryPath().resolve(packPath));
+        return Optional.of(libraryPath.resolve(packPath));
     }
 
     private void assertFormat(String outputFormat) {
@@ -172,7 +172,7 @@ public class LibraryService {
         try {
             // Packs must first be converted to raw format
             StoryPack storyPack;
-            Path packPath = libraryPath().resolve(packFile);
+            Path packPath = libraryPath.resolve(packFile);
             LOGGER.info("Reading " + inputFormat + " format pack");
             if (packFile.endsWith(".zip")) {
                 try(InputStream is = Files.newInputStream(packPath)) {
@@ -195,7 +195,7 @@ public class LibraryService {
             }
 
             String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis() + ".pack";
-            Path destinationPath = libraryPath().resolve(destinationFileName);
+            Path destinationPath = libraryPath.resolve(destinationFileName);
             LOGGER.info("Moving " + outputFormat + " format pack into local library: " + destinationPath);
             Files.move(tmp, destinationPath);
 
@@ -218,7 +218,7 @@ public class LibraryService {
         try {
             // Packs must first be converted to raw format
             StoryPack storyPack;
-            Path packPath = libraryPath().resolve(packFile);
+            Path packPath = libraryPath.resolve(packFile);
             LOGGER.info("Reading " + inputFormat + " format pack");
             if (packFile.endsWith(".pack")) {
                 try(InputStream is = Files.newInputStream(packPath)) {
@@ -239,7 +239,7 @@ public class LibraryService {
             }
 
             String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis() + ".zip";
-            Path destinationPath = libraryPath().resolve(destinationFileName);
+            Path destinationPath = libraryPath.resolve(destinationFileName);
             LOGGER.info("Moving " + outputFormat + " format pack into local library: " + destinationPath);
             Files.move(tmp, destinationPath);
 
@@ -262,7 +262,7 @@ public class LibraryService {
         try {
             // Packs must first be converted to raw format
             StoryPack storyPack;
-            Path packPath = libraryPath().resolve(packFile);
+            Path packPath = libraryPath.resolve(packFile);
             LOGGER.info("Reading " + inputFormat + " format pack");
             if (packFile.endsWith(".zip")) {
                 try(InputStream is = Files.newInputStream(packPath)) {
@@ -282,7 +282,7 @@ public class LibraryService {
             new FsStoryPackWriter().write(storyPack, tmp);
 
             String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis();
-            Path destinationPath = libraryPath().resolve(destinationFileName);
+            Path destinationPath = libraryPath.resolve(destinationFileName);
             LOGGER.info("Moving " + outputFormat + " format pack into local library: " + destinationPath);
             Files.move(tmp, destinationPath);
 
@@ -298,7 +298,7 @@ public class LibraryService {
         try {
             // Copy temporary file to local library
             Path src = Path.of(uploadedFilePath);
-            Path dest = libraryPath().resolve(destPath);
+            Path dest = libraryPath.resolve(destPath);
             Files.move(src, dest, StandardCopyOption.REPLACE_EXISTING);
             return true;
         } catch (IOException e) {
@@ -308,11 +308,10 @@ public class LibraryService {
     }
 
     public boolean deletePack(String packPath) {
-        Path libraryFolder = libraryPath();
-        if (Files.notExists(libraryFolder) || !Files.isDirectory(libraryFolder)) {
+        if (Files.notExists(libraryPath) || !Files.isDirectory(libraryPath)) {
             return false;
         }
-        Path packFile = libraryPath().resolve(packPath);
+        Path packFile = libraryPath.resolve(packPath);
         if(Files.notExists(packFile)) {
             LOGGER.error("Cannot remove pack from library because it is not in the folder");
             return false;
@@ -330,22 +329,22 @@ public class LibraryService {
         }
     }
 
-    public Path libraryPath() {
+    public static Path libraryPath() {
         // Path may be overridden by system property `studio.library`
         return Path.of(System.getProperty(LOCAL_LIBRARY_PROP, System.getProperty("user.home") + LOCAL_LIBRARY_PATH));
     }
 
-    private Path tmpDirPath() {
+    private static Path tmpDirPath() {
         // Path may be overridden by system property `studio.tmpdir`
         return Path.of(System.getProperty(TMP_DIR_PROP, System.getProperty("user.home") + TMP_DIR_PATH) );
     }
 
     private Path createTempFile(String prefix, String suffix) throws IOException {
-        return Files.createTempFile(tmpDirPath(), prefix, suffix);
+        return Files.createTempFile(tmpDirPath, prefix, suffix);
     }
 
     private Path createTempDirectory(String prefix) throws IOException {
-        return Files.createTempDirectory(tmpDirPath(), prefix);
+        return Files.createTempDirectory(tmpDirPath, prefix);
     }
 
     private Optional<LibraryPack> readPackFile(Path path) {

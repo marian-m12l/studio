@@ -7,8 +7,9 @@
 package studio.webui.api;
 
 import java.nio.file.Path;
-import java.util.Timer;
-import java.util.TimerTask;
+import java.util.Optional;
+import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
@@ -24,7 +25,9 @@ import studio.webui.service.LibraryService;
 public class LibraryController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LibraryController.class);
-    
+
+    private static final ScheduledThreadPoolExecutor THREAD_POOL = new ScheduledThreadPoolExecutor(2);
+
     public static Router apiRouter(Vertx vertx, LibraryService libraryService) {
         Router router = Router.router(vertx);
 
@@ -82,46 +85,23 @@ public class LibraryController {
             String format = ctx.getBodyAsJson().getString("format");
             // Perform conversion/uncompression asynchronously
             Promise<Path> promisedPack = Promise.promise();
-            if (Constants.PACK_FORMAT_RAW.equalsIgnoreCase(format)) {
-                Timer timer = new Timer();
-                timer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        libraryService.addConvertedRawPackFile(packPath, allowEnriched)
-                                .ifPresentOrElse(
-                                        packPath -> promisedPack.tryComplete(packPath),
-                                        () -> promisedPack.tryFail("Failed to read or convert pack to raw format"));
-                        promisedPack.tryComplete();
-                    }
-                }, 1000);
-            } else if (Constants.PACK_FORMAT_FS.equalsIgnoreCase(format)) {
-                Timer timer = new Timer();
-                timer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        libraryService.addConvertedFsPackFile(packPath, allowEnriched)
-                                .ifPresentOrElse(
-                                        packPath -> promisedPack.tryComplete(packPath),
-                                        () -> promisedPack.tryFail("Failed to read or convert pack to folder format"));
-                        promisedPack.tryComplete();
-                    }
-                }, 1000);
-            } else if (Constants.PACK_FORMAT_ARCHIVE.equalsIgnoreCase(format)) {
-                Timer timer = new Timer();
-                timer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        libraryService.addConvertedArchivePackFile(packPath)
-                                .ifPresentOrElse(
-                                        packPath -> promisedPack.tryComplete(packPath),
-                                        () -> promisedPack.tryFail("Failed to read or convert pack to folder format"));
-                        promisedPack.tryComplete();
-                    }
-                }, 1000);
-            } else {
-                ctx.fail(400);
-                return;
-            }
+            THREAD_POOL.schedule(() -> {
+                Optional<Path> optPath = null;
+                if (Constants.PACK_FORMAT_RAW.equalsIgnoreCase(format)) {
+                    optPath = libraryService.addConvertedRawPackFile(packPath, allowEnriched);
+                } else if (Constants.PACK_FORMAT_FS.equalsIgnoreCase(format)) {
+                    optPath = libraryService.addConvertedFsPackFile(packPath, allowEnriched);
+                } else if (Constants.PACK_FORMAT_ARCHIVE.equalsIgnoreCase(format)) {
+                    optPath = libraryService.addConvertedArchivePackFile(packPath);
+                } else {
+                    ctx.fail(400);
+                    return;
+                }
+                optPath.ifPresentOrElse(p -> promisedPack.tryComplete(p),
+                        () -> promisedPack.tryFail("Failed to read or convert pack to " + format + " format"));
+                promisedPack.tryComplete();
+            }, 1, TimeUnit.SECONDS);
+            
             promisedPack.future().onComplete(maybeConvertedPack -> {
                 if (maybeConvertedPack.succeeded()) {
                     // Return path to converted file within library

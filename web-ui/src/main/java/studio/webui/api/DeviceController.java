@@ -12,6 +12,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
+import studio.core.v1.Constants;
 import studio.webui.service.IStoryTellerService;
 import studio.webui.service.LibraryService;
 
@@ -65,7 +66,7 @@ public class DeviceController {
         router.post("/addFromLibrary").blockingHandler(ctx -> {
             String uuid = ctx.getBodyAsJson().getString("uuid");
             String packPath = ctx.getBodyAsJson().getString("path");
-            Path packFile = libraryService.libraryPath().resolve(packPath);
+            Path packFile = LibraryService.libraryPath().resolve(packPath);
             // Start transfer to device
             storyTellerService.addPack(uuid, packFile) //
                     .whenComplete((maybeTransferId, e) -> {
@@ -138,10 +139,10 @@ public class DeviceController {
             String driver = ctx.getBodyAsJson().getString("driver");
             // Transfer pack file to library file
             Path path = null;
-            if ("raw".equalsIgnoreCase(driver)) {
-                path = libraryService.libraryPath().resolve(uuid + ".pack");
-            } else if ("fs".equalsIgnoreCase(driver)) {
-                path = libraryService.libraryPath();
+            if (Constants.PACK_FORMAT_RAW.equalsIgnoreCase(driver)) {
+                path = LibraryService.libraryPath().resolve(uuid + ".pack");
+            } else if (Constants.PACK_FORMAT_FS.equalsIgnoreCase(driver)) {
+                path = LibraryService.libraryPath();
             } else {
                 ctx.fail(400);
                 return;
