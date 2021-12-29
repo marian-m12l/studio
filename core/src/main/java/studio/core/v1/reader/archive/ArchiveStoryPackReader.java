@@ -9,6 +9,10 @@ package studio.core.v1.reader.archive;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Iterator;
@@ -44,53 +48,40 @@ import studio.core.v1.model.mime.ImageType;
 
 public class ArchiveStoryPackReader {
 
-    public StoryPackMetadata readMetadata(InputStream inputStream) throws IOException {
+    public StoryPackMetadata readMetadata(Path zipPath) throws IOException {
         // Zip archive contains a json file and separate assets
-        try (ZipInputStream zis = new ZipInputStream(inputStream); InputStreamReader isr = new InputStreamReader(zis)) {
-
+        try (FileSystem zipFs = FileSystems.newFileSystem(zipPath, ClassLoader.getSystemClassLoader())) {
             // Pack metadata model
             StoryPackMetadata metadata = new StoryPackMetadata(Constants.PACK_FORMAT_ARCHIVE);
-
-            boolean hasStoryJsonEntry = false;
-
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-                if (entry.isDirectory()) {
-                    continue;
-                }
-                // Story descriptor file: story.json
-                if (entry.getName().equalsIgnoreCase("story.json")) {
-                    hasStoryJsonEntry = true;
-
-                    JsonParser parser = new JsonParser();
-                    JsonObject root = parser.parse(isr).getAsJsonObject();
-
-                    // Read metadata
-                    metadata.setVersion(root.get("version").getAsShort());
-                    Optional.ofNullable(root.get("title")).filter(JsonElement::isJsonPrimitive)
-                            .ifPresent(title -> metadata.setTitle(title.getAsString()));
-                    Optional.ofNullable(root.get("description")).filter(JsonElement::isJsonPrimitive)
-                            .ifPresent(desc -> metadata.setDescription(desc.getAsString()));
-                    // TODO Thumbnail?
-
-                    // Night mode
-                    metadata.setNightModeAvailable(Optional.ofNullable(root.get("nightModeAvailable"))
-                            .map(JsonElement::getAsBoolean).orElse(false));
-
-                    // Read first stage node
-                    JsonObject mainStageNode = root.getAsJsonArray("stageNodes").get(0).getAsJsonObject();
-                    metadata.setUuid(mainStageNode.get("uuid").getAsString());
-                }
-                // Pack thumbnail
-                else if (entry.getName().equalsIgnoreCase("thumbnail.png")) {
-                    metadata.setThumbnail(IOUtils.toByteArray(zis));
-                }
-                // Ignore asset files
-                else if (entry.getName().startsWith("assets/")) {
-                    // no-op
-                }
+            // Story descriptor file: story.json
+            Path story = zipFs.getPath("story.json");
+            if (Files.notExists(story)) {
+                return null;
             }
-            return hasStoryJsonEntry ? metadata : null;
+            JsonParser parser = new JsonParser();
+            JsonObject root = parser.parse(Files.readString(story)).getAsJsonObject();
+
+            // Read metadata
+            metadata.setVersion(root.get("version").getAsShort());
+            Optional.ofNullable(root.get("title")).filter(JsonElement::isJsonPrimitive)
+                    .ifPresent(title -> metadata.setTitle(title.getAsString()));
+            Optional.ofNullable(root.get("description")).filter(JsonElement::isJsonPrimitive)
+                    .ifPresent(desc -> metadata.setDescription(desc.getAsString()));
+            // TODO Thumbnail?
+
+            // Night mode
+            metadata.setNightModeAvailable(
+                    Optional.ofNullable(root.get("nightModeAvailable")).map(JsonElement::getAsBoolean).orElse(false));
+
+            // Read first stage node
+            JsonObject mainStageNode = root.getAsJsonArray("stageNodes").get(0).getAsJsonObject();
+            metadata.setUuid(mainStageNode.get("uuid").getAsString());
+            // Pack thumbnail
+            Path thumb = zipFs.getPath("thumbnail.png");
+            if (Files.exists(thumb)) {
+                metadata.setThumbnail(Files.readAllBytes(thumb));
+            }
+            return metadata;
         }
     }
 
