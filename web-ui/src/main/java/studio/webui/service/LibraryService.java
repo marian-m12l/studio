@@ -351,9 +351,9 @@ public class LibraryService {
         LOGGER.debug("Reading pack file: " + path);
         // Handle all file formats
         if (path.toString().endsWith(".zip")) {
-            try (InputStream is = Files.newInputStream(path)) {
+            try {
                 LOGGER.debug("Reading archive pack metadata.");
-                StoryPackMetadata meta = new ArchiveStoryPackReader().readMetadata(is);
+                StoryPackMetadata meta = new ArchiveStoryPackReader().readMetadata(path);
                 if (meta != null) {
                     return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
                 }
