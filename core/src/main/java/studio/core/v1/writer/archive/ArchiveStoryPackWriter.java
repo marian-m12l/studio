@@ -7,8 +7,6 @@
 package studio.core.v1.writer.archive;
 
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -18,11 +16,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipOutputStream;
 
 import org.apache.commons.codec.digest.DigestUtils;
-import org.apache.commons.io.IOUtils;
 
 import com.google.gson.stream.JsonWriter;
 
@@ -52,32 +47,6 @@ public class ArchiveStoryPackWriter {
             Path assetPath = Files.createDirectories(zipFs.getPath("assets/"));
             for (String k : assets.keySet()) {
                 Files.write(assetPath.resolve(k), assets.get(k));
-            }
-        }
-    }
-
-    @Deprecated
-    public void write(StoryPack pack, OutputStream outputStream) throws IOException {
-        // Zip archive contains a json file and separate assets
-        try (ZipOutputStream zos = new ZipOutputStream(outputStream);
-                JsonWriter writer = new JsonWriter(new OutputStreamWriter(zos))) {
-
-            // Store assets bytes
-            TreeMap<String, byte[]> assets = new TreeMap<>();
-
-            // Add story descriptor file: story.json
-            ZipEntry zipEntry = new ZipEntry("story.json");
-            zos.putNextEntry(zipEntry);
-            writeStoryJson(pack, writer, assets);
-
-            // Add assets in separate directory
-            zipEntry = new ZipEntry("assets/");
-            zos.putNextEntry(zipEntry);
-            for (Map.Entry<String, byte[]> assetEntry : assets.entrySet()) {
-                String assetPath = "assets/" + assetEntry.getKey();
-                zipEntry = new ZipEntry(assetPath);
-                zos.putNextEntry(zipEntry);
-                IOUtils.write(assetEntry.getValue(), zos);
             }
         }
     }
