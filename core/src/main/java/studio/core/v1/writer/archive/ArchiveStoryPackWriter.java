@@ -9,6 +9,11 @@ package studio.core.v1.writer.archive;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.OutputStreamWriter;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.TreeMap;
@@ -32,8 +37,27 @@ import studio.core.v1.model.mime.ImageType;
 
 public class ArchiveStoryPackWriter {
 
-    public void write(StoryPack pack, OutputStream outputStream) throws IOException {
+    public void write(StoryPack pack, Path zipPath) throws IOException {
+        // Zip archive contains a json file and separate assets
+        URI uri = URI.create("jar:file:" + zipPath.toString());
+        try (FileSystem zipFs = FileSystems.newFileSystem(uri, Map.of("create", "true"))) {
+            // Store assets bytes
+            TreeMap<String, byte[]> assets = new TreeMap<>();
+            // Add story descriptor file: story.json
+            Path storyPath = zipFs.getPath("story.json");
+            try (JsonWriter writer = new JsonWriter(Files.newBufferedWriter(storyPath))) {
+                writeStoryJson(pack, writer, assets);
+            }
+            // Add assets in separate directory
+            Path assetPath = Files.createDirectories(zipFs.getPath("assets/"));
+            for (String k : assets.keySet()) {
+                Files.write(assetPath.resolve(k), assets.get(k));
+            }
+        }
+    }
 
+    @Deprecated
+    public void write(StoryPack pack, OutputStream outputStream) throws IOException {
         // Zip archive contains a json file and separate assets
         try (ZipOutputStream zos = new ZipOutputStream(outputStream);
                 JsonWriter writer = new JsonWriter(new OutputStreamWriter(zos))) {
@@ -44,132 +68,7 @@ public class ArchiveStoryPackWriter {
             // Add story descriptor file: story.json
             ZipEntry zipEntry = new ZipEntry("story.json");
             zos.putNextEntry(zipEntry);
-
-            // Start json document
-            writer.setIndent("    ");
-            writer.beginObject();
-
-            // Write file format metadata
-            writer.name("format").value("v1");
-
-            // Write (optional) enriched pack metadata
-            if (pack.getEnriched() != null) {
-                String packTitle = pack.getEnriched().getTitle();
-                if (packTitle != null) {
-                    writer.name("title").value(packTitle);
-                } else {
-                    writer.name("title").value("MISSING_PACK_TITLE");
-                }
-                if (pack.getEnriched().getDescription() != null) {
-                    writer.name("description").value(pack.getEnriched().getDescription());
-                }
-                // TODO Thumbnail?
-            }
-
-            // Write metadata
-            writer.name("version").value(pack.getVersion());
-
-            // Write night mode
-            writer.name("nightModeAvailable").value(pack.isNightModeAvailable());
-
-            // Write stage nodes and keep track of action nodes and assets
-            Map<ActionNode, String> actionNodeToId = new HashMap<>();
-            writer.name("stageNodes");
-            writer.beginArray();
-            for (int i = 0; i < pack.getStageNodes().size(); i++) {
-                StageNode node = pack.getStageNodes().get(i);
-                writer.beginObject();
-                writer.name("uuid").value(node.getUuid());
-
-                // Write (optional) enriched node metadata
-                if (node.getEnriched() != null) {
-                    writeEnrichedNodeMetadata(writer, node);
-                }
-
-                if (i == 0) {
-                    // The first stage node is marked as such
-                    writer.name("squareOne").value(true);
-                }
-                writer.name("image");
-                if (node.getImage() == null) {
-                    writer.nullValue();
-                } else {
-                    byte[] imageData = node.getImage().getRawData();
-                    String extension = extensionFromMimeType(node.getImage().getMimeType());
-                    String assetFileName = DigestUtils.sha1Hex(imageData) + extension;
-                    writer.value(assetFileName);
-                    assets.putIfAbsent(assetFileName, imageData);
-                }
-                writer.name("audio");
-                if (node.getAudio() == null) {
-                    writer.nullValue();
-                } else {
-                    byte[] audioData = node.getAudio().getRawData();
-                    String extension = extensionFromMimeType(node.getAudio().getMimeType());
-                    String assetFileName = DigestUtils.sha1Hex(audioData) + extension;
-                    writer.value(assetFileName);
-                    assets.putIfAbsent(assetFileName, audioData);
-                }
-                writer.name("okTransition");
-                if (node.getOkTransition() == null) {
-                    writer.nullValue();
-                } else {
-                    writer.beginObject();
-                    if (!actionNodeToId.containsKey(node.getOkTransition().getActionNode())) {
-                        actionNodeToId.put(node.getOkTransition().getActionNode(), UUID.randomUUID().toString());
-                    }
-                    writer.name("actionNode").value(actionNodeToId.get(node.getOkTransition().getActionNode()));
-                    writer.name("optionIndex").value(node.getOkTransition().getOptionIndex());
-                    writer.endObject();
-                }
-                writer.name("homeTransition");
-                if (node.getHomeTransition() == null) {
-                    writer.nullValue();
-                } else {
-                    writer.beginObject();
-                    if (!actionNodeToId.containsKey(node.getHomeTransition().getActionNode())) {
-                        actionNodeToId.put(node.getHomeTransition().getActionNode(), UUID.randomUUID().toString());
-                    }
-                    writer.name("actionNode").value(actionNodeToId.get(node.getHomeTransition().getActionNode()));
-                    writer.name("optionIndex").value(node.getHomeTransition().getOptionIndex());
-                    writer.endObject();
-                }
-                writer.name("controlSettings");
-                writer.beginObject();
-                writer.name("wheel").value(node.getControlSettings().isWheelEnabled());
-                writer.name("ok").value(node.getControlSettings().isOkEnabled());
-                writer.name("home").value(node.getControlSettings().isHomeEnabled());
-                writer.name("pause").value(node.getControlSettings().isPauseEnabled());
-                writer.name("autoplay").value(node.getControlSettings().isAutoJumpEnabled());
-                writer.endObject();
-                writer.endObject();
-            }
-            writer.endArray();
-
-            writer.name("actionNodes");
-            writer.beginArray();
-            for (Map.Entry<ActionNode, String> actionNode : actionNodeToId.entrySet()) {
-                writer.beginObject();
-                writer.name("id").value(actionNode.getValue());
-
-                // Write (optional) enriched node metadata
-                ActionNode node = actionNode.getKey();
-                if (node.getEnriched() != null) {
-                    writeEnrichedNodeMetadata(writer, node);
-                }
-
-                writer.name("options");
-                writer.beginArray();
-                for (StageNode option : node.getOptions()) {
-                    writer.value(option.getUuid());
-                }
-                writer.endArray();
-                writer.endObject();
-            }
-            writer.endArray();
-
-            writer.endObject();
-            writer.flush();
+            writeStoryJson(pack, writer, assets);
 
             // Add assets in separate directory
             zipEntry = new ZipEntry("assets/");
@@ -181,6 +80,134 @@ public class ArchiveStoryPackWriter {
                 IOUtils.write(assetEntry.getValue(), zos);
             }
         }
+    }
+
+    private void writeStoryJson(StoryPack pack, JsonWriter writer, TreeMap<String, byte[]> assets) throws IOException {
+        // Start json document
+        writer.setIndent("    ");
+        writer.beginObject();
+
+        // Write file format metadata
+        writer.name("format").value("v1");
+
+        // Write (optional) enriched pack metadata
+        if (pack.getEnriched() != null) {
+            String packTitle = pack.getEnriched().getTitle();
+            if (packTitle != null) {
+                writer.name("title").value(packTitle);
+            } else {
+                writer.name("title").value("MISSING_PACK_TITLE");
+            }
+            if (pack.getEnriched().getDescription() != null) {
+                writer.name("description").value(pack.getEnriched().getDescription());
+            }
+            // TODO Thumbnail?
+        }
+
+        // Write metadata
+        writer.name("version").value(pack.getVersion());
+
+        // Write night mode
+        writer.name("nightModeAvailable").value(pack.isNightModeAvailable());
+
+        // Write stage nodes and keep track of action nodes and assets
+        Map<ActionNode, String> actionNodeToId = new HashMap<>();
+        writer.name("stageNodes");
+        writer.beginArray();
+        for (int i = 0; i < pack.getStageNodes().size(); i++) {
+            StageNode node = pack.getStageNodes().get(i);
+            writer.beginObject();
+            writer.name("uuid").value(node.getUuid());
+
+            // Write (optional) enriched node metadata
+            if (node.getEnriched() != null) {
+                writeEnrichedNodeMetadata(writer, node);
+            }
+
+            if (i == 0) {
+                // The first stage node is marked as such
+                writer.name("squareOne").value(true);
+            }
+            writer.name("image");
+            if (node.getImage() == null) {
+                writer.nullValue();
+            } else {
+                byte[] imageData = node.getImage().getRawData();
+                String extension = extensionFromMimeType(node.getImage().getMimeType());
+                String assetFileName = DigestUtils.sha1Hex(imageData) + extension;
+                writer.value(assetFileName);
+                assets.putIfAbsent(assetFileName, imageData);
+            }
+            writer.name("audio");
+            if (node.getAudio() == null) {
+                writer.nullValue();
+            } else {
+                byte[] audioData = node.getAudio().getRawData();
+                String extension = extensionFromMimeType(node.getAudio().getMimeType());
+                String assetFileName = DigestUtils.sha1Hex(audioData) + extension;
+                writer.value(assetFileName);
+                assets.putIfAbsent(assetFileName, audioData);
+            }
+            writer.name("okTransition");
+            if (node.getOkTransition() == null) {
+                writer.nullValue();
+            } else {
+                writer.beginObject();
+                if (!actionNodeToId.containsKey(node.getOkTransition().getActionNode())) {
+                    actionNodeToId.put(node.getOkTransition().getActionNode(), UUID.randomUUID().toString());
+                }
+                writer.name("actionNode").value(actionNodeToId.get(node.getOkTransition().getActionNode()));
+                writer.name("optionIndex").value(node.getOkTransition().getOptionIndex());
+                writer.endObject();
+            }
+            writer.name("homeTransition");
+            if (node.getHomeTransition() == null) {
+                writer.nullValue();
+            } else {
+                writer.beginObject();
+                if (!actionNodeToId.containsKey(node.getHomeTransition().getActionNode())) {
+                    actionNodeToId.put(node.getHomeTransition().getActionNode(), UUID.randomUUID().toString());
+                }
+                writer.name("actionNode").value(actionNodeToId.get(node.getHomeTransition().getActionNode()));
+                writer.name("optionIndex").value(node.getHomeTransition().getOptionIndex());
+                writer.endObject();
+            }
+            writer.name("controlSettings");
+            writer.beginObject();
+            writer.name("wheel").value(node.getControlSettings().isWheelEnabled());
+            writer.name("ok").value(node.getControlSettings().isOkEnabled());
+            writer.name("home").value(node.getControlSettings().isHomeEnabled());
+            writer.name("pause").value(node.getControlSettings().isPauseEnabled());
+            writer.name("autoplay").value(node.getControlSettings().isAutoJumpEnabled());
+            writer.endObject();
+            writer.endObject();
+        }
+        writer.endArray();
+
+        writer.name("actionNodes");
+        writer.beginArray();
+        for (Map.Entry<ActionNode, String> actionNode : actionNodeToId.entrySet()) {
+            writer.beginObject();
+            writer.name("id").value(actionNode.getValue());
+
+            // Write (optional) enriched node metadata
+            ActionNode node = actionNode.getKey();
+            if (node.getEnriched() != null) {
+                writeEnrichedNodeMetadata(writer, node);
+            }
+
+            writer.name("options");
+            writer.beginArray();
+            for (StageNode option : node.getOptions()) {
+                writer.value(option.getUuid());
+            }
+            writer.endArray();
+            writer.endObject();
+        }
+        writer.endArray();
+
+        writer.endObject();
+        writer.flush();
     }
 
     private void writeEnrichedNodeMetadata(JsonWriter writer, Node node) throws IOException {

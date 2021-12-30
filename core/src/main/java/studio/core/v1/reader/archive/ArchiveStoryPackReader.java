@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
@@ -58,8 +59,7 @@ public class ArchiveStoryPackReader {
             if (Files.notExists(story)) {
                 return null;
             }
-            JsonParser parser = new JsonParser();
-            JsonObject root = parser.parse(Files.readString(story)).getAsJsonObject();
+            JsonObject root = new JsonParser().parse(Files.readString(story)).getAsJsonObject();
 
             // Read metadata
             metadata.setVersion(root.get("version").getAsShort());
@@ -85,176 +85,237 @@ public class ArchiveStoryPackReader {
         }
     }
 
-    public StoryPack read(InputStream inputStream) throws IOException {
-
+    public StoryPack read(Path zipPath) throws IOException {
         // Zip archive contains a json file and separate assets
-        try (ZipInputStream zis = new ZipInputStream(inputStream); InputStreamReader isr = new InputStreamReader(zis)) {
-
+        try (FileSystem zipFs = FileSystems.newFileSystem(zipPath, ClassLoader.getSystemClassLoader())) {
             // Store assets bytes
             TreeMap<String, byte[]> assets = new TreeMap<>();
-
-            // Story pack model
-            boolean factoryDisabled = false;
-            short version = 0;
-            // Keep stage nodes in the order they appear
-            LinkedHashMap<String, StageNode> stageNodes = new LinkedHashMap<>();
             // Keep asset name to stage nodes map
             Map<String, List<StageNode>> assetToStageNodes = new HashMap<>();
-            // Keep first node
-            StageNode squareOne = null;
-            // Enriched pack metadata
-            EnrichedPackMetadata enrichedPack = null;
-            boolean nightModeAvailable = false;
+
+            // Parse "story.json"
+            Path story = zipFs.getPath("story.json");
+            if (Files.notExists(story)) {
+                return null;
+            }
+            JsonObject root = new JsonParser().parse(Files.readString(story)).getAsJsonObject();
+            StoryPack storyPack = parseStoryJson(root, assetToStageNodes);
+
+            // Parse assets
+            Path assetsDir = zipFs.getPath("assets/");
+            try(Stream<Path> items = Files.walk(assetsDir, 0).filter(Files::isRegularFile)) {
+                items.forEach( p -> {
+                    try {
+                        assets.put(p.getFileName().toString(), Files.readAllBytes(p));
+                    } catch (IOException e) {
+                        e.printStackTrace();
+                    }
+                });
+            }
+            // Update assets in stage nodes
+            enrichAssets(assets, assetToStageNodes);
+            // cleanup
+            assets.clear();
+            assetToStageNodes.clear();
+            return storyPack;
+        }
+    }
+
+    @Deprecated
+    public StoryPack read(InputStream inputStream) throws IOException {
+        StoryPack storyPack = null;
+        // Zip archive contains a json file and separate assets
+        try (ZipInputStream zis = new ZipInputStream(inputStream); InputStreamReader isr = new InputStreamReader(zis)) {
+            // Store assets bytes
+            TreeMap<String, byte[]> assets = new TreeMap<>();
+            // Keep asset name to stage nodes map
+            Map<String, List<StageNode>> assetToStageNodes = new HashMap<>();
 
             ZipEntry entry;
             while ((entry = zis.getNextEntry()) != null) {
                 // Story descriptor file: story.json
                 if (!entry.isDirectory() && entry.getName().equalsIgnoreCase("story.json")) {
-                    JsonParser parser = new JsonParser();
-                    JsonObject root = parser.parse(isr).getAsJsonObject();
-
-                    // Read metadata
-                    version = root.get("version").getAsShort();
-                    // Read (optional) enriched pack metadata
-                    Optional<String> maybeTitle = Optional.ofNullable(root.get("title"))
-                            .filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
-                    Optional<String> maybeDescription = Optional.ofNullable(root.get("description"))
-                            .filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
-                    // TODO Thumbnail?
-                    if (maybeTitle.isPresent() || maybeDescription.isPresent()) {
-                        enrichedPack = new EnrichedPackMetadata(maybeTitle.orElse(null), maybeDescription.orElse(null));
-                    }
-
-                    // Night mode
-                    nightModeAvailable = Optional.ofNullable(root.get("nightModeAvailable"))
-                            .map(JsonElement::getAsBoolean).orElse(false);
-
-                    // Read action nodes
-                    TreeMap<String, ActionNode> actionNodes = new TreeMap<>();
-                    Iterator<JsonElement> actionsIter = root.getAsJsonArray("actionNodes").iterator();
-                    while (actionsIter.hasNext()) {
-                        JsonObject node = actionsIter.next().getAsJsonObject();
-
-                        // Read (optional) enriched node metadata
-                        EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(node);
-
-                        actionNodes.put(node.get("id").getAsString(), new ActionNode(enrichedNodeMetadata));
-                    }
-
-                    // Read stage nodes
-                    Iterator<JsonElement> stagesIter = root.getAsJsonArray("stageNodes").iterator();
-                    while (stagesIter.hasNext()) {
-                        JsonObject node = stagesIter.next().getAsJsonObject();
-                        String uuid = node.get("uuid").getAsString();
-                        Transition okTransition = null;
-                        Transition homeTransition = null;
-
-                        JsonElement okNode = node.get("okTransition");
-                        if (okNode != null && okNode.isJsonObject()) {
-                            JsonObject okObj = okNode.getAsJsonObject();
-                            ActionNode actionNode = actionNodes.get(okObj.get("actionNode").getAsString());
-                            okTransition = new Transition(actionNode, okObj.get("optionIndex").getAsShort());
-                        }
-                        JsonElement homeNode = node.get("homeTransition");
-                        if (homeNode != null && homeNode.isJsonObject()) {
-                            JsonObject homeObj = homeNode.getAsJsonObject();
-                            ActionNode actionNode = actionNodes.get(homeObj.get("actionNode").getAsString());
-                            homeTransition = new Transition(actionNode, homeObj.get("optionIndex").getAsShort());
-                        }
-
-                        JsonObject controlSettings = node.getAsJsonObject("controlSettings");
-
-                        // Read (optional) enriched node metadata
-                        EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(node);
-
-                        StageNode stageNode = new StageNode(uuid, null, null, okTransition, homeTransition,
-                                new ControlSettings(controlSettings.get("wheel").getAsBoolean(),
-                                        controlSettings.get("ok").getAsBoolean(),
-                                        controlSettings.get("home").getAsBoolean(),
-                                        controlSettings.get("pause").getAsBoolean(),
-                                        controlSettings.get("autoplay").getAsBoolean()),
-                                enrichedNodeMetadata);
-
-                        if (node.get("squareOne") != null && node.get("squareOne").getAsBoolean()) {
-                            squareOne = stageNode;
-                        }
-                        JsonElement imageNode = node.get("image");
-                        if (imageNode != null && !imageNode.isJsonNull()) {
-                            String imageAssetName = imageNode.getAsString();
-                            List<StageNode> atsn = assetToStageNodes.getOrDefault(imageAssetName, new ArrayList<>());
-                            atsn.add(stageNode);
-                            assetToStageNodes.put(imageAssetName, atsn);
-                        }
-                        JsonElement audioNode = node.get("audio");
-                        if (audioNode != null && !audioNode.isJsonNull()) {
-                            String audioAssetName = audioNode.getAsString();
-                            List<StageNode> atsn = assetToStageNodes.getOrDefault(audioAssetName, new ArrayList<>());
-                            atsn.add(stageNode);
-                            assetToStageNodes.put(audioAssetName, atsn);
-                        }
-
-                        stageNodes.put(uuid, stageNode);
-                    }
-
-                    // Link action nodes to stage nodes
-                    actionsIter = root.getAsJsonArray("actionNodes").iterator();
-                    while (actionsIter.hasNext()) {
-                        JsonObject node = actionsIter.next().getAsJsonObject();
-                        ActionNode actionNode = actionNodes.get(node.get("id").getAsString());
-                        List<StageNode> options = new ArrayList<>();
-                        Iterator<JsonElement> optionsIter = node.getAsJsonArray("options").iterator();
-                        while (optionsIter.hasNext()) {
-                            String stageUuid = optionsIter.next().getAsString();
-                            options.add(stageNodes.get(stageUuid));
-                        }
-                        actionNode.setOptions(options);
-                    }
-
+                    JsonObject root = new JsonParser().parse(isr).getAsJsonObject();
+                    storyPack = parseStoryJson(root, assetToStageNodes);
                 }
                 // Separate asset files
                 else if (!entry.isDirectory() && entry.getName().startsWith("assets/")) {
                     assets.put(entry.getName().substring("assets/".length()), IOUtils.toByteArray(zis));
                 }
             }
-
             // Update assets in stage nodes
-            for (Map.Entry<String, byte[]> assetEntry : assets.entrySet()) {
-                String assetName = assetEntry.getKey();
-                int dotIndex = assetName.lastIndexOf(".");
-                String extension = assetName.substring(dotIndex).toLowerCase();
-
-                // Stage nodes explicitly reference their assets' filenames
-                List<StageNode> stageNodesReferencingAsset = assetToStageNodes.get(assetName);
-                if (stageNodesReferencingAsset != null && !stageNodesReferencingAsset.isEmpty()) {
-                    for (StageNode stageNode : stageNodesReferencingAsset) {
-                        // supported images
-                        ImageType it = ImageType.fromExtension(extension);
-                        if(it != null) {
-                            stageNode.setImage(new ImageAsset(it.getMime(), assetEntry.getValue()));
-                            continue;
-                        }
-                        // supported audio
-                        AudioType at = AudioType.fromExtension(extension);
-                        if(at != null) {
-                            stageNode.setAudio(new AudioAsset(at.getMime(), assetEntry.getValue()));
-                            continue;
-                        }
-                        // Unsupported asset
-                    }
-                }
-            }
-
-            // Make sure the first node is actually 'square one'
-            List<StageNode> nodes = new ArrayList<>(stageNodes.values());
-            if (squareOne != null) {
-                nodes.remove(squareOne);
-                nodes.add(0, squareOne);
-            }
-            return new StoryPack(nodes.get(0).getUuid(), factoryDisabled, version, nodes, enrichedPack,
-                    nightModeAvailable);
+            enrichAssets(assets, assetToStageNodes);
+            // cleanup
+            assets.clear();
+            assetToStageNodes.clear();
+            return storyPack;
         }
     }
 
+    /**
+     * Convert "story.json" to StoryPack.
+     * @param root JsonObject from "story.json"
+     * @param assetToStageNodes keeps links between assets and nodes
+     * @return StoryPack
+     */
+    private StoryPack parseStoryJson( JsonObject root, Map<String, List<StageNode>> assetToStageNodes ) {
+        StoryPack storyPack = new StoryPack();
+
+        // Keep first node
+        StageNode squareOne = null;
+        // Keep stage nodes in the order they appear
+        LinkedHashMap<String, StageNode> stageNodes = new LinkedHashMap<>();
+
+        // Read metadata
+        storyPack.setFactoryDisabled(false);
+        storyPack.setVersion(root.get("version").getAsShort());
+        // Read (optional) enriched pack metadata
+        Optional<String> maybeTitle = Optional.ofNullable(root.get("title"))
+                .filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
+        Optional<String> maybeDescription = Optional.ofNullable(root.get("description"))
+                .filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
+        // TODO Thumbnail?
+        if (maybeTitle.isPresent() || maybeDescription.isPresent()) {
+            EnrichedPackMetadata enrichedPack = new EnrichedPackMetadata(maybeTitle.orElse(null), maybeDescription.orElse(null));
+            storyPack.setEnriched(enrichedPack);
+        }
+
+        // Night mode
+        boolean nightModeAvailable = Optional.ofNullable(root.get("nightModeAvailable"))
+                .map(JsonElement::getAsBoolean).orElse(false);
+        storyPack.setNightModeAvailable(nightModeAvailable);
+
+        // Read action nodes
+        TreeMap<String, ActionNode> actionNodes = new TreeMap<>();
+        Iterator<JsonElement> actionsIter = root.getAsJsonArray("actionNodes").iterator();
+        while (actionsIter.hasNext()) {
+            JsonObject node = actionsIter.next().getAsJsonObject();
+            // Read (optional) enriched node metadata
+            EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(node);
+            actionNodes.put(node.get("id").getAsString(), new ActionNode(enrichedNodeMetadata));
+        }
+
+        // Read stage nodes
+        Iterator<JsonElement> stagesIter = root.getAsJsonArray("stageNodes").iterator();
+        while (stagesIter.hasNext()) {
+            JsonObject node = stagesIter.next().getAsJsonObject();
+            String uuid = node.get("uuid").getAsString();
+            Transition okTransition = null;
+            Transition homeTransition = null;
+
+            JsonElement okNode = node.get("okTransition");
+            if (okNode != null && okNode.isJsonObject()) {
+                JsonObject okObj = okNode.getAsJsonObject();
+                ActionNode actionNode = actionNodes.get(okObj.get("actionNode").getAsString());
+                okTransition = new Transition(actionNode, okObj.get("optionIndex").getAsShort());
+            }
+            JsonElement homeNode = node.get("homeTransition");
+            if (homeNode != null && homeNode.isJsonObject()) {
+                JsonObject homeObj = homeNode.getAsJsonObject();
+                ActionNode actionNode = actionNodes.get(homeObj.get("actionNode").getAsString());
+                homeTransition = new Transition(actionNode, homeObj.get("optionIndex").getAsShort());
+            }
+
+            JsonObject controlSettings = node.getAsJsonObject("controlSettings");
+
+            // Read (optional) enriched node metadata
+            EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(node);
+
+            StageNode stageNode = new StageNode(uuid, null, null, okTransition, homeTransition,
+                    new ControlSettings(controlSettings.get("wheel").getAsBoolean(),
+                            controlSettings.get("ok").getAsBoolean(),
+                            controlSettings.get("home").getAsBoolean(),
+                            controlSettings.get("pause").getAsBoolean(),
+                            controlSettings.get("autoplay").getAsBoolean()),
+                    enrichedNodeMetadata);
+
+            if (node.get("squareOne") != null && node.get("squareOne").getAsBoolean()) {
+                squareOne = stageNode;
+            }
+            JsonElement imageNode = node.get("image");
+            if (imageNode != null && !imageNode.isJsonNull()) {
+                String imageAssetName = imageNode.getAsString();
+                List<StageNode> atsn = assetToStageNodes.getOrDefault(imageAssetName, new ArrayList<>());
+                atsn.add(stageNode);
+                assetToStageNodes.put(imageAssetName, atsn);
+            }
+            JsonElement audioNode = node.get("audio");
+            if (audioNode != null && !audioNode.isJsonNull()) {
+                String audioAssetName = audioNode.getAsString();
+                List<StageNode> atsn = assetToStageNodes.getOrDefault(audioAssetName, new ArrayList<>());
+                atsn.add(stageNode);
+                assetToStageNodes.put(audioAssetName, atsn);
+            }
+
+            stageNodes.put(uuid, stageNode);
+        }
+
+        // Link action nodes to stage nodes
+        actionsIter = root.getAsJsonArray("actionNodes").iterator();
+        while (actionsIter.hasNext()) {
+            JsonObject node = actionsIter.next().getAsJsonObject();
+            ActionNode actionNode = actionNodes.get(node.get("id").getAsString());
+            List<StageNode> options = new ArrayList<>();
+            Iterator<JsonElement> optionsIter = node.getAsJsonArray("options").iterator();
+            while (optionsIter.hasNext()) {
+                String stageUuid = optionsIter.next().getAsString();
+                options.add(stageNodes.get(stageUuid));
+            }
+            actionNode.setOptions(options);
+        }
+
+        // Make sure the first node is actually 'square one'
+        List<StageNode> nodes = new ArrayList<>(stageNodes.values());
+        if (squareOne != null) {
+            nodes.remove(squareOne);
+            nodes.add(0, squareOne);
+        }
+        // add nodes
+        storyPack.setStageNodes(nodes);
+        // uuid
+        storyPack.setUuid(nodes.get(0).getUuid());
+        return storyPack; 
+    }
+
+    /** 
+     * Enrich Asset with metadata.
+     * 
+     * @param assets keeps asset binary
+     * @param assetToStageNodes keeps links between assets and nodes 
+     */
+    private void enrichAssets(TreeMap<String, byte[]> assets, Map<String, List<StageNode>> assetToStageNodes ) {
+        for (Map.Entry<String, byte[]> assetEntry : assets.entrySet()) {
+            String assetName = assetEntry.getKey();
+            int dotIndex = assetName.lastIndexOf(".");
+            String extension = assetName.substring(dotIndex).toLowerCase();
+
+            // Stage nodes explicitly reference their assets' filenames
+            List<StageNode> stageNodesReferencingAsset = assetToStageNodes.get(assetName);
+            if (stageNodesReferencingAsset != null && !stageNodesReferencingAsset.isEmpty()) {
+                for (StageNode stageNode : stageNodesReferencingAsset) {
+                    // supported images
+                    ImageType it = ImageType.fromExtension(extension);
+                    if(it != null) {
+                        stageNode.setImage(new ImageAsset(it.getMime(), assetEntry.getValue()));
+                        continue;
+                    }
+                    // supported audio
+                    AudioType at = AudioType.fromExtension(extension);
+                    if(at != null) {
+                        stageNode.setAudio(new AudioAsset(at.getMime(), assetEntry.getValue()));
+                        continue;
+                    }
+                    // Unsupported asset
+                }
+            }
+        }
+    }
+
+    /**
+     * Enrich a node with optional metadata
+     * @param node node
+     * @return 
+     */
     private EnrichedNodeMetadata readEnrichedNodeMetadata(JsonObject node) {
         Optional<String> maybeName = Optional.ofNullable(node.get("name")).filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
         Optional<String> maybeType = Optional.ofNullable(node.get("type")).filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
