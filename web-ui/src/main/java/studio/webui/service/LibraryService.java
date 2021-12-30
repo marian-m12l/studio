@@ -175,9 +175,7 @@ public class LibraryService {
             Path packPath = libraryPath.resolve(packFile);
             LOGGER.info("Reading " + inputFormat + " format pack");
             if (packFile.endsWith(".zip")) {
-                try(InputStream is = Files.newInputStream(packPath)) {
-                    storyPack = new ArchiveStoryPackReader().read(is);
-                }
+                storyPack = new ArchiveStoryPackReader().read(packPath);
             } else {
                 storyPack = new FsStoryPackReader().read(packPath);
             }
@@ -234,9 +232,7 @@ public class LibraryService {
 
             Path tmp = createTempFile(packFile, ".zip");
             LOGGER.info("Writing " + outputFormat + " format pack, using temporary file: " + tmp);
-            try(OutputStream os = Files.newOutputStream(tmp)) {
-                new ArchiveStoryPackWriter().write(storyPack, os);
-            }
+            new ArchiveStoryPackWriter().write(storyPack, tmp);
 
             String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis() + ".zip";
             Path destinationPath = libraryPath.resolve(destinationFileName);
@@ -265,9 +261,7 @@ public class LibraryService {
             Path packPath = libraryPath.resolve(packFile);
             LOGGER.info("Reading " + inputFormat + " format pack");
             if (packFile.endsWith(".zip")) {
-                try(InputStream is = Files.newInputStream(packPath)) {
-                    storyPack = new ArchiveStoryPackReader().read(is);
-                }
+               storyPack = new ArchiveStoryPackReader().read(packPath);
             } else {
                 try(InputStream is = Files.newInputStream(packPath)) {
                     storyPack = new BinaryStoryPackReader().read(is);
@@ -279,12 +273,13 @@ public class LibraryService {
 
             Path tmp = createTempDirectory(packFile);
             LOGGER.info("Writing " + outputFormat + " format pack, using temporary folder: " + tmp);
-            new FsStoryPackWriter().write(storyPack, tmp);
+            // should we not keep uuid instead ?
+            Path tmpPath = new FsStoryPackWriter().write(storyPack, tmp);
 
             String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis();
             Path destinationPath = libraryPath.resolve(destinationFileName);
             LOGGER.info("Moving " + outputFormat + " format pack into local library: " + destinationPath);
-            Files.move(tmp, destinationPath);
+            Files.move(tmpPath, destinationPath);
 
             return Optional.of(Paths.get(destinationFileName));
         } catch (Exception e) {

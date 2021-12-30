@@ -7,8 +7,6 @@
 package studio.core.v1.reader.archive;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.InputStreamReader;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
@@ -22,10 +20,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Stream;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
-
-import org.apache.commons.io.IOUtils;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -103,7 +97,7 @@ public class ArchiveStoryPackReader {
 
             // Parse assets
             Path assetsDir = zipFs.getPath("assets/");
-            try(Stream<Path> items = Files.walk(assetsDir, 0).filter(Files::isRegularFile)) {
+            try(Stream<Path> items = Files.walk(assetsDir, 1).filter(Files::isRegularFile)) {
                 items.forEach( p -> {
                     try {
                         assets.put(p.getFileName().toString(), Files.readAllBytes(p));
@@ -111,37 +105,6 @@ public class ArchiveStoryPackReader {
                         e.printStackTrace();
                     }
                 });
-            }
-            // Update assets in stage nodes
-            enrichAssets(assets, assetToStageNodes);
-            // cleanup
-            assets.clear();
-            assetToStageNodes.clear();
-            return storyPack;
-        }
-    }
-
-    @Deprecated
-    public StoryPack read(InputStream inputStream) throws IOException {
-        StoryPack storyPack = null;
-        // Zip archive contains a json file and separate assets
-        try (ZipInputStream zis = new ZipInputStream(inputStream); InputStreamReader isr = new InputStreamReader(zis)) {
-            // Store assets bytes
-            TreeMap<String, byte[]> assets = new TreeMap<>();
-            // Keep asset name to stage nodes map
-            Map<String, List<StageNode>> assetToStageNodes = new HashMap<>();
-
-            ZipEntry entry;
-            while ((entry = zis.getNextEntry()) != null) {
-                // Story descriptor file: story.json
-                if (!entry.isDirectory() && entry.getName().equalsIgnoreCase("story.json")) {
-                    JsonObject root = new JsonParser().parse(isr).getAsJsonObject();
-                    storyPack = parseStoryJson(root, assetToStageNodes);
-                }
-                // Separate asset files
-                else if (!entry.isDirectory() && entry.getName().startsWith("assets/")) {
-                    assets.put(entry.getName().substring("assets/".length()), IOUtils.toByteArray(zis));
-                }
             }
             // Update assets in stage nodes
             enrichAssets(assets, assetToStageNodes);
