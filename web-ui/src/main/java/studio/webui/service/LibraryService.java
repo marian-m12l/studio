@@ -365,8 +365,7 @@ public class LibraryService {
                 LOGGER.debug("Reading raw pack metadata.");
                 StoryPackMetadata meta = new BinaryStoryPackReader().readMetadata(is);
                 if (meta != null) {
-                    int packSectorSize = (int)Math.ceil((double)Files.size(path) / 512d); 
-                    meta.setSectorSize(packSectorSize);
+                    meta.setSectorSize((int)Math.ceil(Files.size(path) / 512d));
                     return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
                 }
             } catch (IOException e) {
@@ -377,8 +376,7 @@ public class LibraryService {
                 LOGGER.debug("Reading FS pack metadata.");
                 StoryPackMetadata meta = new FsStoryPackReader().readMetadata(path);
                 if (meta != null) {
-                    int packSectorSize = (int)Math.ceil((double)Files.size(path) / 512d);
-                    meta.setSectorSize(packSectorSize);
+                    meta.setSectorSize((int)Math.ceil(Files.size(path) / 512d));
                     return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
                 }
             } catch (Exception e) {
