@@ -103,7 +103,7 @@ public class ArchiveStoryPackReader {
 
             // Parse assets
             Path assetsDir = zipFs.getPath("assets/");
-            try(Stream<Path> items = Files.walk(assetsDir, 0).filter(Files::isRegularFile)) {
+            try(Stream<Path> items = Files.walk(assetsDir, 1).filter(Files::isRegularFile)) {
                 items.forEach( p -> {
                     try {
                         assets.put(p.getFileName().toString(), Files.readAllBytes(p));
