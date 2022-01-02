@@ -13,6 +13,7 @@ import java.util.concurrent.TimeUnit;
 
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
@@ -34,7 +35,7 @@ public class LibraryController {
         // Local library device metadata
         router.get("/infos").blockingHandler(ctx -> {
             ctx.response()
-                    .putHeader("content-type", "application/json")
+                    .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                     .end(Json.encode(libraryService.libraryInfos()));
         });
 
@@ -42,13 +43,12 @@ public class LibraryController {
         router.get("/packs").blockingHandler(ctx -> {
             JsonArray libraryPacks = libraryService.packs();
             ctx.response()
-                    .putHeader("content-type", "application/json")
+                    .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                     .end(Json.encode(libraryPacks));
         });
 
         // Local library pack download
         router.post("/download").blockingHandler(ctx -> {
-            String uuid = ctx.getBodyAsJson().getString("uuid");
             String packPath = ctx.getBodyAsJson().getString("path");
             libraryService.getRawPackFile(packPath)
                     .ifPresentOrElse(
@@ -64,12 +64,11 @@ public class LibraryController {
 
         // Local library pack upload
         router.post("/upload").blockingHandler(ctx -> {
-            String uuid = ctx.request().getFormAttribute("uuid");
             String packPath = ctx.request().getFormAttribute("path");
             boolean added = libraryService.addPackFile(packPath, ctx.fileUploads().iterator().next().uploadedFileName());
             if (added) {
                 ctx.response()
-                        .putHeader("content-type", "application/json")
+                        .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                         .end(Json.encode(new JsonObject().put("success", true)));
             } else {
                 LOGGER.error("Pack was not added to library");
@@ -79,7 +78,6 @@ public class LibraryController {
 
         // Local library pack conversion
         router.post("/convert").blockingHandler(ctx -> {
-            String uuid = ctx.getBodyAsJson().getString("uuid");
             String packPath = ctx.getBodyAsJson().getString("path");
             Boolean allowEnriched = ctx.getBodyAsJson().getBoolean("allowEnriched", false);
             String format = ctx.getBodyAsJson().getString("format");
@@ -106,7 +104,7 @@ public class LibraryController {
                 if (maybeConvertedPack.succeeded()) {
                     // Return path to converted file within library
                     ctx.response()
-                            .putHeader("content-type", "application/json")
+                            .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                             .end(Json.encode(new JsonObject()
                                     .put("success", true)
                                     .put("path", maybeConvertedPack.result().toString())
@@ -124,7 +122,7 @@ public class LibraryController {
             boolean removed = libraryService.deletePack(packPath);
             if (removed) {
                 ctx.response()
-                        .putHeader("content-type", "application/json")
+                        .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                         .end(Json.encode(new JsonObject().put("success", true)));
             } else {
                 LOGGER.error("Pack was not removed from library");

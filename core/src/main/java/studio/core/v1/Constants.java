@@ -8,6 +8,10 @@ package studio.core.v1;
 
 public class Constants {
 
+    private Constants () {
+        throw new IllegalArgumentException("Utility class");
+    }
+
     public static final int SECTOR_SIZE = 512;
 
     public static final int PACKS_LIST_SECTOR = 100000;
@@ -90,4 +94,6 @@ public class Constants {
     public static final int BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT = 16;
     public static final int BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT_PADDING = 48;
     public static final int BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE = 64;       // 64 characters == 128 bytes
+
+    public static final String MIME_JSON= "application/json";
 }

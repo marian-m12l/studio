@@ -7,10 +7,12 @@
 package studio.webui.api;
 
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.Json;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
+import studio.core.v1.Constants;
 import studio.webui.service.EvergreenService;
 
 public class EvergreenController {
@@ -25,7 +27,7 @@ public class EvergreenController {
             evergreenService.infos().onComplete(maybeJson -> {
                 if (maybeJson.succeeded()) {
                     ctx.response()
-                            .putHeader("content-type", "application/json")
+                            .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                             .end(Json.encode(maybeJson.result()));
                 } else {
                     LOGGER.error("Failed to get current version infos");
@@ -39,7 +41,7 @@ public class EvergreenController {
             evergreenService.latest().onComplete(maybeJson -> {
                 if (maybeJson.succeeded()) {
                     ctx.response()
-                            .putHeader("content-type", "application/json")
+                            .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                             .end(Json.encode(maybeJson.result()));
                 } else {
                     LOGGER.error("Failed to get latest release");
@@ -53,7 +55,7 @@ public class EvergreenController {
             evergreenService.announce().onComplete(maybeJson -> {
                 if (maybeJson.succeeded()) {
                     ctx.response()
-                            .putHeader("content-type", "application/json")
+                            .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                             .end(Json.encode(maybeJson.result()));
                 } else {
                     LOGGER.error("Failed to get announce");
