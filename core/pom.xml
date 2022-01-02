@@ -18,8 +18,6 @@
 
     <artifactId>studio-core</artifactId>
 
-    <packaging>jar</packaging>
-
     <dependencies>
         <dependency>
             <groupId>com.google.code.gson</groupId>
@@ -56,7 +54,6 @@
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
-            <version>5.8.2</version>
             <scope>test</scope>
         </dependency>
 
