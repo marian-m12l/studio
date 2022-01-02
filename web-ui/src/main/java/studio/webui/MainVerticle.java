@@ -6,6 +6,10 @@
 
 package studio.webui;
 
+import java.awt.Desktop;
+import java.net.URI;
+import java.util.Set;
+
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
@@ -20,16 +24,16 @@ import io.vertx.ext.web.handler.ErrorHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.sockjs.BridgeOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
+import studio.core.v1.Constants;
 import studio.metadata.DatabaseMetadataService;
 import studio.webui.api.DeviceController;
 import studio.webui.api.EvergreenController;
 import studio.webui.api.LibraryController;
-import studio.webui.service.*;
+import studio.webui.service.EvergreenService;
+import studio.webui.service.IStoryTellerService;
+import studio.webui.service.LibraryService;
+import studio.webui.service.StoryTellerService;
 import studio.webui.service.mock.MockStoryTellerService;
-
-import java.awt.*;
-import java.net.URI;
-import java.util.Set;
 
 public class MainVerticle extends AbstractVerticle {
 
@@ -132,8 +136,8 @@ public class MainVerticle extends AbstractVerticle {
 
         // Handle JSON
         router.route().handler(BodyHandler.create());
-        router.route().consumes("application/json");
-        router.route().produces("application/json");
+        router.route().consumes(Constants.MIME_JSON);
+        router.route().produces(Constants.MIME_JSON);
 
 
         // Device services

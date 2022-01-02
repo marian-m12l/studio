@@ -6,7 +6,11 @@
 
 package studio.webui.api;
 
+import java.nio.file.Path;
+import java.util.List;
+
 import io.vertx.core.Vertx;
+import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
@@ -15,9 +19,6 @@ import io.vertx.ext.web.Router;
 import studio.core.v1.Constants;
 import studio.webui.service.IStoryTellerService;
 import studio.webui.service.LibraryService;
-
-import java.nio.file.Path;
-import java.util.List;
 
 public class DeviceController {
 
@@ -37,10 +38,10 @@ public class DeviceController {
                         } else {
                             maybeDeviceInfos.ifPresentOrElse(
                                     deviceInfos -> ctx.response()
-                                            .putHeader("content-type", "application/json")
+                                            .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                                             .end(Json.encode(deviceInfos.put("plugged", true))),
                                     () -> ctx.response()
-                                            .putHeader("content-type", "application/json")
+                                            .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                                             .end(Json.encode(new JsonObject().put("plugged", false)))
                             );
                         }
@@ -56,7 +57,7 @@ public class DeviceController {
                             ctx.fail(500, e);
                         } else {
                             ctx.response()
-                                    .putHeader("content-type", "application/json")
+                                    .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                                     .end(Json.encode(devicePacks));
                         }
                     });
@@ -79,7 +80,7 @@ public class DeviceController {
                                             transferId ->
                                                     // Return the transfer id, which is used to monitor transfer progress
                                                     ctx.response()
-                                                            .putHeader("content-type", "application/json")
+                                                            .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                                                             .end(Json.encode(new JsonObject().put("transferId", transferId))),
                                             () -> {
                                                 LOGGER.error("Failed to transfer pack to device");
@@ -101,7 +102,7 @@ public class DeviceController {
                         } else {
                             if (removed) {
                                 ctx.response()
-                                        .putHeader("content-type", "application/json")
+                                        .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                                         .end(Json.encode(new JsonObject().put("success", true)));
                             } else {
                                 LOGGER.error("Pack was not removed from device");
@@ -123,7 +124,7 @@ public class DeviceController {
                         } else {
                             if (reordered) {
                                 ctx.response()
-                                        .putHeader("content-type", "application/json")
+                                        .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                                         .end(Json.encode(new JsonObject().put("success", true)));
                             } else {
                                 LOGGER.error("Failed to reorder packs on device");
@@ -158,7 +159,7 @@ public class DeviceController {
                                             transferId ->
                                                     // Return the transfer id, which is used to monitor transfer progress
                                                     ctx.response()
-                                                            .putHeader("content-type", "application/json")
+                                                            .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                                                             .end(Json.encode(new JsonObject().put("transferId", transferId))),
                                             () -> {
                                                 LOGGER.error("Failed to transfer pack from device");
@@ -180,7 +181,7 @@ public class DeviceController {
                             ctx.fail(500, e);
                         } else {
                             ctx.response()
-                                    .putHeader("content-type", "application/json")
+                                    .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                                     .end(Json.encode(new JsonObject().put("success", true)));
                         }
                     });
