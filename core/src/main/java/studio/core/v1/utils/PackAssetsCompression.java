@@ -13,8 +13,6 @@ import java.util.logging.Logger;
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioSystem;
 
-import org.apache.commons.codec.digest.DigestUtils;
-
 import studio.core.v1.model.AudioAsset;
 import studio.core.v1.model.ImageAsset;
 import studio.core.v1.model.StageNode;
@@ -53,7 +51,7 @@ public class PackAssetsCompression {
             ImageAsset ia = node.getImage(); 
             if (ia != null) {
                 byte[] imageData = ia.getRawData();
-                String assetHash = DigestUtils.sha1Hex(imageData);
+                String assetHash = SecurityUtils.sha1Hex(imageData);
                 if (!assets.containsKey(assetHash)) {
                     if (ImageType.BMP.is(ia.getMimeType())) {
                         LOGGER.fine("Compressing BMP image asset into PNG");
@@ -71,7 +69,7 @@ public class PackAssetsCompression {
             AudioAsset aa = node.getAudio(); 
             if (aa != null) {
                 byte[] audioData = aa.getRawData();
-                String assetHash = DigestUtils.sha1Hex(audioData);
+                String assetHash = SecurityUtils.sha1Hex(audioData);
                 if (!assets.containsKey(assetHash)) {
                     if (AudioType.WAV.is(aa.getMimeType())) {
                         LOGGER.fine("Compressing WAV audio asset into OGG");
@@ -101,7 +99,7 @@ public class PackAssetsCompression {
             ImageAsset ia = node.getImage();
             if (ia != null) {
                 byte[] imageData = ia.getRawData();
-                String assetHash = DigestUtils.sha1Hex(imageData);
+                String assetHash = SecurityUtils.sha1Hex(imageData);
                 if (!assets.containsKey(assetHash)) {
                     // Convert from 4-bits depth / RLE encoding BMP
                     if (ImageType.BMP.is(ia.getMimeType()) && imageData[28] == 0x04 && imageData[30] == 0x02) {
@@ -126,7 +124,7 @@ public class PackAssetsCompression {
             AudioAsset aa = node.getAudio();
             if (aa != null) {
                 byte[] audioData = aa.getRawData();
-                String assetHash = DigestUtils.sha1Hex(audioData);
+                String assetHash = SecurityUtils.sha1Hex(audioData);
                 if (!assets.containsKey(assetHash)) {
                     if (AudioType.OGG.is(aa.getMimeType())) {
                         LOGGER.fine("Uncompressing OGG audio asset into WAV");
@@ -158,7 +156,7 @@ public class PackAssetsCompression {
             ImageAsset ia = node.getImage();
             if (ia != null) {
                 byte[] imageData = ia.getRawData();
-                String assetHash = DigestUtils.sha1Hex(imageData);
+                String assetHash = SecurityUtils.sha1Hex(imageData);
                 if (!assets.containsKey(assetHash)) {
                     // Convert to 4-bits depth / RLE encoding BMP
                     if (!ImageType.BMP.is(ia.getMimeType()) || imageData[28] != 0x04 || imageData[30] != 0x02) {
@@ -175,7 +173,7 @@ public class PackAssetsCompression {
             AudioAsset aa = node.getAudio();
             if (aa != null) {
                 byte[] audioData = aa.getRawData();
-                String assetHash = DigestUtils.sha1Hex(audioData);
+                String assetHash = SecurityUtils.sha1Hex(audioData);
                 if (!assets.containsKey(assetHash)) {
                     if (!AudioType.MPEG.is(aa.getMimeType()) && !AudioType.MP3.is(aa.getMimeType())) {
                         LOGGER.fine("Converting audio asset into MP3");
