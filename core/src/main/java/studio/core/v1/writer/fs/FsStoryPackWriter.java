@@ -30,9 +30,6 @@ import java.util.UUID;
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioSystem;
 
-import org.apache.commons.codec.binary.Hex;
-import org.apache.commons.codec.digest.DigestUtils;
-
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.AudioAsset;
 import studio.core.v1.model.ImageAsset;
@@ -43,6 +40,7 @@ import studio.core.v1.model.mime.AudioType;
 import studio.core.v1.model.mime.ImageType;
 import studio.core.v1.utils.AudioConversion;
 import studio.core.v1.utils.ID3Tags;
+import studio.core.v1.utils.SecurityUtils;
 import studio.core.v1.utils.XXTEACipher;
 
 /*
@@ -104,7 +102,7 @@ public class FsStoryPackWriter {
                     .map(StageNode::getImage)
                     .filter(Objects::nonNull)
                     .map(ImageAsset::getRawData)
-                    .map(DigestUtils::sha1Hex)
+                    .map(SecurityUtils::sha1Hex)
                     .distinct()
                     .count());
             // Number of sounds (in SI file and sf/ folder)
@@ -112,7 +110,7 @@ public class FsStoryPackWriter {
                     .map(StageNode::getAudio)
                     .filter(Objects::nonNull)
                     .map(AudioAsset::getRawData)
-                    .map(DigestUtils::sha1Hex)
+                    .map(SecurityUtils::sha1Hex)
                     .distinct()
                     .count());
             // Is factory pack (boolean) set to true to avoid pack inspection by official Luniistore application
@@ -132,7 +130,7 @@ public class FsStoryPackWriter {
                 ImageAsset image = node.getImage();
                 if (image != null) {
                     byte[] imageData = image.getRawData();
-                    String imageHash = DigestUtils.sha1Hex(imageData);
+                    String imageHash = SecurityUtils.sha1Hex(imageData);
                     if (!imageHashOrdered.contains(imageHash)) {
                         if (!ImageType.BMP.is(image.getMimeType())) {
                             throw new IllegalArgumentException("FS pack file requires image assets to be BMP.");
@@ -158,10 +156,10 @@ public class FsStoryPackWriter {
                 AudioAsset audio = node.getAudio();
                 // If audio is missing, add a blank audio to satisfy the device
                 if (audio == null) {
-                    audio = new AudioAsset(AudioType.MP3.getMime(), Hex.decodeHex(BLANK_MP3_FILE));
+                    audio = new AudioAsset(AudioType.MP3.getMime(), SecurityUtils.decodeHex(BLANK_MP3_FILE));
                 }
                 byte[] audioData = audio.getRawData();
-                String audioHash = DigestUtils.sha1Hex(audioData);
+                String audioHash = SecurityUtils.sha1Hex(audioData);
                 if (!audioHashOrdered.contains(audioHash)) {
                     if (!AudioType.MP3.is(audio.getMimeType()) && !AudioType.MPEG.is(audio.getMimeType())) {
                         throw new IllegalArgumentException("FS pack file requires audio assets to be MP3.");
