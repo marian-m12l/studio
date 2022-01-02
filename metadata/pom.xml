@@ -17,8 +17,6 @@
 
     <artifactId>studio-metadata</artifactId>
 
-    <packaging>jar</packaging>
-
     <dependencies>
         <dependency>
             <groupId>com.google.code.gson</groupId>
@@ -26,15 +24,9 @@
         </dependency>
     </dependencies>
 
+
     <build>
         <plugins>
-            <plugin>
-                <artifactId>maven-compiler-plugin</artifactId>
-                <configuration>
-                    <source>8</source>
-                    <target>8</target>
-                </configuration>
-            </plugin>
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>

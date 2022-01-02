@@ -55,7 +55,7 @@ public class StudioAgent {
                 // Allows resolution of advice classes
                 .with(new AgentBuilder.InjectionStrategy.UsingInstrumentation(instrumentation, temp))
                 // Transform HttpURLConnection#getInputStream to resolve unofficial metadata
-                .type(ElementMatchers.<TypeDescription>named("sun.net.www.protocol.http.HttpURLConnection"))
+                .type(ElementMatchers.<TypeDescription>named("java.net.HttpURLConnection"))
                 .transform(
                         new AgentBuilder.Transformer.ForAdvice()
                                 .include(UnofficialMetadataAdvice.class.getClassLoader())

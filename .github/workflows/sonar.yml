@@ -34,4 +34,6 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
-        run: mvn -B verify org.sonarsource.scanner.maven:sonar-maven-plugin:sonar -Dsonar.projectKey=kairoh_studio
+          MVN_SONAR: ${{ 'org.sonarsource.scanner.maven:sonar-maven-plugin' }}
+          MVN_JACOCO: ${{ 'org.jacoco:jacoco-maven-plugin:0.8.5' }}
+        run: mvn -B ${MVN_JACOCO}:prepare-agent verify ${MVN_JACOCO}:report ${MVN_SONAR}:sonar -Dmaven.test.failure.ignore=true -Dsonar.projectKey=kairoh_studio
