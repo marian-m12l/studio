@@ -16,7 +16,6 @@ import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import org.apache.commons.codec.binary.Hex;
 import org.usb4java.Device;
 
 import io.vertx.core.eventbus.EventBus;
@@ -25,6 +24,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import studio.core.v1.Constants;
+import studio.core.v1.utils.SecurityUtils;
 import studio.driver.event.DeviceHotplugEventListener;
 import studio.driver.event.TransferProgressListener;
 import studio.driver.fs.FsStoryTellerAsyncDriver;
@@ -123,7 +123,7 @@ public class StoryTellerService implements IStoryTellerService {
                                     eventBus.send("storyteller.failure", null);
                                 } else {
                                     JsonObject eventData = new JsonObject()
-                                            .put("uuid", Hex.encodeHexString(infos.getUuid()))
+                                            .put("uuid", SecurityUtils.encodeHex(infos.getUuid()))
                                             .put("serial", infos.getSerialNumber())
                                             .put("firmware", infos.getFirmwareMajor() + "." + infos.getFirmwareMinor())
                                             .put("storage", new JsonObject()
@@ -182,7 +182,7 @@ public class StoryTellerService implements IStoryTellerService {
         return fsDriver.getDeviceInfos()
                 .thenApply(infos -> Optional.of(
                         new JsonObject()
-                                .put("uuid", Hex.encodeHexString(infos.getUuid()))
+                                .put("uuid", SecurityUtils.encodeHex(infos.getUuid()))
                                 .put("serial", infos.getSerialNumber())
                                 .put("firmware", infos.getFirmwareMajor() + "." + infos.getFirmwareMinor())
                                 .put("storage", new JsonObject()

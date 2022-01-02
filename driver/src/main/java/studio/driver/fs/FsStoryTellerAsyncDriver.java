@@ -27,9 +27,9 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
 
-import org.apache.commons.codec.binary.Hex;
 import org.usb4java.Device;
 
+import studio.core.v1.utils.SecurityUtils;
 import studio.core.v1.writer.fs.FsStoryPackWriter;
 import studio.driver.DeviceVersion;
 import studio.driver.LibUsbDetectionHelper;
@@ -153,7 +153,7 @@ public class FsStoryTellerAsyncDriver {
             deviceMetadataFis.skip(238);
             byte[] uuid = deviceMetadataFis.readNBytes(256);
             infos.setUuid(uuid);
-            LOGGER.fine("UUID: " + Hex.encodeHexString(uuid));
+            LOGGER.fine("UUID: " + SecurityUtils.encodeHex(uuid));
 
             // SD card size and used space
             FileStore mdFd = Files.getFileStore(mdFile); 

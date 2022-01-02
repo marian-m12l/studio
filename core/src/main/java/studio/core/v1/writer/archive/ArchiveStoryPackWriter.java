@@ -17,8 +17,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 
-import org.apache.commons.codec.digest.DigestUtils;
-
 import com.google.gson.stream.JsonWriter;
 
 import studio.core.v1.model.ActionNode;
@@ -29,6 +27,7 @@ import studio.core.v1.model.enriched.EnrichedNodePosition;
 import studio.core.v1.model.enriched.EnrichedNodeType;
 import studio.core.v1.model.mime.AudioType;
 import studio.core.v1.model.mime.ImageType;
+import studio.core.v1.utils.SecurityUtils;
 
 public class ArchiveStoryPackWriter {
 
@@ -103,7 +102,7 @@ public class ArchiveStoryPackWriter {
             } else {
                 byte[] imageData = node.getImage().getRawData();
                 String extension = extensionFromMimeType(node.getImage().getMimeType());
-                String assetFileName = DigestUtils.sha1Hex(imageData) + extension;
+                String assetFileName = SecurityUtils.sha1Hex(imageData) + extension;
                 writer.value(assetFileName);
                 assets.putIfAbsent(assetFileName, imageData);
             }
@@ -113,7 +112,7 @@ public class ArchiveStoryPackWriter {
             } else {
                 byte[] audioData = node.getAudio().getRawData();
                 String extension = extensionFromMimeType(node.getAudio().getMimeType());
-                String assetFileName = DigestUtils.sha1Hex(audioData) + extension;
+                String assetFileName = SecurityUtils.sha1Hex(audioData) + extension;
                 writer.value(assetFileName);
                 assets.putIfAbsent(assetFileName, audioData);
             }

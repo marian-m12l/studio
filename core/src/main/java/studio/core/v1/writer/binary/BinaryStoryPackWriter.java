@@ -13,8 +13,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 
-import org.apache.commons.codec.digest.DigestUtils;
-
 import studio.core.v1.Constants;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.AssetType;
@@ -30,6 +28,7 @@ import studio.core.v1.model.mime.AudioType;
 import studio.core.v1.model.mime.ImageType;
 import studio.core.v1.reader.binary.AssetAddr;
 import studio.core.v1.reader.binary.SectorAddr;
+import studio.core.v1.utils.SecurityUtils;
 
 public class BinaryStoryPackWriter {
 
@@ -69,7 +68,7 @@ public class BinaryStoryPackWriter {
             ImageAsset image = stageNode.getImage();
             if (image != null) {
                 byte[] imageData = image.getRawData();
-                String assetHash = DigestUtils.sha1Hex(imageData);
+                String assetHash = SecurityUtils.sha1Hex(imageData);
                 if (!assetsHashes.containsKey(assetHash)) {
                     if (!ImageType.BMP.is(image.getMimeType())) {
                         throw new IllegalArgumentException("Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
@@ -90,7 +89,7 @@ public class BinaryStoryPackWriter {
             AudioAsset audio = stageNode.getAudio();
             if (audio != null) {
                 byte[] audioData = audio.getRawData();
-                String assetHash = DigestUtils.sha1Hex(audioData);
+                String assetHash = SecurityUtils.sha1Hex(audioData);
                 if (!assetsHashes.containsKey(assetHash)) {
                     if (!AudioType.WAV.is(audio.getMimeType())) {
                         throw new IllegalArgumentException("Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
@@ -121,7 +120,7 @@ public class BinaryStoryPackWriter {
                 dos.writeInt(-1);
                 dos.writeInt(-1);
             } else {
-                String assetHash = DigestUtils.sha1Hex(image.getRawData());
+                String assetHash = SecurityUtils.sha1Hex(image.getRawData());
                 AssetAddr assetAddr = assetsHashes.get(assetHash);
                 dos.writeInt(assetAddr.getOffset());
                 dos.writeInt(assetAddr.getSize());
@@ -133,7 +132,7 @@ public class BinaryStoryPackWriter {
                 dos.writeInt(-1);
                 dos.writeInt(-1);
             } else {
-                String assetHash = DigestUtils.sha1Hex(audio.getRawData());
+                String assetHash = SecurityUtils.sha1Hex(audio.getRawData());
                 AssetAddr assetAddr = assetsHashes.get(assetHash);
                 dos.writeInt(assetAddr.getOffset());
                 dos.writeInt(assetAddr.getSize());

@@ -6,7 +6,7 @@
 
 package studio.driver.model.fs;
 
-import org.apache.commons.codec.binary.Hex;
+import studio.core.v1.utils.SecurityUtils;
 
 public class FsDeviceInfos {
 
@@ -79,7 +79,7 @@ public class FsDeviceInfos {
     @Override
     public String toString() {
         return "FsDeviceInfos{" +
-                "uuid=" + Hex.encodeHexString(uuid) +
+                "uuid=" + SecurityUtils.encodeHex(uuid) +
                 ", firmwareMajor=" + firmwareMajor +
                 ", firmwareMinor=" + firmwareMinor +
                 ", serialNumber='" + serialNumber + '\'' +
