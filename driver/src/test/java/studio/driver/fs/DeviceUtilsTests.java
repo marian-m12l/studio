@@ -48,11 +48,13 @@ class DeviceUtilsTests {
         final Process p = new ProcessBuilder("df", "-l").start();
         final Pattern dfPattern = Pattern.compile("^(\\/[^ ]+)[^/]+(/.*)$");
 
+        System.out.println("df -l");
         return new BufferedReader(new InputStreamReader(p.getInputStream()))//
                 .lines() //
+                .peek(System.out::println) // Debug
                 .map(dfPattern::matcher) //
                 .filter(Matcher::matches) //
-                .filter(m -> m.group(1).startsWith("/dev/")) //
+                .filter(m -> m.group(1).startsWith("/dev/s")) // Mounted devices only (without Fuse, Loopback...)
                 .map(m -> Path.of(m.group(2))) //
                 .collect(Collectors.toList());
     }
