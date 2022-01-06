@@ -6,6 +6,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -20,6 +23,7 @@ import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 import studio.core.v1.model.enriched.EnrichedNodeType;
 import studio.core.v1.model.enriched.EnrichedPackMetadata;
 import studio.core.v1.model.metadata.StoryPackMetadata;
+import studio.core.v1.utils.AudioConversion;
 import studio.core.v1.writer.archive.ArchiveStoryPackWriter;
 
 public class ArchiveStoryPackReaderTest {
@@ -65,7 +69,7 @@ public class ArchiveStoryPackReaderTest {
     }
 
     @Test
-    void readWriteStoryPack() throws IOException, URISyntaxException {
+    void readWriteStoryPack() throws Exception {
         Path zipPath = classpathResource(zipName);
         System.out.println("zipPath: " + zipPath);
 
@@ -131,18 +135,17 @@ public class ArchiveStoryPackReaderTest {
                 assertAll("StageNode-" + i + "-Enriched", //
                         () -> assertEquals(en1.getType(), en2.getType(), "type"),
                         () -> assertEquals(en1.getGroupId(), en2.getGroupId(), "groupid"),
-                        () -> assertEquals(en1.getName(), en2.getName(), "name")
-                );
+                        () -> assertEquals(en1.getName(), en2.getName(), "name"));
             }
         }
 
         // ------------------
         // write
-
         long tt1 = System.currentTimeMillis();
         writer.write(spExpected, zipPath.resolveSibling("output-SimplifiedSamplePack.zip"));
         long tt2 = System.currentTimeMillis();
 
         System.out.printf("writeStoryPack (%s ms)\n", tt2 - tt1);
     }
+
 }
