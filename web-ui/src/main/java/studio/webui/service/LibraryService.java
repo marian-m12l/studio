@@ -7,8 +7,6 @@
 package studio.webui.service;
 
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -188,9 +186,7 @@ public class LibraryService {
 
             Path tmp = createTempFile(packFile, ".pack");
             LOGGER.info("Writing " + outputFormat + " format pack, using temporary file: " + tmp);
-            try(OutputStream os = Files.newOutputStream(tmp)) {
-                new BinaryStoryPackWriter().write(uncompressedPack, os, allowEnriched);
-            }
+            new BinaryStoryPackWriter().write(uncompressedPack, tmp, allowEnriched);
 
             String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis() + ".pack";
             Path destinationPath = libraryPath.resolve(destinationFileName);
@@ -219,9 +215,7 @@ public class LibraryService {
             Path packPath = libraryPath.resolve(packFile);
             LOGGER.info("Reading " + inputFormat + " format pack");
             if (packFile.endsWith(".pack")) {
-                try(InputStream is = Files.newInputStream(packPath)) {
-                    storyPack = new BinaryStoryPackReader().read(is);
-                }
+                storyPack = new BinaryStoryPackReader().read(packPath);
                 // Compress pack assets
                 LOGGER.info("Compressing pack assets");
                 storyPack = PackAssetsCompression.withCompressedAssets(storyPack);
@@ -232,7 +226,7 @@ public class LibraryService {
 
             Path tmp = createTempFile(packFile, ".zip");
             LOGGER.info("Writing " + outputFormat + " format pack, using temporary file: " + tmp);
-            new ArchiveStoryPackWriter().write(storyPack, tmp);
+            new ArchiveStoryPackWriter().write(storyPack, tmp, true);
 
             String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis() + ".zip";
             Path destinationPath = libraryPath.resolve(destinationFileName);
@@ -263,9 +257,7 @@ public class LibraryService {
             if (packFile.endsWith(".zip")) {
                storyPack = new ArchiveStoryPackReader().read(packPath);
             } else {
-                try(InputStream is = Files.newInputStream(packPath)) {
-                    storyPack = new BinaryStoryPackReader().read(is);
-                }
+               storyPack = new BinaryStoryPackReader().read(packPath);
             }
             // Prepare assets (RLE-encoded BMP, audio must already be MP3)
             LOGGER.info("Converting assets if necessary");
@@ -274,7 +266,8 @@ public class LibraryService {
             Path tmp = createTempDirectory(packFile);
             LOGGER.info("Writing " + outputFormat + " format pack, using temporary folder: " + tmp);
             // should we not keep uuid instead ?
-            Path tmpPath = new FsStoryPackWriter().write(storyPack, tmp);
+            Path tmpPath = FsStoryPackWriter.createPackFolder(storyPack, tmp);
+            new FsStoryPackWriter().write(storyPack, tmpPath, true);
 
             String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis();
             Path destinationPath = libraryPath.resolve(destinationFileName);
@@ -356,9 +349,9 @@ public class LibraryService {
                 LOGGER.error("Failed to read archive-format pack " + path + " from local library", e);
             }
         } else if (path.toString().endsWith(".pack")) {
-            try (InputStream is = Files.newInputStream(path)) {
+            try {
                 LOGGER.debug("Reading raw pack metadata.");
-                StoryPackMetadata meta = new BinaryStoryPackReader().readMetadata(is);
+                StoryPackMetadata meta = new BinaryStoryPackReader().readMetadata(path);
                 if (meta != null) {
                     meta.setSectorSize((int)Math.ceil(Files.size(path) / 512d));
                     return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
@@ -374,7 +367,7 @@ public class LibraryService {
                     meta.setSectorSize((int)Math.ceil(Files.size(path) / 512d));
                     return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
                 }
-            } catch (Exception e) {
+            } catch (IOException e) {
                 LOGGER.error("Failed to read FS format pack " + path + " from local library", e);
             }
         }

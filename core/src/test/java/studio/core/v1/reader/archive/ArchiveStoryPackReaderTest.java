@@ -6,9 +6,6 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
-import java.nio.file.FileSystem;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -23,7 +20,6 @@ import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 import studio.core.v1.model.enriched.EnrichedNodeType;
 import studio.core.v1.model.enriched.EnrichedPackMetadata;
 import studio.core.v1.model.metadata.StoryPackMetadata;
-import studio.core.v1.utils.AudioConversion;
 import studio.core.v1.writer.archive.ArchiveStoryPackWriter;
 
 public class ArchiveStoryPackReaderTest {
@@ -142,7 +138,8 @@ public class ArchiveStoryPackReaderTest {
         // ------------------
         // write
         long tt1 = System.currentTimeMillis();
-        writer.write(spExpected, zipPath.resolveSibling("output-SimplifiedSamplePack.zip"));
+        Path zip = zipPath.resolveSibling("output-SimplifiedSamplePack.zip");
+        writer.write(spExpected, zip, true);
         long tt2 = System.currentTimeMillis();
 
         System.out.printf("writeStoryPack (%s ms)\n", tt2 - tt1);

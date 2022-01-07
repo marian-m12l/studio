@@ -40,8 +40,9 @@ import studio.core.v1.model.enriched.EnrichedPackMetadata;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.model.mime.AudioType;
 import studio.core.v1.model.mime.ImageType;
+import studio.core.v1.reader.StoryPackReader;
 
-public class ArchiveStoryPackReader {
+public class ArchiveStoryPackReader implements StoryPackReader {
 
     public StoryPackMetadata readMetadata(Path zipPath) throws IOException {
         // Zip archive contains a json file and separate assets
