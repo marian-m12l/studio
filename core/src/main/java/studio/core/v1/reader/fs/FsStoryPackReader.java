@@ -33,9 +33,10 @@ import studio.core.v1.model.Transition;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.model.mime.AudioType;
 import studio.core.v1.model.mime.ImageType;
+import studio.core.v1.reader.StoryPackReader;
 import studio.core.v1.utils.XXTEACipher;
 
-public class FsStoryPackReader {
+public class FsStoryPackReader implements StoryPackReader {
 
     private static final String NODE_INDEX_FILENAME = "ni";
     private static final String LIST_INDEX_FILENAME = "li";
@@ -51,7 +52,7 @@ public class FsStoryPackReader {
 
         // Open 'ni' file
         Path niPath = inputFolder.resolve(NODE_INDEX_FILENAME);
-        try(DataInputStream niDis = new DataInputStream(Files.newInputStream(niPath, StandardOpenOption.READ)) ) {
+        try(DataInputStream niDis = new DataInputStream(Files.newInputStream(niPath, StandardOpenOption.READ))) {
             ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
             metadata.setVersion(bb.getShort(2));
         }
