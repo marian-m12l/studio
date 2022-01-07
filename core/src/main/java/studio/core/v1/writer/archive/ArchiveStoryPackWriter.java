@@ -28,10 +28,11 @@ import studio.core.v1.model.enriched.EnrichedNodeType;
 import studio.core.v1.model.mime.AudioType;
 import studio.core.v1.model.mime.ImageType;
 import studio.core.v1.utils.SecurityUtils;
+import studio.core.v1.writer.StoryPackWriter;
 
-public class ArchiveStoryPackWriter {
+public class ArchiveStoryPackWriter implements StoryPackWriter {
 
-    public void write(StoryPack pack, Path zipPath) throws IOException {
+    public void write(StoryPack pack, Path zipPath, boolean enriched) throws IOException {
         // Zip archive contains a json file and separate assets
         URI uri = URI.create("jar:file:" + zipPath.toString());
         try (FileSystem zipFs = FileSystems.newFileSystem(uri, Map.of("create", "true"))) {

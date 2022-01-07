@@ -29,6 +29,7 @@ import java.util.UUID;
 
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.UnsupportedAudioFileException;
 
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.AudioAsset;
@@ -42,6 +43,7 @@ import studio.core.v1.utils.AudioConversion;
 import studio.core.v1.utils.ID3Tags;
 import studio.core.v1.utils.SecurityUtils;
 import studio.core.v1.utils.XXTEACipher;
+import studio.core.v1.writer.StoryPackWriter;
 
 /*
 Writer for the new binary format coming with firmware 2.4
@@ -49,7 +51,7 @@ Assets must be prepared to match the expected format : 4-bits depth / RLE encodi
 The first 512 bytes of most files are scrambled with a common key, provided in an external file. The bt file uses a
 device-specific key.
  */
-public class FsStoryPackWriter {
+public class FsStoryPackWriter implements StoryPackWriter {
 
     private static final String NODE_INDEX_FILENAME = "ni";
     private static final String LIST_INDEX_FILENAME = "li";
@@ -64,11 +66,7 @@ public class FsStoryPackWriter {
 
     // TODO Enriched metadata in a dedicated file (pack's title, description and thumbnail, nodes' name, group, type and position)
 
-    public Path write(StoryPack pack, Path outputFolder) throws Exception {
-        // Create pack folder: last 8 digits of uuid
-        Path packFolder = outputFolder.resolve(transformUuid(UUID.fromString(pack.getUuid())));
-        Files.createDirectories(packFolder); 
-
+    public void write(StoryPack pack, Path packFolder, boolean enriched) throws IOException {
         // Write night mode
         if (pack.isNightModeAvailable()) {
             Files.createFile(packFolder.resolve(NIGHT_MODE_FILENAME));
@@ -169,10 +167,14 @@ public class FsStoryPackWriter {
                             throw new IllegalArgumentException("FS pack file does not support ID3 tags in MP3 files.");
                         }
                         // Check that the file is MONO / 44100Hz
-                        AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat(new ByteArrayInputStream(audioData));
-                        if (audioFileFormat.getFormat().getChannels() != AudioConversion.CHANNELS
-                                || audioFileFormat.getFormat().getSampleRate() != AudioConversion.MP3_SAMPLE_RATE) {
-                            throw new IllegalArgumentException("FS pack file requires MP3 audio assets to be MONO / 44100Hz.");
+                        try {
+                            AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat(new ByteArrayInputStream(audioData));
+                            if (audioFileFormat.getFormat().getChannels() != AudioConversion.CHANNELS
+                                    || audioFileFormat.getFormat().getSampleRate() != AudioConversion.MP3_SAMPLE_RATE) {
+                                throw new IllegalArgumentException("FS pack file requires MP3 audio assets to be MONO / 44100Hz.");
+                            }
+                        } catch (UnsupportedAudioFileException e) {
+                            throw new IllegalArgumentException("Unsupported Audio File",e);
                         }
                     }
                     audioIndex = audioHashOrdered.size();
@@ -261,8 +263,6 @@ public class FsStoryPackWriter {
             }
             writeCypheredFile(siPath, siBaos.toByteArray());
         }
-
-        return packFolder;
     }
 
     private void writeCypheredFile(Path path, byte[] byteArray) throws IOException {
@@ -286,6 +286,12 @@ public class FsStoryPackWriter {
             // Add boot file: bt
             Files.write(btPath, btCiphered, StandardOpenOption.TRUNCATE_EXISTING);
         }
+    }
+    
+    // Create pack folder: last 8 digits of uuid
+    public static Path createPackFolder(StoryPack storyPack, Path tmp) throws IOException {
+        Path packFolder = tmp.resolve(transformUuid(UUID.fromString(storyPack.getUuid())));
+        return Files.createDirectories(packFolder);
     }
 
     private static String transformUuid(UUID uuid) {

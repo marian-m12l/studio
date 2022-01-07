@@ -121,10 +121,10 @@ public class MockStoryTellerService implements IStoryTellerService {
         LOGGER.debug("Reading pack file: " + path.toString());
         // Handle only binary file format
         if (path.toString().endsWith(".pack")) {
-            try (InputStream is = Files.newInputStream(path)) {
+            try {
                 LOGGER.debug("Reading binary pack metadata.");
                 BinaryStoryPackReader packReader = new BinaryStoryPackReader();
-                Optional<StoryPackMetadata> metadata = Optional.of(packReader.readMetadata(is));
+                Optional<StoryPackMetadata> metadata = Optional.of(packReader.readMetadata(path));
                 metadata.map(meta -> {
                     int packSectorSize = (int)Math.ceil((double)path.toFile().length() / 512d);
                     meta.setSectorSize(packSectorSize);

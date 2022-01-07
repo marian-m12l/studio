@@ -8,8 +8,10 @@ package studio.core.v1.reader.binary;
 
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -35,11 +37,12 @@ import studio.core.v1.model.enriched.EnrichedPackMetadata;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.model.mime.AudioType;
 import studio.core.v1.model.mime.ImageType;
+import studio.core.v1.reader.StoryPackReader;
 
-public class BinaryStoryPackReader {
+public class BinaryStoryPackReader implements StoryPackReader {
 
-    public StoryPackMetadata readMetadata(InputStream inputStream) throws IOException {
-        try(DataInputStream dis = new DataInputStream(inputStream)){
+    public StoryPackMetadata readMetadata(Path path) throws IOException {
+        try(DataInputStream dis = new DataInputStream(Files.newInputStream(path, StandardOpenOption.READ))){
             // Pack metadata model
             StoryPackMetadata metadata = new StoryPackMetadata(Constants.PACK_FORMAT_RAW);
 
@@ -69,8 +72,8 @@ public class BinaryStoryPackReader {
         }
     }
 
-    public StoryPack read(InputStream inputStream) throws IOException {
-        try(DataInputStream dis = new DataInputStream(inputStream)) {
+    public StoryPack read(Path path) throws IOException {
+        try(DataInputStream dis = new DataInputStream(Files.newInputStream(path, StandardOpenOption.READ))) {
 
             // Read sector 1
             short stages = dis.readShort();
