@@ -36,12 +36,11 @@ public class DatabaseMetadataService {
     private static final Logger LOGGER = Logger.getLogger(DatabaseMetadataService.class.getName());
 
     public static final String OFFICIAL_DB_PROP = "studio.db.official";
-    public static final String OFFICIAL_DB_JSON_PATH = "/.studio/db/official.json";
+    public static final String UNOFFICIAL_DB_PROP = "studio.db.unofficial";
+
     public static final String THUMBNAILS_STORAGE_ROOT = "https://storage.googleapis.com/lunii-data-prod";
     public static final String LUNII_GUEST_TOKEN_URL = "https://server-auth-prod.lunii.com/guest/create";
     public static final String LUNII_PACKS_DATABASE_URL = "https://server-data-prod.lunii.com/v2/packs";
-    public static final String UNOFFICIAL_DB_PROP = "studio.db.unofficial";
-    public static final String UNOFFICIAL_DB_JSON_PATH = "/.studio/db/unofficial.json";
 
     private final Map<String, JsonObject> cachedOfficialDatabase;
 
@@ -283,11 +282,13 @@ public class DatabaseMetadataService {
     }
 
     public static Path officialDbPath() {
-        return Path.of(System.getProperty(OFFICIAL_DB_PROP, System.getProperty("user.home") + OFFICIAL_DB_JSON_PATH));
+        String defaultDir = System.getProperty("user.home") + "/.studio/db/official.json";
+        return Path.of(System.getProperty(OFFICIAL_DB_PROP, defaultDir));
     }
 
     public static Path unofficialDbPath() {
-        return Path.of(System.getProperty(UNOFFICIAL_DB_PROP, System.getProperty("user.home") + UNOFFICIAL_DB_JSON_PATH));
+        String defaultDir = System.getProperty("user.home") + "/.studio/db/unofficial.json";
+        return Path.of(System.getProperty(UNOFFICIAL_DB_PROP, defaultDir));
     }
 
 }

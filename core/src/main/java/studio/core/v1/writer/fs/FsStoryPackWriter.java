@@ -284,7 +284,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
             // device-specific key into 'bt' file
             byte[] btCiphered = cipher(CipherMode.CIPHER, riCipheredBlock, cypherBlockSize, specificKey);
             // Add boot file: bt
-            Files.write(btPath, btCiphered, StandardOpenOption.TRUNCATE_EXISTING);
+            Files.write(btPath, btCiphered);
         }
     }
     
