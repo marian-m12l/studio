@@ -27,6 +27,7 @@ import studio.core.v1.Constants;
 import studio.core.v1.utils.SecurityUtils;
 import studio.driver.event.DeviceHotplugEventListener;
 import studio.driver.event.TransferProgressListener;
+import studio.driver.fs.FileUtils;
 import studio.driver.fs.FsStoryTellerAsyncDriver;
 import studio.driver.model.TransferStatus;
 import studio.driver.model.fs.FsStoryPackInfos;
@@ -249,8 +250,9 @@ public class StoryTellerService implements IStoryTellerService {
                         String transferId = UUID.randomUUID().toString();
                         try {
                             // Create stream on file
-                            LOGGER.info("Transferring pack to device: " + Files.size(packFile) + " bytes");
-                            int fileSizeInSectors = (int) (Files.size(packFile) / LibUsbMassStorageHelper.SECTOR_SIZE);
+                            long packSize = Files.size(packFile);
+                            LOGGER.info("Transferring pack to device: " + FileUtils.readableByteSize(packSize));
+                            int fileSizeInSectors = (int) (packSize / LibUsbMassStorageHelper.SECTOR_SIZE);
 
                             LOGGER.info("Transferring pack to device: " + fileSizeInSectors + " sectors");
                             try(InputStream is = Files.newInputStream(packFile) ){
