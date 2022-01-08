@@ -15,6 +15,14 @@ import java.util.stream.Stream;
 
 public class FileUtils {
 
+    public static void deleteDirectory(Path path) throws IOException {
+        try (Stream<Path> paths = Files.walk(path)) {
+            paths.sorted(Comparator.reverseOrder()) //
+                    .map(Path::toFile) //
+                    .forEach(File::delete);
+        }
+    }
+
     public static long getFolderSize(Path path) throws IOException {
         try (Stream<Path> paths = Files.walk(path)) {
             return paths.map(Path::toFile) //
@@ -29,12 +37,22 @@ public class FileUtils {
         return Files.size(path);
     }
 
-    public static void deleteDirectory(Path path) throws IOException {
-        try (Stream<Path> paths = Files.walk(path)) {
-            paths.sorted(Comparator.reverseOrder()) //
-                    .map(Path::toFile) //
-                    .forEach(File::delete);
+    /**
+     * Return human readable file size. This function is limited to exabyte.
+     * 
+     * @param size
+     * @return a human-readable display value (includes units - EB, PB, TB, GB, MB,
+     *         KB or bytes).
+     */
+    public static String readableByteSize(long byteSize) {
+        if (byteSize < 1024) {
+            return byteSize + " bytes";
         }
+        int exp = (int) (Math.log10(byteSize) / Math.log10(1024d));
+        double conv = byteSize / Math.pow(1024d, exp);
+        double trunc = Math.round(conv * 100d) / 100d;
+        char unit = "KMGTPE".charAt(exp - 1);
+        return "" + trunc + " " + unit + "B";
     }
 
 }

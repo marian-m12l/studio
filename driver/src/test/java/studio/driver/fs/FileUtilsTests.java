@@ -14,10 +14,10 @@ class FileUtilsTests {
     @TempDir
     Path tmp;
 
-    private static String CONTENT = "Hello World";
+    private static final String CONTENT = "Hello World";
 
     @Test
-    void testFileSize() throws IOException {
+    void fileSize() throws IOException {
         Path f1 = addFile(tmp, "f1.txt");
         long fileSize = FileUtils.getFileSize(f1);
         System.out.printf("File size %s : %s bytes \n", f1, fileSize);
@@ -25,7 +25,16 @@ class FileUtilsTests {
     }
 
     @Test
-    void testFolderSize() throws IOException {
+    void readableByteSize() {
+        assertReadableByteSize("11 bytes", 11);
+        assertReadableByteSize("1.0 KB", 1024);
+        assertReadableByteSize("4.0 KB", 4096);
+        assertReadableByteSize("976.56 KB", 1_000_000);
+        assertReadableByteSize("3.81 MB", 4_000_000);
+    }
+
+    @Test
+    void folderSize() throws IOException {
         // empty
         assertFolderSize(tmp, 0);
         // add empty folders
@@ -59,4 +68,10 @@ class FileUtilsTests {
         System.out.printf("Dir size %s : %s bytes \n", dir, folderSize);
         assertEquals(expectedSize, folderSize, "Different directory size");
     }
+
+    void assertReadableByteSize(String expected, long fileSize) {
+        String s = FileUtils.readableByteSize(fileSize);
+        assertEquals(expected, s, "Different file size string");
+    }
+
 }
