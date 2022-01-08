@@ -22,7 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import java.util.stream.Stream;
@@ -453,9 +453,9 @@ public class FsStoryTellerAsyncDriver {
     private TransferStatus copyPackFolder(Path sourceFolder, Path destFolder, TransferProgressListener listener) throws IOException {
         // Keep track of transferred bytes and elapsed time
         final long startTime = System.currentTimeMillis();
-        AtomicInteger transferred = new AtomicInteger(0);
-        int folderSize = (int) FileUtils.getFolderSize(sourceFolder);
-        LOGGER.finest("Pack folder size: " + folderSize);
+        AtomicLong transferred = new AtomicLong(0);
+        long folderSize = FileUtils.getFolderSize(sourceFolder);
+        LOGGER.finest("Pack folder size: " + FileUtils.readableByteSize(folderSize));
         // Copy folders and files
         try(Stream<Path> paths = Files.walk(sourceFolder)) {
             paths.forEach(s -> {
@@ -467,15 +467,15 @@ public class FsStoryTellerAsyncDriver {
                                 Files.createDirectory(d);
                             }
                         } else {
-                            int fileSize = (int) FileUtils.getFileSize(s);
-                            LOGGER.finer("Copying file " + s + " to " + d + " (" + fileSize + " bytes)");
+                            long fileSize = FileUtils.getFileSize(s);
+                            LOGGER.finer("Copying file " + s + " to " + d + " (" + FileUtils.readableByteSize(fileSize) + ")");
                             Files.copy(s, d);
 
                             // Compute progress and speed
-                            int xferred = transferred.addAndGet(fileSize);
+                            long xferred = transferred.addAndGet(fileSize);
                             long elapsed = System.currentTimeMillis() - startTime;
                             double speed = xferred / (elapsed / 1000.0);
-                            LOGGER.finer("Transferred " + xferred + " bytes in " + elapsed + " ms");
+                            LOGGER.finer("Transferred " + FileUtils.readableByteSize(xferred) + " in " + elapsed + " ms");
                             LOGGER.finer("Average speed = " + speed + " bytes/sec");
                             TransferStatus status = new TransferStatus(xferred == folderSize, xferred, folderSize, speed);
 

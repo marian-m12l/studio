@@ -9,14 +9,14 @@ package studio.driver.model;
 public class TransferStatus {
 
     private boolean done;
-    private int transferred;
-    private int total;
+    private long transferred;
+    private long total;
     private double speed;
 
     public TransferStatus() {
     }
 
-    public TransferStatus(boolean done, int transferred, int total, double speed) {
+    public TransferStatus(boolean done, long transferred, long total, double speed) {
         this.done = done;
         this.transferred = transferred;
         this.total = total;
@@ -31,19 +31,19 @@ public class TransferStatus {
         this.done = done;
     }
 
-    public int getTransferred() {
+    public long getTransferred() {
         return transferred;
     }
 
-    public void setTransferred(int transferred) {
+    public void setTransferred(long transferred) {
         this.transferred = transferred;
     }
 
-    public int getTotal() {
+    public long getTotal() {
         return total;
     }
 
-    public void setTotal(int total) {
+    public void setTotal(long total) {
         this.total = total;
     }
 
