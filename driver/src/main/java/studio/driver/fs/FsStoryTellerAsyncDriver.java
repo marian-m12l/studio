@@ -116,7 +116,7 @@ public class FsStoryTellerAsyncDriver {
 
     public CompletableFuture<FsDeviceInfos> getDeviceInfos() {
         if (this.device == null || this.partitionMountPoint == null) {
-            return CompletableFuture.failedFuture(new StoryTellerException("No device plugged"));
+            return CompletableFuture.failedFuture(noDevicePluggedException());
         }
         FsDeviceInfos infos = new FsDeviceInfos();
         Path mdFile = this.partitionMountPoint.resolve(DEVICE_METADATA_FILENAME);
@@ -189,7 +189,7 @@ public class FsStoryTellerAsyncDriver {
 
     public CompletableFuture<List<FsStoryPackInfos>> getPacksList() {
         if (this.device == null || this.partitionMountPoint == null) {
-            return CompletableFuture.failedFuture(new StoryTellerException("No device plugged"));
+            return CompletableFuture.failedFuture(noDevicePluggedException());
         }
 
         return readPackIndex()
@@ -255,7 +255,7 @@ public class FsStoryTellerAsyncDriver {
 
     public CompletableFuture<Boolean> reorderPacks(List<String> uuids) {
         if (this.device == null || this.partitionMountPoint == null) {
-            return CompletableFuture.failedFuture(new StoryTellerException("No device plugged"));
+            return CompletableFuture.failedFuture(noDevicePluggedException());
         }
 
         return readPackIndex()
@@ -278,7 +278,7 @@ public class FsStoryTellerAsyncDriver {
 
     public CompletableFuture<Boolean> deletePack(String uuid) {
         if (this.device == null || this.partitionMountPoint == null) {
-            return CompletableFuture.failedFuture(new StoryTellerException("No device plugged"));
+            return CompletableFuture.failedFuture(noDevicePluggedException());
         }
 
         return readPackIndex()
@@ -342,7 +342,7 @@ public class FsStoryTellerAsyncDriver {
 
     public CompletableFuture<TransferStatus> downloadPack(String uuid, String outputPath, TransferProgressListener listener) {
         if (this.device == null || this.partitionMountPoint == null) {
-            return CompletableFuture.failedFuture(new StoryTellerException("No device plugged"));
+            return CompletableFuture.failedFuture(noDevicePluggedException());
         }
         return readPackIndex()
                 .thenCompose(packUUIDs -> CompletableFuture.supplyAsync(() -> {
@@ -375,7 +375,7 @@ public class FsStoryTellerAsyncDriver {
 
     public CompletableFuture<TransferStatus> uploadPack(String uuid, Path inputPath, TransferProgressListener listener) {
         if (this.device == null || this.partitionMountPoint == null) {
-            return CompletableFuture.failedFuture(new StoryTellerException("No device plugged"));
+            return CompletableFuture.failedFuture(noDevicePluggedException());
         }
 
         try {
@@ -474,7 +474,7 @@ public class FsStoryTellerAsyncDriver {
                             // Compute progress and speed
                             int xferred = transferred.addAndGet(fileSize);
                             long elapsed = System.currentTimeMillis() - startTime;
-                            double speed = ((double) xferred) / ((double) elapsed / 1000.0);
+                            double speed = xferred / (elapsed / 1000.0);
                             LOGGER.finer("Transferred " + xferred + " bytes in " + elapsed + " ms");
                             LOGGER.finer("Average speed = " + speed + " bytes/sec");
                             TransferStatus status = new TransferStatus(xferred == folderSize, xferred, folderSize, speed);
@@ -498,5 +498,9 @@ public class FsStoryTellerAsyncDriver {
     public String computePackFolderName(String uuid) {
         String uuidStr = uuid.replaceAll("-", "");
         return uuidStr.substring(uuidStr.length() - 8).toUpperCase();
+    }
+
+    private StoryTellerException noDevicePluggedException() {
+        return new StoryTellerException("No device plugged");
     }
 }
