@@ -7,6 +7,7 @@
 <assembly>
 
     <id>dist</id>
+
     <formats>
         <format>zip</format>
     </formats>
@@ -38,14 +39,15 @@
             </includes>
         </fileSet>
         <fileSet>
-            <directory>${project.build.directory}</directory>
+            <directory>${project.build.scriptSourceDirectory}</directory>
             <outputDirectory></outputDirectory>
+            <filtered>true</filtered>
+            <fileMode>0755</fileMode>
             <includes>
                 <include>studio-linux.sh</include>
                 <include>studio-macos.sh</include>
                 <include>studio-windows.bat</include>
             </includes>
-            <fileMode>0755</fileMode>
         </fileSet>
     </fileSets>
 

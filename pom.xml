@@ -28,12 +28,12 @@
         <!-- General -->
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <project.java.version>11</project.java.version>
-        <maven.compiler.release>${project.java.version}</maven.compiler.release>
-        <maven.compiler.source>${project.java.version}</maven.compiler.source>
-        <maven.compiler.target>${project.java.version}</maven.compiler.target>
+        <java.version>11</java.version>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
         <!-- Maven plugins -->
-        <surefire.version>2.22.2</surefire.version>
+        <mvn.compiler.version>3.8.1</mvn.compiler.version>
+        <mvn.surefire.version>2.22.2</mvn.surefire.version>
+        <mvn.assembly.version>3.3.0</mvn.assembly.version>
         <!-- Devops -->
         <sonar.organization>ofayau</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
@@ -70,16 +70,23 @@
         </dependencies>
    </dependencyManagement>
 
-<build>
-    <pluginManagement>
-        <plugins>
+   <build>
+      <pluginManagement>
+         <plugins>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-surefire-plugin</artifactId>
-                <version>${surefire.version}</version>
+               <artifactId>maven-compiler-plugin</artifactId>
+               <version>${mvn.compiler.version}</version>
             </plugin>
-        </plugins>
-    </pluginManagement>
-</build>
+            <plugin>
+               <artifactId>maven-surefire-plugin</artifactId>
+               <version>${mvn.surefire.version}</version>
+            </plugin>
+            <plugin>
+               <artifactId>maven-assembly-plugin</artifactId>
+               <version>${mvn.assembly.version}</version>
+            </plugin>
+         </plugins>
+      </pluginManagement>
+   </build>
 
 </project>
