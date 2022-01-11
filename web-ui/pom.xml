@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+ <?xml version="1.0" encoding="UTF-8"?>
 <!--
   ~ This Source Code Form is subject to the terms of the Mozilla Public
   ~ License, v. 2.0. If a copy of the MPL was not distributed with this
@@ -21,7 +21,7 @@
         <frontend-src-dir>${project.basedir}/javascript</frontend-src-dir>
         <node.version>v12.3.1</node.version>
         <yarn.version>v1.16.0</yarn.version>
-        <frontend-maven-plugin.version>1.7.6</frontend-maven-plugin.version>
+        <frontend-maven-plugin.version>1.12.1</frontend-maven-plugin.version>
         <vertx.version>3.9.0</vertx.version>
         <vertx.main.verticle>studio.webui.MainVerticle</vertx.main.verticle>
     </properties>
@@ -81,27 +81,10 @@
     </dependencies>
 
     <build>
+
         <resources>
-            <!-- regular resource processing for everything except scripts -->
             <resource>
                 <directory>src/main/resources</directory>
-                <excludes>
-                    <exclude>studio-linux.sh</exclude>
-                    <exclude>studio-macos.sh</exclude>
-                    <exclude>studio-windows.bat</exclude>
-                </excludes>
-                <filtering>true</filtering>
-            </resource>
-            <!-- resource processing with a different output directory for scripts -->
-            <resource>
-                <directory>src/main/resources</directory>
-                <includes>
-                    <include>studio-linux.sh</include>
-                    <include>studio-macos.sh</include>
-                    <include>studio-windows.bat</include>
-                </includes>
-                <!-- relative to target/classes -->
-                <targetPath>..</targetPath>
                 <filtering>true</filtering>
             </resource>
         </resources>
@@ -132,9 +115,6 @@
                         <goals>
                             <goal>yarn</goal>
                         </goals>
-                        <configuration>
-                            <arguments>install</arguments>
-                        </configuration>
                     </execution>
                     <!-- build bundle -->
                     <execution>
@@ -150,7 +130,7 @@
                 </executions>
             </plugin>
 
-            <plugin>
+             <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <version>3.1.0</version>
                 <executions>
@@ -174,29 +154,9 @@
                 </executions>
             </plugin>
 
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <!-- Copy dependencies into `lib` folder -->
-                <executions>
-                    <execution>
-                        <id>copy-dependencies</id>
-                        <phase>prepare-package</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <outputDirectory>${project.build.directory}/lib</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
-
             <!-- Distributable assembly -->
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
-                <version>3.1.1</version>
                 <executions>
                     <execution>
                         <id>make-assembly</id>
@@ -208,30 +168,19 @@
                 </executions>
                 <configuration>
                     <descriptors>
-                        <descriptor>src/main/assembly/dist.xml</descriptor>
+                        <descriptor>src/assembly/dist.xml</descriptor>
                     </descriptors>
                 </configuration>
             </plugin>
 
-            <!-- Run the app with `mvn exec:exec` -->
+            <!-- Run the app with `mvn exec:java` -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
-                <version>1.6.0</version>
+                <version>3.0.0</version>
                 <configuration>
-                    <executable>java</executable>
-                    <arguments>
-                        <argument>-cp</argument>
-                        <argument>${project.build.directory}/classes:${project.build.directory}/lib/*</argument>
-                        <argument>-Denv=dev</argument>
-                        <argument>-Dstudio.open=false</argument>
-                        <argument>-Dfile.encoding=UTF-8</argument>
-                        <argument>-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager</argument>
-                        <argument>-Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.Log4j2LogDelegateFactory</argument>
-                        <argument>io.vertx.core.Launcher</argument>
-                        <argument>run</argument>
-                        <argument>${vertx.main.verticle}</argument>
-                    </arguments>
+                    <mainClass>studio.webui.TestMain</mainClass>
+                    <classpathScope>test</classpathScope>
                 </configuration>
             </plugin>
         </plugins>

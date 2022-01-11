@@ -4,7 +4,6 @@ target/
 # IntelliJ
 .idea
 *.iml
-*node_modules
 
 # Eclipse
 .classpath
@@ -12,6 +11,8 @@ target/
 .settings/
 
 # Custom
+web-ui/bin/
 web-ui/javascript/build/
+web-ui/javascript/node_modules/
 web-ui/*.log
 
