@@ -40,12 +40,13 @@ public class ImageConversion {
         BufferedImage inputImage = ImageIO.read(new ByteArrayInputStream(data));
         // Redraw image to remove potential alpha channel
         BufferedImage redrawn = redrawImage(inputImage);
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
-        ImageIO.write(redrawn, format, output);
-        if (output.size() == 0) {
-            throw new IOException("Failed to convert image");
+        try(ByteArrayOutputStream output = new ByteArrayOutputStream()){
+            ImageIO.write(redrawn, format, output);
+            if (output.size() == 0) {
+                throw new IOException("Failed to convert image");
+            }
+            return output.toByteArray();
         }
-        return output.toByteArray();
     }
 
     private static BufferedImage redrawImage(BufferedImage inputImage) {
@@ -62,18 +63,19 @@ public class ImageConversion {
         BufferedImage inputImage = ImageIO.read(new ByteArrayInputStream(data));
         // Redraw image to remove potential alpha channel, and to used indexed colors
         BufferedImage redrawn = redrawIndexedImage(inputImage);
-        ByteArrayOutputStream output = new ByteArrayOutputStream();
         ImageWriter writer = ImageIO.getImageWritersByFormatName(BITMAP_FORMAT).next();
         ImageWriteParam writeParam = writer.getDefaultWriteParam();
         writeParam.setCompressionMode(ImageWriteParam.MODE_EXPLICIT);
         writeParam.setCompressionType(BITMAP_RLE4_COMPRESSION);
-        writer.setOutput(ImageIO.createImageOutputStream(output));
-        writer.write(null, new IIOImage(redrawn, null, null), writeParam);
-        if (output.size() == 0) {
-            throw new IOException("Failed to convert image");
+        try(ByteArrayOutputStream output = new ByteArrayOutputStream()){
+            writer.setOutput(ImageIO.createImageOutputStream(output));
+            writer.write(null, new IIOImage(redrawn, null, null), writeParam);
+            if (output.size() == 0) {
+                throw new IOException("Failed to convert image");
+            }
+            // BMPImageWriter outputs wrong padding on absolute-mode chunks that needs to be fixed
+            return fixRLE4Padding(output.toByteArray());
         }
-        // BMPImageWriter outputs wrong padding on absolute-mode chunks that needs to be fixed
-        return fixRLE4Padding(output.toByteArray());
     }
 
     private static byte[] fixRLE4Padding(byte[] image) throws IOException {
