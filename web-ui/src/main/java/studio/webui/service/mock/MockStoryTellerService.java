@@ -11,8 +11,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
-import java.util.Base64;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -53,10 +51,10 @@ public class MockStoryTellerService implements IStoryTellerService {
         LOGGER.info("Setting up mocked story teller service");
 
         // Create the mocked device folder if needed
-        Path libraryFolder = Path.of(devicePath());
+        Path libraryFolder = devicePath();
         if (Files.notExists(libraryFolder) || !Files.isDirectory(libraryFolder)) {
             try {
-                Files.createDirectories(Paths.get(devicePath()));
+                Files.createDirectories(libraryFolder);
             } catch (IOException e) {
                 LOGGER.error("Failed to initialize mocked device", e);
                 throw new IllegalStateException("Failed to initialize mocked device");
@@ -64,13 +62,12 @@ public class MockStoryTellerService implements IStoryTellerService {
         }
     }
 
-    private String devicePath() {
-        return System.getProperty("user.home") + MOCKED_DEVICE_PATH;
+    private static Path devicePath() {
+        return Path.of(System.getProperty("user.home") + MOCKED_DEVICE_PATH);
     }
 
     public CompletableFuture<Optional<JsonObject>> deviceInfos() {
-        Path deviceFolder = Path.of(devicePath());
-        try(Stream<Path> paths = Files.list(deviceFolder)) {
+        try(Stream<Path> paths = Files.list(devicePath())) {
             long files = paths.count();
             return CompletableFuture.completedFuture(
                     Optional.of(new JsonObject()
@@ -83,6 +80,7 @@ public class MockStoryTellerService implements IStoryTellerService {
                                     .put("taken", files)
                             )
                             .put("error", false)
+                            .put("driver", "raw") // Simulate raw only
                     )
             );
         } catch (IOException e) {
@@ -93,44 +91,43 @@ public class MockStoryTellerService implements IStoryTellerService {
 
     public CompletableFuture<JsonArray> packs() {
         // Check that mocked device folder exists
-        Path deviceFolder = Path.of(devicePath());
+        Path deviceFolder = devicePath();
         if (Files.notExists(deviceFolder) || !Files.isDirectory(deviceFolder)) {
             return CompletableFuture.completedFuture(new JsonArray());
         } else {
-            // List binary pack files in mocked device folder
-            try (Stream<Path> paths = Files.walk(deviceFolder)) {
-                return CompletableFuture.completedFuture(new JsonArray(
-                                paths
-                                        .filter(Files::isRegularFile)
-                                        .map(path -> this.readBinaryPackFile(path).map(
-                                                meta -> this.getPackMetadata(meta, path.getFileName().toString())
-                                        ))
-                                        .filter(Optional::isPresent)
-                                        .map(Optional::get)
-                                        .collect(Collectors.toList())
-                        )
-                );
-            } catch (IOException e) {
-                LOGGER.error("Failed to read packs from mocked device", e);
-                throw new RuntimeException(e);
-            }
+            return readPackIndex(deviceFolder).thenApply(packs -> new JsonArray( //
+                    packs.stream().map(this::getPackMetadata).collect(Collectors.toList()) //
+            ));
         }
     }
 
+    private CompletableFuture<List<StoryPackMetadata>> readPackIndex(Path deviceFolder) {
+        // List binary pack files in mocked device folder
+        try (Stream<Path> paths = Files.walk(deviceFolder).filter(Files::isRegularFile)) {
+            return CompletableFuture.completedFuture( //
+                    paths.map(this::readBinaryPackFile) //
+                    .filter(Optional::isPresent) //
+                    .map(Optional::get) //
+                    .collect(Collectors.toList()) //
+            );
+        } catch (IOException e) {
+            LOGGER.error("Failed to read packs from mocked device", e);
+            throw new RuntimeException(e);
+        }
+    }
+    
     private Optional<StoryPackMetadata> readBinaryPackFile(Path path) {
         LOGGER.debug("Reading pack file: " + path.toString());
         // Handle only binary file format
         if (path.toString().endsWith(".pack")) {
             try {
                 LOGGER.debug("Reading binary pack metadata.");
-                BinaryStoryPackReader packReader = new BinaryStoryPackReader();
-                Optional<StoryPackMetadata> metadata = Optional.of(packReader.readMetadata(path));
-                metadata.map(meta -> {
-                    int packSectorSize = (int)Math.ceil((double)path.toFile().length() / 512d);
-                    meta.setSectorSize(packSectorSize);
-                    return meta;
-                });
-                return metadata;
+                StoryPackMetadata meta = new BinaryStoryPackReader().readMetadata(path);
+                if (meta != null) {
+                    meta.setSectorSize((int)Math.ceil(Files.size(path) / 512d));
+                    //return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
+                    return Optional.of(meta);
+                }
             } catch (IOException e) {
                 LOGGER.error("Failed to read binary-format pack " + path.toString() + " from mocked device", e);
                 return Optional.empty();
@@ -146,7 +143,7 @@ public class MockStoryTellerService implements IStoryTellerService {
 
     public CompletableFuture<Optional<String>> addPack(String uuid, Path packFile) {
         // Check that mocked device folder exists
-        Path deviceFolder = Path.of(devicePath());
+        Path deviceFolder = devicePath();
         if (Files.notExists(deviceFolder) || !Files.isDirectory(deviceFolder)) {
             return CompletableFuture.completedFuture(Optional.empty());
         } else {
@@ -188,7 +185,7 @@ public class MockStoryTellerService implements IStoryTellerService {
 
     public CompletableFuture<Boolean> deletePack(String uuid) {
         // Check that mocked device folder exists
-        Path deviceFolder = Path.of(devicePath());
+        Path deviceFolder = devicePath();
         if (Files.notExists(deviceFolder) || !Files.isDirectory(deviceFolder)) {
             return CompletableFuture.completedFuture(false);
         } else {
@@ -210,12 +207,13 @@ public class MockStoryTellerService implements IStoryTellerService {
 
     public CompletableFuture<Boolean> reorderPacks(List<String> uuids) {
         // Not supported
+        LOGGER.warn("Not supported : reorderPacks");
         return CompletableFuture.completedFuture(false);
     }
 
     public CompletableFuture<Optional<String>> extractPack(String uuid, Path destFile) {
         // Check that mocked device folder exists
-        Path deviceFolder = Path.of(devicePath());
+        Path deviceFolder = devicePath();
         if (Files.notExists(deviceFolder) || !Files.isDirectory(deviceFolder)) {
             return CompletableFuture.completedFuture(Optional.empty());
         } else {
@@ -260,16 +258,12 @@ public class MockStoryTellerService implements IStoryTellerService {
         }
     }
 
-    private JsonObject getPackMetadata(StoryPackMetadata packMetadata, String path) {
+    private JsonObject getPackMetadata(StoryPackMetadata packMetadata) {
         JsonObject json = new JsonObject()
                 .put("uuid", packMetadata.getUuid())
                 .put("format", packMetadata.getFormat())
                 .put("version", packMetadata.getVersion())
-                .put("path", path);
-        Optional.ofNullable(packMetadata.getTitle()).ifPresent(title -> json.put("title", title));
-        Optional.ofNullable(packMetadata.getDescription()).ifPresent(desc -> json.put("description", desc));
-        Optional.ofNullable(packMetadata.getThumbnail()).ifPresent(thumb -> json.put("image", "data:image/png;base64," + Base64.getEncoder().encodeToString(thumb)));
-        Optional.ofNullable(packMetadata.getSectorSize()).ifPresent(size -> json.put("sectorSize", size));
+                .put("sectorSize", packMetadata.getSectorSize());
         return databaseMetadataService.getPackMetadata(packMetadata.getUuid())
                 .map(metadata -> json
                         .put("title", metadata.getTitle())
@@ -282,6 +276,7 @@ public class MockStoryTellerService implements IStoryTellerService {
 
     public CompletableFuture<Void> dump(Path outputPath) {
         // Not supported
+        LOGGER.warn("Not supported : dump");
         return CompletableFuture.completedFuture(null);
     }
 

@@ -209,7 +209,7 @@ public class FsStoryTellerAsyncDriver {
 
                             // Open 'ni' file
                             Path niPath = packPath.resolve(NODE_INDEX_FILENAME);
-                            try( DataInputStream niDis = new DataInputStream(Files.newInputStream(niPath))) {
+                            try(DataInputStream niDis = new DataInputStream(Files.newInputStream(niPath))) {
                                 ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
                                 short version = bb.getShort(2);
                                 packInfos.setVersion(version);
