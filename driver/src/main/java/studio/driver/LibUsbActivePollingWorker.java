@@ -6,11 +6,17 @@
 
 package studio.driver;
 
-import org.usb4java.*;
-import studio.driver.event.DeviceHotplugEventListener;
-
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
+
+import org.usb4java.Context;
+import org.usb4java.Device;
+import org.usb4java.DeviceDescriptor;
+import org.usb4java.DeviceList;
+import org.usb4java.LibUsb;
+import org.usb4java.LibUsbException;
+
+import studio.driver.event.DeviceHotplugEventListener;
 
 public class LibUsbActivePollingWorker implements Runnable {
 
@@ -21,7 +27,8 @@ public class LibUsbActivePollingWorker implements Runnable {
     private final DeviceHotplugEventListener listener;
     private Device device = null;
 
-    public LibUsbActivePollingWorker(Context context, DeviceVersion deviceVersion, DeviceHotplugEventListener listener) {
+    public LibUsbActivePollingWorker(Context context, DeviceVersion deviceVersion,
+            DeviceHotplugEventListener listener) {
         this.context = context;
         this.deviceVersion = deviceVersion;
         this.listener = listener;
@@ -31,48 +38,42 @@ public class LibUsbActivePollingWorker implements Runnable {
     public void run() {
         // List available devices
         DeviceList devices = new DeviceList();
-        int result = LibUsb.getDeviceList(this.context, devices);
+        int result = LibUsb.getDeviceList(context, devices);
         if (result < 0) {
             throw new LibUsbException("Unable to get libusb device list", result);
         }
         try {
             // Iterate over all devices and scan for the right one
             Device found = null;
-            for (Device d: devices) {
-                DeviceDescriptor descriptor = new DeviceDescriptor();
-                result = LibUsb.getDeviceDescriptor(d, descriptor);
+            for (Device d : devices) {
+                DeviceDescriptor desc = new DeviceDescriptor();
+                result = LibUsb.getDeviceDescriptor(d, desc);
                 if (result != LibUsb.SUCCESS) {
                     throw new LibUsbException("Unable to read libusb device descriptor", result);
                 }
-                if (
-                        (deviceVersion == DeviceVersion.DEVICE_VERSION_1 || deviceVersion == DeviceVersion.DEVICE_VERSION_ANY)
-                        && descriptor.idVendor() == LibUsbDetectionHelper.VENDOR_ID_FW1 && descriptor.idProduct() == LibUsbDetectionHelper.PRODUCT_ID_FW1
-                ) {
+                if (LibUsbDetectionHelper.isDeviceV1(deviceVersion) && LibUsbDetectionHelper.isFirmwareV1(desc)) {
                     found = d;
+                    break;
                 }
-                if (
-                        (deviceVersion == DeviceVersion.DEVICE_VERSION_2 || deviceVersion == DeviceVersion.DEVICE_VERSION_ANY)
-                        && (
-                                (descriptor.idVendor() == LibUsbDetectionHelper.VENDOR_ID_FW2 && descriptor.idProduct() == LibUsbDetectionHelper.PRODUCT_ID_FW2)
-                                || (descriptor.idVendor() == LibUsbDetectionHelper.VENDOR_ID_V2 && descriptor.idProduct() == (short)(LibUsbDetectionHelper.PRODUCT_ID_V2 & 0xffff))
-                        )
-                ) {
+                if (LibUsbDetectionHelper.isDeviceV2(deviceVersion) && LibUsbDetectionHelper.isFirmwareV2(desc)) {
                     found = d;
+                    break;
                 }
             }
             // Fire plugged / unplugged events
-            if (found != null && this.device == null) {
+            if (found != null && device == null) {
                 LOGGER.info("Active polling found a new device. Firing event.");
-                this.device = found;
-                CompletableFuture.runAsync(() -> this.listener.onDevicePlugged(this.device));
-            } else if (found == null && this.device != null) {
+                device = found;
+                CompletableFuture.runAsync(() -> listener.onDevicePlugged(device));
+            } else if (found == null && device != null) {
                 LOGGER.info("Active polling lost the device. Firing event.");
-                CompletableFuture.runAsync(() -> this.listener.onDeviceUnplugged(this.device));
-                this.device = null;
+                CompletableFuture.runAsync(() -> listener.onDeviceUnplugged(device));
+                device = null;
             }
         } finally {
             // Ensure the allocated device list is freed
-            LibUsb.freeDeviceList(devices, false);  // Do NOT unref devices
+            LibUsb.freeDeviceList(devices, false); // Do NOT unref devices
         }
     }
+
 }
