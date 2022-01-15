@@ -19,8 +19,10 @@ public class TestMain {
                 "io.vertx.core.logging.Log4j2LogDelegateFactory");
 
         // test mode
-        System.setProperty("env", "dev");
-        System.setProperty("studio.open", "false");
+        if(args.length>0 && "dev".equals( args[0] )) {
+            System.setProperty("env", "dev");
+            System.setProperty("studio.open", "false");
+        }
 
         // real main
         Launcher.executeCommand("run", "studio.webui.MainVerticle");

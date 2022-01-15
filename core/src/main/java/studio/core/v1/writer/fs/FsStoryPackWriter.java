@@ -15,6 +15,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -237,7 +238,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
                 // Write image path into ri file
                 String imageHash = imageHashOrdered.get(i);
                 String rfSubPath = assetPathFromIndex(i);
-                riDos.write(rfSubPath.getBytes(Charset.forName("UTF-8")));
+                riDos.write(rfSubPath.getBytes(StandardCharsets.UTF_8));
                 // Write image data into file
                 Path rfPath = packFolder.resolve(IMAGE_FOLDER + rfSubPath.replace('\\', '/'));
                 Files.createDirectories(rfPath.getParent());
@@ -255,7 +256,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
                 // Write sound path into si file
                 String audioHash = audioHashOrdered.get(i);
                 String sfSubPath = assetPathFromIndex(i);
-                siDos.write(sfSubPath.getBytes(Charset.forName("UTF-8")));
+                siDos.write(sfSubPath.getBytes(StandardCharsets.UTF_8));
                 // Write sound data into file
                 Path sfPath = packFolder.resolve(SOUND_FOLDER + sfSubPath.replace('\\', '/'));
                 Files.createDirectories(sfPath.getParent());

@@ -28,6 +28,7 @@ public class AudioConversion {
     public static final int CHANNELS = 1;
 
     private AudioConversion() {
+        throw new IllegalArgumentException("Utility class");
     }
 
     /** Make LameEncoder closeable. */

@@ -51,11 +51,8 @@ public class LibUsbActivePollingWorker implements Runnable {
                 if (result != LibUsb.SUCCESS) {
                     throw new LibUsbException("Unable to read libusb device descriptor", result);
                 }
-                if (LibUsbDetectionHelper.isDeviceV1(deviceVersion) && LibUsbDetectionHelper.isFirmwareV1(desc)) {
-                    found = d;
-                    break;
-                }
-                if (LibUsbDetectionHelper.isDeviceV2(deviceVersion) && LibUsbDetectionHelper.isFirmwareV2(desc)) {
+                if ((LibUsbDetectionHelper.isDeviceV1(deviceVersion) && LibUsbDetectionHelper.isFirmwareV1(desc)) || //
+                        (LibUsbDetectionHelper.isDeviceV2(deviceVersion) && LibUsbDetectionHelper.isFirmwareV2(desc))) {
                     found = d;
                     break;
                 }

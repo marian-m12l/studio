@@ -17,6 +17,10 @@ public class XXTEACipher {
 
     private static final int DELTA = 0x9e3779b9;
 
+    private XXTEACipher() {
+        throw new IllegalArgumentException("Utility class");
+    }
+
     public static int[] toIntArray(byte[] data, ByteOrder endianness) {
         ByteBuffer bb = ByteBuffer.wrap(data);
         bb.order(endianness);

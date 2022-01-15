@@ -8,7 +8,7 @@ import java.security.NoSuchAlgorithmException;
 
 import org.junit.jupiter.api.Test;
 
-public class SecurityUtilsTest {
+class SecurityUtilsTest {
 
     @Test
     void sha1Hex() throws NoSuchAlgorithmException, UnsupportedEncodingException {

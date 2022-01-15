@@ -56,7 +56,11 @@ public class VorbisEncoder {
 
     // need to randomize seed
     private static final SecureRandom prng = new SecureRandom();
-    
+
+    private VorbisEncoder() {
+        throw new IllegalArgumentException("Utility class");
+    }
+
     public static byte[] encode(InputStream pcmInputStream) throws VorbisEncodingException {
 
         boolean eos = false;

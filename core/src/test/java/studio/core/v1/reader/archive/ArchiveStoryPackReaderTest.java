@@ -22,7 +22,7 @@ import studio.core.v1.model.enriched.EnrichedPackMetadata;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.writer.archive.ArchiveStoryPackWriter;
 
-public class ArchiveStoryPackReaderTest {
+class ArchiveStoryPackReaderTest {
 
     private ArchiveStoryPackReader reader = new ArchiveStoryPackReader();
     private ArchiveStoryPackWriter writer = new ArchiveStoryPackWriter();

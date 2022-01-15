@@ -24,6 +24,9 @@ public class DeviceController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DeviceController.class);
 
+    private DeviceController() {
+        throw new IllegalArgumentException("Utility class");
+    }
 
     public static Router apiRouter(Vertx vertx, IStoryTellerService storyTellerService, LibraryService libraryService) {
         Router router = Router.router(vertx);

@@ -18,7 +18,11 @@ import studio.webui.service.EvergreenService;
 public class EvergreenController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(EvergreenController.class);
-    
+
+    private EvergreenController() {
+        throw new IllegalArgumentException("Utility class");
+    }
+
     public static Router apiRouter(Vertx vertx, EvergreenService evergreenService) {
         Router router = Router.router(vertx);
 
