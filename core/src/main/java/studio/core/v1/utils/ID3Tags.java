@@ -18,6 +18,9 @@ public class ID3Tags {
     private static final int ID3V2_HEADER_SIZE = 10;
     private static final int ID3V2_SIZE_OFFSET = 6;
 
+    private ID3Tags() {
+        throw new IllegalArgumentException("Utility class");
+    }
 
     public static boolean hasID3v1Tag(byte[] mp3Data) {
         // Look for ID3v1 tag at end of file

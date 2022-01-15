@@ -15,6 +15,10 @@ import java.util.stream.Stream;
 
 public class FileUtils {
 
+    private FileUtils() {
+        throw new IllegalArgumentException("Utility class");
+    }
+
     public static void deleteDirectory(Path path) throws IOException {
         try (Stream<Path> paths = Files.walk(path)) {
             paths.sorted(Comparator.reverseOrder()) //

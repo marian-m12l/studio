@@ -13,6 +13,10 @@ import java.util.logging.Logger;
 
 public class UnofficialImageAdvice {
 
+    private UnofficialImageAdvice() {
+        throw new IllegalArgumentException("Utility class");
+    }
+
     @Advice.OnMethodExit
     public static void getImageUrl(@Advice.Return(readOnly = false) String retval) {
         if (retval.startsWith("https://storage.googleapis.com/lunii-data-prod/studio/")) {

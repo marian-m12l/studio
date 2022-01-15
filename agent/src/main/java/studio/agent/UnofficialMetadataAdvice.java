@@ -25,6 +25,10 @@ import java.util.logging.Logger;
 
 public class UnofficialMetadataAdvice {
 
+    private UnofficialMetadataAdvice() {
+        throw new IllegalArgumentException("Utility class");
+    }
+
     @Advice.OnMethodExit
     public static void getInputStream(@Advice.This HttpURLConnection that, @Advice.Return(readOnly = false) InputStream retval) {
         final Logger logger = Logger.getLogger("studio-agent");

@@ -476,7 +476,7 @@ public class FsStoryTellerAsyncDriver {
                             long elapsed = System.currentTimeMillis() - startTime;
                             double speed = xferred / (elapsed / 1000.0);
                             LOGGER.finer("Transferred " + FileUtils.readableByteSize(xferred) + " in " + elapsed + " ms");
-                            LOGGER.finer("Average speed = " + speed + " bytes/sec");
+                            LOGGER.finer("Average speed = " + FileUtils.readableByteSize((long)speed) + "/sec");
                             TransferStatus status = new TransferStatus(xferred == folderSize, xferred, folderSize, speed);
 
                             // Call (optional) listener with transfer status

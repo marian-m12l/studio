@@ -13,6 +13,7 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
+import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.usb4java.Device;
@@ -246,7 +247,7 @@ public class LibUsbMassStorageHelper {
         return asyncTransferOut(handle, cbw)
                 .thenCompose(done -> {
                     // Read data
-                    ByteBuffer data = ByteBuffer.allocateDirect((int) nbSectorsToRead * (int) SECTOR_SIZE);
+                    ByteBuffer data = ByteBuffer.allocateDirect(nbSectorsToRead * SECTOR_SIZE);
                     return asyncTransferIn(handle, data)
                             .thenCompose(dataRead -> {
                                 // Read Command Status Wrapper
@@ -270,8 +271,7 @@ public class LibUsbMassStorageHelper {
         return asyncTransferOut(handle, cbw)
                 .thenCompose(done -> {
                     // Read data
-                    int capacity = (int) nbSectorsToRead * (int) SECTOR_SIZE;
-                    ByteBuffer data = ByteBuffer.allocateDirect(capacity);
+                    ByteBuffer data = ByteBuffer.allocateDirect(nbSectorsToRead * SECTOR_SIZE);
                     return asyncTransferIn(handle, data)
                             .thenCompose(dataRead -> {
                                 // Read Command Status Wrapper
@@ -441,14 +441,18 @@ public class LibUsbMassStorageHelper {
     private static boolean checkCommandStatusWrapper(ByteBuffer csw) {
         // Check Command Status Wrapper length
         if (csw.remaining() != MASS_STORAGE_CSW_LENGTH) {
-            LOGGER.severe("Invalid CSW: wrong size ("+csw.remaining()+")");
+            if(LOGGER.isLoggable(Level.SEVERE)) {
+                LOGGER.severe("Invalid CSW: wrong size ("+csw.remaining()+")");
+            }
             return false;
         }
         // Check CSW signature
         byte[] signature = new byte[MASS_STORAGE_CSW_SIGNATURE.length];
         csw.get(signature);
         if (!Arrays.equals(signature, MASS_STORAGE_CSW_SIGNATURE)) {
-            LOGGER.severe("Invalid CSW: wrong signature ("+bytesToHex(signature)+")");
+            if(LOGGER.isLoggable(Level.SEVERE)) {
+                LOGGER.severe("Invalid CSW: wrong signature ("+bytesToHex(signature)+")");
+            }
             return false;
         }
         // Check Command Block Tag
@@ -461,7 +465,9 @@ public class LibUsbMassStorageHelper {
         csw.order(ByteOrder.LITTLE_ENDIAN);
         int residue = csw.getInt(8);
         if (residue > 0) {
-            LOGGER.severe("Invalid CSW: positive residue ("+residue+")");
+            if(LOGGER.isLoggable(Level.SEVERE)) {
+                LOGGER.severe("Invalid CSW: positive residue ("+residue+")");
+            }
             return false;
         }
         // Check status

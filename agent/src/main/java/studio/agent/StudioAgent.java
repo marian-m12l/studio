@@ -29,6 +29,10 @@ public class StudioAgent {
 
     private static final Logger LOGGER = Logger.getLogger("studio-agent");
 
+    private StudioAgent() {
+        throw new IllegalArgumentException("Utility class");
+    }
+
     public static void premain(String arguments, Instrumentation instrumentation) throws IOException {
         LOGGER.info("Started studio-agent (premain) version " + getVersion());
 

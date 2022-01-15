@@ -34,6 +34,7 @@ import studio.driver.LibUsbDetectionHelper;
 import studio.driver.StoryTellerException;
 import studio.driver.event.DeviceHotplugEventListener;
 import studio.driver.event.TransferProgressListener;
+import studio.driver.fs.FileUtils;
 import studio.driver.model.TransferStatus;
 import studio.driver.model.raw.RawDeviceInfos;
 import studio.driver.model.raw.RawStoryPackInfos;
@@ -339,7 +340,7 @@ public class RawStoryTellerAsyncDriver {
                                                     double speed = status.getTransferred() / (elapsed / 1000.0);
                                                     status.setSpeed(speed);
                                                     LOGGER.finer("Transferred " + status.getTransferred() + " bytes in " + elapsed + " ms");
-                                                    LOGGER.finer("Average speed = " + speed + " bytes/sec");
+                                                    LOGGER.finer("Average speed = " + FileUtils.readableByteSize((long)speed) + "/sec");
                                                     if (status.getTransferred() == totalSize) {
                                                         status.setDone(true);
                                                     }
@@ -406,7 +407,7 @@ public class RawStoryTellerAsyncDriver {
                                                 double speed = status.getTransferred() / (elapsed / 1000.0);
                                                 status.setSpeed(speed);
                                                 LOGGER.finer("Transferred " + status.getTransferred() + " bytes in " + elapsed + " ms");
-                                                LOGGER.finer("Average speed = " + speed + " bytes/sec");
+                                                LOGGER.finer("Average speed = " + FileUtils.readableByteSize((long)speed) + " bytes/sec");
                                                 if (status.getTransferred() == totalSize) {
                                                     status.setDone(true);
                                                 }
