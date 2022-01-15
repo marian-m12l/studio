@@ -28,6 +28,10 @@ public class ImageConversion {
 
     private static final String BITMAP_RLE4_COMPRESSION = "BI_RLE4";
 
+    private ImageConversion() {
+        throw new IllegalArgumentException("Utility class");
+    }
+
     public static byte[] anyToBitmap(byte[] data) throws IOException {
         return convertImage(data, BITMAP_FORMAT);
     }

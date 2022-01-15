@@ -11,11 +11,11 @@ public abstract class Asset {
     private String mimeType;
     private byte[] rawData;
 
-    public Asset() {
+    protected Asset() {
         super();
     }
 
-    public Asset(String mimeType, byte[] rawData) {
+    protected Asset(String mimeType, byte[] rawData) {
         this.mimeType = mimeType;
         this.rawData = rawData;
     }

@@ -29,6 +29,10 @@ public class LibraryController {
 
     private static final ScheduledThreadPoolExecutor THREAD_POOL = new ScheduledThreadPoolExecutor(2);
 
+    private LibraryController() {
+        throw new IllegalArgumentException("Utility class");
+    }
+
     public static Router apiRouter(Vertx vertx, LibraryService libraryService) {
         Router router = Router.router(vertx);
 
