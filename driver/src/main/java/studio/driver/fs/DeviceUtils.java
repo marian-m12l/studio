@@ -16,6 +16,10 @@ import java.util.List;
 
 public class DeviceUtils {
 
+    private DeviceUtils() {
+        throw new IllegalArgumentException("Utility class");
+    }
+
     /** Simple OS test. */
     public static boolean isWindows() {
         return '/' != File.separatorChar;

@@ -41,7 +41,7 @@ public class SecurityUtils {
      */
 
     public static String sha1Hex(String s) throws UnsupportedEncodingException {
-        return sha1Hex(s.getBytes("UTF-8"));
+        return sha1Hex(s.getBytes(StandardCharsets.UTF_8));
     }
 
     private static final byte[] HEX_ARRAY = "0123456789abcdef".getBytes(StandardCharsets.US_ASCII);
@@ -63,7 +63,7 @@ public class SecurityUtils {
     }
 
     public static String encodeHex(String s) throws UnsupportedEncodingException {
-        return encodeHex(s.getBytes("UTF-8"));
+        return encodeHex(s.getBytes(StandardCharsets.UTF_8));
     }
 
     /**
