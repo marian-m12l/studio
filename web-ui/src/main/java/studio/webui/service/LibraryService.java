@@ -180,7 +180,7 @@ public class LibraryService {
             StoryPack uncompressedPack = storyPack;
             if (PackAssetsCompression.hasCompressedAssets(storyPack)) {
                 LOGGER.info("Uncompressing pack assets");
-                uncompressedPack = PackAssetsCompression.withUncompressedAssets(storyPack);
+                PackAssetsCompression.processUncompressed(storyPack);
             }
 
             Path tmp = createTempFile(packFile, ".pack");
@@ -217,7 +217,7 @@ public class LibraryService {
                 storyPack = new BinaryStoryPackReader().read(packPath);
                 // Compress pack assets
                 LOGGER.info("Compressing pack assets");
-                storyPack = PackAssetsCompression.withCompressedAssets(storyPack);
+                PackAssetsCompression.processCompressed(storyPack);
             } else {
                 storyPack = new FsStoryPackReader().read(packPath);
                // No need to compress pack assets
@@ -260,7 +260,7 @@ public class LibraryService {
             }
             // Prepare assets (RLE-encoded BMP, audio must already be MP3)
             LOGGER.info("Converting assets if necessary");
-            storyPack = PackAssetsCompression.withPreparedAssetsFirmware2dot4(storyPack);
+            PackAssetsCompression.processFirmware2dot4(storyPack);
 
             Path tmp = createTempDirectory(packFile);
             LOGGER.info("Writing " + outputFormat + " format pack, using temporary folder: " + tmp);
