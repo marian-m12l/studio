@@ -35,8 +35,6 @@ public class LibUsbDetectionHelper {
 
     private static final long POLL_DELAY = 5000L;
 
-    // LibUsb context
-    private static Context context = new Context();
     // Scheduled task to actively poll device when hotplug is not supported
     private static ScheduledExecutorService scheduledExecutor = null;
     private static Future<?> activePollingTask = null;
@@ -55,7 +53,8 @@ public class LibUsbDetectionHelper {
     public static void initializeLibUsb(DeviceVersion deviceVersion, DeviceHotplugEventListener listener) {
         // Init libusb
         LOGGER.info("Initializing libusb...");
-        context = new Context();
+        // LibUsb context
+        Context context = new Context();
         int result = LibUsb.init(context);
         if (result != LibUsb.SUCCESS) {
             throw new StoryTellerException("Unable to initialize libusb.", new LibUsbException(result));
@@ -73,11 +72,11 @@ public class LibUsbDetectionHelper {
         if (LibUsb.hasCapability(LibUsb.CAP_HAS_HOTPLUG)) {
             LOGGER.info("Hotplug is supported. Registering hotplug callback(s)...");
             if (isDeviceV1(deviceVersion)) {
-                registerCallback(VENDOR_ID_FW1, PRODUCT_ID_FW1, listener);
+                registerCallback(context, VENDOR_ID_FW1, PRODUCT_ID_FW1, listener);
             }
             if (isDeviceV2(deviceVersion)) {
-                registerCallback(VENDOR_ID_FW2, PRODUCT_ID_FW2, listener);
-                registerCallback(VENDOR_ID_V2, PRODUCT_ID_V2, listener);
+                registerCallback(context, VENDOR_ID_FW2, PRODUCT_ID_FW2, listener);
+                registerCallback(context, VENDOR_ID_V2, PRODUCT_ID_V2, listener);
             }
         } else {
             LOGGER.info("Hotplug is NOT supported. Scheduling task to actively poll USB device...");
@@ -87,14 +86,14 @@ public class LibUsbDetectionHelper {
                     TimeUnit.MILLISECONDS);
         }
         // Add shutdown hook
-        registerHook(asyncEventHandlerWorker);
+        registerHook(context, asyncEventHandlerWorker);
     }
 
     /**
      * De-initialize libusb context and stop worker threads when JVM exits
      * @param asyncEventHandlerWorker
      */
-    private static void registerHook(LibUsbAsyncEventsWorker asyncEventHandlerWorker) {
+    private static void registerHook(Context context, LibUsbAsyncEventsWorker asyncEventHandlerWorker) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (activePollingTask != null && !activePollingTask.isDone()) {
                 LOGGER.info("Stopping active polling worker task");
@@ -119,7 +118,7 @@ public class LibUsbDetectionHelper {
         }));
     }
     
-    private static void registerCallback(int vendorId, int productId, DeviceHotplugEventListener listener) {
+    private static void registerCallback(Context context, int vendorId, int productId, DeviceHotplugEventListener listener) {
         LibUsb.hotplugRegisterCallback(context, LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED | LibUsb.HOTPLUG_EVENT_DEVICE_LEFT,
                 LibUsb.HOTPLUG_ENUMERATE, // Arm the callback and fire it for all matching currently attached devices
                 vendorId, productId, LibUsb.HOTPLUG_MATCH_ANY, // Device class
