@@ -14,6 +14,7 @@ import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioInputStream;
 import javax.sound.sampled.AudioSystem;
+import javax.sound.sampled.UnsupportedAudioFileException;
 
 import de.sciss.jump3r.lowlevel.LameEncoder;
 import de.sciss.jump3r.mp3.MPEGMode;
@@ -45,15 +46,15 @@ public class AudioConversion {
         }
     }
 
-    public static byte[] oggToWave(byte[] oggData) throws Exception {
+    public static byte[] oggToWave(byte[] oggData) throws IOException, UnsupportedAudioFileException {
         return anyToWave(oggData);
     }
 
-    public static byte[] mp3ToWave(byte[] mp3Data) throws Exception {
+    public static byte[] mp3ToWave(byte[] mp3Data) throws IOException, UnsupportedAudioFileException {
         return anyToWave(mp3Data);
     }
 
-    public static byte[] anyToWave(byte[] data) throws Exception {
+    public static byte[] anyToWave(byte[] data) throws IOException, UnsupportedAudioFileException {
         try (AudioInputStream inputAudio = AudioSystem.getAudioInputStream(new ByteArrayInputStream(data))) {
 
             float inputRate = inputAudio.getFormat().getSampleRate();
@@ -86,7 +87,7 @@ public class AudioConversion {
         }
     }
 
-    public static byte[] waveToOgg(byte[] waveData) throws Exception {
+    public static byte[] waveToOgg(byte[] waveData) throws IOException, VorbisEncodingException, UnsupportedAudioFileException {
         // Convert sample rate to 44100Hz (the only rate that is supported by the vorbis
         // encoding library)
         AudioFormat pcm44100Format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, OGG_SAMPLE_RATE, BITSIZE, //
@@ -98,7 +99,7 @@ public class AudioConversion {
         }
     }
 
-    public static byte[] anyToMp3(byte[] data) throws Exception {
+    public static byte[] anyToMp3(byte[] data) throws IOException, UnsupportedAudioFileException {
         try (AudioInputStream inputAudio = AudioSystem.getAudioInputStream(new ByteArrayInputStream(data))) {
 
             float inputRate = inputAudio.getFormat().getSampleRate();
