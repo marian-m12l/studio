@@ -8,7 +8,6 @@ package studio.driver.raw;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
-import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
@@ -22,6 +21,7 @@ import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 import org.usb4java.Transfer;
 
+import studio.core.v1.utils.SecurityUtils;
 import studio.driver.StoryTellerException;
 
 /**
@@ -451,7 +451,7 @@ public class LibUsbMassStorageHelper {
         csw.get(signature);
         if (!Arrays.equals(signature, MASS_STORAGE_CSW_SIGNATURE)) {
             if(LOGGER.isLoggable(Level.SEVERE)) {
-                LOGGER.severe("Invalid CSW: wrong signature ("+bytesToHex(signature)+")");
+                LOGGER.severe("Invalid CSW: wrong signature ("+ SecurityUtils.encodeHex(signature) +")");
             }
             return false;
         }
@@ -474,16 +474,5 @@ public class LibUsbMassStorageHelper {
         byte status = csw.get(12);
         LOGGER.finest("CSW status: "+status);
         return status == 0;
-    }
-
-    private static final byte[] HEX_ARRAY = "0123456789ABCDEF".getBytes();
-    private static String bytesToHex(byte[] bytes) {
-        byte[] hexChars = new byte[bytes.length * 2];
-        for (int j = 0; j < bytes.length; j++) {
-            int v = bytes[j] & 0xFF;
-            hexChars[j * 2] = HEX_ARRAY[v >>> 4];
-            hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
-        }
-        return new String(hexChars, StandardCharsets.UTF_8);
     }
 }
