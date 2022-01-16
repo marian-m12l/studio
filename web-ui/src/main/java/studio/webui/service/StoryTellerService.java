@@ -6,6 +6,8 @@
 
 package studio.webui.service;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
@@ -255,7 +257,7 @@ public class StoryTellerService implements IStoryTellerService {
                             int fileSizeInSectors = (int) (packSize / LibUsbMassStorageHelper.SECTOR_SIZE);
 
                             LOGGER.info("Transferring pack to device: " + fileSizeInSectors + " sectors");
-                            try(InputStream is = Files.newInputStream(packFile) ){
+                            try(InputStream is = new BufferedInputStream(Files.newInputStream(packFile)) ){
                                 driver.uploadPack(is, fileSizeInSectors, new TransferProgressListener() {
                                     @Override
                                     public void onProgress(TransferStatus status) {
@@ -378,7 +380,7 @@ public class StoryTellerService implements IStoryTellerService {
             return CompletableFuture.completedFuture(Optional.empty());
         }
         // Open destination file
-        try (OutputStream fos = Files.newOutputStream(destFile) ){
+        try (OutputStream fos = new BufferedOutputStream(Files.newOutputStream(destFile)) ){
             driver.downloadPack(uuid, fos, new TransferProgressListener() {
                 @Override
                 public void onProgress(TransferStatus status) {

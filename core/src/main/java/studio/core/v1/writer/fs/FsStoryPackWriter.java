@@ -6,6 +6,8 @@
 
 package studio.core.v1.writer.fs;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
@@ -17,7 +19,6 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -82,7 +83,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
 
         // Add nodes index file: ni
         Path niPath = packFolder.resolve(NODE_INDEX_FILENAME);
-        try( DataOutputStream niDos = new DataOutputStream(Files.newOutputStream(niPath))) {
+        try( DataOutputStream niDos = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(niPath)))) {
             ByteBuffer bb = ByteBuffer.allocate(512).order(ByteOrder.LITTLE_ENDIAN);
     
             // Nodes index file format version (1)
@@ -276,7 +277,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
         byte[] specificKey = computeSpecificKeyFromUUID(deviceUuid);
         Path riPath = packFolder.resolve(IMAGE_INDEX_FILENAME);
         Path btPath = packFolder.resolve(BOOT_FILENAME);
-        try (InputStream is = Files.newInputStream(riPath, StandardOpenOption.READ)) {
+        try (InputStream is = new BufferedInputStream(Files.newInputStream(riPath))) {
             int cypherBlockSize = 64;
             // Read ciphered block of ri file
             byte[] riCipheredBlock = is.readNBytes(cypherBlockSize);

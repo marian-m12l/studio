@@ -2,14 +2,11 @@ package studio.core.v1.utils;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.IOException;
 import java.net.URISyntaxException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-
-import javax.sound.sampled.UnsupportedAudioFileException;
 
 import org.junit.jupiter.api.Test;
 
