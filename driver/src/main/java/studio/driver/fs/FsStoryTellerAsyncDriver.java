@@ -7,7 +7,6 @@
 package studio.driver.fs;
 
 import java.io.DataInputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -159,10 +158,11 @@ public class FsStoryTellerAsyncDriver {
             FileStore mdFd = Files.getFileStore(mdFile); 
             long sdCardTotalSpace = mdFd.getTotalSpace();
             long sdCardUsedSpace = mdFd.getTotalSpace() - mdFd.getUnallocatedSpace();
+            double percent = Math.round(100d * 100d * sdCardUsedSpace / sdCardTotalSpace) / 100d;
             infos.setSdCardSizeInBytes(sdCardTotalSpace);
             infos.setUsedSpaceInBytes(sdCardUsedSpace);
-            LOGGER.fine("SD card size: " + sdCardTotalSpace);
-            LOGGER.fine("SD card used space: " + sdCardUsedSpace);
+            LOGGER.fine("SD card used : " + percent + "% (" + FileUtils.readableByteSize(sdCardUsedSpace) + " / "
+                    + FileUtils.readableByteSize(sdCardTotalSpace) + ")");
         } catch (Exception e) {
             return CompletableFuture.failedFuture(new StoryTellerException("Failed to read device metadata on partition", e));
         }
@@ -236,17 +236,15 @@ public class FsStoryTellerAsyncDriver {
             List<UUID> packUUIDs = new ArrayList<>();
             Path piFile = this.partitionMountPoint.resolve(PACK_INDEX_FILENAME);
             LOGGER.finest("Reading packs index from file: " + piFile);
-
-            try (InputStream packIndexFis = Files.newInputStream(piFile) ) {
-                byte[] packUuid = new byte[16];
-                while (packIndexFis.read(packUuid) > 0) {
-                    ByteBuffer bb = ByteBuffer.wrap(packUuid);
+            try {
+                ByteBuffer bb = ByteBuffer.wrap(Files.readAllBytes(piFile));
+                while (bb.hasRemaining()) {
                     long high = bb.getLong();
                     long low = bb.getLong();
                     packUUIDs.add(new UUID(high, low));
                 }
                 return packUUIDs;
-            } catch (Exception e) {
+            } catch (IOException e) {
                 throw new StoryTellerException("Failed to read pack index on device partition", e);
             }
         });
@@ -261,7 +259,8 @@ public class FsStoryTellerAsyncDriver {
         return readPackIndex()
                 .thenCompose(packUUIDs -> {
                     try {
-                        boolean allUUIDsAreOnDevice = uuids.stream().allMatch(uuid -> packUUIDs.stream().anyMatch(p -> p.equals(UUID.fromString(uuid))));
+                        boolean allUUIDsAreOnDevice = uuids.stream()
+                                .allMatch(uuid -> packUUIDs.stream().anyMatch(p -> p.equals(UUID.fromString(uuid))));
                         if (allUUIDsAreOnDevice) {
                             // Reorder list according to uuids list
                             packUUIDs.sort(Comparator.comparingInt(p -> uuids.indexOf(p.toString())));
@@ -314,31 +313,22 @@ public class FsStoryTellerAsyncDriver {
     }
 
     private CompletableFuture<Boolean> writePackIndex(List<UUID> packUUIDs) {
-        // Because the hidden file cannot be modified on windows, we need to write to a temporary file
         try {
             Path piFile = this.partitionMountPoint.resolve(PACK_INDEX_FILENAME);
-            Path newPiFile = piFile.resolveSibling(PACK_INDEX_FILENAME + ".new");
 
-            LOGGER.finest("Writing pack index to temporary file: " + newPiFile);
-            try(DataOutputStream packIndexDos = new DataOutputStream(Files.newOutputStream(newPiFile))) {
-                for (UUID packUUID : packUUIDs) {
-                    packIndexDos.writeLong(packUUID.getMostSignificantBits());
-                    packIndexDos.writeLong(packUUID.getLeastSignificantBits());
-                }
+            LOGGER.finest("Replacing pack index file: " + piFile);
+            ByteBuffer bb = ByteBuffer.allocate(16 * packUUIDs.size());
+            for (UUID packUUID : packUUIDs) {
+                bb.putLong(packUUID.getMostSignificantBits());
+                bb.putLong(packUUID.getLeastSignificantBits());
             }
-
-            // Then replace file
-            LOGGER.finest("Replacing pack index file");
-            Files.move(newPiFile, piFile, StandardCopyOption.REPLACE_EXISTING);
-//            LOGGER.finest("Deleting temporary pack index file");
-//            Files.delete(newPiFile);
+            Files.write(piFile, bb.array());
 
             return CompletableFuture.completedFuture(true);
         } catch (Exception e) {
             return CompletableFuture.failedFuture(new StoryTellerException("Failed to write pack index on device partition", e));
         }
     }
-
 
     public CompletableFuture<TransferStatus> downloadPack(String uuid, String outputPath, TransferProgressListener listener) {
         if (this.device == null || this.partitionMountPoint == null) {
@@ -381,9 +371,10 @@ public class FsStoryTellerAsyncDriver {
         try {
             // Check free space
             long folderSize = FileUtils.getFolderSize(inputPath);
-            LOGGER.finest("Pack folder size: " + folderSize);
+            LOGGER.finest("Pack folder size: " + FileUtils.readableByteSize(folderSize));
             Path mdFile = this.partitionMountPoint.resolve(DEVICE_METADATA_FILENAME);
             long freeSpace = Files.getFileStore(mdFile).getUsableSpace();
+            LOGGER.finest("SD free space: " + FileUtils.readableByteSize(freeSpace));
             if (freeSpace < folderSize) {
                 throw new StoryTellerException("Not enough free space on the device");
             }
@@ -462,14 +453,14 @@ public class FsStoryTellerAsyncDriver {
                     try {
                         Path d = destFolder.resolve(sourceFolder.relativize(s));
                         if (Files.isDirectory(s)) {
-                            if (!Files.exists(d)) {
-                                LOGGER.finer("Creating directory " + d.toString());
+                            if (Files.notExists(d)) {
+                                LOGGER.finer("Creating directory " + d);
                                 Files.createDirectory(d);
                             }
                         } else {
                             long fileSize = FileUtils.getFileSize(s);
-                            LOGGER.finer("Copying file " + s + " to " + d + " (" + FileUtils.readableByteSize(fileSize) + ")");
-                            Files.copy(s, d);
+                            LOGGER.finer("Copying file " + s.getFileName() + " (" + FileUtils.readableByteSize(fileSize) + ") to " + d);
+                            Files.copy(s, d, StandardCopyOption.REPLACE_EXISTING);
 
                             // Compute progress and speed
                             long xferred = transferred.addAndGet(fileSize);
@@ -487,7 +478,7 @@ public class FsStoryTellerAsyncDriver {
                                 }
                             }
                         }
-                    } catch (Exception e) {
+                    } catch (IOException e) {
                         throw new StoryTellerException("Failed to copy pack folder", e);
                     }
                 });
