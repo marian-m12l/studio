@@ -6,6 +6,7 @@
 
 package studio.driver.fs;
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -121,7 +122,7 @@ public class FsStoryTellerAsyncDriver {
         Path mdFile = this.partitionMountPoint.resolve(DEVICE_METADATA_FILENAME);
         LOGGER.finest("Reading device infos from file: " + mdFile);
 
-        try(InputStream deviceMetadataFis = Files.newInputStream(mdFile) ) {
+        try(InputStream deviceMetadataFis = new BufferedInputStream(Files.newInputStream(mdFile))) {
             // MD file format version
             short mdVersion = readLittleEndianShort(deviceMetadataFis);
             LOGGER.finest("Device metadata format version: " + mdVersion);
@@ -209,7 +210,7 @@ public class FsStoryTellerAsyncDriver {
 
                             // Open 'ni' file
                             Path niPath = packPath.resolve(NODE_INDEX_FILENAME);
-                            try(DataInputStream niDis = new DataInputStream(Files.newInputStream(niPath))) {
+                            try(DataInputStream niDis = new DataInputStream(new BufferedInputStream(Files.newInputStream(niPath)))) {
                                 ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
                                 short version = bb.getShort(2);
                                 packInfos.setVersion(version);

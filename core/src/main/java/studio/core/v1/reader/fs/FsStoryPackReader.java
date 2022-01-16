@@ -6,6 +6,7 @@
 
 package studio.core.v1.reader.fs;
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.File;
 import java.io.IOException;
@@ -14,7 +15,6 @@ import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -52,7 +52,7 @@ public class FsStoryPackReader implements StoryPackReader {
 
         // Open 'ni' file
         Path niPath = inputFolder.resolve(NODE_INDEX_FILENAME);
-        try(DataInputStream niDis = new DataInputStream(Files.newInputStream(niPath, StandardOpenOption.READ))) {
+        try(DataInputStream niDis = new DataInputStream(new BufferedInputStream(Files.newInputStream(niPath)))) {
             ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
             metadata.setVersion(bb.getShort(2));
         }
@@ -92,7 +92,7 @@ public class FsStoryPackReader implements StoryPackReader {
 
         // Open 'ni' file
         Path niPath = inputFolder.resolve(NODE_INDEX_FILENAME);
-        try(DataInputStream niDis = new DataInputStream(Files.newInputStream(niPath))) {
+        try(DataInputStream niDis = new DataInputStream(new BufferedInputStream(Files.newInputStream(niPath)))) {
             ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
             // Nodes index file format version (1)
             bb.getShort();
