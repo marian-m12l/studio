@@ -6,12 +6,12 @@
 
 package studio.core.v1.reader.binary;
 
+import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -42,7 +42,7 @@ import studio.core.v1.reader.StoryPackReader;
 public class BinaryStoryPackReader implements StoryPackReader {
 
     public StoryPackMetadata readMetadata(Path path) throws IOException {
-        try(DataInputStream dis = new DataInputStream(Files.newInputStream(path, StandardOpenOption.READ))){
+        try(DataInputStream dis = new DataInputStream(new BufferedInputStream(Files.newInputStream(path)))){
             // Pack metadata model
             StoryPackMetadata metadata = new StoryPackMetadata(Constants.PACK_FORMAT_RAW);
 
@@ -73,7 +73,7 @@ public class BinaryStoryPackReader implements StoryPackReader {
     }
 
     public StoryPack read(Path path) throws IOException {
-        try(DataInputStream dis = new DataInputStream(Files.newInputStream(path, StandardOpenOption.READ))) {
+        try(DataInputStream dis = new DataInputStream(new BufferedInputStream(Files.newInputStream(path)))) {
 
             // Read sector 1
             short stages = dis.readShort();

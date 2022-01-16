@@ -6,11 +6,11 @@
 
 package studio.core.v1.writer.binary;
 
+import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -36,7 +36,7 @@ import studio.core.v1.writer.StoryPackWriter;
 public class BinaryStoryPackWriter implements StoryPackWriter {
 
     public void write(StoryPack pack, Path path, boolean enriched) throws IOException {
-        try(DataOutputStream dos = new DataOutputStream(Files.newOutputStream(path,StandardOpenOption.CREATE))){
+        try(DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(path)))){
 
             // Write sector 1
             dos.writeShort(pack.getStageNodes().size());
