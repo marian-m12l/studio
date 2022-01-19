@@ -15,8 +15,8 @@ import org.junit.jupiter.api.Test;
 
 class DeviceUtilsTests {
 
-    private static String OS = System.getProperty("os.name").toLowerCase();
-    public static boolean IS_WINDOWS = (OS.indexOf("win") >= 0);
+    private static final String OS = System.getProperty("os.name").toLowerCase();
+    private static final boolean IS_WINDOWS = (OS.indexOf("win") >= 0);
 
     @Test
     void testWindows() throws IOException {
