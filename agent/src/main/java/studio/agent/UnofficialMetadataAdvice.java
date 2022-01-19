@@ -29,6 +29,20 @@ public class UnofficialMetadataAdvice {
         throw new IllegalArgumentException("Utility class");
     }
 
+    private static final String OS = System.getProperty("os.name").toLowerCase();
+    private static final boolean IS_WINDOWS = OS.contains("win");
+    private static final boolean IS_MAC = OS.contains("mac");
+
+    public static Path luniithequePath() {
+        if (IS_WINDOWS) {
+            return Path.of(System.getenv("APPDATA"), "Luniitheque");
+        }
+        if (IS_MAC) {
+            return Path.of(System.getProperty("user.home"), "Library/Application Support/Luniitheque");
+        }
+        return Path.of(System.getProperty("user.home"), ".local/share/Luniitheque");
+    }
+    
     @Advice.OnMethodExit
     public static void getInputStream(@Advice.This HttpURLConnection that, @Advice.Return(readOnly = false) InputStream retval) {
         final Logger logger = Logger.getLogger("studio-agent");
@@ -52,17 +66,11 @@ public class UnofficialMetadataAdvice {
                     String imagePath = null;
                     if (meta.getThumbnail() != null) {
                         imagePath = "/studio/" + meta.getUuid();
-                        String os = System.getProperty("os.name").toLowerCase();
-                        String luniitheque = os.contains("win")
-                                ? System.getenv("APPDATA") + "/Luniitheque"
-                                : os.contains("mac")
-                                    ? System.getProperty("user.home") + "/Library/Application Support/Luniitheque"
-                                    : System.getProperty("user.home") + "/.local/share/Luniitheque";
-                        String cacheFilePath = luniitheque + "/images/" + UUID.nameUUIDFromBytes(("http:/" + imagePath).getBytes()).toString();
-                        logger.info("Storing unofficial metadata image into local filesystem with path: " + cacheFilePath);
-
-                        byte[] bytes = Base64.getDecoder().decode(meta.getThumbnail().substring(meta.getThumbnail().indexOf(";base64,") + 8));
-                        Files.write(Path.of(cacheFilePath), bytes);
+                        UUID u = UUID.nameUUIDFromBytes(("http:/" + imagePath).getBytes());
+                        Path cacheFilePath = luniithequePath().resolve("images").resolve(u.toString());
+                        logger.info("Storing unofficial metadata image into local filesystem: " + cacheFilePath);
+                        String encodedImg = meta.getThumbnail().substring(meta.getThumbnail().indexOf(";base64,") + 8);
+                        Files.write(cacheFilePath, Base64.getDecoder().decode(encodedImg));
                     }
 
                     // Generate JSON document with unofficial metadata
@@ -99,16 +107,16 @@ public class UnofficialMetadataAdvice {
                     locales.addProperty("fr_FR", true); // FIXME Handle multiple locales
                     metadata.add("locales_available", locales);
                     JsonObject localized = new JsonObject();
-                    JsonObject localized_frFR = new JsonObject();
-                    localized_frFR.addProperty("description", meta.getDescription());
+                    JsonObject localizedFr = new JsonObject();
+                    localizedFr.addProperty("description", meta.getDescription());
                     JsonObject image = new JsonObject();
                     image.addProperty("image_url", imagePath);
-                    localized_frFR.add("image", image);
+                    localizedFr.add("image", image);
                     JsonArray previews = new JsonArray();
-                    localized_frFR.add("previews", previews);
-                    localized_frFR.addProperty("subtitle", "");
-                    localized_frFR.addProperty("title", meta.getTitle());
-                    localized.add("fr_FR", localized_frFR);
+                    localizedFr.add("previews", previews);
+                    localizedFr.addProperty("subtitle", "");
+                    localizedFr.addProperty("title", meta.getTitle());
+                    localized.add("fr_FR", localizedFr);
                     metadata.add("localized_infos", localized);
                     metadata.addProperty("modification_date", 0L);
                     metadata.addProperty("sampling_rate", 0);
