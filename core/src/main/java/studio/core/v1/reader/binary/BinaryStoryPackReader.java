@@ -38,13 +38,14 @@ import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.model.mime.AudioType;
 import studio.core.v1.model.mime.ImageType;
 import studio.core.v1.reader.StoryPackReader;
+import studio.core.v1.utils.PackFormat;
 
 public class BinaryStoryPackReader implements StoryPackReader {
 
     public StoryPackMetadata readMetadata(Path path) throws IOException {
         try(DataInputStream dis = new DataInputStream(new BufferedInputStream(Files.newInputStream(path)))){
             // Pack metadata model
-            StoryPackMetadata metadata = new StoryPackMetadata(Constants.PACK_FORMAT_RAW);
+            StoryPackMetadata metadata = new StoryPackMetadata(PackFormat.RAW);
 
             // Read sector 1
             dis.skipBytes(3);   // Skip to version

@@ -12,7 +12,6 @@ import java.util.List;
 
 import org.junit.jupiter.api.Test;
 
-import studio.core.v1.Constants;
 import studio.core.v1.model.ControlSettings;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
@@ -20,12 +19,14 @@ import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 import studio.core.v1.model.enriched.EnrichedNodeType;
 import studio.core.v1.model.enriched.EnrichedPackMetadata;
 import studio.core.v1.model.metadata.StoryPackMetadata;
-import studio.core.v1.writer.archive.ArchiveStoryPackWriter;
+import studio.core.v1.reader.StoryPackReader;
+import studio.core.v1.utils.PackFormat;
+import studio.core.v1.writer.StoryPackWriter;
 
 class ArchiveStoryPackReaderTest {
 
-    private ArchiveStoryPackReader reader = new ArchiveStoryPackReader();
-    private ArchiveStoryPackWriter writer = new ArchiveStoryPackWriter();
+    private StoryPackReader reader = PackFormat.ARCHIVE.getReader();
+    private StoryPackWriter writer = PackFormat.ARCHIVE.getWriter();
 
     private String zipName = "SimplifiedSamplePack-60f84e3d-8a37-4b4a-9e67-fc13daad9bb9-v1.zip";
 
@@ -46,7 +47,7 @@ class ArchiveStoryPackReaderTest {
         System.out.printf("readMetadata (%s ms) : %s\n", t2 - t1, metaActual);
 
         StoryPackMetadata metaExpected = new StoryPackMetadata();
-        metaExpected.setFormat(Constants.PACK_FORMAT_ARCHIVE);
+        metaExpected.setFormat(PackFormat.ARCHIVE);
         metaExpected.setVersion((short) 1);
         metaExpected.setTitle("SimplifiedSamplePack");
         metaExpected.setUuid("60f84e3d-8a37-4b4a-9e67-fc13daad9bb9");
@@ -135,11 +136,10 @@ class ArchiveStoryPackReaderTest {
             }
         }
 
-        // ------------------
         // write
         long tt1 = System.currentTimeMillis();
-        Path zip = zipPath.resolveSibling("output-SimplifiedSamplePack.zip");
-        writer.write(spExpected, zip, true);
+        Path zip = zipPath.resolveSibling("output-from-zip.zip");
+        writer.write(spActual, zip, true);
         long tt2 = System.currentTimeMillis();
 
         System.out.printf("writeStoryPack (%s ms)\n", tt2 - tt1);

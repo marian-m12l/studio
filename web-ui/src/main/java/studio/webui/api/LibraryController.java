@@ -21,6 +21,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import studio.core.v1.Constants;
+import studio.core.v1.utils.PackFormat;
 import studio.webui.service.LibraryService;
 
 public class LibraryController {
@@ -37,7 +38,7 @@ public class LibraryController {
         Router router = Router.router(vertx);
 
         // Local library device metadata
-        router.get("/infos").blockingHandler(ctx -> {
+        router.get("/infos").handler(ctx -> {
             ctx.response()
                     .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                     .end(Json.encode(libraryService.libraryInfos()));
@@ -45,7 +46,10 @@ public class LibraryController {
 
         // Local library packs list
         router.get("/packs").blockingHandler(ctx -> {
+            long t1 = System.currentTimeMillis();
             JsonArray libraryPacks = libraryService.packs();
+            long t2 = System.currentTimeMillis();
+            LOGGER.info("Library packs scanned in {}ms", t2-t1);
             ctx.response()
                     .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
                     .end(Json.encode(libraryPacks));
@@ -88,22 +92,27 @@ public class LibraryController {
             // Perform conversion/uncompression asynchronously
             Promise<Path> promisedPack = Promise.promise();
             THREAD_POOL.schedule(() -> {
-                Optional<Path> optPath = null;
-                if (Constants.PACK_FORMAT_RAW.equalsIgnoreCase(format)) {
-                    optPath = libraryService.addConvertedRawPackFile(packPath, allowEnriched);
-                } else if (Constants.PACK_FORMAT_FS.equalsIgnoreCase(format)) {
-                    optPath = libraryService.addConvertedFsPackFile(packPath, allowEnriched);
-                } else if (Constants.PACK_FORMAT_ARCHIVE.equalsIgnoreCase(format)) {
-                    optPath = libraryService.addConvertedArchivePackFile(packPath);
-                } else {
+                PackFormat packFormat;
+                try {
+                    packFormat = PackFormat.valueOf(format.toUpperCase());
+                }catch(IllegalArgumentException e ) {
+                    LOGGER.error("Invalid PackFormat : " + format);
                     ctx.fail(400);
                     return;
+                }
+                Optional<Path> optPath = Optional.empty();
+                if (PackFormat.RAW == packFormat) {
+                    optPath = libraryService.addConvertedRawPackFile(packPath, allowEnriched);
+                } else if (PackFormat.FS == packFormat) {
+                    optPath = libraryService.addConvertedFsPackFile(packPath, allowEnriched);
+                } else if (PackFormat.ARCHIVE == packFormat) {
+                    optPath = libraryService.addConvertedArchivePackFile(packPath);
                 }
                 optPath.ifPresentOrElse(p -> promisedPack.tryComplete(p),
                         () -> promisedPack.tryFail("Failed to read or convert pack to " + format + " format"));
                 promisedPack.tryComplete();
-            }, 1, TimeUnit.SECONDS);
-            
+            }, 0, TimeUnit.SECONDS);
+
             promisedPack.future().onComplete(maybeConvertedPack -> {
                 if (maybeConvertedPack.succeeded()) {
                     // Return path to converted file within library
@@ -121,7 +130,7 @@ public class LibraryController {
         });
 
         // Remove pack from device
-        router.post("/remove").blockingHandler(ctx -> {
+        router.post("/remove").handler(ctx -> {
             String packPath = ctx.getBodyAsJson().getString("path");
             boolean removed = libraryService.deletePack(packPath);
             if (removed) {

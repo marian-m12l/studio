@@ -29,9 +29,9 @@ import java.util.logging.Logger;
 import org.usb4java.Device;
 import org.usb4java.DeviceHandle;
 
+import studio.core.v1.utils.exception.StoryTellerException;
 import studio.driver.DeviceVersion;
 import studio.driver.LibUsbDetectionHelper;
-import studio.driver.StoryTellerException;
 import studio.driver.event.DeviceHotplugEventListener;
 import studio.driver.event.TransferProgressListener;
 import studio.driver.fs.FileUtils;
@@ -489,7 +489,7 @@ public class RawStoryTellerAsyncDriver {
             return CompletableFuture.failedFuture(noDevicePluggedException());
         }
         try {
-            if(Files.notExists(outputPath)) {
+            if(!Files.isDirectory(outputPath)) {
                 Files.createDirectory(outputPath);
             }
         } catch (IOException e) {

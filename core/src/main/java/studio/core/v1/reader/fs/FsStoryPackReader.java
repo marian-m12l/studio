@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 
-import studio.core.v1.Constants;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.AudioAsset;
 import studio.core.v1.model.ControlSettings;
@@ -34,6 +33,7 @@ import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.model.mime.AudioType;
 import studio.core.v1.model.mime.ImageType;
 import studio.core.v1.reader.StoryPackReader;
+import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.XXTEACipher;
 
 public class FsStoryPackReader implements StoryPackReader {
@@ -48,7 +48,7 @@ public class FsStoryPackReader implements StoryPackReader {
 
     public StoryPackMetadata readMetadata(Path inputFolder) throws IOException {
         // Pack metadata model
-        StoryPackMetadata metadata = new StoryPackMetadata(Constants.PACK_FORMAT_FS);
+        StoryPackMetadata metadata = new StoryPackMetadata(PackFormat.FS);
 
         // Open 'ni' file
         Path niPath = inputFolder.resolve(NODE_INDEX_FILENAME);
@@ -110,7 +110,7 @@ public class FsStoryPackReader implements StoryPackReader {
             int soundAssetsCount = bb.getInt();
             // Is factory pack (boolean) set to true to avoid pack inspection by official Luniistore application
             factoryDisabled = bb.get() != 0x00;
-    
+
             // Read stage nodes
             for (int i=0; i<stageNodesCount; i++) {
                 bb = ByteBuffer.wrap(niDis.readNBytes(nodeSize)).order(ByteOrder.LITTLE_ENDIAN);
@@ -127,7 +127,7 @@ public class FsStoryPackReader implements StoryPackReader {
                 boolean home = bb.getShort() != 0;
                 boolean pause = bb.getShort() != 0;
                 boolean autoplay = bb.getShort() != 0;
-    
+
                 // Transition will be updated later with the actual action nodes
                 Transition okTransition = null;
                 if (okTransitionActionNodeIndexInLI != -1 && okTransitionNumberOfOptions != -1 && okTransitionSelectedOptionIndex != -1) {
@@ -149,7 +149,7 @@ public class FsStoryPackReader implements StoryPackReader {
                     twa.add(homeTransition);
                     transitionsWithAction.put(homeTransitionActionNodeIndexInLI, twa);
                 }
-    
+
                 // Read Image and audio assets
                 ImageAsset image = null;
                 if (imageAssetIndexInRI != -1) {
