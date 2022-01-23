@@ -19,13 +19,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
+import java.util.logging.Level;
+import java.util.logging.Logger;
 import java.util.stream.Stream;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
-import studio.core.v1.Constants;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.AudioAsset;
 import studio.core.v1.model.ControlSettings;
@@ -41,14 +42,17 @@ import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.model.mime.AudioType;
 import studio.core.v1.model.mime.ImageType;
 import studio.core.v1.reader.StoryPackReader;
+import studio.core.v1.utils.PackFormat;
 
 public class ArchiveStoryPackReader implements StoryPackReader {
+
+    private static final Logger LOGGER = Logger.getLogger(ArchiveStoryPackReader.class.getName());
 
     public StoryPackMetadata readMetadata(Path zipPath) throws IOException {
         // Zip archive contains a json file and separate assets
         try (FileSystem zipFs = FileSystems.newFileSystem(zipPath, ClassLoader.getSystemClassLoader())) {
             // Pack metadata model
-            StoryPackMetadata metadata = new StoryPackMetadata(Constants.PACK_FORMAT_ARCHIVE);
+            StoryPackMetadata metadata = new StoryPackMetadata(PackFormat.ARCHIVE);
             // Story descriptor file: story.json
             Path story = zipFs.getPath("story.json");
             if (Files.notExists(story)) {
@@ -103,7 +107,7 @@ public class ArchiveStoryPackReader implements StoryPackReader {
                     try {
                         assets.put(p.getFileName().toString(), Files.readAllBytes(p));
                     } catch (IOException e) {
-                        e.printStackTrace();
+                        LOGGER.log(Level.SEVERE, "Failed to read archive asset", e);
                     }
                 });
             }

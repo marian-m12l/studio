@@ -83,10 +83,6 @@ public class Constants {
             (byte) 0x8B, (byte) 0x44, (byte) 0xC3, (byte) 0x1A, (byte) 0xC7, (byte) 0x83, (byte) 0x5E, (byte) 0x1D
     };
 
-    public static final String PACK_FORMAT_ARCHIVE = "archive";
-    public static final String PACK_FORMAT_RAW = "raw";
-    public static final String PACK_FORMAT_FS= "fs";
-
     public static final int BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING = 11 + 48;
     public static final int BINARY_ENRICHED_METADATA_TITLE_TRUNCATE = 64;           // 64 characters == 128 bytes
     public static final int BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE = 128;    // 128 characters == 256 bytes

@@ -25,7 +25,7 @@ import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import studio.core.v1.Constants;
+import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.SecurityUtils;
 import studio.driver.event.DeviceHotplugEventListener;
 import studio.driver.event.TransferProgressListener;
@@ -465,7 +465,7 @@ public class StoryTellerService implements IStoryTellerService {
         return databaseMetadataService.getPackMetadata(pack.getUuid().toString())
                 .map(metadata -> new JsonObject()
                         .put("uuid", pack.getUuid().toString())
-                        .put("format", Constants.PACK_FORMAT_RAW)
+                        .put("format", PackFormat.RAW.getLabel())
                         .put("version", pack.getVersion())
                         .put("title", metadata.getTitle())
                         .put("description", metadata.getDescription())
@@ -475,7 +475,7 @@ public class StoryTellerService implements IStoryTellerService {
                 )
                 .orElse(new JsonObject()
                         .put("uuid", pack.getUuid().toString())
-                        .put("format", Constants.PACK_FORMAT_RAW)
+                        .put("format", PackFormat.RAW.getLabel())
                         .put("version", pack.getVersion())
                         .put("sectorSize", pack.getSizeInSectors())
                 );
@@ -484,7 +484,7 @@ public class StoryTellerService implements IStoryTellerService {
         return databaseMetadataService.getPackMetadata(pack.getUuid().toString())
                 .map(metadata -> new JsonObject()
                         .put("uuid", pack.getUuid().toString())
-                        .put("format", Constants.PACK_FORMAT_FS)
+                        .put("format", PackFormat.FS.getLabel())
                         .put("version", pack.getVersion())
                         .put("title", metadata.getTitle())
                         .put("description", metadata.getDescription())
@@ -496,7 +496,7 @@ public class StoryTellerService implements IStoryTellerService {
                 )
                 .orElse(new JsonObject()
                         .put("uuid", pack.getUuid().toString())
-                        .put("format", Constants.PACK_FORMAT_FS)
+                        .put("format", PackFormat.FS.getLabel())
                         .put("version", pack.getVersion())
                         .put("folderName", pack.getFolderName())
                         .put("sizeInBytes", pack.getSizeInBytes())

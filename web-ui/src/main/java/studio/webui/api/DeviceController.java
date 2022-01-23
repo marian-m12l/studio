@@ -17,6 +17,7 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import studio.core.v1.Constants;
+import studio.core.v1.utils.PackFormat;
 import studio.webui.service.IStoryTellerService;
 import studio.webui.service.LibraryService;
 
@@ -143,9 +144,9 @@ public class DeviceController {
             String driver = ctx.getBodyAsJson().getString("driver");
             // Transfer pack file to library file
             Path path = null;
-            if (Constants.PACK_FORMAT_RAW.equalsIgnoreCase(driver)) {
+            if (PackFormat.RAW.name().equalsIgnoreCase(driver)) {
                 path = LibraryService.libraryPath().resolve(uuid + ".pack");
-            } else if (Constants.PACK_FORMAT_FS.equalsIgnoreCase(driver)) {
+            } else if (PackFormat.FS.name().equalsIgnoreCase(driver)) {
                 path = LibraryService.libraryPath();
             } else {
                 ctx.fail(400);

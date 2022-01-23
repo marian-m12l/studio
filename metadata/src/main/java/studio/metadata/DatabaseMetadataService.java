@@ -7,7 +7,6 @@
 package studio.metadata;
 
 import java.io.BufferedReader;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -15,9 +14,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.logging.Level;
@@ -42,50 +39,63 @@ public class DatabaseMetadataService {
     public static final String LUNII_GUEST_TOKEN_URL = "https://server-auth-prod.lunii.com/guest/create";
     public static final String LUNII_PACKS_DATABASE_URL = "https://server-data-prod.lunii.com/v2/packs";
 
-    private final Map<String, JsonObject> cachedOfficialDatabase;
+    // databases paths
+    private Path officialDbPath = officialDbPath();
+    private Path unofficialDbPath = unofficialDbPath();
+
+    // databases caches : <uuid, packMetadata>
+    private final Map<String, JsonObject> cachedOfficialDatabase = new HashMap<>();
+    private final JsonObject unofficialJsonCache;
+    private long lastModifiedCache = 0;
 
     public DatabaseMetadataService(boolean isAgent) {
-        // Read and cache official database
-        cachedOfficialDatabase = new HashMap<>();
         if (!isAgent) {
             try {
-                LOGGER.fine("Reading and caching official metadata database");
-                // Read official metadata database file (path may be overridden by system property `studio.db.official`)
-                Path databasePath = officialDbPath();
-                String jsonString = Files.readString(databasePath);
-                JsonObject officialRoot = new JsonParser().parse(jsonString).getAsJsonObject();   // throws IllegalStateException
-                // Support newer file format which has an additional wrapper: { "code": "0.0", "response": { ...
-                final JsonObject packsRoot = (officialRoot.keySet().contains("response")) ? officialRoot.getAsJsonObject("response") : officialRoot;
+                // Read official metadata database file
+                LOGGER.info("Reading official metadata in " + officialDbPath);
+                String jsonString = Files.readString(officialDbPath);
+                JsonObject officialRoot = new JsonParser().parse(jsonString).getAsJsonObject();
+                // Support newer file which has an additional wrapper: { "code": "0.0", "response": { ...
+                JsonObject packsRoot = officialRoot.has("response") ? officialRoot.getAsJsonObject("response") : officialRoot;
                 if (packsRoot == null) {
                     throw new IllegalStateException("Failed to get json root node");
                 }
-                // Go through all packs
-                packsRoot.keySet().forEach(key -> {
-                    JsonObject packMetadata = packsRoot.getAsJsonObject(key);
-                    String uuid = packMetadata.get("uuid").getAsString();
-                    cachedOfficialDatabase.put(uuid, packMetadata);
-                });
-            } catch (IOException e) {
-                LOGGER.log(Level.WARNING, "Missing official metadata database file", e);
-                this.fetchOfficialDatabase();
-            } catch (JsonParseException|IllegalStateException e) {
+                // Refresh cache
+                refreshOfficialCache(packsRoot);
+            } catch (IOException | JsonParseException | IllegalStateException e) {
                 // Graceful failure on invalid file content
                 LOGGER.log(Level.WARNING, "Official metadata database file is invalid", e);
-                this.fetchOfficialDatabase();
+                fetchOfficialDatabase();
             }
         }
-        // Initialize empty unofficial database if needed
-        Path databasePath = unofficialDbPath();
-        if (Files.notExists(databasePath) || !Files.isRegularFile(databasePath)) {
-            try {
-                Files.writeString(databasePath, "{}");
-            } catch (IOException e) {
-                LOGGER.log(Level.SEVERE, "Failed to initialize unofficial metadata database", e);
-                throw new IllegalStateException("Failed to initialize unofficial metadata database");
+
+        try {
+            LOGGER.info("Reading unofficial database in " + unofficialDbPath);
+            // Initialize empty unofficial database if needed
+            if (!Files.isRegularFile(unofficialDbPath)) {
+                unofficialJsonCache = new JsonObject();
+                lastModifiedCache = System.currentTimeMillis();
+                persistUnofficialDatabase();
+                return;
             }
-        } else if (!isAgent) {
-            // Otherwise clear unofficial database from official packs metadata
-            this.cleanUnofficialDatabase();
+            // Read json from disk
+            String jsonString = Files.readString(unofficialDbPath);
+            unofficialJsonCache = new JsonParser().parse(jsonString).getAsJsonObject();
+            if (!isAgent) {
+                // Otherwise clear unofficial database from official packs metadata
+                LOGGER.fine("Cleaning unofficial database.");
+                // Remove official packs from unofficial metadata database file
+                for (String uuid : unofficialJsonCache.keySet()) {
+                    if (isOfficialPack(uuid)) {
+                        unofficialJsonCache.remove(uuid);
+                        lastModifiedCache = System.currentTimeMillis();
+                    }
+                }
+                persistUnofficialDatabase();
+            }
+        } catch (IOException e) {
+            LOGGER.log(Level.SEVERE, "Failed to initialize unofficial metadata database", e);
+            throw new IllegalStateException("Failed to initialize unofficial metadata database");
         }
     }
 
@@ -98,8 +108,26 @@ public class DatabaseMetadataService {
         return metadata;
     }
 
+    public boolean isOfficialPack(String uuid) {
+        LOGGER.fine("Looking in official database for pack: " + uuid);
+        return cachedOfficialDatabase.containsKey(uuid);
+    }
+
+    private void refreshOfficialCache(JsonObject packsRoot) {
+        // Go through all packs
+        packsRoot.keySet().forEach(key -> {
+            JsonObject packMetadata = packsRoot.getAsJsonObject(key);
+            String uuid = packMetadata.get("uuid").getAsString();
+            cachedOfficialDatabase.put(uuid, packMetadata);
+        });
+    }
+
     public Optional<DatabasePackMetadata> getOfficialMetadata(String uuid) {
         LOGGER.fine("Fetching metadata from official database for pack: " + uuid);
+        // missing
+        if(!isOfficialPack(uuid)) {
+            return Optional.empty();
+        }
         return Optional.ofNullable(cachedOfficialDatabase.get(uuid)).map(packMetadata -> {
             // FIXME Handle multiple locales
             JsonObject localesAvailable = packMetadata.getAsJsonObject("locales_available");
@@ -115,51 +143,22 @@ public class DatabaseMetadataService {
         });
     }
 
-    public boolean isOfficialPack(String uuid) {
-        LOGGER.fine("Looking in official database for pack: " + uuid);
-        return cachedOfficialDatabase.containsKey(uuid);
-    }
-
-    public synchronized Optional<DatabasePackMetadata> getUnofficialMetadata(String uuid) {
+    public Optional<DatabasePackMetadata> getUnofficialMetadata(String uuid) {
         LOGGER.fine("Fetching metadata from unofficial database for pack: " + uuid);
-        // Fetch from unofficial metadata database file (path may be overridden by system property `studio.db.unofficial`)
-        Path databasePath = unofficialDbPath();
-        try {
-            String jsonString = Files.readString(databasePath);
-            JsonObject unofficialRoot = new JsonParser().parse(jsonString).getAsJsonObject();
-            if (unofficialRoot.has(uuid)) {
-                JsonObject packMetadata = unofficialRoot.getAsJsonObject(uuid);
-                return Optional.of(new DatabasePackMetadata(
-                        uuid,
-                        Optional.ofNullable(packMetadata.get("title")).map(JsonElement::getAsString).orElse(null),
-                        Optional.ofNullable(packMetadata.get("description")).map(JsonElement::getAsString).orElse(null),
-                        Optional.ofNullable(packMetadata.get("image")).map(JsonElement::getAsString).orElse(null),
-                        false
-                ));
-            }
-        } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Missing unofficial metadata database file", e);
+        // Fetch from unofficial metadata cache database
+        if (unofficialJsonCache.has(uuid)) {
+            LOGGER.fine("Unofficial metadata found for pack: " + uuid);
+            JsonObject packMetadata = unofficialJsonCache.getAsJsonObject(uuid);
+            return Optional.of(new DatabasePackMetadata(
+                    uuid,
+                    Optional.ofNullable(packMetadata.get("title")).map(JsonElement::getAsString).orElse(null),
+                    Optional.ofNullable(packMetadata.get("description")).map(JsonElement::getAsString).orElse(null),
+                    Optional.ofNullable(packMetadata.get("image")).map(JsonElement::getAsString).orElse(null),
+                    false
+            ));
         }
-
         // Missing metadata
         return Optional.empty();
-    }
-
-    private void replaceOfficialDatabase(JsonObject json) {
-        // Update official database
-        Path databasePath = officialDbPath();
-        try {
-            writeDatabaseFile(databasePath, json);
-
-            // Go through all packs to update cache
-            json.keySet().forEach(key -> {
-                JsonObject packMetadata = json.getAsJsonObject(key);
-                String uuid = packMetadata.get("uuid").getAsString();
-                cachedOfficialDatabase.put(uuid, packMetadata);
-            });
-        } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Failed to update official metadata database file", e);
-        }
     }
 
     private void fetchOfficialDatabase() {
@@ -208,71 +207,53 @@ public class DatabaseMetadataService {
                 JsonObject response = json.get("response").getAsJsonObject();
                 // Try and update official database
                 LOGGER.info("Fetched metadata, updating local database");
-                this.replaceOfficialDatabase(response);
+                // Update official database on RAM
+                refreshOfficialCache(response);
+                // Update official database on disk
+                writeDatabaseFile(officialDbPath, response);
             }
         } catch (IOException e) {
             LOGGER.log(Level.SEVERE, "Failed to fetch official metadata database.", e);
         }
     }
 
-    public void refreshUnofficialMetadata(DatabasePackMetadata meta) {
+    public void refreshUnofficialCache(DatabasePackMetadata meta) {
         // Refresh unofficial database only if the pack isn't an official one
-        if (this.getOfficialMetadata(meta.getUuid()).isPresent()) {
+        if(isOfficialPack(meta.getUuid())) {
             return;
         }
         // Update unofficial database
-        Path databasePath = unofficialDbPath();
-        try {
-            // Open database file
-            String jsonString = Files.readString(databasePath);
-            JsonObject unofficialRoot = new JsonParser().parse(jsonString).getAsJsonObject();
-
-            // Replace or add pack metadata
-            JsonObject value = new JsonObject();
-            value.addProperty("uuid", meta.getUuid());
-            if (meta.getTitle() != null) {
-                value.addProperty("title", meta.getTitle());
-            }
-            if (meta.getDescription() != null) {
-                value.addProperty("description", meta.getDescription());
-            }
-            if (meta.getThumbnail() != null) {
-                value.addProperty("image", meta.getThumbnail());
-            }
-            unofficialRoot.add(meta.getUuid(), value);
-
-            // Write database file
-            writeDatabaseFile(databasePath, unofficialRoot);
-        } catch (FileNotFoundException e) {
-            LOGGER.log(Level.SEVERE, "Missing unofficial metadata database file", e);
-        } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Failed to update unofficial metadata database file", e);
+        String uuid = meta.getUuid();
+        LOGGER.fine("Updating unofficial metadata cache for " + uuid);
+        // Find old value
+        JsonObject oldValue = null;
+        if(unofficialJsonCache.has(uuid)) {
+            oldValue = unofficialJsonCache.getAsJsonObject(uuid);
+        }
+        // New pack metadata
+        JsonObject newValue = new JsonObject();
+        newValue.addProperty("uuid", uuid);
+        Optional.ofNullable(meta.getTitle()).ifPresent(t -> newValue.addProperty("title", t));
+        Optional.ofNullable(meta.getDescription()).ifPresent(t -> newValue.addProperty("description", t));
+        Optional.ofNullable(meta.getThumbnail()).ifPresent(t -> newValue.addProperty("image", t));
+        // Need cache update if different
+        if (!newValue.equals(oldValue)) {
+            LOGGER.info("Cache updating of " + uuid);
+            lastModifiedCache = System.currentTimeMillis();
+            unofficialJsonCache.add(uuid, newValue);
         }
     }
 
-    public void cleanUnofficialDatabase() {
-        LOGGER.fine("Cleaning unofficial database.");
-        // Remove official packs from unofficial metadata database file
-        Path databasePath = unofficialDbPath();
-        try  {
-            String jsonString = Files.readString(databasePath);
-            JsonObject unofficialRoot = new JsonParser().parse(jsonString).getAsJsonObject();
-            List<String> toClean = new ArrayList<>();
-            for (String uuid : unofficialRoot.keySet()) {
-                if (this.isOfficialPack(uuid)) {
-                    toClean.add(uuid);
-                }
-            }
-            for (String uuid : toClean) {
-                unofficialRoot.remove(uuid);
-            }
-
-            // Write database file
-            writeDatabaseFile(databasePath, unofficialRoot);
-        } catch (FileNotFoundException e) {
-            LOGGER.log(Level.SEVERE, "Missing unofficial metadata database file", e);
-        } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Failed to clean unofficial metadata database file", e);
+    public void persistUnofficialDatabase() throws IOException {
+        // file last modified time
+        long lastModifiedFile = -1l;
+        if (Files.isRegularFile(unofficialDbPath)) {
+            lastModifiedFile = Files.getLastModifiedTime(unofficialDbPath).toMillis();
+        }
+        // if cache updated, write json database to file
+        if (lastModifiedCache > lastModifiedFile) {
+            LOGGER.info("Persisting unofficial database to disk");
+            writeDatabaseFile(unofficialDbPath, unofficialJsonCache);
         }
     }
 
@@ -281,12 +262,12 @@ public class DatabaseMetadataService {
         Files.writeString(databasePath, gson.toJson(json));
     }
 
-    public static Path officialDbPath() {
+    private static Path officialDbPath() {
         String defaultDir = System.getProperty("user.home") + "/.studio/db/official.json";
         return Path.of(System.getProperty(OFFICIAL_DB_PROP, defaultDir));
     }
 
-    public static Path unofficialDbPath() {
+    private static Path unofficialDbPath() {
         String defaultDir = System.getProperty("user.home") + "/.studio/db/unofficial.json";
         return Path.of(System.getProperty(UNOFFICIAL_DB_PROP, defaultDir));
     }

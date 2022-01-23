@@ -30,10 +30,10 @@ import java.util.stream.Stream;
 import org.usb4java.Device;
 
 import studio.core.v1.utils.SecurityUtils;
+import studio.core.v1.utils.exception.StoryTellerException;
 import studio.core.v1.writer.fs.FsStoryPackWriter;
 import studio.driver.DeviceVersion;
 import studio.driver.LibUsbDetectionHelper;
-import studio.driver.StoryTellerException;
 import studio.driver.event.DeviceHotplugEventListener;
 import studio.driver.event.TransferProgressListener;
 import studio.driver.model.TransferStatus;
@@ -454,7 +454,7 @@ public class FsStoryTellerAsyncDriver {
                     try {
                         Path d = destFolder.resolve(sourceFolder.relativize(s));
                         if (Files.isDirectory(s)) {
-                            if (Files.notExists(d)) {
+                            if (!Files.isDirectory(d)) {
                                 LOGGER.finer("Creating directory " + d);
                                 Files.createDirectory(d);
                             }

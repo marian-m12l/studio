@@ -19,6 +19,7 @@ import org.usb4java.DeviceDescriptor;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
+import studio.core.v1.utils.exception.StoryTellerException;
 import studio.driver.event.DeviceHotplugEventListener;
 
 public class LibUsbDetectionHelper {
