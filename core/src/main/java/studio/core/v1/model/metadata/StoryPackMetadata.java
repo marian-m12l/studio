@@ -6,9 +6,11 @@
 
 package studio.core.v1.model.metadata;
 
+import studio.core.v1.utils.PackFormat;
+
 public class StoryPackMetadata {
 
-    private String format;
+    private PackFormat format;
     private String uuid;
     private short version;
     private String title;
@@ -20,11 +22,11 @@ public class StoryPackMetadata {
     public StoryPackMetadata() {
     }
 
-    public StoryPackMetadata(String format) {
+    public StoryPackMetadata(PackFormat format) {
         this.format = format;
     }
 
-    public StoryPackMetadata(String format, String uuid, short version, String title, String description, byte[] thumbnail, Integer sectorSize, boolean nightModeAvailable) {
+    public StoryPackMetadata(PackFormat format, String uuid, short version, String title, String description, byte[] thumbnail, Integer sectorSize, boolean nightModeAvailable) {
         this.format = format;
         this.uuid = uuid;
         this.version = version;
@@ -35,11 +37,11 @@ public class StoryPackMetadata {
         this.nightModeAvailable = nightModeAvailable;
     }
 
-    public String getFormat() {
+    public PackFormat getFormat() {
         return format;
     }
 
-    public void setFormat(String format) {
+    public void setFormat(PackFormat format) {
         this.format = format;
     }
 

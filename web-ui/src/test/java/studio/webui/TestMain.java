@@ -3,13 +3,22 @@ package studio.webui;
 import java.util.Optional;
 
 import io.vertx.core.Launcher;
+import studio.metadata.DatabaseMetadataService;
+import studio.webui.service.LibraryService;
 
 public class TestMain {
 
+    /** Copy env vars to system vars. */
+    private static void envToSystemProperty(String a, String b) {
+        Optional.ofNullable(System.getenv(a)).ifPresent(s -> System.setProperty(b, s));
+    }
+
     public static void main(String... args) {
         // copy from env vars
-        Optional.ofNullable(System.getenv("STUDIO_LIBRARY")).ifPresent(s -> System.setProperty("studio.library", s));
-        Optional.ofNullable(System.getenv("STUDIO_TMPDIR")).ifPresent(s -> System.setProperty("studio.tmpdir", s));
+        envToSystemProperty("STUDIO_LIBRARY", LibraryService.LOCAL_LIBRARY_PROP);
+        envToSystemProperty("STUDIO_TMPDIR", LibraryService.TMP_DIR_PROP);
+        envToSystemProperty("STUDIO_DB_OFFICIAL", DatabaseMetadataService.OFFICIAL_DB_PROP);
+        envToSystemProperty("STUDIO_DB_UNOFFICIAL", DatabaseMetadataService.UNOFFICIAL_DB_PROP);
 
         // common config
         System.setProperty("file.encoding", "UTF-8");
@@ -19,7 +28,7 @@ public class TestMain {
                 "io.vertx.core.logging.Log4j2LogDelegateFactory");
 
         // test mode
-        if(args.length>0 && "dev".equals( args[0] )) {
+        if (args.length > 0 && "dev".equals(args[0])) {
             System.setProperty("env", "dev");
             System.setProperty("studio.open", "false");
         }

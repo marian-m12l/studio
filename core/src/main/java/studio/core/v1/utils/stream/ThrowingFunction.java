@@ -2,6 +2,8 @@ package studio.core.v1.utils.stream;
 
 import java.util.function.Function;
 
+import studio.core.v1.utils.exception.StoryTellerException;
+
 /**
  * Handle checked exception-in lambda.
  * 
@@ -21,7 +23,7 @@ public interface ThrowingFunction<T, R, E extends Exception> {
             try {
                 return f.apply(t);
             } catch (Exception e) {
-                throw new RuntimeException(e);
+                throw new StoryTellerException(e);
             }
         };
     }

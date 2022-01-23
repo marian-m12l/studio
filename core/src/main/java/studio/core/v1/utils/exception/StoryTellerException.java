@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package studio.driver;
+package studio.core.v1.utils.exception;
 
 public class StoryTellerException extends RuntimeException {
 

@@ -54,7 +54,7 @@ public class MockStoryTellerService implements IStoryTellerService {
 
         // Create the mocked device folder if needed
         Path libraryFolder = devicePath();
-        if (Files.notExists(libraryFolder) || !Files.isDirectory(libraryFolder)) {
+        if (!Files.isDirectory(libraryFolder)) {
             try {
                 Files.createDirectories(libraryFolder);
             } catch (IOException e) {
@@ -94,7 +94,7 @@ public class MockStoryTellerService implements IStoryTellerService {
     public CompletableFuture<JsonArray> packs() {
         // Check that mocked device folder exists
         Path deviceFolder = devicePath();
-        if (Files.notExists(deviceFolder) || !Files.isDirectory(deviceFolder)) {
+        if (!Files.isDirectory(deviceFolder)) {
             return CompletableFuture.completedFuture(new JsonArray());
         } else {
             return readPackIndex(deviceFolder).thenApply(packs -> new JsonArray( //
@@ -146,7 +146,7 @@ public class MockStoryTellerService implements IStoryTellerService {
     public CompletableFuture<Optional<String>> addPack(String uuid, Path packFile) {
         // Check that mocked device folder exists
         Path deviceFolder = devicePath();
-        if (Files.notExists(deviceFolder) || !Files.isDirectory(deviceFolder)) {
+        if (!Files.isDirectory(deviceFolder)) {
             return CompletableFuture.completedFuture(Optional.empty());
         } else {
             String transferId = UUID.randomUUID().toString();
@@ -188,7 +188,7 @@ public class MockStoryTellerService implements IStoryTellerService {
     public CompletableFuture<Boolean> deletePack(String uuid) {
         // Check that mocked device folder exists
         Path deviceFolder = devicePath();
-        if (Files.notExists(deviceFolder) || !Files.isDirectory(deviceFolder)) {
+        if (!Files.isDirectory(deviceFolder)) {
             return CompletableFuture.completedFuture(false);
         } else {
             try {
@@ -216,7 +216,7 @@ public class MockStoryTellerService implements IStoryTellerService {
     public CompletableFuture<Optional<String>> extractPack(String uuid, Path destFile) {
         // Check that mocked device folder exists
         Path deviceFolder = devicePath();
-        if (Files.notExists(deviceFolder) || !Files.isDirectory(deviceFolder)) {
+        if (!Files.isDirectory(deviceFolder)) {
             return CompletableFuture.completedFuture(Optional.empty());
         } else {
             String transferId = UUID.randomUUID().toString();
@@ -263,7 +263,7 @@ public class MockStoryTellerService implements IStoryTellerService {
     private JsonObject getPackMetadata(StoryPackMetadata packMetadata) {
         JsonObject json = new JsonObject()
                 .put("uuid", packMetadata.getUuid())
-                .put("format", packMetadata.getFormat())
+                .put("format", packMetadata.getFormat().getLabel())
                 .put("version", packMetadata.getVersion())
                 .put("sectorSize", packMetadata.getSectorSize());
         return databaseMetadataService.getPackMetadata(packMetadata.getUuid())

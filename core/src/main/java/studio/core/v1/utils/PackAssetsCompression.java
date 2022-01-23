@@ -45,7 +45,7 @@ public class PackAssetsCompression {
         return false;
     }
 
-    public static void processCompressed(StoryPack pack) throws Exception {
+    public static void processCompressed(StoryPack pack) {
         // Image
         processImageAssets(pack, ImageType.PNG, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
@@ -66,7 +66,7 @@ public class PackAssetsCompression {
         }));
     }
 
-    public static void processUncompressed(StoryPack pack) throws Exception {
+    public static void processUncompressed(StoryPack pack) {
         // Image
         processImageAssets(pack, ImageType.BMP, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
