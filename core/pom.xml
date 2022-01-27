@@ -28,7 +28,7 @@
             <artifactId>vorbisspi</artifactId>
             <version>1.0.3.3</version>
         </dependency>
-        <dependency>
+        <!--<dependency>
             <groupId>com.googlecode.soundlibs</groupId>
             <artifactId>mp3spi</artifactId>
             <version>1.9.5.4</version>
@@ -38,7 +38,7 @@
                     <artifactId>junit</artifactId>
                 </exclusion>
             </exclusions>
-        </dependency>
+        </dependency>-->
         <dependency>
             <groupId>org.xiph</groupId>
             <artifactId>vorbis-java</artifactId>
