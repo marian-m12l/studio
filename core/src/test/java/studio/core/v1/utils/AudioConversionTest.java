@@ -23,27 +23,47 @@ class AudioConversionTest {
         Path zipPath = classpathResource(zipName);
 
         try (FileSystem zipFs = FileSystems.newFileSystem(zipPath, ClassLoader.getSystemClassLoader())) {
-            Path ogg = zipFs.getPath("assets/1a23e1732632e8bbcb7607a92edd3c3ec3c3357a.ogg");
+            Path insideOgg = zipFs.getPath("assets/1a23e1732632e8bbcb7607a92edd3c3ec3c3357a.ogg");
 
-            long oggSize = Files.size(ogg);
-            assertEquals(16330, oggSize, "asset ogg");
+            long insideOggSize = Files.size(insideOgg);
+            assertEquals(16330, insideOggSize, "asset ogg");
 
-            System.out.println("Read " + ogg);
-            byte[] oggBytes = Files.readAllBytes(ogg);
-            assertEquals(16330, oggBytes.length, "old.ogg");
+            System.out.println("Read " + insideOgg);
+            byte[] insideOggBytes = Files.readAllBytes(insideOgg);
+            assertEquals(16330, insideOggBytes.length, "old.ogg");
 
             System.out.println("Write wav");
-            byte[] wavBytes = AudioConversion.anyToWave(oggBytes);
-            long newWavSize = Files.size(Files.write(zipPath.resolveSibling("new.wav"), wavBytes));
-            assertEquals(90938, newWavSize, "new.wav");
+            byte[] outsideWavBytes = AudioConversion.anyToWave(insideOggBytes);
+            Path outsideWav = Files.write(zipPath.resolveSibling("new.wav"), outsideWavBytes);
+            long outsideWavSize = Files.size(outsideWav);
+            assertEquals(90938, outsideWavSize, "new.wav");
 
             System.out.println("Write ogg");
-            byte[] oggBytes2 = AudioConversion.waveToOgg(wavBytes);
-            long newOggSize = Files.size(Files.write(zipPath.resolveSibling("new.ogg"), oggBytes2));
-            assertEquals(17059, newOggSize, "new.ogg");
+            byte[] outsideOggBytes = AudioConversion.waveToOgg(outsideWavBytes);
+            Path outsideOgg = Files.write(zipPath.resolveSibling("new.ogg"), outsideOggBytes);
+            long outsideOggSize = Files.size(outsideOgg);
+            assertEquals(17059, outsideOggSize, "new.ogg");
 
             // oldOggSize != newOggSize ???
             // assertArrayEquals(oggBytes, oggBytes2, "Ogg different");
+        }
+    }
+
+    @Test
+    void convertMp3() throws Exception {
+        Path zipPath = classpathResource(zipName);
+        try (FileSystem zipFs = FileSystems.newFileSystem(zipPath, ClassLoader.getSystemClassLoader())) {
+            Path insideOgg = zipFs.getPath("assets/1a23e1732632e8bbcb7607a92edd3c3ec3c3357a.ogg");
+
+            System.out.println("Read " + insideOgg);
+            byte[] insideOggBytes = Files.readAllBytes(insideOgg);
+            assertEquals(16330, insideOggBytes.length, "old.ogg");
+
+            System.out.println("Write mp3");
+            byte[] outsideMp3Bytes = AudioConversion.anyToMp3(insideOggBytes);
+            Path outsideMp3 = Files.write(zipPath.resolveSibling("new.mp3"), outsideMp3Bytes);
+            long outsideMp3Size = Files.size(outsideMp3);
+            assertEquals(15247, outsideMp3Size, "new.mp3");
         }
     }
 }

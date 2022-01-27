@@ -11,6 +11,8 @@ public class SecurityUtils {
 
     private static final Logger LOGGER = Logger.getLogger(SecurityUtils.class.getName());
 
+    private static final byte[] HEX_ARRAY = "0123456789abcdef".getBytes(StandardCharsets.US_ASCII);
+
     private SecurityUtils() {
         throw new IllegalStateException("Utility class");
     }
@@ -18,9 +20,8 @@ public class SecurityUtils {
     /**
      * Compute the sha1 of a byte array in Hex string
      * 
-     * @param input UTF-8 string
+     * @param input byte array
      * @return sha1 String
-     * @throws UnsupportedEncodingException
      */
     public static String sha1Hex(byte[] array) {
         try {
@@ -39,12 +40,9 @@ public class SecurityUtils {
      * @return sha1 String
      * @throws UnsupportedEncodingException
      */
-
     public static String sha1Hex(String s) throws UnsupportedEncodingException {
         return sha1Hex(s.getBytes(StandardCharsets.UTF_8));
     }
-
-    private static final byte[] HEX_ARRAY = "0123456789abcdef".getBytes(StandardCharsets.US_ASCII);
 
     /**
      * Convert byte array to (lowercase) Hex String
@@ -62,6 +60,13 @@ public class SecurityUtils {
         return new String(hexChars, StandardCharsets.UTF_8);
     }
 
+    /**
+     * Convert UTF-8 String to (lowercase) Hex String
+     * 
+     * @param s String
+     * @return hexadecimal string
+     * @throws UnsupportedEncodingException
+     */
     public static String encodeHex(String s) throws UnsupportedEncodingException {
         return encodeHex(s.getBytes(StandardCharsets.UTF_8));
     }
@@ -83,4 +88,5 @@ public class SecurityUtils {
         }
         return arr;
     }
+
 }
