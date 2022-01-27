@@ -6,6 +6,15 @@
 
 package studio.core.v1.reader.binary;
 
+import static studio.core.v1.Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT;
+import static studio.core.v1.Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT_PADDING;
+import static studio.core.v1.Constants.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE;
+import static studio.core.v1.Constants.BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE;
+import static studio.core.v1.Constants.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING;
+import static studio.core.v1.Constants.BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING;
+import static studio.core.v1.Constants.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE;
+import static studio.core.v1.Constants.SECTOR_SIZE;
+
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -21,7 +30,6 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 
-import studio.core.v1.Constants;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.AssetType;
 import studio.core.v1.model.AudioAsset;
@@ -52,17 +60,17 @@ public class BinaryStoryPackReader implements StoryPackReader {
             metadata.setVersion(dis.readShort());
 
             // Read (optional) enriched pack metadata
-            dis.skipBytes(Constants.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING);
-            Optional<String> maybeTitle = readString(dis, Constants.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE);
+            dis.skipBytes(BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING);
+            Optional<String> maybeTitle = readString(dis, BINARY_ENRICHED_METADATA_TITLE_TRUNCATE);
             metadata.setTitle(maybeTitle.orElse(null));
-            Optional<String> maybeDescription = readString(dis, Constants.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE);
+            Optional<String> maybeDescription = readString(dis, BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE);
             metadata.setDescription(maybeDescription.orElse(null));
             // TODO Thumbnail?
 
-            dis.skipBytes(Constants.SECTOR_SIZE - 5
-                    - Constants.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING
-                    - Constants.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE*2
-                    - Constants.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE*2); // Skip to end of sector
+            dis.skipBytes(SECTOR_SIZE - 5
+                    - BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING
+                    - BINARY_ENRICHED_METADATA_TITLE_TRUNCATE*2
+                    - BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE*2); // Skip to end of sector
 
             // Read main stage node
             long uuidLowBytes = dis.readLong();
@@ -83,18 +91,18 @@ public class BinaryStoryPackReader implements StoryPackReader {
 
             // Read (optional) enriched pack metadata
             EnrichedPackMetadata enrichedPack = null;
-            dis.skipBytes(Constants.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING);
-            Optional<String> maybeTitle = readString(dis, Constants.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE);
-            Optional<String> maybeDescription = readString(dis, Constants.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE);
+            dis.skipBytes(BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING);
+            Optional<String> maybeTitle = readString(dis, BINARY_ENRICHED_METADATA_TITLE_TRUNCATE);
+            Optional<String> maybeDescription = readString(dis, BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE);
             // TODO Thumbnail?
             if (maybeTitle.isPresent() || maybeDescription.isPresent()) {
                 enrichedPack = new EnrichedPackMetadata(maybeTitle.orElse(null), maybeDescription.orElse(null));
             }
 
-            dis.skipBytes(Constants.SECTOR_SIZE - 5
-                    - Constants.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING
-                    - Constants.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE*2
-                    - Constants.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE*2); // Skip to end of sector
+            dis.skipBytes(SECTOR_SIZE - 5
+                    - BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING
+                    - BINARY_ENRICHED_METADATA_TITLE_TRUNCATE*2
+                    - BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE*2); // Skip to end of sector
 
             // Read stage nodes (`stages` sectors, starting from sector 2)
             TreeMap<SectorAddr, StageNode> stageNodes = new TreeMap<>();
@@ -159,7 +167,7 @@ public class BinaryStoryPackReader implements StoryPackReader {
                 boolean autoJumpEnabled = dis.readShort() == 1;
 
                 // Read (optional) enriched node metadata
-                dis.skipBytes(Constants.BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING);
+                dis.skipBytes(BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING);
                 EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(dis);
 
                 // Build stage node
@@ -201,9 +209,9 @@ public class BinaryStoryPackReader implements StoryPackReader {
                 }
 
                 // Skip to end of sector
-                dis.skipBytes(Constants.SECTOR_SIZE - 54
-                        - Constants.BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING
-                        - Constants.BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE*2 - 16 - 1 - 4);
+                dis.skipBytes(SECTOR_SIZE - 54
+                        - BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING
+                        - BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE*2 - 16 - 1 - 4);
             }
 
             // Read action nodes
@@ -215,7 +223,7 @@ public class BinaryStoryPackReader implements StoryPackReader {
                 SectorAddr actionNodeAddr = actionNodesIter.next();
                 // Skip to the beginning of the sector, if needed
                 while (actionNodeAddr.getOffset() > currentOffset) {
-                    dis.skipBytes(Constants.SECTOR_SIZE);
+                    dis.skipBytes(SECTOR_SIZE);
                     currentOffset++;
                 }
 
@@ -227,8 +235,8 @@ public class BinaryStoryPackReader implements StoryPackReader {
                 }
 
                 // Read (optional) enriched node metadata
-                int alignmentOverflow = 2*(options.size()) % Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT;
-                int alignmentPadding = Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT_PADDING + (alignmentOverflow > 0 ? Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT - alignmentOverflow : 0);
+                int alignmentOverflow = 2*(options.size()) % BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT;
+                int alignmentPadding = BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT_PADDING + (alignmentOverflow > 0 ? BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT - alignmentOverflow : 0);
                 dis.skipBytes(alignmentPadding - 2);    // No need to skip the last 2 bytes that were read in the previous loop
                 EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(dis);
 
@@ -237,9 +245,9 @@ public class BinaryStoryPackReader implements StoryPackReader {
                 transitionsWithAction.get(actionNodeAddr).forEach(transition -> transition.setActionNode(actionNode));
 
                 // Skip to end of sector
-                dis.skipBytes(Constants.SECTOR_SIZE - (2*(options.size()+1))
+                dis.skipBytes(SECTOR_SIZE - (2*(options.size()+1))
                         - (alignmentPadding - 2)
-                        - Constants.BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE*2 - 16 - 1 - 4);
+                        - BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE*2 - 16 - 1 - 4);
                 currentOffset++;
             }
 
@@ -250,11 +258,11 @@ public class BinaryStoryPackReader implements StoryPackReader {
                 AssetAddr assetAddr = assetAddrsIter.next();
                 // Skip to the beginning of the sector, if needed
                 while (assetAddr.getOffset() > currentOffset) {
-                    dis.skipBytes(Constants.SECTOR_SIZE);
+                    dis.skipBytes(SECTOR_SIZE);
                     currentOffset++;
                 }
                 // Read all bytes
-                byte[] assetBytes = new byte[Constants.SECTOR_SIZE * assetAddr.getSize()];
+                byte[] assetBytes = new byte[SECTOR_SIZE * assetAddr.getSize()];
                 dis.read(assetBytes, 0, assetBytes.length);
 
                 // Update asset on stage nodes referencing this sector
@@ -288,7 +296,7 @@ public class BinaryStoryPackReader implements StoryPackReader {
     }
 
     private EnrichedNodeMetadata readEnrichedNodeMetadata(DataInputStream dis) throws IOException {
-        Optional<String> maybeName = readString(dis, Constants.BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE);
+        Optional<String> maybeName = readString(dis, BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE);
         Optional<String> maybeGroupId = Optional.empty();
         long groupIdLowBytes = dis.readLong();
         long groupIdHighBytes = dis.readLong();
