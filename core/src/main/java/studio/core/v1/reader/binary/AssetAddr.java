@@ -6,8 +6,6 @@
 
 package studio.core.v1.reader.binary;
 
-import studio.core.v1.model.AssetType;
-
 import java.util.Objects;
 
 public class AssetAddr implements Comparable<AssetAddr> {
@@ -15,6 +13,11 @@ public class AssetAddr implements Comparable<AssetAddr> {
     private int offset;
     private int size;
     private AssetType type;
+
+    public enum AssetType {
+        AUDIO,
+        IMAGE
+    }
 
     public AssetAddr() {
     }

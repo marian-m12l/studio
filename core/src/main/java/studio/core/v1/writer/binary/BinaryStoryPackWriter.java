@@ -26,18 +26,18 @@ import java.util.TreeMap;
 import java.util.UUID;
 
 import studio.core.v1.model.ActionNode;
-import studio.core.v1.model.AssetType;
-import studio.core.v1.model.AudioAsset;
-import studio.core.v1.model.ImageAsset;
 import studio.core.v1.model.Node;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.Transition;
+import studio.core.v1.model.asset.AudioAsset;
+import studio.core.v1.model.asset.AudioType;
+import studio.core.v1.model.asset.ImageAsset;
+import studio.core.v1.model.asset.ImageType;
 import studio.core.v1.model.enriched.EnrichedNodePosition;
 import studio.core.v1.model.enriched.EnrichedNodeType;
-import studio.core.v1.model.mime.AudioType;
-import studio.core.v1.model.mime.ImageType;
 import studio.core.v1.reader.binary.AssetAddr;
+import studio.core.v1.reader.binary.AssetAddr.AssetType;
 import studio.core.v1.reader.binary.SectorAddr;
 import studio.core.v1.utils.SecurityUtils;
 import studio.core.v1.writer.StoryPackWriter;
@@ -45,7 +45,7 @@ import studio.core.v1.writer.StoryPackWriter;
 public class BinaryStoryPackWriter implements StoryPackWriter {
 
     /** Binary check, stored in base64. */
-    public static final byte[] CHECK_BYTES = Base64.getMimeDecoder().decode(String.join("\n", //
+    private static final byte[] CHECK_BYTES = Base64.getMimeDecoder().decode(String.join("\n", //
             "X87Wfg5QRriuVdqMRciYiqOHpTE7d0d2sIFTfdWWLzTdOIgFyk5E4bFUWb6zSJrXX1OqF/Y2Tjiq",
             "IUmyp8HcBnMRaJJl7EkYgjeLtOm4mzMBFcw1TtxOepJNSgMD2U0i7MAjzlqtQASuoQZ9QB9j8ubi",
             "scY4ok7CpzstlZd86cbKemrby5ZNLZ6GtnIK1VrKwnuFM5FiRYad50XB59HJ3Lqb1EXCAEVdoT79",
@@ -100,7 +100,7 @@ public class BinaryStoryPackWriter implements StoryPackWriter {
                     byte[] imageData = image.getRawData();
                     String assetHash = SecurityUtils.sha1Hex(imageData);
                     if (!assetsHashes.containsKey(assetHash)) {
-                        if (!ImageType.BMP.is(image.getMimeType())) {
+                        if (ImageType.BMP != image.getType()) {
                             throw new IllegalArgumentException(
                                     "Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
                         }
@@ -122,7 +122,7 @@ public class BinaryStoryPackWriter implements StoryPackWriter {
                     byte[] audioData = audio.getRawData();
                     String assetHash = SecurityUtils.sha1Hex(audioData);
                     if (!assetsHashes.containsKey(assetHash)) {
-                        if (!AudioType.WAV.is(audio.getMimeType())) {
+                        if (AudioType.WAV != audio.getType()) {
                             throw new IllegalArgumentException(
                                     "Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
                         }

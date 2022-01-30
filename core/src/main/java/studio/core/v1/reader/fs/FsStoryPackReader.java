@@ -23,15 +23,15 @@ import java.util.TreeMap;
 import java.util.UUID;
 
 import studio.core.v1.model.ActionNode;
-import studio.core.v1.model.AudioAsset;
 import studio.core.v1.model.ControlSettings;
-import studio.core.v1.model.ImageAsset;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.Transition;
+import studio.core.v1.model.asset.AudioAsset;
+import studio.core.v1.model.asset.AudioType;
+import studio.core.v1.model.asset.ImageAsset;
+import studio.core.v1.model.asset.ImageType;
 import studio.core.v1.model.metadata.StoryPackMetadata;
-import studio.core.v1.model.mime.AudioType;
-import studio.core.v1.model.mime.ImageType;
 import studio.core.v1.reader.StoryPackReader;
 import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.XXTEACipher;
@@ -159,7 +159,7 @@ public class FsStoryPackReader implements StoryPackReader {
                     // Read image file
                     Path imagePath = inputFolder.resolve(IMAGE_FOLDER + imageName);
                     byte[] rfContent = readCipheredFile(imagePath);
-                    image = new ImageAsset(ImageType.BMP.getMime(), rfContent);
+                    image = new ImageAsset(ImageType.BMP, rfContent);
                 }
                 AudioAsset audio = null;
                 if (soundAssetIndexInSI != -1) {
@@ -169,7 +169,7 @@ public class FsStoryPackReader implements StoryPackReader {
                     // Read audio file
                     Path audioPath = inputFolder.resolve(SOUND_FOLDER + audioName);
                     byte[] sfContent = readCipheredFile(audioPath);
-                    audio = new AudioAsset(AudioType.MPEG.getMime(), sfContent);
+                    audio = new AudioAsset(AudioType.MPEG, sfContent);
                 }
 
                 StageNode stageNode = new StageNode(

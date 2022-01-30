@@ -4,28 +4,25 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package studio.core.v1.model;
+package studio.core.v1.model.asset;
 
-public abstract class Asset {
+public class ImageAsset {
 
-    private String mimeType;
+    private ImageType type;
     private byte[] rawData;
 
-    protected Asset() {
+    public ImageAsset(ImageType type, byte[] rawData) {
         super();
-    }
-
-    protected Asset(String mimeType, byte[] rawData) {
-        this.mimeType = mimeType;
+        this.type = type;
         this.rawData = rawData;
     }
 
-    public String getMimeType() {
-        return mimeType;
+    public ImageType getType() {
+        return type;
     }
 
-    public void setMimeType(String mimeType) {
-        this.mimeType = mimeType;
+    public void setType(ImageType imageType) {
+        this.type = imageType;
     }
 
     public byte[] getRawData() {
@@ -35,4 +32,5 @@ public abstract class Asset {
     public void setRawData(byte[] rawData) {
         this.rawData = rawData;
     }
+
 }

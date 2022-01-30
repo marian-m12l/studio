@@ -16,12 +16,12 @@ import java.util.logging.Logger;
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioSystem;
 
-import studio.core.v1.model.AudioAsset;
-import studio.core.v1.model.ImageAsset;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
-import studio.core.v1.model.mime.AudioType;
-import studio.core.v1.model.mime.ImageType;
+import studio.core.v1.model.asset.AudioAsset;
+import studio.core.v1.model.asset.AudioType;
+import studio.core.v1.model.asset.ImageAsset;
+import studio.core.v1.model.asset.ImageType;
 import studio.core.v1.utils.stream.ThrowingFunction;
 
 public class PackAssetsCompression {
@@ -35,10 +35,10 @@ public class PackAssetsCompression {
     public static boolean hasCompressedAssets(StoryPack pack) {
         for (int i = 0; i < pack.getStageNodes().size(); i++) {
             StageNode node = pack.getStageNodes().get(i);
-            if (node.getImage() != null && !ImageType.BMP.is(node.getImage().getMimeType())) {
+            if (node.getImage() != null && ImageType.BMP != node.getImage().getType()) {
                 return true;
             }
-            if (node.getAudio() != null && !AudioType.WAV.is(node.getAudio().getMimeType())) {
+            if (node.getAudio() != null && AudioType.WAV != node.getAudio().getType()) {
                 return true;
             }
         }
@@ -49,7 +49,7 @@ public class PackAssetsCompression {
         // Image
         processImageAssets(pack, ImageType.PNG, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
-            if (ImageType.BMP.is(ia.getMimeType())) {
+            if (ImageType.BMP == ia.getType()) {
                 LOGGER.fine("Compressing BMP image asset into PNG");
                 imageData = ImageConversion.bitmapToPng(imageData);
             }
@@ -58,7 +58,7 @@ public class PackAssetsCompression {
         // Audio
         processAudioAssets(pack, AudioType.OGG, ThrowingFunction.unchecked(aa -> {
             byte[] audioData = aa.getRawData();
-            if (AudioType.WAV.is(aa.getMimeType())) {
+            if (AudioType.WAV == aa.getType()) {
                 LOGGER.fine("Compressing WAV audio asset into OGG");
                 audioData = AudioConversion.waveToOgg(audioData);
             }
@@ -71,15 +71,15 @@ public class PackAssetsCompression {
         processImageAssets(pack, ImageType.BMP, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
             // Convert from 4-bits depth / RLE encoding BMP
-            if (ImageType.BMP.is(ia.getMimeType()) && imageData[28] == 0x04 && imageData[30] == 0x02) {
+            if (ImageType.BMP == ia.getType() && imageData[28] == 0x04 && imageData[30] == 0x02) {
                 LOGGER.fine("Uncompressing 4-bits/RLE BMP image asset into BMP");
                 imageData = ImageConversion.anyToBitmap(imageData);
             }
-            if (ImageType.JPEG.is(ia.getMimeType())) {
+            if (ImageType.JPEG == ia.getType()) {
                 LOGGER.fine("Uncompressing JPG image asset into BMP");
                 imageData = ImageConversion.anyToBitmap(imageData);
             }
-            if (ImageType.PNG.is(ia.getMimeType())) {
+            if (ImageType.PNG == ia.getType()) {
                 LOGGER.fine("Uncompressing PNG image asset into BMP");
                 imageData = ImageConversion.anyToBitmap(imageData);
             }
@@ -88,11 +88,11 @@ public class PackAssetsCompression {
         // Audio
         processAudioAssets(pack, AudioType.WAV, ThrowingFunction.unchecked(aa -> {
             byte[] audioData = aa.getRawData();
-            if (AudioType.OGG.is(aa.getMimeType())) {
+            if (AudioType.OGG == aa.getType()) {
                 LOGGER.fine("Uncompressing OGG audio asset into WAV");
                 audioData = AudioConversion.oggToWave(audioData);
             }
-            if (AudioType.MPEG.is(aa.getMimeType())) {
+            if (AudioType.MPEG == aa.getType()) {
                 LOGGER.fine("Uncompressing MP3 audio asset into WAV");
                 audioData = AudioConversion.mp3ToWave(audioData);
             }
@@ -105,7 +105,7 @@ public class PackAssetsCompression {
         processImageAssets(pack, ImageType.BMP, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
             // Convert to 4-bits depth / RLE encoding BMP
-            if (!ImageType.BMP.is(ia.getMimeType()) || imageData[28] != 0x04 || imageData[30] != 0x02) {
+            if (ImageType.BMP != ia.getType() || imageData[28] != 0x04 || imageData[30] != 0x02) {
                 LOGGER.fine("Converting image asset into 4-bits/RLE BMP");
                 imageData = ImageConversion.anyToRLECompressedBitmap(imageData);
             }
@@ -114,7 +114,7 @@ public class PackAssetsCompression {
         // Audio
         processAudioAssets(pack, AudioType.MPEG, ThrowingFunction.unchecked(aa -> {
             byte[] audioData = aa.getRawData();
-            if (!AudioType.MPEG.is(aa.getMimeType()) && !AudioType.MP3.is(aa.getMimeType())) {
+            if (AudioType.MPEG != aa.getType() && AudioType.MP3 != aa.getType()) {
                 LOGGER.fine("Converting audio asset into MP3");
                 audioData = AudioConversion.anyToMp3(audioData);
             } else {
@@ -154,7 +154,7 @@ public class PackAssetsCompression {
                 }
                 // Use asset (already compressed) bytes from map
                 ia.setRawData(assets.get(assetHash));
-                ia.setMimeType(targetType.getMime());
+                ia.setType(targetType);
             }
         });
         // Clean cache
@@ -182,7 +182,7 @@ public class PackAssetsCompression {
                 }
                 // Use asset (already compressed) bytes from map
                 aa.setRawData(assets.get(assetHash));
-                aa.setMimeType(targetType.getMime());
+                aa.setType(targetType);
             }
         });
         // Clean cache

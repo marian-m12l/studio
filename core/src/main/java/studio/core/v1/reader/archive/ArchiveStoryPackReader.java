@@ -28,19 +28,19 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 
 import studio.core.v1.model.ActionNode;
-import studio.core.v1.model.AudioAsset;
 import studio.core.v1.model.ControlSettings;
-import studio.core.v1.model.ImageAsset;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.Transition;
+import studio.core.v1.model.asset.AudioAsset;
+import studio.core.v1.model.asset.AudioType;
+import studio.core.v1.model.asset.ImageAsset;
+import studio.core.v1.model.asset.ImageType;
 import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 import studio.core.v1.model.enriched.EnrichedNodePosition;
 import studio.core.v1.model.enriched.EnrichedNodeType;
 import studio.core.v1.model.enriched.EnrichedPackMetadata;
 import studio.core.v1.model.metadata.StoryPackMetadata;
-import studio.core.v1.model.mime.AudioType;
-import studio.core.v1.model.mime.ImageType;
 import studio.core.v1.reader.StoryPackReader;
 import studio.core.v1.utils.PackFormat;
 
@@ -264,13 +264,13 @@ public class ArchiveStoryPackReader implements StoryPackReader {
                     // supported images
                     ImageType it = ImageType.fromExtension(extension);
                     if(it != null) {
-                        stageNode.setImage(new ImageAsset(it.getMime(), assetEntry.getValue()));
+                        stageNode.setImage(new ImageAsset(it, assetEntry.getValue()));
                         continue;
                     }
                     // supported audio
                     AudioType at = AudioType.fromExtension(extension);
                     if(at != null) {
-                        stageNode.setAudio(new AudioAsset(at.getMime(), assetEntry.getValue()));
+                        stageNode.setAudio(new AudioAsset(at, assetEntry.getValue()));
                         continue;
                     }
                     // Unsupported asset

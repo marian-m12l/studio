@@ -6,6 +6,8 @@
 
 package studio.core.v1.model;
 
+import studio.core.v1.model.asset.AudioAsset;
+import studio.core.v1.model.asset.ImageAsset;
 import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 
 public class StageNode extends Node {

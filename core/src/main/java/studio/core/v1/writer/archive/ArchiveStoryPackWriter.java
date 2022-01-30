@@ -25,8 +25,6 @@ import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.enriched.EnrichedNodePosition;
 import studio.core.v1.model.enriched.EnrichedNodeType;
-import studio.core.v1.model.mime.AudioType;
-import studio.core.v1.model.mime.ImageType;
 import studio.core.v1.utils.SecurityUtils;
 import studio.core.v1.writer.StoryPackWriter;
 
@@ -102,7 +100,7 @@ public class ArchiveStoryPackWriter implements StoryPackWriter {
                 writer.nullValue();
             } else {
                 byte[] imageData = node.getImage().getRawData();
-                String extension = extensionFromMimeType(node.getImage().getMimeType());
+                String extension = node.getImage().getType().getFirstExtension();
                 String assetFileName = SecurityUtils.sha1Hex(imageData) + extension;
                 writer.value(assetFileName);
                 assets.putIfAbsent(assetFileName, imageData);
@@ -112,7 +110,7 @@ public class ArchiveStoryPackWriter implements StoryPackWriter {
                 writer.nullValue();
             } else {
                 byte[] audioData = node.getAudio().getRawData();
-                String extension = extensionFromMimeType(node.getAudio().getMimeType());
+                String extension = node.getAudio().getType().getFirstExtension();
                 String assetFileName = SecurityUtils.sha1Hex(audioData) + extension;
                 writer.value(assetFileName);
                 assets.putIfAbsent(assetFileName, audioData);
@@ -202,18 +200,6 @@ public class ArchiveStoryPackWriter implements StoryPackWriter {
             writer.name("y").value(nodePosition.getY());
             writer.endObject();
         }
-    }
-
-    private String extensionFromMimeType(String mimeType) {
-        ImageType it = ImageType.fromMime(mimeType);
-        if(it != null) {
-            return it.getExtensions().get(0);
-        }
-        AudioType at = AudioType.fromMime(mimeType);
-        if(at != null) {
-            return at.getExtensions().get(0);
-        }
-        return "";
     }
 
 }
