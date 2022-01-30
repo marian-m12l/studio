@@ -22,6 +22,9 @@ import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.ControlSettings;
 import studio.core.v1.model.StageNode;
@@ -37,6 +40,8 @@ import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.XXTEACipher;
 
 public class FsStoryPackReader implements StoryPackReader {
+
+    private static final Logger LOGGER = LogManager.getLogger(FsStoryPackReader.class);
 
     private static final String NODE_INDEX_FILENAME = "ni";
     private static final String LIST_INDEX_FILENAME = "li";
@@ -108,6 +113,8 @@ public class FsStoryPackReader implements StoryPackReader {
             int imageAssetsCount = bb.getInt();
             // Number of sounds (in SI file and sf/ folder)
             int soundAssetsCount = bb.getInt();
+            LOGGER.trace("NodeList start : {}, containing {} images and {} audio.", nodesList, imageAssetsCount,
+                    soundAssetsCount);
             // Is factory pack (boolean) set to true to avoid pack inspection by official Luniistore application
             factoryDisabled = bb.get() != 0x00;
 

@@ -91,83 +91,85 @@ public class QuantizeFilter extends WholeImageFilter {
         return serpentine;
     }
 
-    public void quantize(int[] inPixels, int[] outPixels, int width, int height, int numColors, boolean dither, boolean serpentine) {
-        int count = width*height;
+    public void quantize(int[] inPixels, int[] outPixels, int width, int height, int numColors, boolean dither,
+            boolean serpentine) {
+        int count = width * height;
         Quantizer quantizer = new OctTreeQuantizer();
         quantizer.setup(numColors);
         quantizer.addPixels(inPixels, 0, count);
-        int[] table =  quantizer.buildColorTable();
+        int[] table = quantizer.buildColorTable();
 
         if (!dither) {
-            for (int i = 0; i < count; i++)
+            for (int i = 0; i < count; i++) {
                 outPixels[i] = table[quantizer.getIndexForColor(inPixels[i])];
-        } else {
-            int index = 0;
-            for (int y = 0; y < height; y++) {
-                boolean reverse = serpentine && (y & 1) == 1;
-                int direction;
-                if (reverse) {
-                    index = y*width+width-1;
-                    direction = -1;
-                } else {
-                    index = y*width;
-                    direction = 1;
-                }
-                for (int x = 0; x < width; x++) {
-                    int rgb1 = inPixels[index];
-                    int rgb2 = table[quantizer.getIndexForColor(rgb1)];
+            }
+            return;
+        }
 
-                    outPixels[index] = rgb2;
+        int index = 0;
+        for (int y = 0; y < height; y++) {
+            boolean reverse = serpentine && (y & 1) == 1;
+            int direction;
+            if (reverse) {
+                index = y * width + width - 1;
+                direction = -1;
+            } else {
+                index = y * width;
+                direction = 1;
+            }
+            for (int x = 0; x < width; x++) {
+                int rgb1 = inPixels[index];
+                int rgb2 = table[quantizer.getIndexForColor(rgb1)];
 
-                    int r1 = (rgb1 >> 16) & 0xff;
-                    int g1 = (rgb1 >> 8) & 0xff;
-                    int b1 = rgb1 & 0xff;
+                outPixels[index] = rgb2;
 
-                    int r2 = (rgb2 >> 16) & 0xff;
-                    int g2 = (rgb2 >> 8) & 0xff;
-                    int b2 = rgb2 & 0xff;
+                int r1 = (rgb1 >> 16) & 0xff;
+                int g1 = (rgb1 >> 8) & 0xff;
+                int b1 = rgb1 & 0xff;
 
-                    int er = r1-r2;
-                    int eg = g1-g2;
-                    int eb = b1-b2;
+                int r2 = (rgb2 >> 16) & 0xff;
+                int g2 = (rgb2 >> 8) & 0xff;
+                int b2 = rgb2 & 0xff;
 
-                    for (int i = -1; i <= 1; i++) {
-                        int iy = i+y;
-                        if (0 <= iy && iy < height) {
-                            for (int j = -1; j <= 1; j++) {
-                                int jx = j+x;
-                                if (0 <= jx && jx < width) {
-                                    int w;
-                                    if (reverse)
-                                        w = matrix[(i+1)*3-j+1];
-                                    else
-                                        w = matrix[(i+1)*3+j+1];
-                                    if (w != 0) {
-                                        int k = reverse ? index - j : index + j;
-                                        rgb1 = inPixels[k];
-                                        r1 = (rgb1 >> 16) & 0xff;
-                                        g1 = (rgb1 >> 8) & 0xff;
-                                        b1 = rgb1 & 0xff;
-                                        r1 += er * w/sum;
-                                        g1 += eg * w/sum;
-                                        b1 += eb * w/sum;
-                                        inPixels[k] = (PixelUtils.clamp(r1) << 16) | (PixelUtils.clamp(g1) << 8) | PixelUtils.clamp(b1);
-                                    }
+                int er = r1 - r2;
+                int eg = g1 - g2;
+                int eb = b1 - b2;
+
+                for (int i = -1; i <= 1; i++) {
+                    int iy = i + y;
+                    if (0 <= iy && iy < height) {
+                        for (int j = -1; j <= 1; j++) {
+                            int jx = j + x;
+                            if (0 <= jx && jx < width) {
+                                int w;
+                                if (reverse)
+                                    w = matrix[(i + 1) * 3 - j + 1];
+                                else
+                                    w = matrix[(i + 1) * 3 + j + 1];
+                                if (w != 0) {
+                                    int k = reverse ? index - j : index + j;
+                                    rgb1 = inPixels[k];
+                                    r1 = (rgb1 >> 16) & 0xff;
+                                    g1 = (rgb1 >> 8) & 0xff;
+                                    b1 = rgb1 & 0xff;
+                                    r1 += er * w / sum;
+                                    g1 += eg * w / sum;
+                                    b1 += eb * w / sum;
+                                    inPixels[k] = (PixelUtils.clamp(r1) << 16) | (PixelUtils.clamp(g1) << 8)
+                                            | PixelUtils.clamp(b1);
                                 }
                             }
                         }
                     }
-                    index += direction;
                 }
+                index += direction;
             }
         }
     }
 
     protected int[] filterPixels( int width, int height, int[] inPixels, Rectangle transformedSpace ) {
         int[] outPixels = new int[width*height];
-
         quantize(inPixels, outPixels, width, height, numColors, dither, serpentine);
-
         return outPixels;
     }
 

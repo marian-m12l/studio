@@ -104,7 +104,7 @@ public class ImageConversion {
                         baos.write(bb.get());
                     }
                     // Fix wrong alignment
-                    int wrongByteLength = (int) Math.ceil(length/2);
+                    int wrongByteLength = length / 2;
                     if (wrongByteLength % 2 == 0 && lengthInBytes % 2 == 1) {
                         // Fix: Add missing padding byte
                         baos.write(0x00);

@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -37,7 +36,7 @@ import studio.webui.model.LibraryPack;
 
 public class LibraryService {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(LibraryService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LibraryService.class);
 
     public static final String LOCAL_LIBRARY_PROP = "studio.library";
     public static final String TMP_DIR_PROP = "studio.tmpdir";
@@ -88,18 +87,21 @@ public class LibraryService {
             // Group pack by uuid
             Map<String, List<LibraryPack>> metadataByUuid = paths
                     // debuging
-                    .peek(p -> LOGGER.info("Read metadata from `" + p.getFileName() + "`"))
+                    .filter(p -> {
+                        LOGGER.info("Read metadata from `" + p.getFileName() + "`");
+                        return true;
+                    })
                     // actual read
                     .map(this::readMetadata)
                     // filter empty
                     .filter(Optional::isPresent).map(Optional::get)
+                    // sort by timestamp DESC (=newer first)
+                    .sorted(newestComparator)
                     // Group packs by UUID
                     .collect(Collectors.groupingBy(p -> p.getMetadata().getUuid()));
 
             // Converts metadata to Json
             List<JsonObject> jsonMetasByUuid = metadataByUuid.entrySet().stream()
-                    // sort by timestamp DESC (=newer first)
-                    .peek(e -> Collections.sort(e.getValue(), newestComparator))
                     // convert
                     .map(e -> {
                         // find first zip pack

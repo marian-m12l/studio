@@ -3,16 +3,12 @@ package studio.core.v1.utils;
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-import java.io.IOException;
-import java.net.URISyntaxException;
-import java.security.NoSuchAlgorithmException;
-
 import org.junit.jupiter.api.Test;
 
 class SecurityUtilsTest {
 
     @Test
-    void sha1Hex() throws NoSuchAlgorithmException {
+    void sha1Hex() {
         String s = "Hello world";
         byte[] a = s.getBytes();
         String expected = "7b502c3a1f48c8609ae212cdfb639dee39673f5e";
@@ -39,7 +35,7 @@ class SecurityUtilsTest {
     }
 
     @Test
-    void encodeHex() throws IOException, URISyntaxException {
+    void encodeHex() {
         String s = "Hello world";
         byte[] a = s.getBytes();
         String expected = "48656c6c6f20776f726c64";

@@ -96,7 +96,7 @@ public class LibraryController {
                 try {
                     packFormat = PackFormat.valueOf(format.toUpperCase());
                 }catch(IllegalArgumentException e ) {
-                    LOGGER.error("Invalid PackFormat : " + format);
+                    LOGGER.error("Invalid PackFormat : {}", format);
                     ctx.fail(400);
                     return;
                 }

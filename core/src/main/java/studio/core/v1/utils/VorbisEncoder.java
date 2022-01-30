@@ -52,7 +52,6 @@ import org.xiph.libvorbis.vorbisenc;
 public class VorbisEncoder {
 
     private static final int READ = 1024;
-    private static byte[] BUFFER = new byte[READ*4+44];
 
     // need to randomize seed
     private static final SecureRandom prng = new SecureRandom();
@@ -62,7 +61,7 @@ public class VorbisEncoder {
     }
 
     public static byte[] encode(InputStream pcmInputStream) throws VorbisEncodingException {
-
+        byte[] buffer = new byte[READ*4+44];
         boolean eos = false;
 
         // struct that stores all the static vorbis bitstream settings
@@ -93,14 +92,14 @@ public class VorbisEncoder {
 
         // Writing header
         ogg_packet header = new ogg_packet();
-        ogg_packet header_comm = new ogg_packet();
-        ogg_packet header_code = new ogg_packet();
+        ogg_packet headerComm = new ogg_packet();
+        ogg_packet headerCode = new ogg_packet();
 
-        vd.vorbis_analysis_headerout( vc, header, header_comm, header_code );
+        vd.vorbis_analysis_headerout( vc, header, headerComm, headerCode );
 
         os.ogg_stream_packetin( header); // automatically placed in its own page
-        os.ogg_stream_packetin( header_comm );
-        os.ogg_stream_packetin( header_code );
+        os.ogg_stream_packetin( headerComm );
+        os.ogg_stream_packetin( headerCode );
 
         // one Ogg bitstream page.  Vorbis packets are inside
         ogg_page og = new ogg_page();
@@ -118,32 +117,28 @@ public class VorbisEncoder {
 
             // Encoding
             while ( !eos ) {
-
                 int i;
-                int bytes = pcmInputStream.read(BUFFER, 0, READ*4 );
+                int bytes = pcmInputStream.read(buffer, 0, READ*4 );
 
-                int break_count = 0;
+                int breakCount = 0;
 
                 if ( bytes==0 ) {
-
                     // end of file.  this can be done implicitly in the mainline,
                     // but it's easier to see here in non-clever fashion.
                     // Tell the library we're at end of stream so that it can handle
                     // the last frame and mark end of stream in the output properly
-
                     vd.vorbis_analysis_wrote( 0 );
 
                 } else {
-
                     // data to encode
-
                     // expose the buffer to submit data
-                    float[][] buffer = vd.vorbis_analysis_buffer( READ );
-
+                    float[][] floatBuffer = vd.vorbis_analysis_buffer( READ );
+                    float fb;
                     // duplicate mono channel
-                    for ( i=0; i < bytes/2; i++ ) {
-                        buffer[0][vd.pcm_current + i] = ( (BUFFER[i*2+1]<<8) | (0x00ff&(int) BUFFER[i*2]) ) / 32768.f;
-                        buffer[1][vd.pcm_current + i] = ( (BUFFER[i*2+1]<<8) | (0x00ff&(int) BUFFER[i*2]) ) / 32768.f;
+                    for (i = 0; i < bytes / 2; i++) {
+                        fb = ((buffer[i * 2 + 1] << 8) | (0x00ff & buffer[i * 2])) / 32768.f;
+                        floatBuffer[0][vd.pcm_current + i] = fb;
+                        floatBuffer[1][vd.pcm_current + i] = fb;
                     }
 
                     // tell the library how much we actually submitted
@@ -168,7 +163,7 @@ public class VorbisEncoder {
                         while ( !eos ) {
 
                             if ( !os.ogg_stream_pageout( og ) ) {
-                                break_count++;
+                                breakCount++;
                                 break;
                             }
 

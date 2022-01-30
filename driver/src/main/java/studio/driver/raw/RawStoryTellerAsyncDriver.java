@@ -127,9 +127,9 @@ public class RawStoryTellerAsyncDriver {
 
                         if (uuidHighBytes != 0L || uuidLowBytes != 0L) {
                             uuid = new UUID(uuidHighBytes, uuidLowBytes);
-                            LOGGER.fine("UUID from SD: " + uuid.toString());
+                            LOGGER.debug("UUID from SD: {}" + uuid);
                         } else {
-                            LOGGER.warning("NO UUID IN SD");
+                            LOGGER.warn("NO UUID IN SD");
                         }
                     }*/
 

@@ -11,7 +11,8 @@ import studio.core.v1.utils.SecurityUtils;
 public class FsDeviceInfos {
 
     private byte[] uuid;
-    private short firmwareMajor, firmwareMinor;
+    private short firmwareMajor;
+    private short firmwareMinor;
     private String serialNumber;
     private long sdCardSizeInBytes;
     private long usedSpaceInBytes;

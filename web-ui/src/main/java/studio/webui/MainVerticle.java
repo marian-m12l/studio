@@ -37,7 +37,7 @@ import studio.webui.service.mock.MockStoryTellerService;
 
 public class MainVerticle extends AbstractVerticle {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(MainVerticle.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MainVerticle.class);
 
     private DatabaseMetadataService databaseMetadataService;
     private LibraryService libraryService;

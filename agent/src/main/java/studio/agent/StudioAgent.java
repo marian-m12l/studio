@@ -17,6 +17,7 @@ import java.io.File;
 import java.io.IOException;
 import java.lang.instrument.Instrumentation;
 import java.nio.file.Files;
+import java.util.Arrays;
 import java.util.Properties;
 import java.util.jar.JarFile;
 
@@ -35,8 +36,9 @@ public class StudioAgent {
     }
 
     public static void premain(String arguments, Instrumentation instrumentation) throws IOException {
-        LOGGER.info("Started studio-agent (premain) version {}", getVersion());
-
+        if(LOGGER.isInfoEnabled()) {
+            LOGGER.info("Started studio-agent (premain) version {} with args: {}", getVersion(), Arrays.asList(arguments));
+        }
         // Add metadata library to bootstrap classpath
         String metadataLibraryPath = System.getProperty("user.home") + METADATA_JAR;
         instrumentation.appendToBootstrapClassLoaderSearch(new JarFile(metadataLibraryPath));
@@ -54,7 +56,7 @@ public class StudioAgent {
                     }
                     @Override
                     public void onError(String s, ClassLoader classLoader, JavaModule javaModule, boolean b, Throwable throwable) {
-                        LOGGER.error("Transformation error: " + s, throwable);
+                        LOGGER.atError().withThrowable(throwable).log("Transformation error: {}", s);
                     }
                 })
                 // Allows resolution of advice classes

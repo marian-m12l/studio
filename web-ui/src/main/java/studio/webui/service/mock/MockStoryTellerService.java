@@ -40,7 +40,7 @@ public class MockStoryTellerService implements IStoryTellerService {
 
     private static final ScheduledThreadPoolExecutor THREAD_POOL = new ScheduledThreadPoolExecutor(2);
 
-    private final Logger LOGGER = LoggerFactory.getLogger(MockStoryTellerService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MockStoryTellerService.class);
 
     private final EventBus eventBus;
 
@@ -119,7 +119,7 @@ public class MockStoryTellerService implements IStoryTellerService {
     }
     
     private Optional<StoryPackMetadata> readBinaryPackFile(Path path) {
-        LOGGER.debug("Reading pack file: " + path.toString());
+        LOGGER.debug("Reading pack file: " + path);
         // Handle only binary file format
         if (path.toString().endsWith(".pack")) {
             try {
@@ -131,7 +131,7 @@ public class MockStoryTellerService implements IStoryTellerService {
                     return Optional.of(meta);
                 }
             } catch (IOException e) {
-                LOGGER.error("Failed to read binary-format pack " + path.toString() + " from mocked device", e);
+                LOGGER.error("Failed to read binary-format pack " + path + " from mocked device", e);
                 return Optional.empty();
             }
         } else if (path.toString().endsWith(".zip")) {
