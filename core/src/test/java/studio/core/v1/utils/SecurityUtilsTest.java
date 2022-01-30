@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.io.IOException;
-import java.io.UnsupportedEncodingException;
 import java.net.URISyntaxException;
 import java.security.NoSuchAlgorithmException;
 
@@ -13,7 +12,7 @@ import org.junit.jupiter.api.Test;
 class SecurityUtilsTest {
 
     @Test
-    void sha1Hex() throws NoSuchAlgorithmException, UnsupportedEncodingException {
+    void sha1Hex() throws NoSuchAlgorithmException {
         String s = "Hello world";
         byte[] a = s.getBytes();
         String expected = "7b502c3a1f48c8609ae212cdfb639dee39673f5e";

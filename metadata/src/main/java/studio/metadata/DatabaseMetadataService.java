@@ -17,8 +17,9 @@ import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -30,7 +31,7 @@ import com.google.gson.stream.JsonReader;
 
 public class DatabaseMetadataService {
 
-    private static final Logger LOGGER = Logger.getLogger(DatabaseMetadataService.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(DatabaseMetadataService.class);
 
     public static final String OFFICIAL_DB_PROP = "studio.db.official";
     public static final String UNOFFICIAL_DB_PROP = "studio.db.unofficial";
@@ -64,7 +65,7 @@ public class DatabaseMetadataService {
                 refreshOfficialCache(packsRoot);
             } catch (IOException | JsonParseException | IllegalStateException e) {
                 // Graceful failure on invalid file content
-                LOGGER.log(Level.WARNING, "Official metadata database file is invalid", e);
+                LOGGER.warn( "Official metadata database file is invalid", e);
                 fetchOfficialDatabase();
             }
         }
@@ -83,7 +84,7 @@ public class DatabaseMetadataService {
             unofficialJsonCache = new JsonParser().parse(jsonString).getAsJsonObject();
             if (!isAgent) {
                 // Otherwise clear unofficial database from official packs metadata
-                LOGGER.fine("Cleaning unofficial database.");
+                LOGGER.debug("Cleaning unofficial database.");
                 // Remove official packs from unofficial metadata database file
                 for (String uuid : unofficialJsonCache.keySet()) {
                     if (isOfficialPack(uuid)) {
@@ -94,13 +95,13 @@ public class DatabaseMetadataService {
                 persistUnofficialDatabase();
             }
         } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Failed to initialize unofficial metadata database", e);
+            LOGGER.error("Failed to initialize unofficial metadata database", e);
             throw new IllegalStateException("Failed to initialize unofficial metadata database");
         }
     }
 
     public Optional<DatabasePackMetadata> getPackMetadata(String uuid) {
-        LOGGER.fine("Fetching metadata for pack: " + uuid);
+        LOGGER.debug("Fetching metadata for pack: {}", uuid);
         Optional<DatabasePackMetadata> metadata = this.getOfficialMetadata(uuid);
         if (!metadata.isPresent()) {
             metadata = this.getUnofficialMetadata(uuid);
@@ -109,7 +110,7 @@ public class DatabaseMetadataService {
     }
 
     public boolean isOfficialPack(String uuid) {
-        LOGGER.fine("Looking in official database for pack: " + uuid);
+        LOGGER.debug("Looking in official database for pack: {}", uuid);
         return cachedOfficialDatabase.containsKey(uuid);
     }
 
@@ -123,7 +124,7 @@ public class DatabaseMetadataService {
     }
 
     public Optional<DatabasePackMetadata> getOfficialMetadata(String uuid) {
-        LOGGER.fine("Fetching metadata from official database for pack: " + uuid);
+        LOGGER.debug("Fetching metadata from official database for pack: {}", uuid);
         // missing
         if(!isOfficialPack(uuid)) {
             return Optional.empty();
@@ -144,10 +145,10 @@ public class DatabaseMetadataService {
     }
 
     public Optional<DatabasePackMetadata> getUnofficialMetadata(String uuid) {
-        LOGGER.fine("Fetching metadata from unofficial database for pack: " + uuid);
+        LOGGER.debug("Fetching metadata from unofficial database for pack: {}", uuid);
         // Fetch from unofficial metadata cache database
         if (unofficialJsonCache.has(uuid)) {
-            LOGGER.fine("Unofficial metadata found for pack: " + uuid);
+            LOGGER.debug("Unofficial metadata found for pack: {}", uuid);
             JsonObject packMetadata = unofficialJsonCache.getAsJsonObject(uuid);
             return Optional.of(new DatabasePackMetadata(
                     uuid,
@@ -163,7 +164,7 @@ public class DatabaseMetadataService {
 
     private void fetchOfficialDatabase() {
         try {
-            LOGGER.fine("Fetching official metadata database");
+            LOGGER.debug("Fetching official metadata database");
             // Get a guest token
             URL tokenUrl = new URL(LUNII_GUEST_TOKEN_URL);
             HttpURLConnection tokenConnection = (HttpURLConnection) tokenUrl.openConnection();
@@ -172,7 +173,7 @@ public class DatabaseMetadataService {
             tokenConnection.setReadTimeout(10000);
             int tokenStatusCode = tokenConnection.getResponseCode();
             if (tokenStatusCode != 200) {
-                LOGGER.log(Level.SEVERE, "Failed to fetch guest token. Status code: " + tokenStatusCode);
+                LOGGER.error("Failed to fetch guest token. Status code: {}", tokenStatusCode);
                 return;
             }
             JsonParser parser = new JsonParser();
@@ -184,7 +185,7 @@ public class DatabaseMetadataService {
                 JsonObject tokenJson = parser.parse(new JsonReader(br)).getAsJsonObject();
                 token = tokenJson.getAsJsonObject("response").getAsJsonObject("token").get("server").getAsString();
             }
-            LOGGER.fine("Guest token: " + token);
+            LOGGER.debug("Guest token: {}", token);
 
             // Call service to fetch metadata for all packs
             URL url = new URL(LUNII_PACKS_DATABASE_URL);
@@ -196,7 +197,7 @@ public class DatabaseMetadataService {
             connection.setRequestProperty("X-AUTH-TOKEN", token);
             int statusCode = connection.getResponseCode();
             if (statusCode != 200) {
-                LOGGER.log(Level.SEVERE, "Failed to fetch official metadata database. Status code: " + statusCode);
+                LOGGER.error("Failed to fetch official metadata database. Status code: {}", statusCode);
                 return;
             }
             // OK, read response body
@@ -213,7 +214,7 @@ public class DatabaseMetadataService {
                 writeDatabaseFile(officialDbPath, response);
             }
         } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Failed to fetch official metadata database.", e);
+            LOGGER.error("Failed to fetch official metadata database.", e);
         }
     }
 
@@ -224,7 +225,7 @@ public class DatabaseMetadataService {
         }
         // Update unofficial database
         String uuid = meta.getUuid();
-        LOGGER.fine("Updating unofficial metadata cache for " + uuid);
+        LOGGER.debug("Updating unofficial metadata cache for {}", uuid);
         // Find old value
         JsonObject oldValue = null;
         if(unofficialJsonCache.has(uuid)) {
@@ -238,7 +239,7 @@ public class DatabaseMetadataService {
         Optional.ofNullable(meta.getThumbnail()).ifPresent(t -> newValue.addProperty("image", t));
         // Need cache update if different
         if (!newValue.equals(oldValue)) {
-            LOGGER.info("Cache updating of " + uuid);
+            LOGGER.info("Cache updating of {}", uuid);
             lastModifiedCache = System.currentTimeMillis();
             unofficialJsonCache.add(uuid, newValue);
         }

@@ -11,9 +11,9 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.usb4java.Context;
 import org.usb4java.DeviceDescriptor;
 import org.usb4java.LibUsb;
@@ -24,7 +24,7 @@ import studio.driver.event.DeviceHotplugEventListener;
 
 public class LibUsbDetectionHelper {
 
-    private static final Logger LOGGER = Logger.getLogger(LibUsbDetectionHelper.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(LibUsbDetectionHelper.class);
 
     // USB device
     private static final int VENDOR_ID_FW1 = 0x0c45;
@@ -110,7 +110,7 @@ public class LibUsbDetectionHelper {
                 try {
                     asyncEventHandlerWorker.join();
                 } catch (InterruptedException e) {
-                    LOGGER.log(Level.SEVERE, "Failed to stop async event handling worker thread", e);
+                    LOGGER.error("Failed to stop async event handling worker thread", e);
                     Thread.currentThread().interrupt();
                 }
             }
@@ -128,12 +128,12 @@ public class LibUsbDetectionHelper {
                     LOGGER.info(msg);
                     if(event ==  LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED ) {
                         CompletableFuture.runAsync(() -> listener.onDevicePlugged(device)).exceptionally(e -> {
-                            LOGGER.log(Level.SEVERE, "An error occurred while handling device plug event", e);
+                            LOGGER.error("An error occurred while handling device plug event", e);
                             return null;
                         });
                     } else if(event == LibUsb.HOTPLUG_EVENT_DEVICE_LEFT ) {
                         CompletableFuture.runAsync(() -> listener.onDeviceUnplugged(device)).exceptionally(e -> {
-                            LOGGER.log(Level.SEVERE, "An error occurred while handling device unplug event", e);
+                            LOGGER.error("An error occurred while handling device unplug event", e);
                             return null;
                         });
                     }

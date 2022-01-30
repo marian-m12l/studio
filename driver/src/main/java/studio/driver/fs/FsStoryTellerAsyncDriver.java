@@ -23,10 +23,10 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.usb4java.Device;
 
 import studio.core.v1.utils.SecurityUtils;
@@ -42,7 +42,7 @@ import studio.driver.model.fs.FsStoryPackInfos;
 
 public class FsStoryTellerAsyncDriver {
 
-    private static final Logger LOGGER = Logger.getLogger(FsStoryTellerAsyncDriver.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(FsStoryTellerAsyncDriver.class);
 
     private static final String DEVICE_METADATA_FILENAME = ".md";
     private static final String PACK_INDEX_FILENAME = ".pi";
@@ -61,24 +61,24 @@ public class FsStoryTellerAsyncDriver {
 
     public FsStoryTellerAsyncDriver() {
         // Initialize libusb, handle and propagate hotplug events
-        LOGGER.fine("Registering hotplug listener");
+        LOGGER.debug("Registering hotplug listener");
         LibUsbDetectionHelper.initializeLibUsb(DeviceVersion.DEVICE_VERSION_2, new DeviceHotplugEventListener() {
                     @Override
                     public void onDevicePlugged(Device device) {
                         // Wait for a partition to be mounted which contains the .md file
-                        LOGGER.fine("Waiting for device partition...");
+                        LOGGER.debug("Waiting for device partition...");
                         for (int i = 0; i < FS_MOUNTPOINT_RETRY && partitionMountPoint==null; i++) {
                             try {
                                 Thread.sleep(FS_MOUNTPOINT_POLL_DELAY);
                                 DeviceUtils.listMountPoints().forEach(path -> {
-                                    LOGGER.finest("Looking for .md file on mount point / drive: " + path);
+                                    LOGGER.trace("Looking for .md file on mount point / drive: {}", path);
                                     if (Files.exists(path.resolve(DEVICE_METADATA_FILENAME))) {
                                         partitionMountPoint = path;
                                         LOGGER.info("FS device partition located: " + partitionMountPoint);
                                     }
                                 });
                             } catch (InterruptedException e) {
-                                LOGGER.log(Level.SEVERE, "Failed to locate device partition", e);
+                                LOGGER.error("Failed to locate device partition", e);
                                 Thread.currentThread().interrupt();
                             }
                         }
@@ -120,12 +120,12 @@ public class FsStoryTellerAsyncDriver {
         }
         FsDeviceInfos infos = new FsDeviceInfos();
         Path mdFile = this.partitionMountPoint.resolve(DEVICE_METADATA_FILENAME);
-        LOGGER.finest("Reading device infos from file: " + mdFile);
+        LOGGER.trace("Reading device infos from file: {}", mdFile);
 
         try(InputStream deviceMetadataFis = new BufferedInputStream(Files.newInputStream(mdFile))) {
             // MD file format version
             short mdVersion = readLittleEndianShort(deviceMetadataFis);
-            LOGGER.finest("Device metadata format version: " + mdVersion);
+            LOGGER.trace("Device metadata format version: {}", mdVersion);
             if (mdVersion < 1 || mdVersion > 3) {
                 return CompletableFuture.failedFuture(new StoryTellerException("Unsupported device metadata format version: " + mdVersion));
             }
@@ -136,16 +136,16 @@ public class FsStoryTellerAsyncDriver {
             short minor = readLittleEndianShort(deviceMetadataFis);
             infos.setFirmwareMajor(major);
             infos.setFirmwareMinor(minor);
-            LOGGER.fine("Firmware version: " + major + "." + minor);
+            LOGGER.debug("Firmware version: {}.{}", major, minor);
 
             // Serial number
             String serialNumber = null;
             long sn = readBigEndianLong(deviceMetadataFis);
             if (sn != 0L && sn != -1L && sn != -4294967296L) {
                 serialNumber = String.format("%014d", sn);
-                LOGGER.fine("Serial Number: " + serialNumber);
+                LOGGER.debug("Serial Number: {}", serialNumber);
             } else {
-                LOGGER.warning("No serial number in SPI");
+                LOGGER.warn("No serial number in SPI");
             }
             infos.setSerialNumber(serialNumber);
 
@@ -153,7 +153,7 @@ public class FsStoryTellerAsyncDriver {
             deviceMetadataFis.skip(238);
             byte[] uuid = deviceMetadataFis.readNBytes(256);
             infos.setUuid(uuid);
-            LOGGER.fine("UUID: " + SecurityUtils.encodeHex(uuid));
+            LOGGER.debug("UUID: {}", SecurityUtils.encodeHex(uuid));
 
             // SD card size and used space
             FileStore mdFd = Files.getFileStore(mdFile); 
@@ -162,8 +162,7 @@ public class FsStoryTellerAsyncDriver {
             double percent = Math.round(100d * 100d * sdCardUsedSpace / sdCardTotalSpace) / 100d;
             infos.setSdCardSizeInBytes(sdCardTotalSpace);
             infos.setUsedSpaceInBytes(sdCardUsedSpace);
-            LOGGER.fine("SD card used : " + percent + "% (" + FileUtils.readableByteSize(sdCardUsedSpace) + " / "
-                    + FileUtils.readableByteSize(sdCardTotalSpace) + ")");
+            LOGGER.debug("SD card used : {}% ({} / {})", percent, FileUtils.readableByteSize(sdCardUsedSpace), FileUtils.readableByteSize(sdCardTotalSpace) );
         } catch (Exception e) {
             return CompletableFuture.failedFuture(new StoryTellerException("Failed to read device metadata on partition", e));
         }
@@ -196,12 +195,12 @@ public class FsStoryTellerAsyncDriver {
         return readPackIndex()
                 .thenApply(packUUIDs -> {
                     try {
-                        LOGGER.fine("Number of packs in index: " + packUUIDs.size());
+                        LOGGER.debug("Number of packs in index: {}", packUUIDs.size());
                         List<FsStoryPackInfos> packs = new ArrayList<>();
                         for (UUID packUUID : packUUIDs) {
                             FsStoryPackInfos packInfos = new FsStoryPackInfos();
                             packInfos.setUuid(packUUID);
-                            LOGGER.fine("Pack UUID: " + packUUID.toString());
+                            LOGGER.debug("Pack UUID: {}", packUUID.toString());
 
                             // Compute .content folder (last 4 bytes of UUID)
                             String folderName = computePackFolderName(packUUID.toString());
@@ -214,7 +213,7 @@ public class FsStoryTellerAsyncDriver {
                                 ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
                                 short version = bb.getShort(2);
                                 packInfos.setVersion(version);
-                                LOGGER.fine("Pack version: " + version);
+                                LOGGER.debug("Pack version: {}", version);
                             }
 
                             // Night mode is available if file 'nm' exists
@@ -236,7 +235,7 @@ public class FsStoryTellerAsyncDriver {
         return CompletableFuture.supplyAsync(() -> {
             List<UUID> packUUIDs = new ArrayList<>();
             Path piFile = this.partitionMountPoint.resolve(PACK_INDEX_FILENAME);
-            LOGGER.finest("Reading packs index from file: " + piFile);
+            LOGGER.trace("Reading packs index from file: {}", piFile);
             try {
                 ByteBuffer bb = ByteBuffer.wrap(Files.readAllBytes(piFile));
                 while (bb.hasRemaining()) {
@@ -287,7 +286,7 @@ public class FsStoryTellerAsyncDriver {
                         // Look for UUID in packs index
                         Optional<UUID> matched = packUUIDs.stream().filter(p -> p.equals(UUID.fromString(uuid))).findFirst();
                         if (matched.isPresent()) {
-                            LOGGER.fine("Found pack with uuid: " + uuid);
+                            LOGGER.debug("Found pack with uuid: {}", uuid);
                             // Remove from index
                             packUUIDs.remove(matched.get());
                             // Write pack index
@@ -296,7 +295,7 @@ public class FsStoryTellerAsyncDriver {
                                         // Generate folder name
                                         String folderName = computePackFolderName(uuid);
                                         Path folderPath = this.partitionMountPoint.resolve(CONTENT_FOLDER).resolve(folderName);
-                                        LOGGER.fine("Removing pack folder: " + folderPath);
+                                        LOGGER.debug("Removing pack folder: {}", folderPath);
                                         try {
                                             FileUtils.deleteDirectory(folderPath);
                                             return CompletableFuture.completedFuture(ok);
@@ -317,7 +316,7 @@ public class FsStoryTellerAsyncDriver {
         try {
             Path piFile = this.partitionMountPoint.resolve(PACK_INDEX_FILENAME);
 
-            LOGGER.finest("Replacing pack index file: " + piFile);
+            LOGGER.trace("Replacing pack index file: {}", piFile);
             ByteBuffer bb = ByteBuffer.allocate(16 * packUUIDs.size());
             for (UUID packUUID : packUUIDs) {
                 bb.putLong(packUUID.getMostSignificantBits());
@@ -342,12 +341,12 @@ public class FsStoryTellerAsyncDriver {
                     if (matched.isEmpty()) {
                         throw new StoryTellerException("Pack not found");
                     }
-                    LOGGER.fine("Found pack with uuid: " + uuid);
+                    LOGGER.debug("Found pack with uuid: {}", uuid);
 
                     // Generate folder name
                     String folderName = computePackFolderName(uuid);
                     Path sourceFolder = this.partitionMountPoint.resolve(CONTENT_FOLDER).resolve(folderName);
-                    LOGGER.finest("Downloading pack folder: " + sourceFolder);
+                    LOGGER.trace("Downloading pack folder: {}", sourceFolder);
                     if (Files.notExists(sourceFolder)) {
                         throw new StoryTellerException("Pack folder not found");
                     }
@@ -372,10 +371,10 @@ public class FsStoryTellerAsyncDriver {
         try {
             // Check free space
             long folderSize = FileUtils.getFolderSize(inputPath);
-            LOGGER.finest("Pack folder size: " + FileUtils.readableByteSize(folderSize));
+            LOGGER.trace("Pack folder size: {}", FileUtils.readableByteSize(folderSize));
             Path mdFile = this.partitionMountPoint.resolve(DEVICE_METADATA_FILENAME);
             long freeSpace = Files.getFileStore(mdFile).getUsableSpace();
-            LOGGER.finest("SD free space: " + FileUtils.readableByteSize(freeSpace));
+            LOGGER.trace("SD free space: {}", FileUtils.readableByteSize(freeSpace));
             if (freeSpace < folderSize) {
                 throw new StoryTellerException("Not enough free space on the device");
             }
@@ -383,7 +382,7 @@ public class FsStoryTellerAsyncDriver {
             // Generate folder name
             String folderName = computePackFolderName(uuid);
             Path folderPath = this.partitionMountPoint.resolve(CONTENT_FOLDER).resolve(folderName);
-            LOGGER.fine("Uploading pack to folder: " + folderName);
+            LOGGER.debug("Uploading pack to folder: {}", folderName);
 
             // Create destination folder
             Files.createDirectories(folderPath);
@@ -407,7 +406,7 @@ public class FsStoryTellerAsyncDriver {
                 }
             }).thenCompose(status -> {
                 // When transfer is complete, generate device-specific boot file from device UUID
-                LOGGER.fine("Generating device-specific boot file");
+                LOGGER.debug("Generating device-specific boot file");
                 return getDeviceInfos().thenApply(deviceInfos -> {
                     try {
                         FsStoryPackWriter writer = new FsStoryPackWriter();
@@ -447,7 +446,7 @@ public class FsStoryTellerAsyncDriver {
         final long startTime = System.currentTimeMillis();
         AtomicLong transferred = new AtomicLong(0);
         long folderSize = FileUtils.getFolderSize(sourceFolder);
-        LOGGER.finest("Pack folder size: " + FileUtils.readableByteSize(folderSize));
+        LOGGER.trace("Pack folder size: {}", FileUtils.readableByteSize(folderSize));
         // Copy folders and files
         try(Stream<Path> paths = Files.walk(sourceFolder)) {
             paths.forEach(s -> {
@@ -455,20 +454,20 @@ public class FsStoryTellerAsyncDriver {
                         Path d = destFolder.resolve(sourceFolder.relativize(s));
                         if (Files.isDirectory(s)) {
                             if (!Files.isDirectory(d)) {
-                                LOGGER.finer("Creating directory " + d);
+                                LOGGER.debug("Creating directory {}" + d);
                                 Files.createDirectory(d);
                             }
                         } else {
                             long fileSize = FileUtils.getFileSize(s);
-                            LOGGER.finer("Copying file " + s.getFileName() + " (" + FileUtils.readableByteSize(fileSize) + ") to " + d);
+                            LOGGER.debug("Copying file {} ({}) to {}", s.getFileName(), FileUtils.readableByteSize(fileSize), d);
                             Files.copy(s, d, StandardCopyOption.REPLACE_EXISTING);
 
                             // Compute progress and speed
                             long xferred = transferred.addAndGet(fileSize);
                             long elapsed = System.currentTimeMillis() - startTime;
                             double speed = xferred / (elapsed / 1000.0);
-                            LOGGER.finer("Transferred " + FileUtils.readableByteSize(xferred) + " in " + elapsed + " ms");
-                            LOGGER.finer("Average speed = " + FileUtils.readableByteSize((long)speed) + "/sec");
+                            LOGGER.trace("Transferred {} in {} ms", FileUtils.readableByteSize(xferred), elapsed);
+                            LOGGER.trace("Average speed = {}/sec", FileUtils.readableByteSize((long)speed));
                             TransferStatus status = new TransferStatus(xferred == folderSize, xferred, folderSize, speed);
 
                             // Call (optional) listener with transfer status

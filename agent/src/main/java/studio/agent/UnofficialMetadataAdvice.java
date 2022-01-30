@@ -20,18 +20,21 @@ import java.nio.file.Path;
 import java.util.Base64;
 import java.util.Optional;
 import java.util.UUID;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class UnofficialMetadataAdvice {
 
-    private UnofficialMetadataAdvice() {
-        throw new IllegalArgumentException("Utility class");
-    }
+    private static final Logger LOGGER = LogManager.getLogger("studio-agent");
 
     private static final String OS = System.getProperty("os.name").toLowerCase();
     private static final boolean IS_WINDOWS = OS.contains("win");
     private static final boolean IS_MAC = OS.contains("mac");
+
+    private UnofficialMetadataAdvice() {
+        throw new IllegalArgumentException("Utility class");
+    }
 
     public static Path luniithequePath() {
         if (IS_WINDOWS) {
@@ -42,11 +45,9 @@ public class UnofficialMetadataAdvice {
         }
         return Path.of(System.getProperty("user.home"), ".local/share/Luniitheque");
     }
-    
+
     @Advice.OnMethodExit
     public static void getInputStream(@Advice.This HttpURLConnection that, @Advice.Return(readOnly = false) InputStream retval) {
-        final Logger logger = Logger.getLogger("studio-agent");
-
         // Fetched URL
         String url = that.getURL().toString();
 
@@ -58,7 +59,7 @@ public class UnofficialMetadataAdvice {
                 DatabaseMetadataService databaseMetadataService = new DatabaseMetadataService(true);
                 Optional<DatabasePackMetadata> packMetadata = databaseMetadataService.getUnofficialMetadata(uuid);
                 if (packMetadata.isPresent()) {
-                    logger.info("Unofficial database contains metadata for fetched pack with uuid: " + uuid);
+                    LOGGER.info("Unofficial database contains metadata for fetched pack with uuid: {}", uuid);
 
                     DatabasePackMetadata meta = packMetadata.get();
 
@@ -68,7 +69,7 @@ public class UnofficialMetadataAdvice {
                         imagePath = "/studio/" + meta.getUuid();
                         UUID u = UUID.nameUUIDFromBytes(("http:/" + imagePath).getBytes());
                         Path cacheFilePath = luniithequePath().resolve("images").resolve(u.toString());
-                        logger.info("Storing unofficial metadata image into local filesystem: " + cacheFilePath);
+                        LOGGER.info("Storing unofficial metadata image into local filesystem: {}", cacheFilePath);
                         String encodedImg = meta.getThumbnail().substring(meta.getThumbnail().indexOf(";base64,") + 8);
                         Files.write(cacheFilePath, Base64.getDecoder().decode(encodedImg));
                     }
@@ -153,7 +154,7 @@ public class UnofficialMetadataAdvice {
                     retval = new ByteArrayInputStream(json.getBytes());
                 }
             } catch (Exception e) {
-                logger.log(Level.SEVERE, "Error while injecting unofficial metadata", e);
+                LOGGER.error("Error while injecting unofficial metadata", e);
             }
         }
     }

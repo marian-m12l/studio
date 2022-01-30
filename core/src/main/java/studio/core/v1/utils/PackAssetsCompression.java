@@ -11,10 +11,12 @@ import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
-import java.util.logging.Logger;
 
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioSystem;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
@@ -26,7 +28,7 @@ import studio.core.v1.utils.stream.ThrowingFunction;
 
 public class PackAssetsCompression {
 
-    private static final Logger LOGGER = Logger.getLogger(PackAssetsCompression.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(PackAssetsCompression.class);
 
     private PackAssetsCompression() {
         throw new IllegalStateException("Utility class");
@@ -50,7 +52,7 @@ public class PackAssetsCompression {
         processImageAssets(pack, ImageType.PNG, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
             if (ImageType.BMP == ia.getType()) {
-                LOGGER.fine("Compressing BMP image asset into PNG");
+                LOGGER.debug("Compressing BMP image asset into PNG");
                 imageData = ImageConversion.bitmapToPng(imageData);
             }
             return imageData;
@@ -59,7 +61,7 @@ public class PackAssetsCompression {
         processAudioAssets(pack, AudioType.OGG, ThrowingFunction.unchecked(aa -> {
             byte[] audioData = aa.getRawData();
             if (AudioType.WAV == aa.getType()) {
-                LOGGER.fine("Compressing WAV audio asset into OGG");
+                LOGGER.debug("Compressing WAV audio asset into OGG");
                 audioData = AudioConversion.waveToOgg(audioData);
             }
             return audioData;
@@ -72,15 +74,15 @@ public class PackAssetsCompression {
             byte[] imageData = ia.getRawData();
             // Convert from 4-bits depth / RLE encoding BMP
             if (ImageType.BMP == ia.getType() && imageData[28] == 0x04 && imageData[30] == 0x02) {
-                LOGGER.fine("Uncompressing 4-bits/RLE BMP image asset into BMP");
+                LOGGER.debug("Uncompressing 4-bits/RLE BMP image asset into BMP");
                 imageData = ImageConversion.anyToBitmap(imageData);
             }
             if (ImageType.JPEG == ia.getType()) {
-                LOGGER.fine("Uncompressing JPG image asset into BMP");
+                LOGGER.debug("Uncompressing JPG image asset into BMP");
                 imageData = ImageConversion.anyToBitmap(imageData);
             }
             if (ImageType.PNG == ia.getType()) {
-                LOGGER.fine("Uncompressing PNG image asset into BMP");
+                LOGGER.debug("Uncompressing PNG image asset into BMP");
                 imageData = ImageConversion.anyToBitmap(imageData);
             }
             return imageData;
@@ -89,11 +91,11 @@ public class PackAssetsCompression {
         processAudioAssets(pack, AudioType.WAV, ThrowingFunction.unchecked(aa -> {
             byte[] audioData = aa.getRawData();
             if (AudioType.OGG == aa.getType()) {
-                LOGGER.fine("Uncompressing OGG audio asset into WAV");
+                LOGGER.debug("Uncompressing OGG audio asset into WAV");
                 audioData = AudioConversion.oggToWave(audioData);
             }
             if (AudioType.MPEG == aa.getType()) {
-                LOGGER.fine("Uncompressing MP3 audio asset into WAV");
+                LOGGER.debug("Uncompressing MP3 audio asset into WAV");
                 audioData = AudioConversion.mp3ToWave(audioData);
             }
             return audioData;
@@ -106,7 +108,7 @@ public class PackAssetsCompression {
             byte[] imageData = ia.getRawData();
             // Convert to 4-bits depth / RLE encoding BMP
             if (ImageType.BMP != ia.getType() || imageData[28] != 0x04 || imageData[30] != 0x02) {
-                LOGGER.fine("Converting image asset into 4-bits/RLE BMP");
+                LOGGER.debug("Converting image asset into 4-bits/RLE BMP");
                 imageData = ImageConversion.anyToRLECompressedBitmap(imageData);
             }
             return imageData;
@@ -115,7 +117,7 @@ public class PackAssetsCompression {
         processAudioAssets(pack, AudioType.MPEG, ThrowingFunction.unchecked(aa -> {
             byte[] audioData = aa.getRawData();
             if (AudioType.MPEG != aa.getType() && AudioType.MP3 != aa.getType()) {
-                LOGGER.fine("Converting audio asset into MP3");
+                LOGGER.debug("Converting audio asset into MP3");
                 audioData = AudioConversion.anyToMp3(audioData);
             } else {
                 // Remove potential ID3 tags
@@ -125,7 +127,7 @@ public class PackAssetsCompression {
                 AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat(new ByteArrayInputStream(audioData));
                 if (audioFileFormat.getFormat().getChannels() != AudioConversion.CHANNELS
                         || audioFileFormat.getFormat().getSampleRate() != AudioConversion.MP3_SAMPLE_RATE) {
-                    LOGGER.fine("Re-encoding MP3 audio asset");
+                    LOGGER.debug("Re-encoding MP3 audio asset");
                     audioData = AudioConversion.anyToMp3(audioData);
                 }
             }
@@ -142,7 +144,7 @@ public class PackAssetsCompression {
 
         // Multi-threaded processing : images
         pack.getStageNodes().parallelStream().forEach(node -> {
-            LOGGER.fine("Image from node " + i.incrementAndGet() + "/" + nbNodes);
+            LOGGER.debug("Image from node {}/{}", i.incrementAndGet(), nbNodes);
             ImageAsset ia = node.getImage();
             if (ia != null) {
                 byte[] imageData = ia.getRawData();
@@ -170,7 +172,7 @@ public class PackAssetsCompression {
 
         // Multi-threaded processing : audio
         pack.getStageNodes().parallelStream().forEach(node -> {
-            LOGGER.fine("Audio from node " + i.incrementAndGet() + "/" + nbNodes);
+            LOGGER.debug("Audio from node {}/{}", i.incrementAndGet(), nbNodes);
             AudioAsset aa = node.getAudio();
             if (aa != null) {
                 byte[] audioData = aa.getRawData();

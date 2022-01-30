@@ -7,8 +7,9 @@
 package studio.driver;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.logging.Logger;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.usb4java.Context;
 import org.usb4java.Device;
 import org.usb4java.DeviceDescriptor;
@@ -20,7 +21,7 @@ import studio.driver.event.DeviceHotplugEventListener;
 
 public class LibUsbActivePollingWorker implements Runnable {
 
-    private static final Logger LOGGER = Logger.getLogger(LibUsbActivePollingWorker.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(LibUsbActivePollingWorker.class);
 
     private final Context context;
     private final DeviceVersion deviceVersion;

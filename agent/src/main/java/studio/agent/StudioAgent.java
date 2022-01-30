@@ -19,22 +19,23 @@ import java.lang.instrument.Instrumentation;
 import java.nio.file.Files;
 import java.util.Properties;
 import java.util.jar.JarFile;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class StudioAgent {
 
     public static final String AGENT_PROPERTIES = "studio-agent.properties";
     public static final String METADATA_JAR = "/.studio/agent/studio-metadata.jar";
 
-    private static final Logger LOGGER = Logger.getLogger("studio-agent");
+    private static final Logger LOGGER = LogManager.getLogger("studio-agent");
 
     private StudioAgent() {
         throw new IllegalArgumentException("Utility class");
     }
 
     public static void premain(String arguments, Instrumentation instrumentation) throws IOException {
-        LOGGER.info("Started studio-agent (premain) version " + getVersion());
+        LOGGER.info("Started studio-agent (premain) version {}", getVersion());
 
         // Add metadata library to bootstrap classpath
         String metadataLibraryPath = System.getProperty("user.home") + METADATA_JAR;
@@ -49,11 +50,11 @@ public class StudioAgent {
                 .with(new AgentBuilder.Listener.Adapter() {
                     @Override
                     public void onTransformation(TypeDescription typeDescription, ClassLoader classLoader, JavaModule javaModule, boolean b, DynamicType dynamicType) {
-                        LOGGER.info("Transformation registered on class: " + typeDescription.getTypeName());
+                        LOGGER.info("Transformation registered on class: {}", typeDescription.getTypeName());
                     }
                     @Override
                     public void onError(String s, ClassLoader classLoader, JavaModule javaModule, boolean b, Throwable throwable) {
-                        LOGGER.log(Level.SEVERE, "Transformation error: " + s, throwable);
+                        LOGGER.error("Transformation error: " + s, throwable);
                     }
                 })
                 // Allows resolution of advice classes
@@ -81,7 +82,7 @@ public class StudioAgent {
             properties.load(StudioAgent.class.getClassLoader().getResourceAsStream(AGENT_PROPERTIES));
             return properties.getProperty("version");
         } catch (IOException e) {
-            LOGGER.log(Level.SEVERE, "Failed to read agent version.", e);
+            LOGGER.error("Failed to read agent version.", e);
             return "unknown";
         }
     }

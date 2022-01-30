@@ -12,9 +12,9 @@ import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.usb4java.Device;
 import org.usb4java.DeviceHandle;
 import org.usb4java.LibUsb;
@@ -169,7 +169,7 @@ import studio.core.v1.utils.exception.StoryTellerException;
  */
 public class LibUsbMassStorageHelper {
 
-    private static final Logger LOGGER = Logger.getLogger(LibUsbMassStorageHelper.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(LibUsbMassStorageHelper.class);
 
     // USB device
     private static final short INTERFACE_ID = 0;
@@ -256,7 +256,7 @@ public class LibUsbMassStorageHelper {
                                         .thenApply(cswRead -> {
                                             // Check CSW
                                             if (!checkCommandStatusWrapper(csw)) {
-                                                LOGGER.severe("Read operation failed while reading from SPI");
+                                                LOGGER.error("Read operation failed while reading from SPI");
                                                 throw new StoryTellerException("Read operation failed while reading from SPI");
                                             }
                                             return data;
@@ -280,7 +280,7 @@ public class LibUsbMassStorageHelper {
                                         .thenApply(cswRead -> {
                                             // Check CSW
                                             if (!checkCommandStatusWrapper(csw)) {
-                                                LOGGER.severe("Read operation failed while reading from SD");
+                                                LOGGER.error("Read operation failed while reading from SD");
                                                 throw new StoryTellerException("Read operation failed while reading from SD");
                                             }
                                             return data;
@@ -302,7 +302,7 @@ public class LibUsbMassStorageHelper {
                                         .thenApply(cswRead -> {
                                             // Check CSW
                                             if (!checkCommandStatusWrapper(csw)) {
-                                                LOGGER.severe("Read operation failed while writing to SD");
+                                                LOGGER.error("Read operation failed while writing to SD");
                                                 throw new StoryTellerException("Read operation failed while writing to SD");
                                             }
                                             return dataWritten;
@@ -322,10 +322,10 @@ public class LibUsbMassStorageHelper {
                 data,
                 xfer -> {
                     if (xfer.status() != LibUsb.TRANSFER_COMPLETED) {
-                        LOGGER.severe("TRANSFER OUT NOT COMPLETED: " + xfer.status());
+                        LOGGER.error("TRANSFER OUT NOT COMPLETED: {}", xfer.status());
                         promise.completeExceptionally(new StoryTellerException("Transfer OUT failed"));
                     } else {
-                        LOGGER.finest("Async transfer OUT done. " + xfer.actualLength() + " bytes sent.");
+                        LOGGER.trace("Async transfer OUT done. {} bytes sent.", xfer.actualLength());
                         LibUsb.freeTransfer(xfer);
                         promise.complete(true);
                     }
@@ -352,10 +352,10 @@ public class LibUsbMassStorageHelper {
                 data,
                 xfer -> {
                     if (xfer.status() != LibUsb.TRANSFER_COMPLETED) {
-                        LOGGER.severe("TRANSFER IN NOT COMPLETED: " + xfer.status());
+                        LOGGER.error("TRANSFER IN NOT COMPLETED: {}", xfer.status());
                         promise.completeExceptionally(new StoryTellerException("Transfer IN failed"));
                     } else {
-                        LOGGER.finest("Async transfer IN done. " + xfer.actualLength() + " bytes received.");
+                        LOGGER.trace("Async transfer IN done. {} bytes received.", xfer.actualLength());
                         LibUsb.freeTransfer(xfer);
                         promise.complete(true);
                     }
@@ -441,18 +441,14 @@ public class LibUsbMassStorageHelper {
     private static boolean checkCommandStatusWrapper(ByteBuffer csw) {
         // Check Command Status Wrapper length
         if (csw.remaining() != MASS_STORAGE_CSW_LENGTH) {
-            if(LOGGER.isLoggable(Level.SEVERE)) {
-                LOGGER.severe("Invalid CSW: wrong size ("+csw.remaining()+")");
-            }
+            LOGGER.error("Invalid CSW: wrong size ({})", csw.remaining());
             return false;
         }
         // Check CSW signature
         byte[] signature = new byte[MASS_STORAGE_CSW_SIGNATURE.length];
         csw.get(signature);
         if (!Arrays.equals(signature, MASS_STORAGE_CSW_SIGNATURE)) {
-            if(LOGGER.isLoggable(Level.SEVERE)) {
-                LOGGER.severe("Invalid CSW: wrong signature ("+ SecurityUtils.encodeHex(signature) +")");
-            }
+            LOGGER.error("Invalid CSW: wrong signature ({})", SecurityUtils.encodeHex(signature));
             return false;
         }
         // Check Command Block Tag
@@ -465,14 +461,12 @@ public class LibUsbMassStorageHelper {
         csw.order(ByteOrder.LITTLE_ENDIAN);
         int residue = csw.getInt(8);
         if (residue > 0) {
-            if(LOGGER.isLoggable(Level.SEVERE)) {
-                LOGGER.severe("Invalid CSW: positive residue ("+residue+")");
-            }
+            LOGGER.error("Invalid CSW: positive residue ({})", residue);
             return false;
         }
         // Check status
         byte status = csw.get(12);
-        LOGGER.finest("CSW status: "+status);
+        LOGGER.trace("CSW status: {}", status);
         return status == 0;
     }
 }

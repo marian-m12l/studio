@@ -19,9 +19,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.TreeMap;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.stream.Stream;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
@@ -46,7 +47,7 @@ import studio.core.v1.utils.PackFormat;
 
 public class ArchiveStoryPackReader implements StoryPackReader {
 
-    private static final Logger LOGGER = Logger.getLogger(ArchiveStoryPackReader.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(ArchiveStoryPackReader.class);
 
     public StoryPackMetadata readMetadata(Path zipPath) throws IOException {
         // Zip archive contains a json file and separate assets
@@ -107,7 +108,7 @@ public class ArchiveStoryPackReader implements StoryPackReader {
                     try {
                         assets.put(p.getFileName().toString(), Files.readAllBytes(p));
                     } catch (IOException e) {
-                        LOGGER.log(Level.SEVERE, "Failed to read archive asset", e);
+                        LOGGER.error("Failed to read archive asset", e);
                     }
                 });
             }
