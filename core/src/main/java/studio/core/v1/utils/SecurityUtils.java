@@ -1,15 +1,15 @@
 package studio.core.v1.utils;
 
-import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.util.logging.Level;
-import java.util.logging.Logger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class SecurityUtils {
 
-    private static final Logger LOGGER = Logger.getLogger(SecurityUtils.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(SecurityUtils.class);
 
     private static final byte[] HEX_ARRAY = "0123456789abcdef".getBytes(StandardCharsets.US_ASCII);
 
@@ -28,7 +28,7 @@ public class SecurityUtils {
             byte[] digest = MessageDigest.getInstance("SHA1").digest(array);
             return encodeHex(digest);
         } catch (NoSuchAlgorithmException e) {
-            LOGGER.log(Level.SEVERE, "sha1 not supported", e);
+            LOGGER.error("sha1 not supported", e);
             return null;
         }
     }
@@ -38,9 +38,8 @@ public class SecurityUtils {
      * 
      * @param input UTF-8 string
      * @return sha1 String
-     * @throws UnsupportedEncodingException
      */
-    public static String sha1Hex(String s) throws UnsupportedEncodingException {
+    public static String sha1Hex(String s) {
         return sha1Hex(s.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -65,9 +64,8 @@ public class SecurityUtils {
      * 
      * @param s String
      * @return hexadecimal string
-     * @throws UnsupportedEncodingException
      */
-    public static String encodeHex(String s) throws UnsupportedEncodingException {
+    public static String encodeHex(String s) {
         return encodeHex(s.getBytes(StandardCharsets.UTF_8));
     }
 

@@ -8,11 +8,13 @@ package studio.core.v1.utils;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.logging.Logger;
+
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 public class ID3Tags {
 
-    private static final Logger LOGGER = Logger.getLogger(ID3Tags.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(ID3Tags.class);
 
     private static final int ID3V1_SIZE = 128;
     private static final int ID3V2_HEADER_SIZE = 10;
@@ -35,7 +37,7 @@ public class ID3Tags {
     public static byte[] removeID3v1Tag(byte[] mp3Data) {
         if (hasID3v1Tag(mp3Data)) {
             // Remove last 128 bytes
-            LOGGER.fine("Removing ID3v1 tag at end of file (128 bytes).");
+            LOGGER.debug("Removing ID3v1 tag at end of file (128 bytes).");
             return Arrays.copyOfRange(mp3Data, 0, mp3Data.length - ID3V1_SIZE);
         }
         return mp3Data;
@@ -61,7 +63,7 @@ public class ID3Tags {
             byte size4 = mp3Buffer.get();
             int size = ((size1 & 0x7f) << 21) | ((size2 & 0x7f) << 14) | ((size3 & 0x7f) << 7) | (size4 & 0x7f);
             size += ID3V2_HEADER_SIZE;
-            LOGGER.fine("Removing ID3v2 tag at beginning of file (" + size + " bytes).");
+            LOGGER.debug("Removing ID3v2 tag at beginning of file ({} bytes).", size);
             return Arrays.copyOfRange(mp3Data, size, mp3Data.length);
         }
         return mp3Data;

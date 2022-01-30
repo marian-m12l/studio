@@ -6,15 +6,15 @@
 
 package studio.driver;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.usb4java.Context;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
-import java.util.logging.Logger;
-
 public class LibUsbAsyncEventsWorker extends Thread {
 
-    private static final Logger LOGGER = Logger.getLogger(LibUsbAsyncEventsWorker.class.getName());
+    private static final Logger LOGGER = LogManager.getLogger(LibUsbAsyncEventsWorker.class);
 
     private volatile boolean abort;
     private Context context;
@@ -29,7 +29,7 @@ public class LibUsbAsyncEventsWorker extends Thread {
 
     @Override
     public void run() {
-        LOGGER.fine("Starting worker thread to handle libusb async events...");
+        LOGGER.debug("Starting worker thread to handle libusb async events...");
         while (!this.abort) {
             int result = LibUsb.handleEventsTimeout(this.context, 250000);
             if (result != LibUsb.SUCCESS) {
