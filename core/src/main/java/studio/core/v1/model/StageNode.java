@@ -19,9 +19,6 @@ public class StageNode extends Node {
     private Transition homeTransition;
     private ControlSettings controlSettings;
 
-    public StageNode() {
-    }
-
     public StageNode(String uuid, ImageAsset image, AudioAsset audio, Transition okTransition, Transition homeTransition, ControlSettings controlSettings, EnrichedNodeMetadata enriched) {
         super(enriched);
         this.uuid = uuid;

@@ -179,21 +179,21 @@ public class LibUsbMassStorageHelper {
 
     // Mass storage Command Block Wrapper (CBW)
     private static final int MASS_STORAGE_CBW_LENGTH = 31;
-    private static final byte[] MASS_STORAGE_CBW_SIGNATURE = new byte[] { 0x55, 0x53, 0x42, 0x43 }; // "USBC"
-    private static final byte[] MASS_STORAGE_CBW_DIRECTION_IN = new byte[] { (byte) 0x80 };
-    private static final byte[] MASS_STORAGE_CBW_DIRECTION_OUT = new byte[] { 0x00 };
-    private static final byte[] MASS_STORAGE_CBW_LUN_0 = new byte[] { 0x00 };
-    private static final byte[] MASS_STORAGE_CBW_COMMAND_BLOCK_SIZE = new byte[] { 0x10 };
+    private static final byte[] MASS_STORAGE_CBW_SIGNATURE = { 0x55, 0x53, 0x42, 0x43 }; // "USBC"
+    public static final byte[] MASS_STORAGE_CBW_DIRECTION_IN = { (byte) 0x80 };
+    public static final byte[] MASS_STORAGE_CBW_DIRECTION_OUT = { 0x00 };
+    private static final byte[] MASS_STORAGE_CBW_LUN_0 = { 0x00 };
+    private static final byte[] MASS_STORAGE_CBW_COMMAND_BLOCK_SIZE = { 0x10 };
     private enum CBWDirection { OUTBOUND, INBOUND }
 
     // Mass storage Command Status Wrapper (CSW)
     private static final int MASS_STORAGE_CSW_LENGTH = 13;
-    private static final byte[] MASS_STORAGE_CSW_SIGNATURE = new byte[] { 0x55, 0x53, 0x42, 0x53 }; // "USBS"
+    private static final byte[] MASS_STORAGE_CSW_SIGNATURE = { 0x55, 0x53, 0x42, 0x53 }; // "USBS"
 
     // Vendor-specific SCSI commands
-    private static final byte[] SCSI_COMMAND_CODE_READ_FROM_SPI = new byte[] { (byte) 0xf6, 0x05, 0x06 };
-    private static final byte[] SCSI_COMMAND_CODE_READ_FROM_SD = new byte[] { (byte) 0xf6, (byte) 0xe1, 0x00 };
-    private static final byte[] SCSI_COMMAND_CODE_WRITE_TO_SD = new byte[] { (byte) 0xf6, (byte) 0xe2, 0x00 };
+    private static final byte[] SCSI_COMMAND_CODE_READ_FROM_SPI = { (byte) 0xf6, 0x05, 0x06 };
+    private static final byte[] SCSI_COMMAND_CODE_READ_FROM_SD = { (byte) 0xf6, (byte) 0xe1, 0x00 };
+    private static final byte[] SCSI_COMMAND_CODE_WRITE_TO_SD = { (byte) 0xf6, (byte) 0xe2, 0x00 };
 
     public static final short SECTOR_SIZE = 512;
 

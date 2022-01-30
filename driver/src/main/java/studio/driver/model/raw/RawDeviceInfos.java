@@ -11,7 +11,8 @@ import java.util.UUID;
 public class RawDeviceInfos {
 
     private UUID uuid;
-    private short firmwareMajor, firmwareMinor;
+    private short firmwareMajor;
+    private short firmwareMinor;
     private String serialNumber;
     private int sdCardSizeInSectors;
     private int usedSpaceInSectors;

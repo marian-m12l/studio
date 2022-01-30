@@ -25,28 +25,11 @@ import java.security.SecureRandom;
  */
 public class PixelUtils {
 
-    public static final int REPLACE = 0;
-    public static final int NORMAL = 1;
-    public static final int MIN = 2;
-    public static final int MAX = 3;
-    public static final int ADD = 4;
-    public static final int SUBTRACT = 5;
-    public static final int DIFFERENCE = 6;
-    public static final int MULTIPLY = 7;
-    public static final int HUE = 8;
-    public static final int SATURATION = 9;
-    public static final int VALUE = 10;
-    public static final int COLOR = 11;
-    public static final int SCREEN = 12;
-    public static final int AVERAGE = 13;
-    public static final int OVERLAY = 14;
-    public static final int CLEAR = 15;
-    public static final int EXCHANGE = 16;
-    public static final int DISSOLVE = 17;
-    public static final int DST_IN = 18;
-    public static final int ALPHA = 19;
-    public static final int ALPHA_TO_GRAY = 20;
-
+    private enum Operation {
+        REPLACE, NORMAL, MIN, MAX, ADD, SUBTRACT, DIFFERENCE, MULTIPLY, HUE, SATURATION, VALUE, COLOR, SCREEN, AVERAGE,
+        OVERLAY, CLEAR, EXCHANGE, DISSOLVE, DST_IN, ALPHA, ALPHA_TO_GRAY;
+    }
+    
     // Sonar Fix : SecureRandom
     private static SecureRandom prng = new SecureRandom();
 
@@ -82,8 +65,8 @@ public class PixelUtils {
         return Math.abs(r1-r2) <= tolerance && Math.abs(g1-g2) <= tolerance && Math.abs(b1-b2) <= tolerance;
     }
 
-    private static final float hsb1[] = new float[3];//FIXME-not thread safe
-    private static final float hsb2[] = new float[3];//FIXME-not thread safe
+    private static final float[] hsb1 = new float[3];
+    private static final float[] hsb2 = new float[3];
 
     // Return rgb1 painted onto rgb2
     public static int combinePixels(int rgb1, int rgb2, int op) {
@@ -94,8 +77,9 @@ public class PixelUtils {
         return (rgb2 & ~channelMask) | combinePixels(rgb1 & channelMask, rgb2, op, extraAlpha);
     }
 
-    public static int combinePixels(int rgb1, int rgb2, int op, int extraAlpha) {
-        if (op == REPLACE)
+    public static int combinePixels(int rgb1, int rgb2, int ope, int extraAlpha) {
+        Operation op = Operation.values()[ope];
+        if (op == Operation.REPLACE)
             return rgb1;
         int a1 = (rgb1 >> 24) & 0xff;
         int r1 = (rgb1 >> 16) & 0xff;
@@ -185,7 +169,8 @@ public class PixelUtils {
                 b1 = 255 - ((255 - b1) * (255 - b2)) / 255;
                 break;
             case OVERLAY:
-                int m, s;
+                int m;
+                int s;
                 s = 255 - ((255 - r1) * (255 - r2)) / 255;
                 m = r1 * r2 / 255;
                 r1 = (s * r1 + m * (255 - r1)) / 255;

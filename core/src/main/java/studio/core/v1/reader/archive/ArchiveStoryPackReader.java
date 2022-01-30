@@ -272,7 +272,6 @@ public class ArchiveStoryPackReader implements StoryPackReader {
                     AudioType at = AudioType.fromExtension(extension);
                     if(at != null) {
                         stageNode.setAudio(new AudioAsset(at, assetEntry.getValue()));
-                        continue;
                     }
                     // Unsupported asset
                 }

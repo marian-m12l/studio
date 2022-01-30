@@ -30,6 +30,9 @@ import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.ControlSettings;
 import studio.core.v1.model.StageNode;
@@ -50,6 +53,8 @@ import studio.core.v1.utils.PackFormat;
 
 public class BinaryStoryPackReader implements StoryPackReader {
 
+    private static final Logger LOGGER = LogManager.getLogger(BinaryStoryPackReader.class);
+    
     public StoryPackMetadata readMetadata(Path path) throws IOException {
         try(DataInputStream dis = new DataInputStream(new BufferedInputStream(Files.newInputStream(path)))){
             // Pack metadata model
@@ -158,6 +163,8 @@ public class BinaryStoryPackReader implements StoryPackReader {
                     homeActionNodeAddr = new SectorAddr(homeTransitionOffset);
                     actionNodesToVisit.add(homeActionNodeAddr);
                 }
+
+                LOGGER.trace("Transitions : {} ok, {} home", okTransitionCount, homeTransitionCount);
 
                 // Control settings
                 boolean wheelEnabled = dis.readShort() == 1;

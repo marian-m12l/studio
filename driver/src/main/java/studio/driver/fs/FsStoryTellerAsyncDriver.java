@@ -200,7 +200,7 @@ public class FsStoryTellerAsyncDriver {
                         for (UUID packUUID : packUUIDs) {
                             FsStoryPackInfos packInfos = new FsStoryPackInfos();
                             packInfos.setUuid(packUUID);
-                            LOGGER.debug("Pack UUID: {}", packUUID.toString());
+                            LOGGER.debug("Pack UUID: {}", packUUID);
 
                             // Compute .content folder (last 4 bytes of UUID)
                             String folderName = computePackFolderName(packUUID.toString());

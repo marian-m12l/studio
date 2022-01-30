@@ -40,7 +40,7 @@ import studio.metadata.DatabaseMetadataService;
 
 public class StoryTellerService implements IStoryTellerService {
 
-    private final Logger LOGGER = LoggerFactory.getLogger(StoryTellerService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(StoryTellerService.class);
 
     private final EventBus eventBus;
 
