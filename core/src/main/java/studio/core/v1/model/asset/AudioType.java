@@ -1,22 +1,22 @@
-package studio.core.v1.model.mime;
+package studio.core.v1.model.asset;
 
 import java.util.Arrays;
 import java.util.List;
 
-public enum ImageType {
+public enum AudioType {
 
-    BMP("image/bmp", ".bmp"), PNG("image/png", ".png"), JPEG("image/jpeg", ".jpg", ".jpeg");
+    WAV("audio/x-wav", ".wav"), MPEG("audio/mpeg", ".mp3"), MP3("audio/mp3", ".mp3"), OGG("audio/ogg", ".ogg", ".oga");
 
     private String mime;
     private List<String> extensions;
 
-    private ImageType(String mime, String... extensions) {
+    private AudioType(String mime, String... extensions) {
         this.mime = mime;
         this.extensions = Arrays.asList(extensions);
     }
 
-    public static ImageType fromExtension(String extension) {
-        for (ImageType e : values()) {
+    public static AudioType fromExtension(String extension) {
+        for (AudioType e : values()) {
             if (e.extensions.contains(extension)) {
                 return e;
             }
@@ -24,9 +24,9 @@ public enum ImageType {
         return null;
     }
 
-    public static ImageType fromMime(String mime) {
-        for (ImageType e : values()) {
-            if (e.is(mime)) {
+    public static AudioType fromMime(String mime) {
+        for (AudioType e : values()) {
+            if (e.mime.equals(mime)) {
                 return e;
             }
         }
@@ -41,8 +41,7 @@ public enum ImageType {
         return extensions;
     }
 
-    public boolean is(String mime) {
-        return this.mime.equals(mime);
+    public String getFirstExtension() {
+        return extensions.get(0);
     }
-
 }
