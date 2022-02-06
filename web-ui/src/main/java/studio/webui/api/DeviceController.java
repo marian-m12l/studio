@@ -29,7 +29,7 @@ public class DeviceController {
         throw new IllegalArgumentException("Utility class");
     }
 
-    public static Router apiRouter(Vertx vertx, IStoryTellerService storyTellerService, LibraryService libraryService) {
+    public static Router apiRouter(Vertx vertx, IStoryTellerService storyTellerService) {
         Router router = Router.router(vertx);
 
         // Plugged device metadata

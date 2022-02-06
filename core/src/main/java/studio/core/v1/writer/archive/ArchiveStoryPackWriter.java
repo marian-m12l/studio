@@ -43,8 +43,8 @@ public class ArchiveStoryPackWriter implements StoryPackWriter {
             }
             // Add assets in separate directory
             Path assetPath = Files.createDirectories(zipFs.getPath("assets/"));
-            for (String k : assets.keySet()) {
-                Files.write(assetPath.resolve(k), assets.get(k));
+            for (Map.Entry<String, byte[]> a : assets.entrySet()) {
+                Files.write(assetPath.resolve(a.getKey()), a.getValue());
             }
         }
     }

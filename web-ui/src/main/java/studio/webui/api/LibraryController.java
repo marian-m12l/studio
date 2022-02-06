@@ -104,11 +104,11 @@ public class LibraryController {
                 if (PackFormat.RAW == packFormat) {
                     optPath = libraryService.addConvertedRawPackFile(packPath, allowEnriched);
                 } else if (PackFormat.FS == packFormat) {
-                    optPath = libraryService.addConvertedFsPackFile(packPath, allowEnriched);
+                    optPath = libraryService.addConvertedFsPackFile(packPath);
                 } else if (PackFormat.ARCHIVE == packFormat) {
                     optPath = libraryService.addConvertedArchivePackFile(packPath);
                 }
-                optPath.ifPresentOrElse(p -> promisedPack.tryComplete(p),
+                optPath.ifPresentOrElse(promisedPack::tryComplete,
                         () -> promisedPack.tryFail("Failed to read or convert pack to " + format + " format"));
                 promisedPack.tryComplete();
             }, 0, TimeUnit.SECONDS);
