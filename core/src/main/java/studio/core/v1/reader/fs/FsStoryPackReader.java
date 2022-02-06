@@ -25,6 +25,7 @@ import java.util.UUID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import studio.core.v1.Constants;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.ControlSettings;
 import studio.core.v1.model.StageNode;
@@ -225,7 +226,7 @@ public class FsStoryPackReader implements StoryPackReader {
     private byte[] decipherFirstBlockCommonKey(byte[] data) {
         byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
         int[] dataInt = XXTEACipher.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
-        int[] decryptedInt = XXTEACipher.btea(dataInt, -(Math.min(128, data.length/4)), XXTEACipher.toIntArray(XXTEACipher.COMMON_KEY, ByteOrder.BIG_ENDIAN));
+        int[] decryptedInt = XXTEACipher.btea(dataInt, -(Math.min(128, data.length/4)), XXTEACipher.toIntArray(Constants.COMMON_KEY, ByteOrder.BIG_ENDIAN));
         byte[] decryptedBlock = XXTEACipher.toByteArray(decryptedInt, ByteOrder.LITTLE_ENDIAN);
         ByteBuffer bb = ByteBuffer.allocate(data.length);
         bb.put(decryptedBlock);

@@ -34,8 +34,6 @@ import studio.webui.service.IStoryTellerService;
 
 public class MockStoryTellerService implements IStoryTellerService {
 
-    public static final String MOCKED_DEVICE_PATH = "/.studio/device/";
-
     private static final int BUFFER_SIZE = 1024 * 1024 * 10;
 
     private static final ScheduledThreadPoolExecutor THREAD_POOL = new ScheduledThreadPoolExecutor(2);
@@ -65,7 +63,7 @@ public class MockStoryTellerService implements IStoryTellerService {
     }
 
     private static Path devicePath() {
-        return Path.of(System.getProperty("user.home") + MOCKED_DEVICE_PATH);
+        return Path.of(System.getProperty("user.home") + "/.studio/device/");
     }
 
     public CompletableFuture<Optional<JsonObject>> deviceInfos() {

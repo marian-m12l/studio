@@ -12,7 +12,7 @@ public abstract class Node {
 
     private EnrichedNodeMetadata enriched;
 
-    public Node(EnrichedNodeMetadata enriched) {
+    protected Node(EnrichedNodeMetadata enriched) {
         this.enriched = enriched;
     }
 

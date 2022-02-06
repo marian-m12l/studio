@@ -329,8 +329,9 @@ public class BinaryStoryPackWriter implements StoryPackWriter {
     private <K, V> K getKey(Map<K, V> map, V value) {
         return map.entrySet().stream() //
                 .filter(entry -> value.equals(entry.getValue())) //
+                .findFirst() //
                 .map(Map.Entry::getKey) //
-                .findFirst().get();
+                .orElse(null);
     }
 
 }

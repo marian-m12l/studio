@@ -149,7 +149,7 @@ public class LibraryService {
         throw new StoryTellerException(msg);
     }
 
-    public Optional<Path> addConvertedRawPackFile(String packFile, Boolean allowEnriched) {
+    public Optional<Path> addConvertedRawPackFile(String packFile, boolean allowEnriched) {
         PackFormat outputFormat = PackFormat.RAW;
         if (packFile.endsWith(".pack")) {
             assertFormat(outputFormat);
@@ -225,7 +225,7 @@ public class LibraryService {
         }
     }
 
-    public Optional<Path> addConvertedFsPackFile(String packFile, Boolean allowEnriched) {
+    public Optional<Path> addConvertedFsPackFile(String packFile) {
         PackFormat outputFormat = PackFormat.FS;
         if (!packFile.endsWith(".zip") && !packFile.endsWith(".pack")) {
             assertFormat(outputFormat);

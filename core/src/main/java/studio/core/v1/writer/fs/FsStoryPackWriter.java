@@ -36,6 +36,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import studio.core.v1.Constants;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
@@ -380,7 +381,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
     }
 
     private byte[] cipherFirstBlockCommonKey(byte[] data) {
-        byte[] encryptedBlock = cipher(CipherMode.CIPHER, data, 512, XXTEACipher.COMMON_KEY);
+        byte[] encryptedBlock = cipher(CipherMode.CIPHER, data, 512, Constants.COMMON_KEY);
         ByteBuffer bb = ByteBuffer.allocate(data.length);
         bb.put(encryptedBlock);
         if (data.length > 512) {
@@ -390,7 +391,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
     }
 
     private byte[] decipherFirstBlockCommonKey(byte[] data) {
-        byte[] decryptedBlock = cipher(CipherMode.DECIPHER, data, 512, XXTEACipher.COMMON_KEY);
+        byte[] decryptedBlock = cipher(CipherMode.DECIPHER, data, 512, Constants.COMMON_KEY);
         ByteBuffer bb = ByteBuffer.allocate(data.length);
         bb.put(decryptedBlock);
         if (data.length > 512) {
@@ -401,13 +402,12 @@ public class FsStoryPackWriter implements StoryPackWriter {
 
     private byte[] computeSpecificKeyFromUUID(byte[] uuid) {
         byte[] btKey = decipherFirstBlockCommonKey(uuid);
-        byte[] reorderedBtKey = new byte[]{
-                btKey[11], btKey[10], btKey[9], btKey[8],
-                btKey[15], btKey[14], btKey[13], btKey[12],
-                btKey[3], btKey[2], btKey[1], btKey[0],
-                btKey[7], btKey[6], btKey[5], btKey[4]
+        return new byte[] { //
+                btKey[11], btKey[10], btKey[9], btKey[8], //
+                btKey[15], btKey[14], btKey[13], btKey[12], //
+                btKey[3], btKey[2], btKey[1], btKey[0], //
+                btKey[7], btKey[6], btKey[5], btKey[4] //
         };
-        return reorderedBtKey;
     }
 
     /** Read classpath relative file. */
@@ -418,7 +418,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
             return Files.readAllBytes(p);
         } catch (URISyntaxException | IOException e) {
             LOGGER.atError().withThrowable(e).log("Cannot load relative resource {}!", relative);
-            return null;
+            return new byte[0];
         }
     }
 }

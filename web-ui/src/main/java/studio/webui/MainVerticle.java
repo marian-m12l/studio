@@ -39,16 +39,14 @@ public class MainVerticle extends AbstractVerticle {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MainVerticle.class);
 
-    private DatabaseMetadataService databaseMetadataService;
     private LibraryService libraryService;
     private EvergreenService evergreenService;
     private IStoryTellerService storyTellerService;
 
     @Override
     public void start() {
-
         // Service that manages pack metadata
-        databaseMetadataService = new DatabaseMetadataService(false);
+        DatabaseMetadataService databaseMetadataService = new DatabaseMetadataService(false);
 
         // Service that manages local library
         libraryService = new LibraryService(databaseMetadataService);
@@ -64,9 +62,7 @@ public class MainVerticle extends AbstractVerticle {
             storyTellerService = new StoryTellerService(vertx.eventBus(), databaseMetadataService);
         }
 
-
         Router router = Router.router(vertx);
-
         // Handle cross-origin calls
         router.route().handler(CorsHandler.create("http://localhost:.*")
                 .allowedMethods(Set.of(
@@ -106,7 +102,7 @@ public class MainVerticle extends AbstractVerticle {
 
         // Automatically open URL in browser, unless instructed otherwise
         String openBrowser = System.getProperty("studio.open", "true");
-        if (Boolean.valueOf(openBrowser)) {
+        if (Boolean.parseBoolean(openBrowser)) {
             LOGGER.info("Opening URL in default browser...");
             if (Desktop.isDesktopSupported()) {
                 try {
@@ -139,9 +135,8 @@ public class MainVerticle extends AbstractVerticle {
         router.route().consumes(Constants.MIME_JSON);
         router.route().produces(Constants.MIME_JSON);
 
-
         // Device services
-        router.mountSubRouter("/device", DeviceController.apiRouter(vertx, storyTellerService, libraryService));
+        router.mountSubRouter("/device", DeviceController.apiRouter(vertx, storyTellerService));
 
         // Library services
         router.mountSubRouter("/library", LibraryController.apiRouter(vertx, libraryService));

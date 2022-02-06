@@ -273,17 +273,14 @@ public class BinaryStoryPackReader implements StoryPackReader {
                 dis.read(assetBytes, 0, assetBytes.length);
 
                 // Update asset on stage nodes referencing this sector
-                switch (assetAddr.getType()) {
-                    case AUDIO:
-                        AudioAsset audioAsset = new AudioAsset(AudioType.WAV, assetBytes);
-                        stagesWithAudio.get(assetAddr).forEach(stageNode -> stageNode.setAudio(audioAsset));
-                        break;
-                    case IMAGE:
-                        ImageAsset imageAsset = new ImageAsset(ImageType.BMP, assetBytes);
-                        stagesWithImage.get(assetAddr).forEach(stageNode -> stageNode.setImage(imageAsset));
-                        break;
+                if(assetAddr.getType() == AssetType.AUDIO) {
+                    AudioAsset audioAsset = new AudioAsset(AudioType.WAV, assetBytes);
+                    stagesWithAudio.get(assetAddr).forEach(stageNode -> stageNode.setAudio(audioAsset));
                 }
-
+                if(assetAddr.getType() == AssetType.IMAGE) {
+                    ImageAsset imageAsset = new ImageAsset(ImageType.BMP, assetBytes);
+                    stagesWithImage.get(assetAddr).forEach(stageNode -> stageNode.setImage(imageAsset));
+                }
                 currentOffset += assetAddr.getSize();
             }
             return new StoryPack(stageNodes.get(new SectorAddr(0)).getUuid(), factoryDisabled, version, List.copyOf(stageNodes.values()), enrichedPack, false);
@@ -295,11 +292,13 @@ public class BinaryStoryPackReader implements StoryPackReader {
         dis.read(bytes);
         String str = new String(bytes, StandardCharsets.UTF_16);
         int firstNullChar = str.indexOf("\u0000");
-        return firstNullChar == 0
-                ? Optional.empty()
-                : firstNullChar == -1
-                    ? Optional.of(str)
-                    : Optional.of(str.substring(0, firstNullChar));
+        if(firstNullChar == 0) {
+            return Optional.empty();
+        }
+        if(firstNullChar == -1) {
+            return Optional.of(str);
+        }
+        return Optional.of(str.substring(0, firstNullChar));
     }
 
     private EnrichedNodeMetadata readEnrichedNodeMetadata(DataInputStream dis) throws IOException {

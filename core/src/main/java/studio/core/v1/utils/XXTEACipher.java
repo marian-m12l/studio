@@ -13,8 +13,6 @@ import java.util.List;
 
 public class XXTEACipher {
 
-    public static final byte[] COMMON_KEY = SecurityUtils.decodeHex("91bd7a0aa75440a9bbd49d6ce0dcc0e3");
-
     private static final int DELTA = 0x9e3779b9;
 
     private XXTEACipher() {
