@@ -11,6 +11,7 @@ import java.nio.ByteOrder;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
 import org.apache.logging.log4j.LogManager;
@@ -207,7 +208,7 @@ public class LibUsbMassStorageHelper {
      * @param <T> The type returned by the function
      * @return The return value from the function
      */
-    public static <T> CompletableFuture<T> executeOnDeviceHandle(Device device, Function<DeviceHandle, CompletableFuture<T>> func) {
+    public static <T> CompletionStage<T> executeOnDeviceHandle(Device device, Function<DeviceHandle, CompletionStage<T>> func) {
         return CompletableFuture.supplyAsync(() -> {
             // Open device handle
             DeviceHandle handle = new DeviceHandle();
@@ -241,7 +242,7 @@ public class LibUsbMassStorageHelper {
                 );
     }
 
-    public static CompletableFuture<ByteBuffer> asyncReadSPISectors(DeviceHandle handle, int offset, short nbSectorsToRead) {
+    public static CompletionStage<ByteBuffer> asyncReadSPISectors(DeviceHandle handle, int offset, short nbSectorsToRead) {
         // Write Command Block Wrapper
         ByteBuffer cbw = createSPIReadCBW(offset, nbSectorsToRead);
         return asyncTransferOut(handle, cbw)
@@ -265,7 +266,7 @@ public class LibUsbMassStorageHelper {
                 });
     }
 
-    public static CompletableFuture<ByteBuffer> asyncReadSDSectors(DeviceHandle handle, int sector, short nbSectorsToRead) {
+    public static CompletionStage<ByteBuffer> asyncReadSDSectors(DeviceHandle handle, int sector, short nbSectorsToRead) {
         // Write Command Block Wrapper
         ByteBuffer cbw = createSDReadCBW(sector, nbSectorsToRead);
         return asyncTransferOut(handle, cbw)
@@ -289,7 +290,7 @@ public class LibUsbMassStorageHelper {
                 });
     }
 
-    public static CompletableFuture<Boolean> asyncWriteSDSectors(DeviceHandle handle, int sector, short nbSectorsToWrite, ByteBuffer data) {
+    public static CompletionStage<Boolean> asyncWriteSDSectors(DeviceHandle handle, int sector, short nbSectorsToWrite, ByteBuffer data) {
         ByteBuffer cbw = createSDWriteCBW(sector, nbSectorsToWrite);
         return asyncTransferOut(handle, cbw)
                 .thenCompose(done -> {
@@ -311,7 +312,7 @@ public class LibUsbMassStorageHelper {
                 });
     }
 
-    private static CompletableFuture<Boolean> asyncTransferOut(DeviceHandle handle, ByteBuffer data) {
+    private static CompletionStage<Boolean> asyncTransferOut(DeviceHandle handle, ByteBuffer data) {
         CompletableFuture<Boolean> promise = new CompletableFuture<>();
 
         Transfer transfer = LibUsb.allocTransfer();
@@ -341,7 +342,7 @@ public class LibUsbMassStorageHelper {
         return promise;
     }
 
-    private static CompletableFuture<Boolean> asyncTransferIn(DeviceHandle handle, ByteBuffer data) {
+    private static CompletionStage<Boolean> asyncTransferIn(DeviceHandle handle, ByteBuffer data) {
         CompletableFuture<Boolean> promise = new CompletableFuture<>();
 
         Transfer transfer = LibUsb.allocTransfer();

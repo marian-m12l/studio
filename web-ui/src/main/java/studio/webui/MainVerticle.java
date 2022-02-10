@@ -10,11 +10,12 @@ import java.awt.Desktop;
 import java.net.URI;
 import java.util.Set;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.bridge.BridgeEventType;
 import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.web.Router;
@@ -22,9 +23,8 @@ import io.vertx.ext.web.handler.BodyHandler;
 import io.vertx.ext.web.handler.CorsHandler;
 import io.vertx.ext.web.handler.ErrorHandler;
 import io.vertx.ext.web.handler.StaticHandler;
-import io.vertx.ext.web.handler.sockjs.BridgeOptions;
+import io.vertx.ext.web.handler.sockjs.SockJSBridgeOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
-import studio.core.v1.Constants;
 import studio.metadata.DatabaseMetadataService;
 import studio.webui.api.DeviceController;
 import studio.webui.api.EvergreenController;
@@ -37,7 +37,9 @@ import studio.webui.service.mock.MockStoryTellerService;
 
 public class MainVerticle extends AbstractVerticle {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MainVerticle.class);
+    private static final Logger LOGGER = LogManager.getLogger(MainVerticle.class);
+
+    public static final String MIME_JSON = "application/json";
 
     private LibraryService libraryService;
     private EvergreenService evergreenService;
@@ -90,7 +92,7 @@ public class MainVerticle extends AbstractVerticle {
         router.route().handler(StaticHandler.create().setCachingEnabled(false));
 
         // Error handler
-        ErrorHandler errorHandler = ErrorHandler.create(true);
+        ErrorHandler errorHandler = ErrorHandler.create(vertx, true);
         router.route().failureHandler(ctx -> {
             Throwable failure = ctx.failure();
             LOGGER.error("Exception thrown", failure);
@@ -115,7 +117,7 @@ public class MainVerticle extends AbstractVerticle {
     }
 
     private SockJSHandler eventBusHandler() {
-        BridgeOptions options = new BridgeOptions()
+        SockJSBridgeOptions options = new SockJSBridgeOptions()
                 .addOutboundPermitted(new PermittedOptions().setAddressRegex("storyteller\\.(.+)"));
         SockJSHandler sockJSHandler = SockJSHandler.create(vertx);
         sockJSHandler.bridge(options, event -> {
@@ -131,9 +133,7 @@ public class MainVerticle extends AbstractVerticle {
         Router router = Router.router(vertx);
 
         // Handle JSON
-        router.route().handler(BodyHandler.create());
-        router.route().consumes(Constants.MIME_JSON);
-        router.route().produces(Constants.MIME_JSON);
+        router.route().handler(BodyHandler.create()).consumes(MIME_JSON).produces(MIME_JSON);
 
         // Device services
         router.mountSubRouter("/device", DeviceController.apiRouter(vertx, storyTellerService));

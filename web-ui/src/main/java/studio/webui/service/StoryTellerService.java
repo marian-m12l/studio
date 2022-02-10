@@ -16,15 +16,16 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.usb4java.Device;
 
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.SecurityUtils;
 import studio.driver.event.DeviceHotplugEventListener;
@@ -40,7 +41,7 @@ import studio.metadata.DatabaseMetadataService;
 
 public class StoryTellerService implements IStoryTellerService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(StoryTellerService.class);
+    private static final Logger LOGGER = LogManager.getLogger(StoryTellerService.class);
 
     private final EventBus eventBus;
 
@@ -155,7 +156,7 @@ public class StoryTellerService implements IStoryTellerService {
         });
     }
 
-    public CompletableFuture<Optional<JsonObject>> deviceInfos() {
+    public CompletionStage<Optional<JsonObject>> deviceInfos() {
         if (device != null) {
             return deviceInfosV1();
         } else if (fsDevice != null) {
@@ -164,7 +165,7 @@ public class StoryTellerService implements IStoryTellerService {
             return CompletableFuture.completedFuture(Optional.empty());
         }
     }
-    private CompletableFuture<Optional<JsonObject>> deviceInfosV1() {
+    private CompletionStage<Optional<JsonObject>> deviceInfosV1() {
         return driver.getDeviceInfos()
                 .thenApply(infos -> Optional.of(
                         new JsonObject()
@@ -181,7 +182,7 @@ public class StoryTellerService implements IStoryTellerService {
                         )
                 );
     }
-    private CompletableFuture<Optional<JsonObject>> deviceInfosV2() {
+    private CompletionStage<Optional<JsonObject>> deviceInfosV2() {
         return fsDriver.getDeviceInfos()
                 .thenApply(infos -> Optional.of(
                         new JsonObject()
@@ -199,7 +200,7 @@ public class StoryTellerService implements IStoryTellerService {
                 );
     }
 
-    public CompletableFuture<JsonArray> packs() {
+    public CompletionStage<JsonArray> packs() {
         if (device != null) {
             return packsV1();
         } else if (fsDevice != null) {
@@ -208,7 +209,7 @@ public class StoryTellerService implements IStoryTellerService {
             return CompletableFuture.completedFuture(new JsonArray());
         }
     }
-    private CompletableFuture<JsonArray> packsV1() {
+    private CompletionStage<JsonArray> packsV1() {
         return driver.getPacksList()
                 .thenApply(packs ->
                         new JsonArray(
@@ -218,7 +219,7 @@ public class StoryTellerService implements IStoryTellerService {
                         )
                 );
     }
-    private CompletableFuture<JsonArray> packsV2() {
+    private CompletionStage<JsonArray> packsV2() {
         return fsDriver.getPacksList()
                 .thenApply(packs ->
                         new JsonArray(
@@ -229,7 +230,7 @@ public class StoryTellerService implements IStoryTellerService {
                 );
     }
 
-    public CompletableFuture<Optional<String>> addPack(String uuid, Path packFile) {
+    public CompletionStage<Optional<String>> addPack(String uuid, Path packFile) {
         if (device != null) {
             return addPackV1(uuid, packFile);
         } else if (fsDevice != null) {
@@ -238,7 +239,7 @@ public class StoryTellerService implements IStoryTellerService {
             return CompletableFuture.completedFuture(Optional.empty());
         }
     }
-    private CompletableFuture<Optional<String>> addPackV1(String uuid, Path packFile) {
+    private CompletionStage<Optional<String>> addPackV1(String uuid, Path packFile) {
         // Check that the pack is not already on the device
         return driver.getPacksList()
                 .thenApply(packs -> {
@@ -253,17 +254,17 @@ public class StoryTellerService implements IStoryTellerService {
                         try {
                             // Create stream on file
                             long packSize = Files.size(packFile);
-                            LOGGER.info("Transferring pack to device: " + FileUtils.readableByteSize(packSize));
+                            LOGGER.info("Transferring pack to device: {}", FileUtils.readableByteSize(packSize));
                             int fileSizeInSectors = (int) (packSize / LibUsbMassStorageHelper.SECTOR_SIZE);
 
-                            LOGGER.info("Transferring pack to device: " + fileSizeInSectors + " sectors");
+                            LOGGER.info("Transferring pack to device: {} sectors", fileSizeInSectors);
                             try(InputStream is = new BufferedInputStream(Files.newInputStream(packFile)) ){
                                 driver.uploadPack(is, fileSizeInSectors, new TransferProgressListener() {
                                     @Override
                                     public void onProgress(TransferStatus status) {
                                         // Send event on eventbus to monitor progress
                                         double p = (double) status.getTransferred() / (double) status.getTotal();
-                                        LOGGER.debug("Pack add progress... " + status.getTransferred() + " / " + status.getTransferred() + " (" + p + ")");
+                                        LOGGER.debug("Pack add progress... {} / {} ({})", status.getTransferred(), status.getTransferred(), p);
                                         eventBus.send("storyteller.transfer." + transferId + ".progress", new JsonObject().put("progress", p));
                                     }
     
@@ -294,7 +295,7 @@ public class StoryTellerService implements IStoryTellerService {
                     }
                 });
     }
-    private CompletableFuture<Optional<String>> addPackV2(String uuid, Path packFile) {
+    private CompletionStage<Optional<String>> addPackV2(String uuid, Path packFile) {
         // Check that the pack is not already on the device
         return fsDriver.getPacksList()
                 .thenApply(packs -> {
@@ -306,13 +307,13 @@ public class StoryTellerService implements IStoryTellerService {
                     } else {
                         String transferId = UUID.randomUUID().toString();
                         try {
-                            LOGGER.info("Transferring pack folder to device: " + packFile);
+                            LOGGER.info("Transferring pack folder to device: {}", packFile);
                             fsDriver.uploadPack(uuid, packFile, new TransferProgressListener() {
                                 @Override
                                 public void onProgress(TransferStatus status) {
                                     // Send event on eventbus to monitor progress
                                     double p = (double) status.getTransferred() / (double) status.getTotal();
-                                    LOGGER.debug("Pack add progress... " + status.getTransferred() + " / " + status.getTransferred() + " (" + p + ")");
+                                    LOGGER.debug("Pack add progress... {} / {} ({})", status.getTransferred(), status.getTransferred(), p);
                                     eventBus.send("storyteller.transfer." + transferId + ".progress", new JsonObject().put("progress", p));
                                 }
 
@@ -343,7 +344,7 @@ public class StoryTellerService implements IStoryTellerService {
                 });
     }
 
-    public CompletableFuture<Boolean> deletePack(String uuid) {
+    public CompletionStage<Boolean> deletePack(String uuid) {
         if (device != null) {
             return driver.deletePack(uuid);
         } else if (fsDevice != null) {
@@ -353,7 +354,7 @@ public class StoryTellerService implements IStoryTellerService {
         }
     }
 
-    public CompletableFuture<Boolean> reorderPacks(List<String> uuids) {
+    public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
         if (device != null) {
             return driver.reorderPacks(uuids);
         } else if (fsDevice != null) {
@@ -363,7 +364,7 @@ public class StoryTellerService implements IStoryTellerService {
         }
     }
 
-    public CompletableFuture<Optional<String>> extractPack(String uuid, Path packFile) {
+    public CompletionStage<Optional<String>> extractPack(String uuid, Path packFile) {
         if (device != null) {
             return extractPackV1(uuid, packFile);
         } else if (fsDevice != null) {
@@ -372,7 +373,7 @@ public class StoryTellerService implements IStoryTellerService {
             return CompletableFuture.completedFuture(Optional.empty());
         }
     }
-    private CompletableFuture<Optional<String>> extractPackV1(String uuid, Path destFile) {
+    private CompletionStage<Optional<String>> extractPackV1(String uuid, Path destFile) {
         String transferId = UUID.randomUUID().toString();
         // Check that the destination is available
         if (Files.exists(destFile)) {
@@ -386,7 +387,7 @@ public class StoryTellerService implements IStoryTellerService {
                 public void onProgress(TransferStatus status) {
                     // Send event on eventbus to monitor progress
                     double p = (double) status.getTransferred() / (double) status.getTotal();
-                    LOGGER.debug("Pack extraction progress... " + status.getTransferred() + " / " + status.getTotal() + " (" + p + ")");
+                    LOGGER.debug("Pack extraction progress... {} / {} ({})", status.getTransferred(), status.getTotal(), p);
                     eventBus.send("storyteller.transfer."+transferId+".progress", new JsonObject().put("progress", p));
                 }
                 @Override
@@ -413,7 +414,7 @@ public class StoryTellerService implements IStoryTellerService {
         }
         return CompletableFuture.completedFuture(Optional.of(transferId));
     }
-    private CompletableFuture<Optional<String>> extractPackV2(String uuid, Path destFile) {
+    private CompletionStage<Optional<String>> extractPackV2(String uuid, Path destFile) {
         String transferId = UUID.randomUUID().toString();
         // Check that the destination is available
         if (Files.exists(destFile.resolve(uuid))) {
@@ -426,7 +427,7 @@ public class StoryTellerService implements IStoryTellerService {
                 public void onProgress(TransferStatus status) {
                     // Send event on eventbus to monitor progress
                     double p = (double) status.getTransferred() / (double) status.getTotal();
-                    LOGGER.debug("Pack extraction progress... " + status.getTransferred() + " / " + status.getTotal() + " (" + p + ")");
+                    LOGGER.debug("Pack extraction progress... {} / {} ({})", status.getTransferred(), status.getTotal(), p);
                     eventBus.send("storyteller.transfer."+transferId+".progress", new JsonObject().put("progress", p));
                 }
                 @Override
@@ -454,7 +455,7 @@ public class StoryTellerService implements IStoryTellerService {
         return CompletableFuture.completedFuture(Optional.of(transferId));
     }
 
-    public CompletableFuture<Void> dump(Path outputPath) {
+    public CompletionStage<Void> dump(Path outputPath) {
         if (this.device == null) {
             return CompletableFuture.completedFuture(null);
         }

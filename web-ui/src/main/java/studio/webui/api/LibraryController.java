@@ -6,27 +6,26 @@
 
 package studio.webui.api;
 
+
 import java.nio.file.Path;
 import java.util.Optional;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpHeaders;
-import io.vertx.core.json.Json;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
-import studio.core.v1.Constants;
 import studio.core.v1.utils.PackFormat;
 import studio.webui.service.LibraryService;
 
 public class LibraryController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LibraryController.class);
+    private static final Logger LOGGER = LogManager.getLogger(LibraryController.class);
 
     private static final ScheduledThreadPoolExecutor THREAD_POOL = new ScheduledThreadPoolExecutor(2);
 
@@ -39,9 +38,7 @@ public class LibraryController {
 
         // Local library device metadata
         router.get("/infos").handler(ctx -> {
-            ctx.response()
-                    .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
-                    .end(Json.encode(libraryService.libraryInfos()));
+            ctx.json(libraryService.libraryInfos());
         });
 
         // Local library packs list
@@ -50,9 +47,7 @@ public class LibraryController {
             JsonArray libraryPacks = libraryService.packs();
             long t2 = System.currentTimeMillis();
             LOGGER.info("Library packs scanned in {}ms", t2-t1);
-            ctx.response()
-                    .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
-                    .end(Json.encode(libraryPacks));
+            ctx.json(libraryPacks);
         });
 
         // Local library pack download
@@ -75,9 +70,7 @@ public class LibraryController {
             String packPath = ctx.request().getFormAttribute("path");
             boolean added = libraryService.addPackFile(packPath, ctx.fileUploads().iterator().next().uploadedFileName());
             if (added) {
-                ctx.response()
-                        .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
-                        .end(Json.encode(new JsonObject().put("success", true)));
+                ctx.json(new JsonObject().put("success", true));
             } else {
                 LOGGER.error("Pack was not added to library");
                 ctx.fail(500);
@@ -116,12 +109,7 @@ public class LibraryController {
             promisedPack.future().onComplete(maybeConvertedPack -> {
                 if (maybeConvertedPack.succeeded()) {
                     // Return path to converted file within library
-                    ctx.response()
-                            .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
-                            .end(Json.encode(new JsonObject()
-                                    .put("success", true)
-                                    .put("path", maybeConvertedPack.result().toString())
-                            ));
+                    ctx.json(new JsonObject().put("success", true).put("path", maybeConvertedPack.result().toString()));
                 } else {
                     LOGGER.error("Failed to read or convert pack");
                     ctx.fail(500, maybeConvertedPack.cause());
@@ -134,9 +122,7 @@ public class LibraryController {
             String packPath = ctx.getBodyAsJson().getString("path");
             boolean removed = libraryService.deletePack(packPath);
             if (removed) {
-                ctx.response()
-                        .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
-                        .end(Json.encode(new JsonObject().put("success", true)));
+                ctx.json(new JsonObject().put("success", true));
             } else {
                 LOGGER.error("Pack was not removed from library");
                 ctx.fail(500);

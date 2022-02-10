@@ -15,4 +15,5 @@ web-ui/bin/
 web-ui/javascript/build/
 web-ui/javascript/node_modules/
 web-ui/*.log
+web-ui/gc.log.*
 
