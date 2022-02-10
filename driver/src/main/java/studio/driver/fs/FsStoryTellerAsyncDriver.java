@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
@@ -114,7 +115,7 @@ public class FsStoryTellerAsyncDriver {
     }
 
 
-    public CompletableFuture<FsDeviceInfos> getDeviceInfos() {
+    public CompletionStage<FsDeviceInfos> getDeviceInfos() {
         if (this.device == null || this.partitionMountPoint == null) {
             return CompletableFuture.failedFuture(noDevicePluggedException());
         }
@@ -187,7 +188,7 @@ public class FsStoryTellerAsyncDriver {
     }
 
 
-    public CompletableFuture<List<FsStoryPackInfos>> getPacksList() {
+    public CompletionStage<List<FsStoryPackInfos>> getPacksList() {
         if (this.device == null || this.partitionMountPoint == null) {
             return CompletableFuture.failedFuture(noDevicePluggedException());
         }
@@ -231,7 +232,7 @@ public class FsStoryTellerAsyncDriver {
                 });
     }
 
-    private CompletableFuture<List<UUID>> readPackIndex() {
+    private CompletionStage<List<UUID>> readPackIndex() {
         return CompletableFuture.supplyAsync(() -> {
             List<UUID> packUUIDs = new ArrayList<>();
             Path piFile = this.partitionMountPoint.resolve(PACK_INDEX_FILENAME);
@@ -251,7 +252,7 @@ public class FsStoryTellerAsyncDriver {
     }
 
 
-    public CompletableFuture<Boolean> reorderPacks(List<String> uuids) {
+    public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
         if (this.device == null || this.partitionMountPoint == null) {
             return CompletableFuture.failedFuture(noDevicePluggedException());
         }
@@ -275,7 +276,7 @@ public class FsStoryTellerAsyncDriver {
                 });
     }
 
-    public CompletableFuture<Boolean> deletePack(String uuid) {
+    public CompletionStage<Boolean> deletePack(String uuid) {
         if (this.device == null || this.partitionMountPoint == null) {
             return CompletableFuture.failedFuture(noDevicePluggedException());
         }
@@ -312,7 +313,7 @@ public class FsStoryTellerAsyncDriver {
                 });
     }
 
-    private CompletableFuture<Boolean> writePackIndex(List<UUID> packUUIDs) {
+    private CompletionStage<Boolean> writePackIndex(List<UUID> packUUIDs) {
         try {
             Path piFile = this.partitionMountPoint.resolve(PACK_INDEX_FILENAME);
 
@@ -330,7 +331,7 @@ public class FsStoryTellerAsyncDriver {
         }
     }
 
-    public CompletableFuture<TransferStatus> downloadPack(String uuid, String outputPath, TransferProgressListener listener) {
+    public CompletionStage<TransferStatus> downloadPack(String uuid, String outputPath, TransferProgressListener listener) {
         if (this.device == null || this.partitionMountPoint == null) {
             return CompletableFuture.failedFuture(noDevicePluggedException());
         }
@@ -363,7 +364,7 @@ public class FsStoryTellerAsyncDriver {
                 }));
     }
 
-    public CompletableFuture<TransferStatus> uploadPack(String uuid, Path inputPath, TransferProgressListener listener) {
+    public CompletionStage<TransferStatus> uploadPack(String uuid, Path inputPath, TransferProgressListener listener) {
         if (this.device == null || this.partitionMountPoint == null) {
             return CompletableFuture.failedFuture(noDevicePluggedException());
         }
@@ -454,7 +455,7 @@ public class FsStoryTellerAsyncDriver {
                         Path d = destFolder.resolve(sourceFolder.relativize(s));
                         if (Files.isDirectory(s)) {
                             if (!Files.isDirectory(d)) {
-                                LOGGER.debug("Creating directory {}" + d);
+                                LOGGER.debug("Creating directory {}", d);
                                 Files.createDirectory(d);
                             }
                         } else {

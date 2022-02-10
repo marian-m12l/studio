@@ -23,9 +23,10 @@ public class TestMain {
         // common config
         System.setProperty("file.encoding", "UTF-8");
         System.setProperty("vertx.disableDnsResolver", "true");
-        //System.setProperty("java.util.logging.manager", "org.apache.logging.log4j.jul.LogManager");
-        System.setProperty("vertx.logger-delegate-factory-class-name",
-                "io.vertx.core.logging.Log4j2LogDelegateFactory");
+        // System.setProperty("java.util.logging.manager",
+        // "org.apache.logging.log4j.jul.LogManager");
+        // System.setProperty("vertx.logger-delegate-factory-class-name",
+        // "io.vertx.core.logging.Log4j2LogDelegateFactory");
 
         // test mode
         if (args.length > 0 && "dev".equals(args[0])) {

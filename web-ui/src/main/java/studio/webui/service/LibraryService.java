@@ -19,10 +19,11 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.utils.PackAssetsCompression;
@@ -36,7 +37,7 @@ import studio.webui.model.LibraryPack;
 
 public class LibraryService {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(LibraryService.class);
+    private static final Logger LOGGER = LogManager.getLogger(LibraryService.class);
 
     public static final String LOCAL_LIBRARY_PROP = "studio.library";
     public static final String TMP_DIR_PROP = "studio.tmpdir";
@@ -88,7 +89,7 @@ public class LibraryService {
             Map<String, List<LibraryPack>> metadataByUuid = paths
                     // debuging
                     .filter(p -> {
-                        LOGGER.info("Read metadata from `" + p.getFileName() + "`");
+                        LOGGER.info("Read metadata from `{}`", p.getFileName());
                         return true;
                     })
                     // actual read
@@ -112,8 +113,7 @@ public class LibraryService {
                                 .filter(meta -> meta.getFormat() == PackFormat.ARCHIVE) //
                                 // update database with newest zip
                                 .findFirst().ifPresent(meta -> {
-                                    LOGGER.info("Refresh metadata from zip for " + meta.getUuid() + " ("
-                                            + meta.getTitle() + ")");
+                                    LOGGER.info("Refresh metadata from zip for {} ({})", meta.getUuid(), meta.getTitle());
                                     String thumbBase64 = Optional.ofNullable(meta.getThumbnail())
                                             .map(t -> "data:image/png;base64," + Base64.getEncoder().encodeToString(t))
                                             .orElse(null);
@@ -160,7 +160,7 @@ public class LibraryService {
         try {
             // Packs must first be converted to raw format
             Path packPath = libraryPath.resolve(packFile);
-            LOGGER.info("Reading " + inputFormat + " format pack");
+            LOGGER.info("Reading {} format pack", inputFormat);
             StoryPack storyPack = inputFormat.getReader().read(packPath);
 
             // Uncompress pack assets
@@ -324,14 +324,14 @@ public class LibraryService {
         }
         // read Metadata
         try {
-            LOGGER.debug("Reading metadata " + inputFormat + " from pack : " + path);
+            LOGGER.debug("Reading metadata {} from pack: {}", inputFormat, path);
             StoryPackMetadata meta = inputFormat.getReader().readMetadata(path);
             if (meta != null) {
                 meta.setSectorSize((int) Math.ceil(Files.size(path) / 512d));
                 return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis(), meta));
             }
         } catch (IOException e) {
-            LOGGER.error("Failed to read metadata " + inputFormat + " from pack : " + path, e);
+            LOGGER.atError().withThrowable(e).log("Failed to read metadata {} from pack: {}", inputFormat, path);
         }
         // Ignore other files OR read error
         return Optional.empty();

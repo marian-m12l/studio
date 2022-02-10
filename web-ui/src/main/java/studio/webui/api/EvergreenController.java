@@ -6,18 +6,16 @@
 
 package studio.webui.api;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import io.vertx.core.Vertx;
-import io.vertx.core.http.HttpHeaders;
-import io.vertx.core.json.Json;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
-import studio.core.v1.Constants;
 import studio.webui.service.EvergreenService;
 
 public class EvergreenController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(EvergreenController.class);
+    private static final Logger LOGGER = LogManager.getLogger(EvergreenController.class);
 
     private EvergreenController() {
         throw new IllegalArgumentException("Utility class");
@@ -30,9 +28,7 @@ public class EvergreenController {
         router.get("/infos").blockingHandler(ctx -> {
             evergreenService.infos().onComplete(maybeJson -> {
                 if (maybeJson.succeeded()) {
-                    ctx.response()
-                            .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
-                            .end(Json.encode(maybeJson.result()));
+                    ctx.json(maybeJson.result());
                 } else {
                     LOGGER.error("Failed to get current version infos");
                     ctx.fail(500, maybeJson.cause());
@@ -44,9 +40,7 @@ public class EvergreenController {
         router.get("/latest").blockingHandler(ctx -> {
             evergreenService.latest().onComplete(maybeJson -> {
                 if (maybeJson.succeeded()) {
-                    ctx.response()
-                            .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
-                            .end(Json.encode(maybeJson.result()));
+                    ctx.json(maybeJson.result());
                 } else {
                     LOGGER.error("Failed to get latest release");
                     ctx.fail(500, maybeJson.cause());
@@ -58,9 +52,7 @@ public class EvergreenController {
         router.get("/announce").blockingHandler(ctx -> {
             evergreenService.announce().onComplete(maybeJson -> {
                 if (maybeJson.succeeded()) {
-                    ctx.response()
-                            .putHeader(HttpHeaders.CONTENT_TYPE, Constants.MIME_JSON)
-                            .end(Json.encode(maybeJson.result()));
+                    ctx.json(maybeJson.result());
                 } else {
                     LOGGER.error("Failed to get announce");
                     ctx.fail(500, maybeJson.cause());

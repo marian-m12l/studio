@@ -144,7 +144,7 @@ public class PackAssetsCompression {
 
         // Multi-threaded processing : images
         pack.getStageNodes().parallelStream().forEach(node -> {
-            LOGGER.debug("Image from node {}/{}", i.incrementAndGet(), nbNodes);
+            LOGGER.debug("Image from node {}/{} [{}]", i.incrementAndGet(), nbNodes, Thread.currentThread().getName());
             ImageAsset ia = node.getImage();
             if (ia != null) {
                 byte[] imageData = ia.getRawData();
@@ -172,7 +172,7 @@ public class PackAssetsCompression {
 
         // Multi-threaded processing : audio
         pack.getStageNodes().parallelStream().forEach(node -> {
-            LOGGER.debug("Audio from node {}/{}", i.incrementAndGet(), nbNodes);
+            LOGGER.debug("Audio from node {}/{} [{}]", i.incrementAndGet(), nbNodes, Thread.currentThread().getName());
             AudioAsset aa = node.getAudio();
             if (aa != null) {
                 byte[] audioData = aa.getRawData();

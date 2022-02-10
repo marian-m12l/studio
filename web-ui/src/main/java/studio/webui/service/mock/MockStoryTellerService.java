@@ -17,16 +17,18 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.reader.binary.BinaryStoryPackReader;
 import studio.metadata.DatabaseMetadataService;
@@ -34,11 +36,11 @@ import studio.webui.service.IStoryTellerService;
 
 public class MockStoryTellerService implements IStoryTellerService {
 
+    private static final Logger LOGGER = LogManager.getLogger(MockStoryTellerService.class);
+    
     private static final int BUFFER_SIZE = 1024 * 1024 * 10;
 
     private static final ScheduledThreadPoolExecutor THREAD_POOL = new ScheduledThreadPoolExecutor(2);
-
-    private static final Logger LOGGER = LoggerFactory.getLogger(MockStoryTellerService.class);
 
     private final EventBus eventBus;
 
@@ -66,7 +68,7 @@ public class MockStoryTellerService implements IStoryTellerService {
         return Path.of(System.getProperty("user.home") + "/.studio/device/");
     }
 
-    public CompletableFuture<Optional<JsonObject>> deviceInfos() {
+    public CompletionStage<Optional<JsonObject>> deviceInfos() {
         try(Stream<Path> paths = Files.list(devicePath())) {
             long files = paths.count();
             return CompletableFuture.completedFuture(
@@ -89,7 +91,7 @@ public class MockStoryTellerService implements IStoryTellerService {
         }
     }
 
-    public CompletableFuture<JsonArray> packs() {
+    public CompletionStage<JsonArray> packs() {
         // Check that mocked device folder exists
         Path deviceFolder = devicePath();
         if (!Files.isDirectory(deviceFolder)) {
@@ -101,7 +103,7 @@ public class MockStoryTellerService implements IStoryTellerService {
         }
     }
 
-    private CompletableFuture<List<StoryPackMetadata>> readPackIndex(Path deviceFolder) {
+    private CompletionStage<List<StoryPackMetadata>> readPackIndex(Path deviceFolder) {
         // List binary pack files in mocked device folder
         try (Stream<Path> paths = Files.walk(deviceFolder).filter(Files::isRegularFile)) {
             return CompletableFuture.completedFuture( //
@@ -141,7 +143,7 @@ public class MockStoryTellerService implements IStoryTellerService {
         return Optional.empty();
     }
 
-    public CompletableFuture<Optional<String>> addPack(String uuid, Path packFile) {
+    public CompletionStage<Optional<String>> addPack(String uuid, Path packFile) {
         // Check that mocked device folder exists
         Path deviceFolder = devicePath();
         if (!Files.isDirectory(deviceFolder)) {
@@ -168,7 +170,7 @@ public class MockStoryTellerService implements IStoryTellerService {
                             count += n;
                             // Send events on eventbus to monitor progress
                             double p = count / (double) fileSize;
-                            LOGGER.debug("Pack copy progress... " + count + " / " + fileSize + " (" + p + ")");
+                            LOGGER.debug("Pack copy progress... {} / {} ({})", count, fileSize,  p);
                             eventBus.send("storyteller.transfer."+transferId+".progress", new JsonObject().put("progress", p));
                         }
                         // Send event on eventbus to signal end of transfer
@@ -183,7 +185,7 @@ public class MockStoryTellerService implements IStoryTellerService {
         }
     }
 
-    public CompletableFuture<Boolean> deletePack(String uuid) {
+    public CompletionStage<Boolean> deletePack(String uuid) {
         // Check that mocked device folder exists
         Path deviceFolder = devicePath();
         if (!Files.isDirectory(deviceFolder)) {
@@ -205,13 +207,13 @@ public class MockStoryTellerService implements IStoryTellerService {
         }
     }
 
-    public CompletableFuture<Boolean> reorderPacks(List<String> uuids) {
+    public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
         // Not supported
         LOGGER.warn("Not supported : reorderPacks");
         return CompletableFuture.completedFuture(false);
     }
 
-    public CompletableFuture<Optional<String>> extractPack(String uuid, Path destFile) {
+    public CompletionStage<Optional<String>> extractPack(String uuid, Path destFile) {
         // Check that mocked device folder exists
         Path deviceFolder = devicePath();
         if (!Files.isDirectory(deviceFolder)) {
@@ -239,7 +241,7 @@ public class MockStoryTellerService implements IStoryTellerService {
                                 count += n;
                                 // Send events on eventbus to monitor progress
                                 double p = count / (double) fileSize;
-                                LOGGER.debug("Pack copy progress... " + count + " / " + fileSize + " (" + p + ")");
+                                LOGGER.debug("Pack copy progress... {} / {} ({})", count, fileSize, p);
                                 eventBus.send("storyteller.transfer."+transferId+".progress", new JsonObject().put("progress", p));
                             }
                             // Send event on eventbus to signal end of transfer
@@ -274,7 +276,7 @@ public class MockStoryTellerService implements IStoryTellerService {
                 .orElse(json);
     }
 
-    public CompletableFuture<Void> dump(Path outputPath) {
+    public CompletionStage<Void> dump(Path outputPath) {
         // Not supported
         LOGGER.warn("Not supported : dump");
         return CompletableFuture.completedFuture(null);

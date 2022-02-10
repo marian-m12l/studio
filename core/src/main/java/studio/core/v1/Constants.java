@@ -28,6 +28,4 @@ public final class Constants {
 
     public static final byte[] COMMON_KEY = SecurityUtils.decodeHex("91bd7a0aa75440a9bbd49d6ce0dcc0e3");
 
-    public static final String MIME_JSON = "application/json";
-
 }

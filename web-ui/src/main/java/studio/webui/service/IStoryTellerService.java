@@ -9,24 +9,24 @@ package studio.webui.service;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
-import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 
 public interface IStoryTellerService {
 
-    CompletableFuture<Optional<JsonObject>> deviceInfos();
+    CompletionStage<Optional<JsonObject>> deviceInfos();
 
-    CompletableFuture<JsonArray> packs();
+    CompletionStage<JsonArray> packs();
 
-    CompletableFuture<Optional<String>> addPack(String uuid, Path packFile);
+    CompletionStage<Optional<String>> addPack(String uuid, Path packFile);
 
-    CompletableFuture<Boolean> deletePack(String uuid);
+    CompletionStage<Boolean> deletePack(String uuid);
 
-    CompletableFuture<Boolean> reorderPacks(List<String> uuids);
+    CompletionStage<Boolean> reorderPacks(List<String> uuids);
 
-    CompletableFuture<Optional<String>> extractPack(String uuid, Path destFile);
+    CompletionStage<Optional<String>> extractPack(String uuid, Path destFile);
 
-    CompletableFuture<Void> dump(Path outputPath);
+    CompletionStage<Void> dump(Path outputPath);
 }
