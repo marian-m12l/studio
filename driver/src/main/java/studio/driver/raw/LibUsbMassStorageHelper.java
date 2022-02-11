@@ -174,18 +174,34 @@ public class LibUsbMassStorageHelper {
 
     // USB device
     private static final short INTERFACE_ID = 0;
-    private static final byte ENDPOINT_IN = (byte)0x81;
-    private static final byte ENDPOINT_OUT = (byte)0x02;
     private static final long TIMEOUT = 5000L;
 
+    private enum Endpoint {
+        IN(0x81), OUT(0x02);
+
+        private byte value;
+
+        private Endpoint(int b) {
+            this.value = (byte) b;
+        }
+
+        public byte getValue() {
+            return value;
+        }
+    }
+    
     // Mass storage Command Block Wrapper (CBW)
     private static final int MASS_STORAGE_CBW_LENGTH = 31;
     private static final byte[] MASS_STORAGE_CBW_SIGNATURE = { 0x55, 0x53, 0x42, 0x43 }; // "USBC"
-    public static final byte[] MASS_STORAGE_CBW_DIRECTION_IN = { (byte) 0x80 };
-    public static final byte[] MASS_STORAGE_CBW_DIRECTION_OUT = { 0x00 };
     private static final byte[] MASS_STORAGE_CBW_LUN_0 = { 0x00 };
     private static final byte[] MASS_STORAGE_CBW_COMMAND_BLOCK_SIZE = { 0x10 };
-    private enum CBWDirection { OUTBOUND, INBOUND }
+
+    private enum CBWDirection {
+        // byte 0x00
+        OUTBOUND, 
+        // byte 0x80
+        INBOUND
+    }
 
     // Mass storage Command Status Wrapper (CSW)
     private static final int MASS_STORAGE_CSW_LENGTH = 13;
@@ -242,56 +258,22 @@ public class LibUsbMassStorageHelper {
                 );
     }
 
-    public static CompletionStage<ByteBuffer> asyncReadSPISectors(DeviceHandle handle, int offset, short nbSectorsToRead) {
-        // Write Command Block Wrapper
-        ByteBuffer cbw = createSPIReadCBW(offset, nbSectorsToRead);
-        return asyncTransferOut(handle, cbw)
-                .thenCompose(done -> {
-                    // Read data
-                    ByteBuffer data = ByteBuffer.allocateDirect(nbSectorsToRead * SECTOR_SIZE);
-                    return asyncTransferIn(handle, data)
-                            .thenCompose(dataRead -> {
-                                // Read Command Status Wrapper
-                                ByteBuffer csw = ByteBuffer.allocateDirect(MASS_STORAGE_CSW_LENGTH);
-                                return asyncTransferIn(handle, csw)
-                                        .thenApply(cswRead -> {
-                                            // Check CSW
-                                            if (!checkCommandStatusWrapper(csw)) {
-                                                LOGGER.error("Read operation failed while reading from SPI");
-                                                throw new StoryTellerException("Read operation failed while reading from SPI");
-                                            }
-                                            return data;
-                                        });
-                            });
-                });
+    public static CompletionStage<ByteBuffer> asyncReadSPISectors(DeviceHandle handle, int offset, short nbSectors) {
+        // SCSI vendor-specific command to read from SPI
+        ByteBuffer cbw = createCommandWrapper(SCSI_COMMAND_CODE_READ_FROM_SPI, CBWDirection.INBOUND, offset, nbSectors);
+        return asyncReadCommand(handle, cbw, nbSectors);
     }
 
-    public static CompletionStage<ByteBuffer> asyncReadSDSectors(DeviceHandle handle, int sector, short nbSectorsToRead) {
-        // Write Command Block Wrapper
-        ByteBuffer cbw = createSDReadCBW(sector, nbSectorsToRead);
-        return asyncTransferOut(handle, cbw)
-                .thenCompose(done -> {
-                    // Read data
-                    ByteBuffer data = ByteBuffer.allocateDirect(nbSectorsToRead * SECTOR_SIZE);
-                    return asyncTransferIn(handle, data)
-                            .thenCompose(dataRead -> {
-                                // Read Command Status Wrapper
-                                ByteBuffer csw = ByteBuffer.allocateDirect(MASS_STORAGE_CSW_LENGTH);
-                                return asyncTransferIn(handle, csw)
-                                        .thenApply(cswRead -> {
-                                            // Check CSW
-                                            if (!checkCommandStatusWrapper(csw)) {
-                                                LOGGER.error("Read operation failed while reading from SD");
-                                                throw new StoryTellerException("Read operation failed while reading from SD");
-                                            }
-                                            return data;
-                                        });
-                            });
-                });
+    public static CompletionStage<ByteBuffer> asyncReadSDSectors(DeviceHandle handle, int offset, short nbSectors) {
+        // SCSI vendor-specific command to read from SD
+        ByteBuffer cbw = createCommandWrapper(SCSI_COMMAND_CODE_READ_FROM_SD, CBWDirection.INBOUND, offset, nbSectors);
+        return asyncReadCommand(handle, cbw, nbSectors);
     }
 
-    public static CompletionStage<Boolean> asyncWriteSDSectors(DeviceHandle handle, int sector, short nbSectorsToWrite, ByteBuffer data) {
-        ByteBuffer cbw = createSDWriteCBW(sector, nbSectorsToWrite);
+    public static CompletionStage<Boolean> asyncWriteSDSectors(DeviceHandle handle, int offset, short nbSectors, ByteBuffer data) {
+        // SCSI vendor-specific command to write to SD.
+        ByteBuffer cbw = createCommandWrapper(SCSI_COMMAND_CODE_WRITE_TO_SD, CBWDirection.OUTBOUND, offset, nbSectors);
+
         return asyncTransferOut(handle, cbw)
                 .thenCompose(done -> {
                     // Write data
@@ -311,110 +293,62 @@ public class LibUsbMassStorageHelper {
                             });
                 });
     }
+    
+    private static CompletionStage<ByteBuffer> asyncReadCommand(DeviceHandle handle, ByteBuffer cbw, short nbSectors) {
+        // Read Command Status Wrapper
+        return asyncTransferOut(handle, cbw)
+                .thenCompose(done -> {
+                    // Read data
+                    ByteBuffer data = ByteBuffer.allocateDirect(nbSectors * SECTOR_SIZE);
+                    return asyncTransferIn(handle, data)
+                            .thenCompose(dataRead -> {
+                                // Read Command Status Wrapper
+                                ByteBuffer csw = ByteBuffer.allocateDirect(MASS_STORAGE_CSW_LENGTH);
+                                return asyncTransferIn(handle, csw)
+                                        .thenApply(cswRead -> {
+                                            // Check CSW
+                                            if (!checkCommandStatusWrapper(csw)) {
+                                                LOGGER.error("Read operation failed");
+                                                throw new StoryTellerException("Read operation failed");
+                                            }
+                                            return data;
+                                        });
+                            });
+                });
+    }
 
-    private static CompletionStage<Boolean> asyncTransferOut(DeviceHandle handle, ByteBuffer data) {
+    private static CompletionStage<Boolean> asyncTransfer(Endpoint endpoint, DeviceHandle handle, ByteBuffer data) {
         CompletableFuture<Boolean> promise = new CompletableFuture<>();
 
         Transfer transfer = LibUsb.allocTransfer();
-        LibUsb.fillBulkTransfer(
-                transfer,
-                handle,
-                ENDPOINT_OUT,
-                data,
-                xfer -> {
-                    if (xfer.status() != LibUsb.TRANSFER_COMPLETED) {
-                        LOGGER.error("TRANSFER OUT NOT COMPLETED: {}", xfer.status());
-                        promise.completeExceptionally(new StoryTellerException("Transfer OUT failed"));
-                    } else {
-                        LOGGER.trace("Async transfer OUT done. {} bytes sent.", xfer.actualLength());
-                        LibUsb.freeTransfer(xfer);
-                        promise.complete(true);
-                    }
-                },
-                null,
-                TIMEOUT
-        );
+        LibUsb.fillBulkTransfer(transfer, handle, endpoint.getValue(), data, xfer -> {
+            if (xfer.status() != LibUsb.TRANSFER_COMPLETED) {
+                LOGGER.error("TRANSFER {} NOT COMPLETED: {}", endpoint, xfer.status());
+                promise.completeExceptionally(new StoryTellerException("Transfer failed" + endpoint));
+            } else {
+                LOGGER.trace("Async transfer {} done. {} bytes received.", endpoint, xfer.actualLength());
+                LibUsb.freeTransfer(xfer);
+                promise.complete(true);
+            }
+        }, null, TIMEOUT);
         int result = LibUsb.submitTransfer(transfer);
         if (result != LibUsb.SUCCESS) {
-            throw new StoryTellerException("Unable to submit transfer OUT", new LibUsbException(result));
+            throw new StoryTellerException("Unable to submit transfer " + endpoint, new LibUsbException(result));
         }
-
         return promise;
+    }
+
+    private static CompletionStage<Boolean> asyncTransferOut(DeviceHandle handle, ByteBuffer data) {
+        return asyncTransfer(Endpoint.OUT, handle, data);
     }
 
     private static CompletionStage<Boolean> asyncTransferIn(DeviceHandle handle, ByteBuffer data) {
-        CompletableFuture<Boolean> promise = new CompletableFuture<>();
-
-        Transfer transfer = LibUsb.allocTransfer();
-        LibUsb.fillBulkTransfer(
-                transfer,
-                handle,
-                ENDPOINT_IN,
-                data,
-                xfer -> {
-                    if (xfer.status() != LibUsb.TRANSFER_COMPLETED) {
-                        LOGGER.error("TRANSFER IN NOT COMPLETED: {}", xfer.status());
-                        promise.completeExceptionally(new StoryTellerException("Transfer IN failed"));
-                    } else {
-                        LOGGER.trace("Async transfer IN done. {} bytes received.", xfer.actualLength());
-                        LibUsb.freeTransfer(xfer);
-                        promise.complete(true);
-                    }
-                },
-                null,
-                TIMEOUT
-        );
-        int result = LibUsb.submitTransfer(transfer);
-        if (result != LibUsb.SUCCESS) {
-            throw new StoryTellerException("Unable to submit transfer IN", new LibUsbException(result));
-        }
-
-        return promise;
+        return asyncTransfer(Endpoint.IN, handle, data);
     }
 
-    private static ByteBuffer createSPIReadCBW(int offset, short nbSectorsToRead) {
-        int expectedByteLength = nbSectorsToRead * SECTOR_SIZE;
-        ByteBuffer bb = createCommandBlockWrapper(CBWDirection.INBOUND, expectedByteLength);
-        // SCSI vendor-specific command to read from SPI
-        bb.put(SCSI_COMMAND_CODE_READ_FROM_SPI);
-        // The following values are big-endian
-        bb.order(ByteOrder.BIG_ENDIAN);
-        // Offset to read from (4 bytes)
-        bb.putInt(offset);
-        // Number of sectors to read (2 bytes)
-        bb.putShort(nbSectorsToRead);
-        // Remaining 7 bytes are padded with zeros
-        return bb;
-    }
-    private static ByteBuffer createSDReadCBW(int sector, short nbSectorsToRead) {
-        int expectedByteLength = nbSectorsToRead * SECTOR_SIZE;
-        ByteBuffer bb = createCommandBlockWrapper(CBWDirection.INBOUND, expectedByteLength);
-        // SCSI vendor-specific command to read from SD
-        bb.put(SCSI_COMMAND_CODE_READ_FROM_SD);
-        // The following values are big-endian
-        bb.order(ByteOrder.BIG_ENDIAN);
-        // Sector to read from (4 bytes)
-        bb.putInt(sector);
-        // Number of sectors to read (2 bytes)
-        bb.putShort(nbSectorsToRead);
-        // Remaining 7 bytes are padded with zeros
-        return bb;
-    }
-    private static ByteBuffer createSDWriteCBW(int sector, short nbSectorsToWrite) {
-        int dataLength = nbSectorsToWrite * SECTOR_SIZE;
-        ByteBuffer bb = createCommandBlockWrapper(CBWDirection.OUTBOUND, dataLength);
-        // SCSI vendor-specific command to write to SD
-        bb.put(SCSI_COMMAND_CODE_WRITE_TO_SD);
-        // The following values are big-endian
-        bb.order(ByteOrder.BIG_ENDIAN);
-        // Sector to write to (4 bytes)
-        bb.putInt(sector);
-        // Number of sectors to write (2 bytes)
-        bb.putShort(nbSectorsToWrite);
-        // Remaining 7 bytes are padded with zeros
-        return bb;
-    }
-    private static ByteBuffer createCommandBlockWrapper(CBWDirection direction, int dataLength) {
+    /** Binary command to usb device. */
+    private static ByteBuffer createCommandWrapper(byte[] commands, CBWDirection direction, int offsetSector,
+            short nbSectors) {
         ByteBuffer bb = ByteBuffer.allocateDirect(MASS_STORAGE_CBW_LENGTH);
         // CBW signature (4 bytes)
         bb.put(MASS_STORAGE_CBW_SIGNATURE);
@@ -424,13 +358,23 @@ public class LibUsbMassStorageHelper {
         bb.put(random);
         // Expected number of bytes (to read or write) (4 bytes)
         bb.order(ByteOrder.LITTLE_ENDIAN);
-        bb.putInt(dataLength);
+        bb.putInt(nbSectors * SECTOR_SIZE);
         // Direction
         bb.put((byte) (direction.ordinal() << 7));
         // Logical Unit Number (LUN) to which the command block is being sent
         bb.put(MASS_STORAGE_CBW_LUN_0);
         // Length of the Command Block (all our commands are 16 bytes long)
         bb.put(MASS_STORAGE_CBW_COMMAND_BLOCK_SIZE);
+
+        // SCSI vendor-specific command
+        bb.put(commands);
+        // The following values are big-endian
+        bb.order(ByteOrder.BIG_ENDIAN);
+        // Sector to write to (4 bytes)
+        bb.putInt(offsetSector);
+        // Number of sectors to write (2 bytes)
+        bb.putShort(nbSectors);
+        // Remaining 7 bytes are padded with zeros
         return bb;
     }
 
@@ -449,7 +393,9 @@ public class LibUsbMassStorageHelper {
         byte[] signature = new byte[MASS_STORAGE_CSW_SIGNATURE.length];
         csw.get(signature);
         if (!Arrays.equals(signature, MASS_STORAGE_CSW_SIGNATURE)) {
-            LOGGER.error("Invalid CSW: wrong signature ({})", SecurityUtils.encodeHex(signature));
+            if(LOGGER.isErrorEnabled()) {
+                LOGGER.error("Invalid CSW: wrong signature ({})", SecurityUtils.encodeHex(signature));
+            }
             return false;
         }
         // Check Command Block Tag

@@ -26,7 +26,9 @@ public class UnofficialImageAdvice {
         if (retval.startsWith("https://storage.googleapis.com/lunii-data-prod/studio/")) {
             String path = "http:/" + retval.substring(retval.indexOf("/studio/"));
             retval = path;
-            LOGGER.info("Replacing image url to trigger cache match ({} -> {})", retval, UUID.nameUUIDFromBytes(path.getBytes()));
+            if(LOGGER.isInfoEnabled()) {
+                LOGGER.info("Replacing image url to trigger cache match ({} -> {})", retval, UUID.nameUUIDFromBytes(path.getBytes()));
+            }
         }
     }
 

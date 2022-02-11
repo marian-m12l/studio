@@ -53,7 +53,7 @@ public class DatabaseMetadataService {
         if (!isAgent) {
             try {
                 // Read official metadata database file
-                LOGGER.info("Reading official metadata in " + officialDbPath);
+                LOGGER.info("Reading official metadata in {}", officialDbPath);
                 String jsonString = Files.readString(officialDbPath);
                 JsonObject officialRoot = new JsonParser().parse(jsonString).getAsJsonObject();
                 // Support newer file which has an additional wrapper: { "code": "0.0", "response": { ...
@@ -71,7 +71,7 @@ public class DatabaseMetadataService {
         }
 
         try {
-            LOGGER.info("Reading unofficial database in " + unofficialDbPath);
+            LOGGER.info("Reading unofficial database in {}", unofficialDbPath);
             // Initialize empty unofficial database if needed
             if (!Files.isRegularFile(unofficialDbPath)) {
                 unofficialJsonCache = new JsonObject();

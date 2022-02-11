@@ -8,7 +8,6 @@ package studio.core.v1.reader.fs;
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
-import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
@@ -16,7 +15,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
@@ -25,7 +23,6 @@ import java.util.UUID;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import studio.core.v1.Constants;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.ControlSettings;
 import studio.core.v1.model.StageNode;
@@ -39,6 +36,7 @@ import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.reader.StoryPackReader;
 import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.XXTEACipher;
+import studio.core.v1.utils.XXTEACipher.CipherMode;
 
 public class FsStoryPackReader implements StoryPackReader {
 
@@ -47,9 +45,9 @@ public class FsStoryPackReader implements StoryPackReader {
     private static final String NODE_INDEX_FILENAME = "ni";
     private static final String LIST_INDEX_FILENAME = "li";
     private static final String IMAGE_INDEX_FILENAME = "ri";
-    private static final String IMAGE_FOLDER = "rf" + File.separator;
+    private static final String IMAGE_FOLDER = "rf";
     private static final String SOUND_INDEX_FILENAME = "si";
-    private static final String SOUND_FOLDER = "sf" + File.separator;
+    private static final String SOUND_FOLDER = "sf";
     private static final String NIGHT_MODE_FILENAME = "nm";
 
     public StoryPackMetadata readMetadata(Path inputFolder) throws IOException {
@@ -119,6 +117,9 @@ public class FsStoryPackReader implements StoryPackReader {
             // Is factory pack (boolean) set to true to avoid pack inspection by official Luniistore application
             factoryDisabled = bb.get() != 0x00;
 
+            Path imageFolder = inputFolder.resolve(IMAGE_FOLDER);
+            Path soundFolder = inputFolder.resolve(SOUND_FOLDER);
+
             // Read stage nodes
             for (int i=0; i<stageNodesCount; i++) {
                 bb = ByteBuffer.wrap(niDis.readNBytes(nodeSize)).order(ByteOrder.LITTLE_ENDIAN);
@@ -158,25 +159,15 @@ public class FsStoryPackReader implements StoryPackReader {
                     transitionsWithAction.put(homeTransitionActionNodeIndexInLI, twa);
                 }
 
-                // Read Image and audio assets
+                // Read image and audio assets
                 ImageAsset image = null;
                 if (imageAssetIndexInRI != -1) {
-                    // Read image path
-                    byte[] imageEntry = Arrays.copyOfRange(riContent, imageAssetIndexInRI*12, imageAssetIndexInRI*12+12);   // Each entry takes 12 bytes
-                    String imageName = new String(imageEntry, StandardCharsets.UTF_8).replaceAll("\\\\", "/");
-                    // Read image file
-                    Path imagePath = inputFolder.resolve(IMAGE_FOLDER + imageName);
-                    byte[] rfContent = readCipheredFile(imagePath);
+                    byte[] rfContent = readAsset(imageFolder, riContent, imageAssetIndexInRI);
                     image = new ImageAsset(ImageType.BMP, rfContent);
                 }
                 AudioAsset audio = null;
                 if (soundAssetIndexInSI != -1) {
-                    // Read audio path
-                    byte[] audioEntry = Arrays.copyOfRange(siContent, soundAssetIndexInSI*12, soundAssetIndexInSI*12+12);    // Each entry takes 12 bytes
-                    String audioName = new String(audioEntry, StandardCharsets.UTF_8).replaceAll("\\\\", "/");
-                    // Read audio file
-                    Path audioPath = inputFolder.resolve(SOUND_FOLDER + audioName);
-                    byte[] sfContent = readCipheredFile(audioPath);
+                    byte[] sfContent = readAsset(soundFolder, siContent, soundAssetIndexInSI);
                     audio = new AudioAsset(AudioType.MPEG, sfContent);
                 }
 
@@ -205,7 +196,7 @@ public class FsStoryPackReader implements StoryPackReader {
             Integer offset = actionCount.getKey();
             Integer count = actionCount.getValue();
             List<StageNode> options = new ArrayList<>(count);
-            liBb.position(offset*4);    // Each entry takes 4 bytes
+            liBb.position(offset*4); // Each entry takes 4 bytes
             for (int i=0; i<count; i++) {
                 int stageNodeIndex = liBb.getInt();
                 options.add(stageNodes.get(stageNodeIndex));
@@ -217,23 +208,17 @@ public class FsStoryPackReader implements StoryPackReader {
 
         return new StoryPack(uuid, factoryDisabled, version, List.copyOf(stageNodes.values()), null, nightModeAvailable);
     }
-
+    
     private byte[] readCipheredFile(Path path) throws IOException {
         byte[] content = Files.readAllBytes(path);
-        return decipherFirstBlockCommonKey(content);
+        return XXTEACipher.cipherCommonKey(CipherMode.DECIPHER, content);
     }
 
-    private byte[] decipherFirstBlockCommonKey(byte[] data) {
-        byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
-        int[] dataInt = XXTEACipher.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
-        int[] decryptedInt = XXTEACipher.btea(dataInt, -(Math.min(128, data.length/4)), XXTEACipher.toIntArray(Constants.COMMON_KEY, ByteOrder.BIG_ENDIAN));
-        byte[] decryptedBlock = XXTEACipher.toByteArray(decryptedInt, ByteOrder.LITTLE_ENDIAN);
-        ByteBuffer bb = ByteBuffer.allocate(data.length);
-        bb.put(decryptedBlock);
-        if (data.length > 512) {
-            bb.put(Arrays.copyOfRange(data, 512, data.length));
-        }
-        return bb.array();
+    private byte[] readAsset(Path assetFolder, byte[] assetContent, int assetIndex) throws IOException {
+        // Read asset name, each entry takes 12 bytes
+        String assetName = new String(assetContent, assetIndex * 12, 12, StandardCharsets.UTF_8).replace("\\", "/");
+        // Read asset file
+        return readCipheredFile(assetFolder.resolve(assetName));
     }
 
 }

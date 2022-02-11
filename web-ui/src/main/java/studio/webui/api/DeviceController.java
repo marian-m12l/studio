@@ -49,7 +49,7 @@ public class DeviceController {
                     LOGGER.error("Failed to read packs from device", e);
                     ctx.fail(500, e);
                 }) //
-                .onSuccess(devicePacks -> ctx.json(devicePacks)) //
+                .onSuccess(ctx::json) //
         );
 
         // Add pack from library to device
