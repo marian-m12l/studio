@@ -21,13 +21,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
-import java.util.UUID;
 
 import javax.sound.sampled.AudioFileFormat;
 import javax.sound.sampled.AudioSystem;
@@ -36,8 +34,8 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import studio.core.v1.Constants;
 import studio.core.v1.model.ActionNode;
+import studio.core.v1.model.ControlSettings;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.Transition;
@@ -49,6 +47,7 @@ import studio.core.v1.utils.AudioConversion;
 import studio.core.v1.utils.ID3Tags;
 import studio.core.v1.utils.SecurityUtils;
 import studio.core.v1.utils.XXTEACipher;
+import studio.core.v1.utils.XXTEACipher.CipherMode;
 import studio.core.v1.writer.StoryPackWriter;
 
 /**
@@ -73,7 +72,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
     private static final String NIGHT_MODE_FILENAME = "nm";
 
     /** Blank MP3 file. */
-    public static final byte[] BLANK_MP3 = readRelative("blank.mp3");
+    private static final byte[] BLANK_MP3 = readRelative("blank.mp3");
 
     // TODO Enriched metadata in a dedicated file (pack's title, description and thumbnail, nodes' name, group, type and position)
 
@@ -206,22 +205,40 @@ public class FsStoryPackWriter implements StoryPackWriter {
                     actionNodesIndexes.put(homeTransition.getActionNode(), nextActionNodeIndex);
                     nextActionNodeIndex += homeTransition.getActionNode().getOptions().size();
                 }
-                writeStageNode(
-                        niDos,
-                        imageIndex,  // Image index in RI file (index 0 == first image) --> rf/000/11111111
-                        audioIndex,  // Sound index in SI file (index 0 == first sound) --> sf/000/11111111
-                        okTransition == null ? -1 : actionNodesIndexes.get(okTransition.getActionNode()),  // OK transition: Action node index in LI file (index 0 == first action node)
-                        okTransition == null ? -1 : okTransition.getActionNode().getOptions().size(),  // OK transition: Number of options available
-                        okTransition == null ? -1 : okTransition.getOptionIndex(),  // OK transition: Menu option index (index 0 == first menu option)
-                        homeTransition == null ? -1 : actionNodesIndexes.get(homeTransition.getActionNode()), // HOME transition: Action node index in LI file (-1 == no transition)
-                        homeTransition == null ? -1 : homeTransition.getActionNode().getOptions().size(), // HOME transition: Number of options available
-                        homeTransition == null ? -1 : homeTransition.getOptionIndex(), // HOME transition: Menu option index
-                        node.getControlSettings().isWheelEnabled(),   // WHEEL flag
-                        node.getControlSettings().isOkEnabled(),   // OK flag
-                        node.getControlSettings().isHomeEnabled(),  // HOME flag
-                        node.getControlSettings().isPauseEnabled(),  // PAUSE flag
-                        node.getControlSettings().isAutoJumpEnabled()   // AUTOPLAY flag
-                );
+
+                // writeStageNode
+                ControlSettings ctrl = node.getControlSettings();
+                bb = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN);
+                // Image index in RI file (index 0 == first image) --> rf/000/11111111
+                bb.putInt(imageIndex);
+                // Sound index in SI file (index 0 == first sound) --> sf/000/11111111
+                bb.putInt(audioIndex);
+                // OK transition: Action node index in LI file (index 0 == first action node)
+                bb.putInt(okTransition == null ? -1 : actionNodesIndexes.get(okTransition.getActionNode()));
+                // OK transition: Number of options available
+                bb.putInt(okTransition == null ? -1 : okTransition.getActionNode().getOptions().size());
+                // OK transition: Menu option index (index 0 == first menu option)
+                bb.putInt(okTransition == null ? -1 : okTransition.getOptionIndex());
+                // HOME transition: Action node index in LI file (-1 == no transition)
+                bb.putInt(homeTransition == null ? -1 : actionNodesIndexes.get(homeTransition.getActionNode()));
+                // HOME transition: Number of options available
+                bb.putInt(homeTransition == null ? -1 : homeTransition.getActionNode().getOptions().size());
+                // HOME transition: Menu option index
+                bb.putInt(homeTransition == null ? -1 : homeTransition.getOptionIndex());
+                // WHEEL flag
+                bb.putShort(boolToShort(ctrl.isWheelEnabled()));
+                // OK flag
+                bb.putShort(boolToShort(ctrl.isOkEnabled()));
+                // HOME flag
+                bb.putShort(boolToShort(ctrl.isHomeEnabled()));
+                // PAUSE flag
+                bb.putShort(boolToShort(ctrl.isPauseEnabled()));
+                // AUTOPLAY flag
+                bb.putShort(boolToShort(ctrl.isAutoJumpEnabled()));
+                bb.putShort((short) 0);
+
+                niDos.write(bb.array());
+                bb.clear();
             }
         }
 
@@ -278,7 +295,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
 
     private void writeCypheredFile(Path path, byte[] byteArray) throws IOException {
         // The first block of bytes must be ciphered with the common key
-        byte[] liCiphered = cipherFirstBlockCommonKey(byteArray);
+        byte[] liCiphered = XXTEACipher.cipherCommonKey(CipherMode.CIPHER, byteArray);
         Files.write(path, liCiphered);
     }
 
@@ -293,7 +310,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
             byte[] riCipheredBlock = is.readNBytes(cypherBlockSize);
             // The first **scrambled** 64 bytes of 'ri' file must be ciphered with the
             // device-specific key into 'bt' file
-            byte[] btCiphered = cipher(CipherMode.CIPHER, riCipheredBlock, cypherBlockSize, specificKey);
+            byte[] btCiphered = XXTEACipher.cipher(CipherMode.CIPHER, riCipheredBlock, cypherBlockSize, specificKey);
             // Add boot file: bt
             Files.write(btPath, btCiphered);
         }
@@ -301,60 +318,21 @@ public class FsStoryPackWriter implements StoryPackWriter {
     
     // Create pack folder: last 8 digits of uuid
     public static Path createPackFolder(StoryPack storyPack, Path tmp) throws IOException {
-        Path packFolder = tmp.resolve(transformUuid(UUID.fromString(storyPack.getUuid())));
+        Path packFolder = tmp.resolve(transformUuid(storyPack.getUuid()));
         return Files.createDirectories(packFolder);
     }
 
-    private static String transformUuid(UUID uuid) {
-        String uuidStr = uuid.toString().replaceAll("-", "");
+    public static String transformUuid(String uuid) {
+        String uuidStr = uuid.replace("-", "");
         return uuidStr.substring(uuidStr.length()-8).toUpperCase();
-    }
-
-    private static void writeStageNode(
-            DataOutputStream niDos,
-            int imageAssetIndexInRI,
-            int soundAssetIndexInSI,
-            int okTransitionActionNodeIndexInLI,
-            int okTransitionNumberOfOptions,
-            int okTransitionSelectedOptionIndex,
-            int homeTransitionActionNodeIndexInLI,
-            int homeTransitionNumberOfOptions,
-            int homeTransitionSelectedOptionIndex,
-            boolean wheel,
-            boolean ok,
-            boolean home,
-            boolean pause,
-            boolean autoplay
-    ) throws IOException {
-        ByteBuffer bb = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN);
-        bb.putInt(imageAssetIndexInRI);
-        bb.putInt(soundAssetIndexInSI);
-        bb.putInt(okTransitionActionNodeIndexInLI);
-        bb.putInt(okTransitionNumberOfOptions);
-        bb.putInt(okTransitionSelectedOptionIndex);
-        bb.putInt(homeTransitionActionNodeIndexInLI);
-        bb.putInt(homeTransitionNumberOfOptions);
-        bb.putInt(homeTransitionSelectedOptionIndex);
-        bb.putShort(boolToShort(wheel));
-        bb.putShort(boolToShort(ok));
-        bb.putShort(boolToShort(home));
-        bb.putShort(boolToShort(pause));
-        bb.putShort(boolToShort(autoplay));
-        bb.putShort((short) 0);
-
-        niDos.write(bb.array());
-        bb.clear();
     }
 
     private static short boolToShort(boolean b) {
         return (short) (b ? 1 : 0);
     }
 
-    private static void writeActionNode(
-            DataOutputStream liDos,
-            int[] stageNodesIndexes
-    ) throws IOException {
-        ByteBuffer bb = ByteBuffer.allocate(stageNodesIndexes.length*4).order(ByteOrder.LITTLE_ENDIAN);
+    private static void writeActionNode(DataOutputStream liDos, int[] stageNodesIndexes) throws IOException {
+        ByteBuffer bb = ByteBuffer.allocate(stageNodesIndexes.length * 4).order(ByteOrder.LITTLE_ENDIAN);
         for (int stageNodeIndex : stageNodesIndexes) {
             bb.putInt(stageNodeIndex);
         }
@@ -366,42 +344,8 @@ public class FsStoryPackWriter implements StoryPackWriter {
         return String.format("000\\%08d", index);
     }
 
-    enum CipherMode {
-        CIPHER, DECIPHER
-    }
-
-    /** (De-)cipher a block of data. */
-    private byte[] cipher(CipherMode mode, byte[] data, int minSize, byte[] key) {
-        byte[] block = Arrays.copyOfRange(data, 0, Math.min(minSize, data.length));
-        int[] dataInt = XXTEACipher.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
-        int[] keyInt = XXTEACipher.toIntArray(key, ByteOrder.BIG_ENDIAN);
-        int op = Math.min(128, data.length / 4);
-        int[] encryptedInt = XXTEACipher.btea(dataInt, mode == CipherMode.DECIPHER ? -op : op, keyInt);
-        return XXTEACipher.toByteArray(encryptedInt, ByteOrder.LITTLE_ENDIAN);
-    }
-
-    private byte[] cipherFirstBlockCommonKey(byte[] data) {
-        byte[] encryptedBlock = cipher(CipherMode.CIPHER, data, 512, Constants.COMMON_KEY);
-        ByteBuffer bb = ByteBuffer.allocate(data.length);
-        bb.put(encryptedBlock);
-        if (data.length > 512) {
-            bb.put(Arrays.copyOfRange(data, 512, data.length));
-        }
-        return bb.array();
-    }
-
-    private byte[] decipherFirstBlockCommonKey(byte[] data) {
-        byte[] decryptedBlock = cipher(CipherMode.DECIPHER, data, 512, Constants.COMMON_KEY);
-        ByteBuffer bb = ByteBuffer.allocate(data.length);
-        bb.put(decryptedBlock);
-        if (data.length > 512) {
-            bb.put(Arrays.copyOfRange(data, 512, data.length));
-        }
-        return bb.array();
-    }
-
     private byte[] computeSpecificKeyFromUUID(byte[] uuid) {
-        byte[] btKey = decipherFirstBlockCommonKey(uuid);
+        byte[] btKey = XXTEACipher.cipherCommonKey(CipherMode.DECIPHER, uuid);
         return new byte[] { //
                 btKey[11], btKey[10], btKey[9], btKey[8], //
                 btKey[15], btKey[14], btKey[13], btKey[12], //

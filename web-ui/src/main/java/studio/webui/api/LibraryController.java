@@ -8,6 +8,7 @@ package studio.webui.api;
 
 
 import java.nio.file.Path;
+import java.util.Iterator;
 import java.util.Optional;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -19,7 +20,9 @@ import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.Router;
+import io.vertx.ext.web.handler.BodyHandler;
 import studio.core.v1.utils.PackFormat;
 import studio.webui.service.LibraryService;
 
@@ -51,37 +54,39 @@ public class LibraryController {
         });
 
         // Local library pack download
-        router.post("/download").blockingHandler(ctx -> {
+        router.post("/download").handler(ctx -> {
             String packPath = ctx.getBodyAsJson().getString("path");
-            libraryService.getRawPackFile(packPath)
-                    .ifPresentOrElse(
-                            path -> ctx.response()
-                                    .putHeader("Content-Length", "" + path.toFile().length())
-                                    .sendFile(path.toAbsolutePath().toString()),
-                            () -> {
-                                LOGGER.error("Failed to download pack from library");
-                                ctx.fail(500);
-                            }
-                    );
+            LOGGER.info("Download {}", packPath);
+            ctx.response().sendFile(libraryService.getPackFile(packPath).toString());
         });
 
         // Local library pack upload
-        router.post("/upload").blockingHandler(ctx -> {
+        router.post("/upload").handler(BodyHandler.create() //
+                .setMergeFormAttributes(true) //
+                .setUploadsDirectory(LibraryService.tmpDirPath().toString()));
+
+        router.post("/upload").handler(ctx -> {
             String packPath = ctx.request().getFormAttribute("path");
-            boolean added = libraryService.addPackFile(packPath, ctx.fileUploads().iterator().next().uploadedFileName());
+            LOGGER.info("Upload {}", packPath);
+            boolean added = false;
+            Iterator<FileUpload> it = ctx.fileUploads().iterator();
+            if(it.hasNext()) {
+                added = libraryService.addPackFile(packPath, it.next().uploadedFileName());
+            }
             if (added) {
                 ctx.json(new JsonObject().put("success", true));
             } else {
-                LOGGER.error("Pack was not added to library");
+                LOGGER.error("Pack {} was not added to library", packPath);
                 ctx.fail(500);
             }
         });
 
         // Local library pack conversion
         router.post("/convert").blockingHandler(ctx -> {
-            String packPath = ctx.getBodyAsJson().getString("path");
-            Boolean allowEnriched = ctx.getBodyAsJson().getBoolean("allowEnriched", false);
-            String format = ctx.getBodyAsJson().getString("format");
+            JsonObject body = ctx.getBodyAsJson();
+            String packPath = body.getString("path");
+            Boolean allowEnriched = body.getBoolean("allowEnriched", false);
+            String format = body.getString("format");
             // Perform conversion/uncompression asynchronously
             Promise<Path> promisedPack = Promise.promise();
             THREAD_POOL.schedule(() -> {

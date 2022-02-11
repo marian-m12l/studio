@@ -6,8 +6,6 @@
 
 package studio.core.v1;
 
-import studio.core.v1.utils.SecurityUtils;
-
 public final class Constants {
 
     private Constants() {
@@ -25,7 +23,5 @@ public final class Constants {
     public static final int BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT = 16;
     public static final int BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT_PADDING = 48;
     public static final int BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE = 64; // 64 characters == 128 bytes
-
-    public static final byte[] COMMON_KEY = SecurityUtils.decodeHex("91bd7a0aa75440a9bbd49d6ce0dcc0e3");
 
 }

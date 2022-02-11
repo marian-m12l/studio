@@ -128,7 +128,7 @@ public class RawStoryTellerAsyncDriver {
 
                         if (uuidHighBytes != 0L || uuidLowBytes != 0L) {
                             uuid = new UUID(uuidHighBytes, uuidLowBytes);
-                            LOGGER.debug("UUID from SD: {}" + uuid);
+                            LOGGER.debug("UUID from SD: {}", uuid);
                         } else {
                             LOGGER.warn("NO UUID IN SD");
                         }
@@ -218,7 +218,7 @@ public class RawStoryTellerAsyncDriver {
                         int sizeInSectors = sdPackIndexSector.getInt();
                         short statsOffset = sdPackIndexSector.getShort();
                         short samplingRate = sdPackIndexSector.getShort();
-                        LOGGER.debug("Pack #{}: {} - {}",i + 1, startSector, sizeInSectors);
+                        LOGGER.debug("Pack #{}: {} - {}", i + 1, startSector, sizeInSectors);
                         // Read version from pack's sector 0 and UUID from pack's sector 1
                         promise = promise.thenCompose(packs ->
                                 LibUsbMassStorageHelper.asyncReadSDSectors(handle, PACK_INDEX_SD_SECTOR + startSector, (short) 2)
@@ -304,6 +304,18 @@ public class RawStoryTellerAsyncDriver {
         return LibUsbMassStorageHelper.asyncWriteSDSectors(handle, PACK_INDEX_SD_SECTOR, (short) 1, bb);
     }
 
+    private void followProgress(TransferStatus status, int totalSize, long startTime) {
+        long elapsed = System.currentTimeMillis() - startTime;
+        double speed = status.getTransferred() / (elapsed / 1000.0);
+        status.setSpeed(speed);
+        if(LOGGER.isTraceEnabled()) {
+            LOGGER.trace("Transferred {} bytes in {} ms", status.getTransferred(), elapsed);
+            LOGGER.trace("Average speed = {}/sec", FileUtils.readableByteSize((long)speed));
+        }
+        if (status.getTransferred() == totalSize) {
+            status.setDone(true);
+        }
+    }
 
     public CompletionStage<TransferStatus> downloadPack(String uuid, OutputStream output, TransferProgressListener listener) {
         if (this.device == null) {
@@ -339,14 +351,7 @@ public class RawStoryTellerAsyncDriver {
                                                     output.write(bytes);
                                                     // Compute progress
                                                     status.setTransferred(status.getTransferred() + bytes.length);
-                                                    long elapsed = System.currentTimeMillis() - startTime;
-                                                    double speed = status.getTransferred() / (elapsed / 1000.0);
-                                                    status.setSpeed(speed);
-                                                    LOGGER.trace("Transferred {} bytes in {} ms", status.getTransferred(), elapsed);
-                                                    LOGGER.trace("Average speed = {}/sec", FileUtils.readableByteSize((long)speed));
-                                                    if (status.getTransferred() == totalSize) {
-                                                        status.setDone(true);
-                                                    }
+                                                    followProgress(status, totalSize, startTime);
                                                     // Call (optional) listener with transfer status
                                                     if (listener != null) {
                                                         CompletableFuture.runAsync(() -> listener.onProgress(status));
@@ -406,14 +411,7 @@ public class RawStoryTellerAsyncDriver {
                                             .thenApply(written -> {
                                                 // Compute progress
                                                 status.setTransferred(status.getTransferred() + chunkSize);
-                                                long elapsed = System.currentTimeMillis() - startTime;
-                                                double speed = status.getTransferred() / (elapsed / 1000.0);
-                                                status.setSpeed(speed);
-                                                LOGGER.trace("Transferred {} bytes in {} ms", status.getTransferred(), elapsed);
-                                                LOGGER.trace("Average speed = {}/sec", FileUtils.readableByteSize((long)speed));
-                                                if (status.getTransferred() == totalSize) {
-                                                    status.setDone(true);
-                                                }
+                                                followProgress(status, totalSize, startTime);
                                                 // Call (optional) listener with transfer status
                                                 if (listener != null) {
                                                     CompletableFuture.runAsync(() -> listener.onProgress(status));
@@ -506,7 +504,7 @@ public class RawStoryTellerAsyncDriver {
                                 .thenCompose(sdPackIndexSector -> {
                                     sdPackIndexSector.position(0);
                                     short nbPacks = sdPackIndexSector.getShort();
-                                    LOGGER.info("Number of packs to dump: " + nbPacks);
+                                    LOGGER.info("Number of packs to dump: {}", nbPacks);
 
                                     CompletionStage<Void> promise = CompletableFuture.completedFuture(null);
                                     for (short i = 0; i < nbPacks; i++) {

@@ -26,17 +26,6 @@ public class StoryPackMetadata {
         this.format = format;
     }
 
-    public StoryPackMetadata(PackFormat format, String uuid, short version, String title, String description, byte[] thumbnail, Integer sectorSize, boolean nightModeAvailable) {
-        this.format = format;
-        this.uuid = uuid;
-        this.version = version;
-        this.title = title;
-        this.description = description;
-        this.thumbnail = thumbnail;
-        this.sectorSize = sectorSize;
-        this.nightModeAvailable = nightModeAvailable;
-    }
-
     public PackFormat getFormat() {
         return format;
     }

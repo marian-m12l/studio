@@ -135,12 +135,12 @@ public class LibraryService {
             return new JsonArray(jsonMetasByUuid);
         } catch (IOException e) {
             LOGGER.error("Failed to read packs from local library", e);
-            throw new RuntimeException(e);
+            throw new StoryTellerException(e);
         }
     }
 
-    public Optional<Path> getRawPackFile(String packPath) {
-        return Optional.of(libraryPath.resolve(packPath));
+    public Path getPackFile(String packPath) {
+        return libraryPath.resolve(packPath);
     }
 
     private void assertFormat(PackFormat outputFormat) {
@@ -156,7 +156,7 @@ public class LibraryService {
         }
         // expected input format type
         PackFormat inputFormat = packFile.endsWith(".zip") ? PackFormat.ARCHIVE : PackFormat.FS;
-        LOGGER.info("Pack is in " + inputFormat + " format. Converting to " + outputFormat + " format");
+        LOGGER.info("Pack is in {} format. Converting to {} format", inputFormat, outputFormat);
         try {
             // Packs must first be converted to raw format
             Path packPath = libraryPath.resolve(packFile);
@@ -170,19 +170,19 @@ public class LibraryService {
             }
 
             Path tmp = createTempFile(packFile, ".pack");
-            LOGGER.info("Writing " + outputFormat + " format pack, using temporary file: " + tmp);
+            LOGGER.info("Writing {} format pack, using temporary file: {}", outputFormat, tmp);
             outputFormat.getWriter().write(storyPack, tmp, allowEnriched);
 
             String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis() + ".pack";
             Path destinationPath = libraryPath.resolve(destinationFileName);
-            LOGGER.info("Moving " + outputFormat + " format pack into local library: " + destinationPath);
+            LOGGER.info("Moving {} format pack into local library: {}", outputFormat, destinationPath);
             Files.move(tmp, destinationPath);
 
             return Optional.of(Paths.get(destinationFileName));
         } catch (Exception e) {
             String msg = "Failed to convert " + inputFormat + " format pack to " + outputFormat + " format";
             LOGGER.error(msg, e);
-            throw new RuntimeException(msg, e);
+            throw new StoryTellerException(msg, e);
         }
     }
 
@@ -193,11 +193,11 @@ public class LibraryService {
         } 
         // expected input format type
         PackFormat inputFormat = packFile.endsWith(".pack") ? PackFormat.RAW : PackFormat.FS;
-        LOGGER.info("Pack is in " + inputFormat + " format. Converting to " + outputFormat + " format");
+        LOGGER.info("Pack is in {} format. Converting to {} format", inputFormat, outputFormat);
         try {
             // Packs must first be converted to raw format
             Path packPath = libraryPath.resolve(packFile);
-            LOGGER.info("Reading " + inputFormat + " format pack");
+            LOGGER.info("Reading {} format pack", inputFormat);
             StoryPack storyPack = inputFormat.getReader().read(packPath);
             // Compress pack assets
             if(inputFormat == PackFormat.RAW) {
@@ -205,23 +205,21 @@ public class LibraryService {
                 PackAssetsCompression.processCompressed(storyPack);
             }
 
-            //Path tmp = createTempFile(packFile, ".zip");
             String zipName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis() + ".zip";
             Path tmp = tmpDirPath.resolve(zipName);
 
-            LOGGER.info("Writing " + outputFormat + " format pack, using temporary file: " + tmp);
+            LOGGER.info("Writing {} format pack, using temporary file: {}", outputFormat, tmp);
             outputFormat.getWriter().write(storyPack, tmp, true);
 
-            //String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis() + ".zip";
             Path destinationPath = libraryPath.resolve(zipName);
-            LOGGER.info("Moving " + outputFormat + " format pack into local library: " + destinationPath);
+            LOGGER.info("Moving {} format pack into local library: {}", outputFormat, destinationPath);
             Files.move(tmp, destinationPath);
 
             return Optional.of(destinationPath);
         } catch (Exception e) {
             String msg = "Failed to convert " + inputFormat + " format pack to " + outputFormat + " format";
             LOGGER.error(msg, e);
-            throw new RuntimeException(msg, e);
+            throw new StoryTellerException(msg, e);
         }
     }
 
@@ -232,11 +230,11 @@ public class LibraryService {
         } 
         // expected input format type
         PackFormat inputFormat = packFile.endsWith(".zip") ? PackFormat.ARCHIVE : PackFormat.RAW;
-        LOGGER.info("Pack is in " + inputFormat + " format. Converting to " + outputFormat + " format");
+        LOGGER.info("Pack is in {} format. Converting to {} format", inputFormat, outputFormat);
         try {
             // Packs must first be converted to raw format
             Path packPath = libraryPath.resolve(packFile);
-            LOGGER.info("Reading " + inputFormat + " format pack");
+            LOGGER.info("Reading {} format pack", inputFormat);
             StoryPack storyPack = inputFormat.getReader().read(packPath);
 
             // Prepare assets (RLE-encoded BMP, audio must already be MP3)
@@ -244,21 +242,21 @@ public class LibraryService {
             PackAssetsCompression.processFirmware2dot4(storyPack);
 
             Path tmp = createTempDirectory(packFile);
-            LOGGER.info("Writing " + outputFormat + " format pack, using temporary folder: " + tmp);
+            LOGGER.info("Writing {} format pack, using temporary folder: {}", outputFormat, tmp);
             // should we not keep uuid instead ?
             Path tmpPath = FsStoryPackWriter.createPackFolder(storyPack, tmp);
             outputFormat.getWriter().write(storyPack, tmpPath, true);
 
             String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis();
             Path destinationPath = libraryPath.resolve(destinationFileName);
-            LOGGER.info("Moving " + outputFormat + " format pack into local library: " + destinationPath);
+            LOGGER.info("Moving {} format pack into local library: {}", outputFormat, destinationPath);
             Files.move(tmpPath, destinationPath);
 
             return Optional.of(Paths.get(destinationFileName));
         } catch (Exception e) {
             String msg = "Failed to convert " + inputFormat + " format pack to " + outputFormat + " format";
             LOGGER.error(msg, e);
-            throw new RuntimeException(msg, e);
+            throw new StoryTellerException(msg, e);
         }
     }
 
@@ -271,7 +269,7 @@ public class LibraryService {
             return true;
         } catch (IOException e) {
             LOGGER.error("Failed to add pack to local library", e);
-            throw new RuntimeException(e);
+            throw new StoryTellerException(e);
         }
     }
 
@@ -302,7 +300,7 @@ public class LibraryService {
         return Path.of(System.getProperty(LOCAL_LIBRARY_PROP, defaultDir));
     }
 
-    private static Path tmpDirPath() {
+    public static Path tmpDirPath() {
         String defaultDir = System.getProperty("user.home") + "/.studio/tmp/";
         return Path.of(System.getProperty(TMP_DIR_PROP, defaultDir) );
     }
