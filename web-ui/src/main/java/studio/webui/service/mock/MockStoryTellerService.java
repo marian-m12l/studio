@@ -18,7 +18,7 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
+import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -41,8 +41,6 @@ public class MockStoryTellerService implements IStoryTellerService {
     
     private static final int BUFFER_SIZE = 1024 * 1024 * 10;
 
-    private static final ScheduledThreadPoolExecutor THREAD_POOL = new ScheduledThreadPoolExecutor(2);
-
     private final EventBus eventBus;
 
     private final DatabaseMetadataService databaseMetadataService;
@@ -63,6 +61,14 @@ public class MockStoryTellerService implements IStoryTellerService {
                 throw new IllegalStateException("Failed to initialize mocked device");
             }
         }
+    }
+
+    private void sendProgress(String id, double p) {
+        eventBus.send("storyteller.transfer." + id + ".progress", new JsonObject().put("progress", p));
+    }
+
+    private void sendDone(String id, boolean success) {
+        eventBus.send("storyteller.transfer." + id + ".done", new JsonObject().put("success", success));
     }
 
     private static Path devicePath() {
@@ -132,13 +138,10 @@ public class MockStoryTellerService implements IStoryTellerService {
                 }
             } catch (IOException e) {
                 LOGGER.atError().withThrowable(e).log("Failed to read binary-format pack {} from mocked device", path);
-                return Optional.empty();
             }
         } else if (path.toString().endsWith(".zip")) {
             LOGGER.error("Mocked device should not contain archive-format packs");
-            return Optional.empty();
         }
-
         // Ignore other files
         return Optional.empty();
     }
@@ -150,38 +153,41 @@ public class MockStoryTellerService implements IStoryTellerService {
             return CompletableFuture.completedFuture(Optional.empty());
         } else {
             String transferId = UUID.randomUUID().toString();
-            // Perform transfer asynchronously, and send events on eventbus to monitor progress and end of transfer
-            THREAD_POOL.schedule( () -> {
-                    // Make sure the device does not already contain this pack
-                    Path destFile = deviceFolder.resolve(uuid + ".pack");
-                    if (Files.exists(destFile)) {
-                        LOGGER.error("Cannot add pack to mocked device because the folder already contains this pack");
-                        eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", false));
-                        return;
+            // Perform transfer asynchronously, and send events on eventbus to monitor
+            // progress and end of transfer
+            Executor after2s = CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS);
+            return CompletableFuture.supplyAsync(() -> {
+                // Make sure the device does not already contain this pack
+                Path destFile = deviceFolder.resolve(uuid + ".pack");
+                if (Files.exists(destFile)) {
+                    LOGGER.error("Cannot add pack to mocked device because the folder already contains this pack");
+                    sendDone(transferId, false);
+                    return Optional.empty();
+                }
+                try (InputStream input = new BufferedInputStream(Files.newInputStream(packFile));
+                        OutputStream output = new BufferedOutputStream(Files.newOutputStream(destFile))) {
+                    long fileSize = Files.size(packFile);
+                    final byte[] buffer = new byte[BUFFER_SIZE];
+                    long count = 0;
+                    int n = 0;
+                    while ((n = input.read(buffer)) != -1) {
+                        output.write(buffer, 0, n);
+                        count += n;
+                        // Send events on eventbus to monitor progress
+                        double p = count / (double) fileSize;
+                        LOGGER.debug("Pack copy progress... {} / {} ({})", count, fileSize, p);
+                        sendProgress(transferId, p);
                     }
-                    try (InputStream input = new BufferedInputStream(Files.newInputStream(packFile));
-                            OutputStream output = new BufferedOutputStream(Files.newOutputStream(destFile))) {
-                        long fileSize = Files.size(packFile);
-                        final byte[] buffer = new byte[BUFFER_SIZE];
-                        long count = 0;
-                        int n = 0;
-                        while ((n = input.read(buffer)) != -1) {
-                            output.write(buffer, 0, n);
-                            count += n;
-                            // Send events on eventbus to monitor progress
-                            double p = count / (double) fileSize;
-                            LOGGER.debug("Pack copy progress... {} / {} ({})", count, fileSize,  p);
-                            eventBus.send("storyteller.transfer."+transferId+".progress", new JsonObject().put("progress", p));
-                        }
-                        // Send event on eventbus to signal end of transfer
-                        eventBus.send("storyteller.transfer."+transferId+".done", new JsonObject().put("success", true));
-                    } catch (IOException e) {
-                        LOGGER.error("Failed to add pack to mocked device", e);
-                        // Send event on eventbus to signal transfer failure
-                        eventBus.send("storyteller.transfer." + transferId + ".done", new JsonObject().put("success", false));
-                    }
-                }, 1, TimeUnit.SECONDS);
-            return CompletableFuture.completedFuture(Optional.of(transferId));
+                    // Send event on eventbus to signal end of transfer
+                    sendDone(transferId, true);
+                    return Optional.of(transferId);
+                } catch (IOException e) {
+                    LOGGER.error("Failed to add pack to mocked device", e);
+                    // Send event on eventbus to signal transfer failure
+                    sendDone(transferId, false);
+                }
+                return Optional.empty();
+            }, after2s);
         }
     }
 
@@ -222,19 +228,14 @@ public class MockStoryTellerService implements IStoryTellerService {
             String transferId = UUID.randomUUID().toString();
             // Perform transfer asynchronously, and send events on eventbus to monitor
             // progress and end of transfer
-            THREAD_POOL.schedule(() -> {
+            Executor after2s = CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS);
+            return CompletableFuture.supplyAsync(() -> {
                 Path packFile = deviceFolder.resolve(uuid + ".pack");
-                if (Files.notExists(packFile)) {
-                    LOGGER.error("Cannot extract pack from mocked device because it is not in the folder");
-                    eventBus.send("storyteller.transfer." + transferId + ".done",
-                            new JsonObject().put("success", false));
-                }
-                // Check that the destination is available
-                if (Files.exists(destFile)) {
-                    LOGGER.error("Cannot extract pack from mocked device because the destination file already exists");
-                    eventBus.send("storyteller.transfer." + transferId + ".done",
-                            new JsonObject().put("success", false));
-                    return;
+                // Check that source and destination are available
+                if (Files.notExists(packFile) || Files.exists(destFile)) {
+                    LOGGER.error("Cannot extract pack from mocked device because source is unavailable or destination exists");
+                    sendDone(transferId, false);
+                    return Optional.empty();
                 }
                 try (InputStream input = new BufferedInputStream(Files.newInputStream(packFile));
                         OutputStream output = new BufferedOutputStream(Files.newOutputStream(destFile))) {
@@ -248,20 +249,18 @@ public class MockStoryTellerService implements IStoryTellerService {
                         // Send events on eventbus to monitor progress
                         double p = count / (double) fileSize;
                         LOGGER.debug("Pack copy progress... {} / {} ({})", count, fileSize, p);
-                        eventBus.send("storyteller.transfer." + transferId + ".progress",
-                                new JsonObject().put("progress", p));
+                        sendProgress(transferId, p);
                     }
                     // Send event on eventbus to signal end of transfer
-                    eventBus.send("storyteller.transfer." + transferId + ".done",
-                            new JsonObject().put("success", true));
+                    sendDone(transferId, true);
+                    return Optional.of(transferId);
                 } catch (IOException e) {
                     LOGGER.error("Failed to extract pack from mocked device", e);
                     // Send event on eventbus to signal transfer failure
-                    eventBus.send("storyteller.transfer." + transferId + ".done",
-                            new JsonObject().put("success", false));
+                    sendDone(transferId, false);
                 }
-            }, 1, TimeUnit.SECONDS);
-            return CompletableFuture.completedFuture(Optional.of(transferId));
+                return Optional.empty();
+            }, after2s);
         }
     }
 

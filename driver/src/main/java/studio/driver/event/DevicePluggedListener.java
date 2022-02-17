@@ -6,9 +6,9 @@
 
 package studio.driver.event;
 
-import studio.driver.model.TransferStatus;
+import org.usb4java.Device;
 
 @FunctionalInterface
-public interface TransferProgressListener {
-    void onProgress(TransferStatus status);
+public interface DevicePluggedListener {
+    void onDevicePlugged(Device device);
 }

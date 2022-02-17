@@ -48,15 +48,7 @@ public class EvergreenService {
     }
 
     public Future<JsonObject> infos() {
-        Promise<JsonObject> promise = Promise.promise();
-        configRetriever.getConfig(ar -> {
-            if (ar.succeeded()) {
-                promise.tryComplete(ar.result());
-            } else {
-                promise.tryFail(ar.cause());
-            }
-        });
-        return promise.future();
+        return configRetriever.getConfig();
     }
 
     public Future<JsonObject> latest() {
