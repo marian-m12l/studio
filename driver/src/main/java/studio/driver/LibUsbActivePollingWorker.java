@@ -17,7 +17,8 @@ import org.usb4java.DeviceList;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
-import studio.driver.event.DeviceHotplugEventListener;
+import studio.driver.event.DevicePluggedListener;
+import studio.driver.event.DeviceUnpluggedListener;
 
 public class LibUsbActivePollingWorker implements Runnable {
 
@@ -25,14 +26,16 @@ public class LibUsbActivePollingWorker implements Runnable {
 
     private final Context context;
     private final DeviceVersion deviceVersion;
-    private final DeviceHotplugEventListener listener;
+    private final DevicePluggedListener pluggedlistener;
+    private final DeviceUnpluggedListener unpluggedlistener;
     private Device device = null;
 
     public LibUsbActivePollingWorker(Context context, DeviceVersion deviceVersion,
-            DeviceHotplugEventListener listener) {
+            DevicePluggedListener pluggedlistener, DeviceUnpluggedListener unpluggedlistener) {
         this.context = context;
         this.deviceVersion = deviceVersion;
-        this.listener = listener;
+        this.pluggedlistener = pluggedlistener;
+        this.unpluggedlistener = unpluggedlistener;
     }
 
     @Override
@@ -62,10 +65,10 @@ public class LibUsbActivePollingWorker implements Runnable {
             if (found != null && device == null) {
                 LOGGER.info("Active polling found a new device. Firing event.");
                 device = found;
-                CompletableFuture.runAsync(() -> listener.onDevicePlugged(device));
+                CompletableFuture.runAsync(() -> pluggedlistener.onDevicePlugged(device));
             } else if (found == null && device != null) {
                 LOGGER.info("Active polling lost the device. Firing event.");
-                CompletableFuture.runAsync(() -> listener.onDeviceUnplugged(device));
+                CompletableFuture.runAsync(() -> unpluggedlistener.onDeviceUnplugged(device));
                 device = null;
             }
         } finally {

@@ -25,9 +25,10 @@ public class EvergreenController {
         Router router = Router.router(vertx);
 
         // Current version
-        router.get("/infos").blockingHandler(ctx -> {
+        router.get("/infos").handler(ctx -> {
             evergreenService.infos().onComplete(maybeJson -> {
                 if (maybeJson.succeeded()) {
+                    LOGGER.info("Current version infos: {}", maybeJson.result());
                     ctx.json(maybeJson.result());
                 } else {
                     LOGGER.error("Failed to get current version infos");

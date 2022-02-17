@@ -20,7 +20,8 @@ import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
 import studio.core.v1.utils.exception.StoryTellerException;
-import studio.driver.event.DeviceHotplugEventListener;
+import studio.driver.event.DevicePluggedListener;
+import studio.driver.event.DeviceUnpluggedListener;
 
 public class LibUsbDetectionHelper {
 
@@ -51,7 +52,8 @@ public class LibUsbDetectionHelper {
      * @param deviceVersion The version of the device to detect
      * @param listener      A hotplug listener
      */
-    public static void initializeLibUsb(DeviceVersion deviceVersion, DeviceHotplugEventListener listener) {
+    public static void initializeLibUsb(DeviceVersion deviceVersion, DevicePluggedListener pluggedlistener,
+            DeviceUnpluggedListener unpluggedlistener) {
         // Init libusb
         LOGGER.info("Initializing libusb...");
         // LibUsb context
@@ -73,17 +75,17 @@ public class LibUsbDetectionHelper {
         if (LibUsb.hasCapability(LibUsb.CAP_HAS_HOTPLUG)) {
             LOGGER.info("Hotplug is supported. Registering hotplug callback(s)...");
             if (isDeviceV1(deviceVersion)) {
-                registerCallback(context, VENDOR_ID_FW1, PRODUCT_ID_FW1, listener);
+                registerCallback(context, VENDOR_ID_FW1, PRODUCT_ID_FW1, pluggedlistener, unpluggedlistener);
             }
             if (isDeviceV2(deviceVersion)) {
-                registerCallback(context, VENDOR_ID_FW2, PRODUCT_ID_FW2, listener);
-                registerCallback(context, VENDOR_ID_V2, PRODUCT_ID_V2, listener);
+                registerCallback(context, VENDOR_ID_FW2, PRODUCT_ID_FW2, pluggedlistener, unpluggedlistener);
+                registerCallback(context, VENDOR_ID_V2, PRODUCT_ID_V2, pluggedlistener, unpluggedlistener);
             }
         } else {
             LOGGER.info("Hotplug is NOT supported. Scheduling task to actively poll USB device...");
             scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
             activePollingTask = scheduledExecutor.scheduleAtFixedRate(
-                    new LibUsbActivePollingWorker(context, deviceVersion, listener), 0, POLL_DELAY,
+                    new LibUsbActivePollingWorker(context, deviceVersion, pluggedlistener, unpluggedlistener), 0, POLL_DELAY,
                     TimeUnit.MILLISECONDS);
         }
         // Add shutdown hook
@@ -119,7 +121,8 @@ public class LibUsbDetectionHelper {
         }));
     }
     
-    private static void registerCallback(Context context, int vendorId, int productId, DeviceHotplugEventListener listener) {
+    private static void registerCallback(Context context, int vendorId, int productId,
+            DevicePluggedListener pluggedlistener, DeviceUnpluggedListener unpluggedlistener) {
         LibUsb.hotplugRegisterCallback(context, LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED | LibUsb.HOTPLUG_EVENT_DEVICE_LEFT,
                 LibUsb.HOTPLUG_ENUMERATE, // Arm the callback and fire it for all matching currently attached devices
                 vendorId, productId, LibUsb.HOTPLUG_MATCH_ANY, // Device class
@@ -127,12 +130,12 @@ public class LibUsbDetectionHelper {
                     String msg = String.format("Hotplug event callback (%04x:%04x): %s", vendorId, productId, event);
                     LOGGER.info(msg);
                     if(event ==  LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED ) {
-                        CompletableFuture.runAsync(() -> listener.onDevicePlugged(device)).exceptionally(e -> {
+                        CompletableFuture.runAsync(() -> pluggedlistener.onDevicePlugged(device)).exceptionally(e -> {
                             LOGGER.error("An error occurred while handling device plug event", e);
                             return null;
                         });
                     } else if(event == LibUsb.HOTPLUG_EVENT_DEVICE_LEFT ) {
-                        CompletableFuture.runAsync(() -> listener.onDeviceUnplugged(device)).exceptionally(e -> {
+                        CompletableFuture.runAsync(() -> unpluggedlistener.onDeviceUnplugged(device)).exceptionally(e -> {
                             LOGGER.error("An error occurred while handling device unplug event", e);
                             return null;
                         });

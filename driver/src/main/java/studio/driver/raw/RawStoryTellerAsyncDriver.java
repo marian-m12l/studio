@@ -10,6 +10,8 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,14 +35,16 @@ import org.usb4java.DeviceHandle;
 import studio.core.v1.utils.exception.StoryTellerException;
 import studio.driver.DeviceVersion;
 import studio.driver.LibUsbDetectionHelper;
-import studio.driver.event.DeviceHotplugEventListener;
+import studio.driver.StoryTellerAsyncDriver;
+import studio.driver.event.DevicePluggedListener;
+import studio.driver.event.DeviceUnpluggedListener;
 import studio.driver.event.TransferProgressListener;
 import studio.driver.fs.FileUtils;
 import studio.driver.model.TransferStatus;
 import studio.driver.model.raw.RawDeviceInfos;
 import studio.driver.model.raw.RawStoryPackInfos;
 
-public class RawStoryTellerAsyncDriver {
+public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDeviceInfos, RawStoryPackInfos> {
 
     private static final Logger LOGGER = LogManager.getLogger(RawStoryTellerAsyncDriver.class);
 
@@ -53,39 +57,32 @@ public class RawStoryTellerAsyncDriver {
     private static final int PACK_TRANSFER_CHUNK_SIZE_IN_SECTORS = 5000;    // 2.5 MB
 
     private Device device = null;
-    private List<DeviceHotplugEventListener> listeners = new ArrayList<>();
-
+    private List<DevicePluggedListener> pluggedlisteners = new ArrayList<>();
+    private List<DeviceUnpluggedListener> unpluggedlisteners = new ArrayList<>();
 
     public RawStoryTellerAsyncDriver() {
         // Initialize libusb, handle and propagate hotplug events
         LOGGER.debug("Registering hotplug listener");
-        LibUsbDetectionHelper.initializeLibUsb(DeviceVersion.DEVICE_VERSION_1, new DeviceHotplugEventListener() {
-                    @Override
-                    public void onDevicePlugged(Device device) {
-                        // Update device reference
-                        RawStoryTellerAsyncDriver.this.device = device;
-                        // Notify listeners
-                        RawStoryTellerAsyncDriver.this.listeners.forEach(listener -> listener.onDevicePlugged(device));
-                    }
-                    @Override
-                    public void onDeviceUnplugged(Device device) {
-                        // Update device reference
-                        RawStoryTellerAsyncDriver.this.device = null;
-                        // Notify listeners
-                        RawStoryTellerAsyncDriver.this.listeners.forEach(listener -> listener.onDeviceUnplugged(device));
-                    }
-                }
-        );
+        LibUsbDetectionHelper.initializeLibUsb(DeviceVersion.DEVICE_VERSION_1, device2 -> {
+            // Update device reference
+            RawStoryTellerAsyncDriver.this.device = device2;
+            // Notify listeners
+            RawStoryTellerAsyncDriver.this.pluggedlisteners.forEach(l -> l.onDevicePlugged(device2));
+        }, device2 -> {
+            // Update device reference
+            RawStoryTellerAsyncDriver.this.device = null;
+            // Notify listeners
+            RawStoryTellerAsyncDriver.this.unpluggedlisteners.forEach(l -> l.onDeviceUnplugged(device2));
+        });
     }
 
-
-    public void registerDeviceListener(DeviceHotplugEventListener listener) {
-        this.listeners.add(listener);
+    public void registerDeviceListener(DevicePluggedListener pluggedlistener, DeviceUnpluggedListener unpluggedlistener) {
+        this.pluggedlisteners.add(pluggedlistener);
+        this.unpluggedlisteners.add(unpluggedlistener);
         if (this.device != null) {
-            listener.onDevicePlugged(this.device);
+            pluggedlistener.onDevicePlugged(this.device);
         }
     }
-
 
     public CompletionStage<RawDeviceInfos> getDeviceInfos() {
         if (this.device == null) {
@@ -317,7 +314,7 @@ public class RawStoryTellerAsyncDriver {
         }
     }
 
-    public CompletionStage<TransferStatus> downloadPack(String uuid, OutputStream output, TransferProgressListener listener) {
+    public CompletionStage<TransferStatus> downloadPack(String uuid, Path destPath, TransferProgressListener listener) {
         if (this.device == null) {
             return CompletableFuture.failedFuture(noDevicePluggedException());
         }
@@ -346,18 +343,15 @@ public class RawStoryTellerAsyncDriver {
                                                 // TODO Write directly from ByteBuffer to output stream ?
                                                 byte[] bytes = new byte[read.remaining()];
                                                 read.get(bytes);
-                                                try {
+                                                try(OutputStream fos = new BufferedOutputStream(Files.newOutputStream(destPath)) ){
                                                     LOGGER.trace("Writing {} bytes to output stream", bytes.length);
-                                                    output.write(bytes);
+                                                    fos.write(bytes);
                                                     // Compute progress
                                                     status.setTransferred(status.getTransferred() + bytes.length);
                                                     followProgress(status, totalSize, startTime);
                                                     // Call (optional) listener with transfer status
                                                     if (listener != null) {
                                                         CompletableFuture.runAsync(() -> listener.onProgress(status));
-                                                        if (status.isDone()) {
-                                                            CompletableFuture.runAsync(() -> listener.onComplete(status));
-                                                        }
                                                     }
                                                     return status;
                                                 } catch (IOException e) {
@@ -374,10 +368,21 @@ public class RawStoryTellerAsyncDriver {
                 );
     }
 
-
-    public CompletionStage<TransferStatus> uploadPack(InputStream input, int packSizeInSectors, TransferProgressListener listener) {
+    public CompletionStage<TransferStatus> uploadPack(String uuid, Path inputPath, TransferProgressListener listener) {
         if (this.device == null) {
             return CompletableFuture.failedFuture(noDevicePluggedException());
+        }
+        // file size and sectors
+        long packSize = 0;
+        try {
+            packSize = Files.size(inputPath);
+        } catch (IOException e) {
+            return CompletableFuture.failedFuture(e);
+        }
+        int packSizeInSectors = (int) (packSize / LibUsbMassStorageHelper.SECTOR_SIZE);
+        if(LOGGER.isInfoEnabled()) {
+            LOGGER.info("Transferring pack ({}) to device: {} ({} sectors)", uuid, FileUtils.readableByteSize(packSize),
+                    packSizeInSectors);
         }
 
         return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, handle -> {
@@ -401,7 +406,7 @@ public class RawStoryTellerAsyncDriver {
                                 // TODO Write directly from input stream to ByteBuffer ?
                                 int chunkSize = nbSectorsToWrite * LibUsbMassStorageHelper.SECTOR_SIZE;
                                 ByteBuffer bb = ByteBuffer.allocateDirect(chunkSize);
-                                try {
+                                try(InputStream input = new BufferedInputStream(Files.newInputStream(inputPath)) ) {
                                     // Read next chunk from input stream
                                     LOGGER.trace("Reading {} bytes from input stream", chunkSize);
                                     byte[] chunk = input.readNBytes(chunkSize);
@@ -438,14 +443,7 @@ public class RawStoryTellerAsyncDriver {
                                                     (short) 0
                                             ));
                                             // Write pack index
-                                            return writePackIndex(handle, packs)
-                                                    .thenApply(done -> {
-                                                        if (status.isDone()) {
-                                                            // Call listener only after the index has been rewritten
-                                                            CompletableFuture.runAsync(() -> listener.onComplete(status));
-                                                        }
-                                                        return status;
-                                                    });
+                                            return writePackIndex(handle, packs).thenApply(done -> status);
                                         }));
                     });
         });

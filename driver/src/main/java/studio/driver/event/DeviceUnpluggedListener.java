@@ -8,7 +8,7 @@ package studio.driver.event;
 
 import org.usb4java.Device;
 
-public interface DeviceHotplugEventListener {
-    void onDevicePlugged(Device device);
+@FunctionalInterface
+public interface DeviceUnpluggedListener {
     void onDeviceUnplugged(Device device);
 }
