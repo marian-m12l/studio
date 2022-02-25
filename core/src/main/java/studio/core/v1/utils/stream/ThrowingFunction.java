@@ -5,7 +5,7 @@ import java.util.function.Function;
 import studio.core.v1.utils.exception.StoryTellerException;
 
 /**
- * Handle checked exception-in lambda.
+ * Handle checked exception in lambda function.
  * 
  * @see https://dzone.com/articles/how-to-handle-checked-exception-in-lambda-expressi
  *
@@ -23,6 +23,7 @@ public interface ThrowingFunction<T, R, E extends Exception> {
             try {
                 return f.apply(t);
             } catch (Exception e) {
+                // custom RuntimeException
                 throw new StoryTellerException(e);
             }
         };

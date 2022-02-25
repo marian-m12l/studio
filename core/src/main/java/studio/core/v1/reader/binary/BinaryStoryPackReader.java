@@ -175,21 +175,14 @@ public class BinaryStoryPackReader implements StoryPackReader {
 
                 // Read (optional) enriched node metadata
                 dis.skipBytes(BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING);
-                EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(dis);
+                EnrichedNodeMetadata enrichedNode = readEnrichedNodeMetadata(dis);
 
                 // Build stage node
                 SectorAddr address = new SectorAddr(i);
                 Transition okTransition = okActionNodeAddr != null ? new Transition(null, okTransitionIndex) : null;
                 Transition homeTransition = homeActionNodeAddr != null ? new Transition(null, homeTransitionIndex) : null;
-                StageNode stageNode = new StageNode(
-                        uuid,
-                        null,
-                        null,
-                        okTransition,
-                        homeTransition,
-                        new ControlSettings(wheelEnabled, okEnabled, homeEnabled, pauseEnabled, autoJumpEnabled),
-                        enrichedNodeMetadata
-                );
+                ControlSettings ctrl = new ControlSettings(wheelEnabled, okEnabled, homeEnabled, pauseEnabled, autoJumpEnabled); 
+                StageNode stageNode = new StageNode(uuid, null, null, okTransition, homeTransition, ctrl, enrichedNode);
                 stageNodes.put(address, stageNode);
 
                 // Assets will be updated when they are read

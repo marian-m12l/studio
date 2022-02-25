@@ -9,7 +9,6 @@ package studio.webui.service;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.nio.file.StandardCopyOption;
 import java.util.Base64;
 import java.util.Comparator;
@@ -149,7 +148,20 @@ public class LibraryService {
         throw new StoryTellerException(msg);
     }
 
-    public Optional<Path> addConvertedRawPackFile(String packFile, boolean allowEnriched) {
+    public Path addConvertedPack(String packPath, PackFormat packFormat, boolean allowEnriched) {
+        if (PackFormat.RAW == packFormat) {
+            return addConvertedRawPackFile(packPath, allowEnriched);
+        }
+        if (PackFormat.FS == packFormat) {
+            return addConvertedFsPackFile(packPath);
+        }
+        if (PackFormat.ARCHIVE == packFormat) {
+            return addConvertedArchivePackFile(packPath);
+        }
+        throw new StoryTellerException("Unknown pack format " + packFormat);
+    }
+
+    public Path addConvertedRawPackFile(String packFile, boolean allowEnriched) {
         PackFormat outputFormat = PackFormat.RAW;
         if (packFile.endsWith(".pack")) {
             assertFormat(outputFormat);
@@ -178,7 +190,7 @@ public class LibraryService {
             LOGGER.info("Moving {} format pack into local library: {}", outputFormat, destinationPath);
             Files.move(tmp, destinationPath);
 
-            return Optional.of(Paths.get(destinationFileName));
+            return destinationPath;
         } catch (Exception e) {
             String msg = "Failed to convert " + inputFormat + " format pack to " + outputFormat + " format";
             LOGGER.error(msg, e);
@@ -186,7 +198,7 @@ public class LibraryService {
         }
     }
 
-    public Optional<Path> addConvertedArchivePackFile(String packFile) {
+    public Path addConvertedArchivePackFile(String packFile) {
         PackFormat outputFormat = PackFormat.ARCHIVE;
         if (packFile.endsWith(".zip")) {
             assertFormat(outputFormat);
@@ -215,7 +227,7 @@ public class LibraryService {
             LOGGER.info("Moving {} format pack into local library: {}", outputFormat, destinationPath);
             Files.move(tmp, destinationPath);
 
-            return Optional.of(destinationPath);
+            return destinationPath;
         } catch (Exception e) {
             String msg = "Failed to convert " + inputFormat + " format pack to " + outputFormat + " format";
             LOGGER.error(msg, e);
@@ -223,7 +235,7 @@ public class LibraryService {
         }
     }
 
-    public Optional<Path> addConvertedFsPackFile(String packFile) {
+    public Path addConvertedFsPackFile(String packFile) {
         PackFormat outputFormat = PackFormat.FS;
         if (!packFile.endsWith(".zip") && !packFile.endsWith(".pack")) {
             assertFormat(outputFormat);
@@ -252,7 +264,7 @@ public class LibraryService {
             LOGGER.info("Moving {} format pack into local library: {}", outputFormat, destinationPath);
             Files.move(tmpPath, destinationPath);
 
-            return Optional.of(Paths.get(destinationFileName));
+            return destinationPath;
         } catch (Exception e) {
             String msg = "Failed to convert " + inputFormat + " format pack to " + outputFormat + " format";
             LOGGER.error(msg, e);
@@ -336,18 +348,19 @@ public class LibraryService {
     }
 
     private JsonObject libraryPackToJson(LibraryPack pack) {
+        StoryPackMetadata spMeta = pack.getMetadata();
         JsonObject json = new JsonObject()
-                .put("format", pack.getMetadata().getFormat().getLabel())
-                .put("uuid", pack.getMetadata().getUuid())
-                .put("version", pack.getMetadata().getVersion())
+                .put("format", spMeta.getFormat().getLabel())
+                .put("uuid", spMeta.getUuid())
+                .put("version", spMeta.getVersion())
                 .put("path", pack.getPath().getFileName().toString())
                 .put("timestamp", pack.getTimestamp())
-                .put("nightModeAvailable", pack.getMetadata().isNightModeAvailable());
-        Optional.ofNullable(pack.getMetadata().getTitle()).ifPresent(title -> json.put("title", title));
-        Optional.ofNullable(pack.getMetadata().getDescription()).ifPresent(desc -> json.put("description", desc));
-        Optional.ofNullable(pack.getMetadata().getThumbnail()).ifPresent(thumb -> json.put("image", "data:image/png;base64," + Base64.getEncoder().encodeToString(thumb)));
-        Optional.ofNullable(pack.getMetadata().getSectorSize()).ifPresent(size -> json.put("sectorSize", size));
-        return databaseMetadataService.getPackMetadata(pack.getMetadata().getUuid())
+                .put("nightModeAvailable", spMeta.isNightModeAvailable());
+        Optional.ofNullable(spMeta.getTitle()).ifPresent(title -> json.put("title", title));
+        Optional.ofNullable(spMeta.getDescription()).ifPresent(desc -> json.put("description", desc));
+        Optional.ofNullable(spMeta.getThumbnail()).ifPresent(thumb -> json.put("image", "data:image/png;base64," + Base64.getEncoder().encodeToString(thumb)));
+        Optional.ofNullable(spMeta.getSectorSize()).ifPresent(size -> json.put("sectorSize", size));
+        return databaseMetadataService.getPackMetadata(spMeta.getUuid())
                 .map(metadata -> json
                         .put("title", metadata.getTitle())
                         .put("description", metadata.getDescription())

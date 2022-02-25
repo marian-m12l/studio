@@ -11,10 +11,8 @@ import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
-import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
-import java.net.URISyntaxException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -65,9 +63,9 @@ public class FsStoryPackWriter implements StoryPackWriter {
     private static final String NODE_INDEX_FILENAME = "ni";
     private static final String LIST_INDEX_FILENAME = "li";
     private static final String IMAGE_INDEX_FILENAME = "ri";
-    private static final String IMAGE_FOLDER = "rf" + File.separator;
+    private static final String IMAGE_FOLDER = "rf";
     private static final String SOUND_INDEX_FILENAME = "si";
-    private static final String SOUND_FOLDER = "sf" + File.separator;
+    private static final String SOUND_FOLDER = "sf";
     private static final String BOOT_FILENAME = "bt";
     private static final String NIGHT_MODE_FILENAME = "nm";
 
@@ -213,18 +211,28 @@ public class FsStoryPackWriter implements StoryPackWriter {
                 bb.putInt(imageIndex);
                 // Sound index in SI file (index 0 == first sound) --> sf/000/11111111
                 bb.putInt(audioIndex);
-                // OK transition: Action node index in LI file (index 0 == first action node)
-                bb.putInt(okTransition == null ? -1 : actionNodesIndexes.get(okTransition.getActionNode()));
-                // OK transition: Number of options available
-                bb.putInt(okTransition == null ? -1 : okTransition.getActionNode().getOptions().size());
-                // OK transition: Menu option index (index 0 == first menu option)
-                bb.putInt(okTransition == null ? -1 : okTransition.getOptionIndex());
-                // HOME transition: Action node index in LI file (-1 == no transition)
-                bb.putInt(homeTransition == null ? -1 : actionNodesIndexes.get(homeTransition.getActionNode()));
-                // HOME transition: Number of options available
-                bb.putInt(homeTransition == null ? -1 : homeTransition.getActionNode().getOptions().size());
-                // HOME transition: Menu option index
-                bb.putInt(homeTransition == null ? -1 : homeTransition.getOptionIndex());
+                // OK transition 
+                if (okTransition != null) {
+                    // Action node index in LI file (index 0 == first action node)
+                    bb.putInt(actionNodesIndexes.get(okTransition.getActionNode()));
+                    // Number of options available
+                    bb.putInt(okTransition.getActionNode().getOptions().size());
+                    // Menu option index (index 0 == first menu option)
+                    bb.putInt(okTransition.getOptionIndex());
+                } else {
+                    bb.putInt(-1).putInt(-1).putInt(-1);
+                }
+                // HOME transition
+                if (homeTransition != null) {
+                    // Action node index in LI file (-1 == no transition)
+                    bb.putInt(actionNodesIndexes.get(homeTransition.getActionNode()));
+                    // Number of options available
+                    bb.putInt(homeTransition.getActionNode().getOptions().size());
+                    // Menu option index
+                    bb.putInt(homeTransition.getOptionIndex());
+                } else {
+                    bb.putInt(-1).putInt(-1).putInt(-1);
+                }
                 // WHEEL flag
                 bb.putShort(boolToShort(ctrl.isWheelEnabled()));
                 // OK flag
@@ -267,7 +275,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
                 String rfSubPath = assetPathFromIndex(i);
                 riDos.write(rfSubPath.getBytes(StandardCharsets.UTF_8));
                 // Write image data into file
-                Path rfPath = packFolder.resolve(IMAGE_FOLDER + rfSubPath.replace('\\', '/'));
+                Path rfPath = packFolder.resolve(IMAGE_FOLDER).resolve(rfSubPath.replace('\\', '/'));
                 Files.createDirectories(rfPath.getParent());
                 writeCypheredFile(rfPath, assets.get(imageHash));
             }
@@ -285,7 +293,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
                 String sfSubPath = assetPathFromIndex(i);
                 siDos.write(sfSubPath.getBytes(StandardCharsets.UTF_8));
                 // Write sound data into file
-                Path sfPath = packFolder.resolve(SOUND_FOLDER + sfSubPath.replace('\\', '/'));
+                Path sfPath = packFolder.resolve(SOUND_FOLDER).resolve(sfSubPath.replace('\\', '/'));
                 Files.createDirectories(sfPath.getParent());
                 writeCypheredFile(sfPath, assets.get(audioHash));
             }
@@ -358,9 +366,8 @@ public class FsStoryPackWriter implements StoryPackWriter {
     private static byte[] readRelative(String relative) {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         try {
-            Path p = Path.of(classLoader.getResource(relative).toURI());
-            return Files.readAllBytes(p);
-        } catch (URISyntaxException | IOException e) {
+            return classLoader.getResourceAsStream(relative).readAllBytes();
+        } catch (IOException e) {
             LOGGER.atError().withThrowable(e).log("Cannot load relative resource {}!", relative);
             return new byte[0];
         }
