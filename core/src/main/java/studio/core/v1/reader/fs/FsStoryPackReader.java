@@ -171,21 +171,10 @@ public class FsStoryPackReader implements StoryPackReader {
                     audio = new AudioAsset(AudioType.MPEG, sfContent);
                 }
 
-                StageNode stageNode = new StageNode(
-                        i == 0 ? uuid : UUID.randomUUID().toString(), // First node should have the same UUID as the story pack FIXME node uuids from metadata file
-                        image,
-                        audio,
-                        okTransition,
-                        homeTransition,
-                        new ControlSettings(
-                                wheel,
-                                ok,
-                                home,
-                                pause,
-                                autoplay
-                        ),
-                        null
-                );
+                ControlSettings ctrl = new ControlSettings(wheel, ok, home, pause, autoplay);
+                // First node should have the same UUID as the story pack FIXME node uuids from metadata file
+                String uu = (i == 0) ? uuid : UUID.randomUUID().toString(); 
+                StageNode stageNode = new StageNode(uu, image, audio, okTransition, homeTransition, ctrl, null);
                 stageNodes.put(i, stageNode);
             }
         }

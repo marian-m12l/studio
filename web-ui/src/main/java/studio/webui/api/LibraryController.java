@@ -9,28 +9,25 @@ package studio.webui.api;
 
 import java.nio.file.Path;
 import java.util.Iterator;
-import java.util.Optional;
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import io.vertx.core.Promise;
 import io.vertx.core.Vertx;
+import io.vertx.core.WorkerExecutor;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.ext.web.FileUpload;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.handler.BodyHandler;
 import studio.core.v1.utils.PackFormat;
+import studio.core.v1.utils.exception.StoryTellerException;
 import studio.webui.service.LibraryService;
 
 public class LibraryController {
 
     private static final Logger LOGGER = LogManager.getLogger(LibraryController.class);
-
-    private static final ScheduledThreadPoolExecutor THREAD_POOL = new ScheduledThreadPoolExecutor(2);
 
     private LibraryController() {
         throw new IllegalArgumentException("Utility class");
@@ -82,44 +79,33 @@ public class LibraryController {
         });
 
         // Local library pack conversion
-        router.post("/convert").blockingHandler(ctx -> {
+        router.post("/convert").handler(ctx -> {
             JsonObject body = ctx.getBodyAsJson();
             String packPath = body.getString("path");
             Boolean allowEnriched = body.getBoolean("allowEnriched", false);
             String format = body.getString("format");
-            // Perform conversion/uncompression asynchronously
-            Promise<Path> promisedPack = Promise.promise();
-            THREAD_POOL.schedule(() -> {
-                PackFormat packFormat;
-                try {
-                    packFormat = PackFormat.valueOf(format.toUpperCase());
-                }catch(IllegalArgumentException e ) {
-                    LOGGER.error("Invalid PackFormat : {}", format);
-                    ctx.fail(400);
-                    return;
-                }
-                Optional<Path> optPath = Optional.empty();
-                if (PackFormat.RAW == packFormat) {
-                    optPath = libraryService.addConvertedRawPackFile(packPath, allowEnriched);
-                } else if (PackFormat.FS == packFormat) {
-                    optPath = libraryService.addConvertedFsPackFile(packPath);
-                } else if (PackFormat.ARCHIVE == packFormat) {
-                    optPath = libraryService.addConvertedArchivePackFile(packPath);
-                }
-                optPath.ifPresentOrElse(promisedPack::tryComplete,
-                        () -> promisedPack.tryFail("Failed to read or convert pack to " + format + " format"));
-                promisedPack.tryComplete();
-            }, 0, TimeUnit.SECONDS);
 
-            promisedPack.future().onComplete(maybeConvertedPack -> {
-                if (maybeConvertedPack.succeeded()) {
-                    // Return path to converted file within library
-                    ctx.json(new JsonObject().put("success", true).put("path", maybeConvertedPack.result().toString()));
-                } else {
-                    LOGGER.error("Failed to read or convert pack");
-                    ctx.fail(500, maybeConvertedPack.cause());
-                }
-            });
+            // Perform conversion/uncompression asynchronously
+            WorkerExecutor executor = vertx.createSharedWorkerExecutor("pack-converter", 1, 20, TimeUnit.MINUTES);
+            executor.executeBlocking( //
+                    future -> {
+                        try {
+                            PackFormat packFormat = PackFormat.valueOf(format.toUpperCase());
+                            Path newPackPath = libraryService.addConvertedPack(packPath, packFormat, allowEnriched);
+                            future.complete(newPackPath);
+                        } catch (IllegalArgumentException | StoryTellerException e) {
+                            future.fail(e);
+                        }
+                    }, //
+                    res -> {
+                        if (res.succeeded()) {
+                            // Return path to converted file within library
+                            ctx.json(new JsonObject().put("success", true).put("path", res.result().toString()));
+                        } else {
+                            LOGGER.error("Failed to read or convert pack");
+                            ctx.fail(500, res.cause());
+                        }
+                    });
         });
 
         // Remove pack from device

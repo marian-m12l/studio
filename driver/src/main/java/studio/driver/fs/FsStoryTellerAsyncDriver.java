@@ -75,7 +75,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
                         try {
                             Thread.sleep(FS_MOUNTPOINT_POLL_DELAY);
                             DeviceUtils.listMountPoints().forEach(path -> {
-                                LOGGER.trace("Looking for .md file on mount point / drive: {}", path);
+                                LOGGER.trace("Looking for .md in {}", path);
                                 if (Files.exists(path.resolve(DEVICE_METADATA_FILENAME))) {
                                     partitionMountPoint = path;
                                     LOGGER.info("FS device partition located: {}", partitionMountPoint);
@@ -174,16 +174,14 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
     private short readLittleEndianShort(InputStream fis) throws IOException {
         byte[] buffer = new byte[2];
         fis.read(buffer);
-        ByteBuffer bb = ByteBuffer.wrap(buffer);
-        bb.order(ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer bb = ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN);
         return bb.getShort();
     }
 
     private long readBigEndianLong(InputStream fis) throws IOException {
         byte[] buffer = new byte[8];
         fis.read(buffer);
-        ByteBuffer bb = ByteBuffer.wrap(buffer);
-        bb.order(ByteOrder.BIG_ENDIAN);
+        ByteBuffer bb = ByteBuffer.wrap(buffer).order(ByteOrder.BIG_ENDIAN);
         return bb.getLong();
     }
 

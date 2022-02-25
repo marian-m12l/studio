@@ -185,18 +185,15 @@ public class ArchiveStoryPackReader implements StoryPackReader {
                 homeTransition = new Transition(actionNode, homeObj.get("optionIndex").getAsShort());
             }
 
-            JsonObject controlSettings = node.getAsJsonObject("controlSettings");
+            JsonObject ctrlJson = node.getAsJsonObject("controlSettings");
+            ControlSettings ctrl = new ControlSettings(ctrlJson.get("wheel").getAsBoolean(),
+                    ctrlJson.get("ok").getAsBoolean(), ctrlJson.get("home").getAsBoolean(),
+                    ctrlJson.get("pause").getAsBoolean(), ctrlJson.get("autoplay").getAsBoolean());
 
             // Read (optional) enriched node metadata
-            EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(node);
+            EnrichedNodeMetadata enrichedNode = readEnrichedNodeMetadata(node);
 
-            StageNode stageNode = new StageNode(uuid, null, null, okTransition, homeTransition,
-                    new ControlSettings(controlSettings.get("wheel").getAsBoolean(),
-                            controlSettings.get("ok").getAsBoolean(),
-                            controlSettings.get("home").getAsBoolean(),
-                            controlSettings.get("pause").getAsBoolean(),
-                            controlSettings.get("autoplay").getAsBoolean()),
-                    enrichedNodeMetadata);
+            StageNode stageNode = new StageNode(uuid, null, null, okTransition, homeTransition, ctrl, enrichedNode);
 
             if (node.get("squareOne") != null && node.get("squareOne").getAsBoolean()) {
                 squareOne = stageNode;
@@ -255,26 +252,24 @@ public class ArchiveStoryPackReader implements StoryPackReader {
     private void enrichAssets(TreeMap<String, byte[]> assets, Map<String, List<StageNode>> assetToStageNodes ) {
         for (Map.Entry<String, byte[]> assetEntry : assets.entrySet()) {
             String assetName = assetEntry.getKey();
-            int dotIndex = assetName.lastIndexOf(".");
-            String extension = assetName.substring(dotIndex).toLowerCase();
-
             // Stage nodes explicitly reference their assets' filenames
             List<StageNode> stageNodesReferencingAsset = assetToStageNodes.get(assetName);
-            if (stageNodesReferencingAsset != null && !stageNodesReferencingAsset.isEmpty()) {
-                for (StageNode stageNode : stageNodesReferencingAsset) {
-                    // supported images
-                    ImageType it = ImageType.fromExtension(extension);
-                    if(it != null) {
-                        stageNode.setImage(new ImageAsset(it, assetEntry.getValue()));
-                        continue;
-                    }
-                    // supported audio
-                    AudioType at = AudioType.fromExtension(extension);
-                    if(at != null) {
-                        stageNode.setAudio(new AudioAsset(at, assetEntry.getValue()));
-                    }
-                    // Unsupported asset
-                }
+            if (stageNodesReferencingAsset == null) {
+                continue;
+            }
+            // get extension
+            int dotIndex = assetName.lastIndexOf(".");
+            String extension = assetName.substring(dotIndex).toLowerCase();
+            // supported images
+            Optional<ImageAsset> ia = Optional.ofNullable(ImageType.fromExtension(extension))
+                    .map(it -> new ImageAsset(it, assetEntry.getValue()));
+            // supported audio
+            Optional<AudioAsset> aa = Optional.ofNullable(AudioType.fromExtension(extension))
+                    .map(at -> new AudioAsset(at, assetEntry.getValue()));
+            // set asset
+            for (StageNode stageNode : stageNodesReferencingAsset) {
+                ia.ifPresent(stageNode::setImage);
+                aa.ifPresent(stageNode::setAudio);
             }
         }
     }

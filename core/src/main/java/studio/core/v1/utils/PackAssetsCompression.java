@@ -12,7 +12,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Function;
 
-import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 
 import org.apache.logging.log4j.LogManager;
@@ -24,6 +24,7 @@ import studio.core.v1.model.asset.AudioAsset;
 import studio.core.v1.model.asset.AudioType;
 import studio.core.v1.model.asset.ImageAsset;
 import studio.core.v1.model.asset.ImageType;
+import studio.core.v1.utils.stream.StoppingConsumer;
 import studio.core.v1.utils.stream.ThrowingFunction;
 
 public class PackAssetsCompression {
@@ -35,8 +36,7 @@ public class PackAssetsCompression {
     }
 
     public static boolean hasCompressedAssets(StoryPack pack) {
-        for (int i = 0; i < pack.getStageNodes().size(); i++) {
-            StageNode node = pack.getStageNodes().get(i);
+        for (StageNode node : pack.getStageNodes()) {
             if (node.getImage() != null && ImageType.BMP != node.getImage().getType()) {
                 return true;
             }
@@ -124,9 +124,10 @@ public class PackAssetsCompression {
                 audioData = ID3Tags.removeID3v1Tag(audioData);
                 audioData = ID3Tags.removeID3v2Tag(audioData);
                 // Check that the file is MONO / 44100Hz
-                AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat(new ByteArrayInputStream(audioData));
-                if (audioFileFormat.getFormat().getChannels() != AudioConversion.CHANNELS
-                        || audioFileFormat.getFormat().getSampleRate() != AudioConversion.MP3_SAMPLE_RATE) {
+                AudioFormat audioFormat = AudioSystem.getAudioFileFormat(new ByteArrayInputStream(audioData))
+                        .getFormat();
+                if (audioFormat.getChannels() != AudioConversion.CHANNELS
+                        || audioFormat.getSampleRate() != AudioConversion.MP3_SAMPLE_RATE) {
                     LOGGER.debug("Re-encoding MP3 audio asset");
                     audioData = AudioConversion.anyToMp3(audioData);
                 }
@@ -143,9 +144,10 @@ public class PackAssetsCompression {
         AtomicInteger i = new AtomicInteger(0);
 
         // Multi-threaded processing : images
-        pack.getStageNodes().parallelStream().forEach(node -> {
-            if(LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Image from node {}/{} [{}]", i.incrementAndGet(), nbNodes, Thread.currentThread().getName());
+      pack.getStageNodes().parallelStream().forEach(StoppingConsumer.stopped( node -> {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Image from node {}/{} [{}]", i.incrementAndGet(), nbNodes,
+                        Thread.currentThread().getName());
             }
             ImageAsset ia = node.getImage();
             if (ia != null) {
@@ -160,7 +162,7 @@ public class PackAssetsCompression {
                 ia.setRawData(assets.get(assetHash));
                 ia.setType(targetType);
             }
-        });
+        }));
         // Clean cache
         assets.clear();
     }
@@ -173,9 +175,10 @@ public class PackAssetsCompression {
         AtomicInteger i = new AtomicInteger(0);
 
         // Multi-threaded processing : audio
-        pack.getStageNodes().parallelStream().forEach(node -> {
-            if(LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Audio from node {}/{} [{}]", i.incrementAndGet(), nbNodes, Thread.currentThread().getName());
+        pack.getStageNodes().parallelStream().forEach(StoppingConsumer.stopped(node -> {
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Audio from node {}/{} [{}]", i.incrementAndGet(), nbNodes,
+                        Thread.currentThread().getName());
             }
             AudioAsset aa = node.getAudio();
             if (aa != null) {
@@ -190,7 +193,7 @@ public class PackAssetsCompression {
                 aa.setRawData(assets.get(assetHash));
                 aa.setType(targetType);
             }
-        });
+        }));
         // Clean cache
         assets.clear();
     }
