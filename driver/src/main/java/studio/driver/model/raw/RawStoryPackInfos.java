@@ -6,44 +6,14 @@
 
 package studio.driver.model.raw;
 
-import java.util.UUID;
+import studio.driver.model.StoryPackInfos;
 
-public class RawStoryPackInfos {
+public class RawStoryPackInfos extends StoryPackInfos {
 
-    private UUID uuid;
-    private short version;
     private int startSector;
     private int sizeInSectors;
     private short statsOffset;
     private short samplingRate;
-
-    public RawStoryPackInfos() {
-    }
-
-    public RawStoryPackInfos(UUID uuid, short version, int startSector, int sizeInSectors, short statsOffset, short samplingRate) {
-        this.uuid = uuid;
-        this.version = version;
-        this.startSector = startSector;
-        this.sizeInSectors = sizeInSectors;
-        this.statsOffset = statsOffset;
-        this.samplingRate = samplingRate;
-    }
-
-    public UUID getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(UUID uuid) {
-        this.uuid = uuid;
-    }
-
-    public short getVersion() {
-        return version;
-    }
-
-    public void setVersion(short version) {
-        this.version = version;
-    }
 
     public int getStartSector() {
         return startSector;
@@ -79,13 +49,8 @@ public class RawStoryPackInfos {
 
     @Override
     public String toString() {
-        return "RawStoryPackInfos{" +
-                "uuid=" + uuid +
-                ", version=" + version +
-                ", startSector=" + startSector +
-                ", sizeInSectors=" + sizeInSectors +
-                ", statsOffset=" + statsOffset +
-                ", samplingRate=" + samplingRate +
-                '}';
+        return "RawStoryPackInfos{" + "uuid=" + getUuid() + ", version=" + getVersion() + ", startSector=" + startSector
+                + ", sizeInSectors=" + sizeInSectors + ", statsOffset=" + statsOffset + ", samplingRate=" + samplingRate
+                + '}';
     }
 }

@@ -7,8 +7,8 @@ public enum AudioType {
 
     WAV("audio/x-wav", ".wav"), MPEG("audio/mpeg", ".mp3"), MP3("audio/mp3", ".mp3"), OGG("audio/ogg", ".ogg", ".oga");
 
-    private String mime;
-    private List<String> extensions;
+    private final String mime;
+    private final List<String> extensions;
 
     private AudioType(String mime, String... extensions) {
         this.mime = mime;

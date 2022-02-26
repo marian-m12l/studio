@@ -164,7 +164,7 @@ public class StoryTellerService implements IStoryTellerService {
 
     private JsonObject toJson(FsDeviceInfos infos) {
         return new JsonObject() //
-                .put("uuid", SecurityUtils.encodeHex(infos.getUuid())) //
+                .put("uuid", SecurityUtils.encodeHex(infos.getDeviceId())) //
                 .put("serial", infos.getSerialNumber()) //
                 .put("firmware", infos.getFirmwareMajor() + "." + infos.getFirmwareMinor()) //
                 .put("storage", new JsonObject() //

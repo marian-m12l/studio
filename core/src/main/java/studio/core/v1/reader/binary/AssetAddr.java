@@ -10,22 +10,19 @@ import java.util.Objects;
 
 public class AssetAddr implements Comparable<AssetAddr> {
 
-    private int offset;
-    private int size;
-    private AssetType type;
+    private final AssetType type;
+    private final int offset;
+    private final int size;
 
     public enum AssetType {
         AUDIO,
         IMAGE
     }
 
-    public AssetAddr() {
-    }
-
-    public AssetAddr(int offset, int size, AssetType type) {
+    public AssetAddr(AssetType type, int offset, int size) {
+        this.type = type;
         this.offset = offset;
         this.size = size;
-        this.type = type;
     }
 
     @Override
@@ -48,27 +45,15 @@ public class AssetAddr implements Comparable<AssetAddr> {
         return this.offset - o.offset;
     }
 
-    public int getOffset() {
-        return offset;
-    }
-
-    public void setOffset(int offset) {
-        this.offset = offset;
-    }
-
-    public int getSize() {
-        return size;
-    }
-
-    public void setSize(int size) {
-        this.size = size;
-    }
-
     public AssetType getType() {
         return type;
     }
 
-    public void setType(AssetType type) {
-        this.type = type;
+    public int getOffset() {
+        return offset;
+    }
+
+    public int getSize() {
+        return size;
     }
 }

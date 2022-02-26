@@ -46,8 +46,7 @@ class ArchiveStoryPackReaderTest {
 
         System.out.printf("readMetadata (%s ms) : %s\n", t2 - t1, metaActual);
 
-        StoryPackMetadata metaExpected = new StoryPackMetadata();
-        metaExpected.setFormat(PackFormat.ARCHIVE);
+        StoryPackMetadata metaExpected = new StoryPackMetadata(PackFormat.ARCHIVE);
         metaExpected.setVersion((short) 1);
         metaExpected.setTitle("SimplifiedSamplePack");
         metaExpected.setUuid("60f84e3d-8a37-4b4a-9e67-fc13daad9bb9");

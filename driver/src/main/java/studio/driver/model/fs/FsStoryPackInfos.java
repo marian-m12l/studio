@@ -6,34 +6,13 @@
 
 package studio.driver.model.fs;
 
-import java.util.UUID;
+import studio.driver.model.StoryPackInfos;
 
-public class FsStoryPackInfos {
+public class FsStoryPackInfos extends StoryPackInfos {
 
-    private UUID uuid;
     private String folderName;
-    private short version;
     private long sizeInBytes;
     private boolean nightModeAvailable;
-
-    public FsStoryPackInfos() {
-    }
-
-    public FsStoryPackInfos(UUID uuid, String folderName, short version, long sizeInBytes, boolean nightModeAvailable) {
-        this.uuid = uuid;
-        this.folderName = folderName;
-        this.version = version;
-        this.sizeInBytes = sizeInBytes;
-        this.nightModeAvailable = nightModeAvailable;
-    }
-
-    public UUID getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(UUID uuid) {
-        this.uuid = uuid;
-    }
 
     public String getFolderName() {
         return folderName;
@@ -41,14 +20,6 @@ public class FsStoryPackInfos {
 
     public void setFolderName(String folderName) {
         this.folderName = folderName;
-    }
-
-    public short getVersion() {
-        return version;
-    }
-
-    public void setVersion(short version) {
-        this.version = version;
     }
 
     public long getSizeInBytes() {
@@ -69,12 +40,7 @@ public class FsStoryPackInfos {
 
     @Override
     public String toString() {
-        return "FsStoryPackInfos{" +
-                "uuid=" + uuid +
-                ", folderName=" + folderName +
-                ", version=" + version +
-                ", sizeInBytes=" + sizeInBytes +
-                ", nightModeAvailable=" + nightModeAvailable +
-                '}';
+        return "FsStoryPackInfos{" + "uuid=" + getUuid() + ", folderName=" + folderName + ", version=" + getVersion()
+                + ", sizeInBytes=" + sizeInBytes + ", nightModeAvailable=" + nightModeAvailable + '}';
     }
 }

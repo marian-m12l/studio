@@ -187,7 +187,15 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                                             Integer usedSpaceInSectors = packs.stream()
                                                     .map(RawStoryPackInfos::getSizeInSectors)
                                                     .reduce(0, Integer::sum);
-                                            return new RawDeviceInfos(finalUuid, finalMajor, finalMinor, finalSerialNumber, finalSdCardSizeInSectors, usedSpaceInSectors, hasError);
+                                            RawDeviceInfos rd = new RawDeviceInfos();
+                                            rd.setUuid(finalUuid);
+                                            rd.setFirmwareMajor(finalMajor);
+                                            rd.setFirmwareMinor(finalMinor);
+                                            rd.setSerialNumber(finalSerialNumber);
+                                            rd.setSdCardSizeInSectors(finalSdCardSizeInSectors);
+                                            rd.setUsedSpaceInSectors(usedSpaceInSectors);
+                                            rd.setInError(hasError);
+                                            return rd;
                                         });
                             });
                 });
@@ -229,8 +237,14 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                                             long uuidLowBytes = sdPackSectors.getLong(LibUsbMassStorageHelper.SECTOR_SIZE + 8);
                                             UUID uuid = new UUID(uuidHighBytes, uuidLowBytes);
                                             LOGGER.debug("Pack UUID: {}", uuid);
-                                            RawStoryPackInfos storyPackInfos = new RawStoryPackInfos(uuid, version, startSector, sizeInSectors, statsOffset, samplingRate);
-                                            packs.add(storyPackInfos);
+                                            RawStoryPackInfos spInfos = new RawStoryPackInfos(); //uuid, version, startSector, sizeInSectors, statsOffset, samplingRate);
+                                            spInfos.setUuid(uuid);
+                                            spInfos.setVersion(version);
+                                            spInfos.setStartSector(startSector);
+                                            spInfos.setSizeInSectors(sizeInSectors);
+                                            spInfos.setStatsOffset(statsOffset);
+                                            spInfos.setSamplingRate(samplingRate);
+                                            packs.add(spInfos);
                                             return packs;
                                         })
                         );
@@ -433,15 +447,15 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                         return promise
                                 .thenCompose(status -> readPackIndex(handle)
                                         .thenCompose(packs -> {
+                                            RawStoryPackInfos spInfos = new RawStoryPackInfos();
+                                            spInfos.setUuid(null);
+                                            spInfos.setVersion((short) 0);
+                                            spInfos.setStartSector(startSector.get());
+                                            spInfos.setSizeInSectors(packSizeInSectors);
+                                            spInfos.setStatsOffset((short) 0);
+                                            spInfos.setSamplingRate((short) 0);
                                             // Add pack to index list
-                                            packs.add(new RawStoryPackInfos(
-                                                    null,   // Not used to write packs index
-                                                    (short) 0,  // Not used to write packs index
-                                                    startSector.get(),
-                                                    packSizeInSectors,
-                                                    (short) 0,
-                                                    (short) 0
-                                            ));
+                                            packs.add(spInfos);
                                             // Write pack index
                                             return writePackIndex(handle, packs).thenApply(done -> status);
                                         }));

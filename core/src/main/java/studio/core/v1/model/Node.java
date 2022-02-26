@@ -10,7 +10,7 @@ import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 
 public abstract class Node {
 
-    private EnrichedNodeMetadata enriched;
+    private final EnrichedNodeMetadata enriched;
 
     protected Node(EnrichedNodeMetadata enriched) {
         this.enriched = enriched;
@@ -18,9 +18,5 @@ public abstract class Node {
 
     public EnrichedNodeMetadata getEnriched() {
         return enriched;
-    }
-
-    public void setEnriched(EnrichedNodeMetadata enriched) {
-        this.enriched = enriched;
     }
 }

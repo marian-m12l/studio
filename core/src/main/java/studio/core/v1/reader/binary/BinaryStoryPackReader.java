@@ -130,7 +130,7 @@ public class BinaryStoryPackReader implements StoryPackReader {
                 AssetAddr imageAssetAddr = null;
                 if (imageOffset != -1) {
                     // Asset must be visited
-                    imageAssetAddr = new AssetAddr(imageOffset, imageSize, AssetType.IMAGE);
+                    imageAssetAddr = new AssetAddr(AssetType.IMAGE, imageOffset, imageSize);
                     assetAddrsToVisit.add(imageAssetAddr);
                 }
 
@@ -140,7 +140,7 @@ public class BinaryStoryPackReader implements StoryPackReader {
                 AssetAddr audioAssetAddr = null;
                 if (audioOffset != -1) {
                     // Asset must be visited
-                    audioAssetAddr = new AssetAddr(audioOffset, audioSize, AssetType.AUDIO);
+                    audioAssetAddr = new AssetAddr(AssetType.AUDIO, audioOffset, audioSize);
                     assetAddrsToVisit.add(audioAssetAddr);
                 }
 
@@ -241,7 +241,7 @@ public class BinaryStoryPackReader implements StoryPackReader {
                 EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(dis);
 
                 // Update action on transitions referencing this sector
-                ActionNode actionNode = new ActionNode(options, enrichedNodeMetadata);
+                ActionNode actionNode = new ActionNode(enrichedNodeMetadata, options);
                 transitionsWithAction.get(actionNodeAddr).forEach(transition -> transition.setActionNode(actionNode));
 
                 // Skip to end of sector
@@ -276,7 +276,15 @@ public class BinaryStoryPackReader implements StoryPackReader {
                 }
                 currentOffset += assetAddr.getSize();
             }
-            return new StoryPack(stageNodes.get(new SectorAddr(0)).getUuid(), factoryDisabled, version, List.copyOf(stageNodes.values()), enrichedPack, false);
+            // Create storypack
+            StoryPack sp = new StoryPack();
+            sp.setUuid(stageNodes.get(new SectorAddr(0)).getUuid());
+            sp.setFactoryDisabled(factoryDisabled);
+            sp.setVersion(version);
+            sp.setStageNodes(List.copyOf(stageNodes.values()));
+            sp.setEnriched(enrichedPack);
+            sp.setNightModeAvailable(false);
+            return sp;
         }
     }
 

@@ -161,7 +161,7 @@ public class ArchiveStoryPackReader implements StoryPackReader {
             JsonObject node = actionsIter.next().getAsJsonObject();
             // Read (optional) enriched node metadata
             EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(node);
-            actionNodes.put(node.get("id").getAsString(), new ActionNode(enrichedNodeMetadata));
+            actionNodes.put(node.get("id").getAsString(), new ActionNode(enrichedNodeMetadata, null));
         }
 
         // Read stage nodes
