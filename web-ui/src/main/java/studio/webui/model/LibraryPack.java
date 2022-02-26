@@ -12,9 +12,9 @@ import java.nio.file.Path;
 
 public class LibraryPack {
 
-    private Path path;
-    private long timestamp;
-    private StoryPackMetadata metadata;
+    private final Path path;
+    private final long timestamp;
+    private final StoryPackMetadata metadata;
 
     public LibraryPack(Path path, long timestamp, StoryPackMetadata metadata) {
         this.path = path;

@@ -8,14 +8,11 @@ package studio.core.v1.model;
 
 public class ControlSettings {
 
-    private boolean wheelEnabled;
-    private boolean okEnabled;
-    private boolean homeEnabled;
-    private boolean pauseEnabled;
-    private boolean autoJumpEnabled;
-
-    public ControlSettings() {
-    }
+    private final boolean wheelEnabled;
+    private final boolean okEnabled;
+    private final boolean homeEnabled;
+    private final boolean pauseEnabled;
+    private final boolean autoJumpEnabled;
 
     public ControlSettings(boolean wheelEnabled, boolean okEnabled, boolean homeEnabled, boolean pauseEnabled, boolean autoJumpEnabled) {
         this.wheelEnabled = wheelEnabled;
@@ -29,39 +26,19 @@ public class ControlSettings {
         return wheelEnabled;
     }
 
-    public void setWheelEnabled(boolean wheelEnabled) {
-        this.wheelEnabled = wheelEnabled;
-    }
-
     public boolean isOkEnabled() {
         return okEnabled;
-    }
-
-    public void setOkEnabled(boolean okEnabled) {
-        this.okEnabled = okEnabled;
     }
 
     public boolean isHomeEnabled() {
         return homeEnabled;
     }
 
-    public void setHomeEnabled(boolean homeEnabled) {
-        this.homeEnabled = homeEnabled;
-    }
-
     public boolean isPauseEnabled() {
         return pauseEnabled;
     }
 
-    public void setPauseEnabled(boolean pauseEnabled) {
-        this.pauseEnabled = pauseEnabled;
-    }
-
     public boolean isAutoJumpEnabled() {
         return autoJumpEnabled;
-    }
-
-    public void setAutoJumpEnabled(boolean autoJumpEnabled) {
-        this.autoJumpEnabled = autoJumpEnabled;
     }
 }

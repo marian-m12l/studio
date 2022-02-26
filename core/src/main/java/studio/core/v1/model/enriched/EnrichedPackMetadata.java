@@ -8,12 +8,9 @@ package studio.core.v1.model.enriched;
 
 public class EnrichedPackMetadata {
 
-    private String title;
-    private String description;
+    private final String title;
+    private final String description;
     // TODO Thumbnail?
-
-    public EnrichedPackMetadata() {
-    }
 
     public EnrichedPackMetadata(String title, String description) {
         this.title = title;
@@ -24,15 +21,7 @@ public class EnrichedPackMetadata {
         return title;
     }
 
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
     public String getDescription() {
         return description;
-    }
-
-    public void setDescription(String description) {
-        this.description = description;
     }
 }

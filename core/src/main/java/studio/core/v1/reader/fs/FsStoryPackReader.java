@@ -191,13 +191,21 @@ public class FsStoryPackReader implements StoryPackReader {
                 options.add(stageNodes.get(stageNodeIndex));
             }
             // Update action on transitions referencing this sector
-            ActionNode actionNode = new ActionNode(options, null);
+            ActionNode actionNode = new ActionNode(null, options);
             transitionsWithAction.get(offset).forEach(transition -> transition.setActionNode(actionNode));
         }
 
-        return new StoryPack(uuid, factoryDisabled, version, List.copyOf(stageNodes.values()), null, nightModeAvailable);
+        // Create storypack
+        StoryPack sp = new StoryPack();
+        sp.setUuid(uuid);
+        sp.setFactoryDisabled(factoryDisabled);
+        sp.setVersion(version);
+        sp.setStageNodes(List.copyOf(stageNodes.values()));
+        sp.setEnriched(null);
+        sp.setNightModeAvailable(nightModeAvailable);
+        return sp;
     }
-    
+
     private byte[] readCipheredFile(Path path) throws IOException {
         byte[] content = Files.readAllBytes(path);
         return XXTEACipher.cipherCommonKey(CipherMode.DECIPHER, content);

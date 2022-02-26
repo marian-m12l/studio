@@ -11,9 +11,6 @@ public class Transition {
     private ActionNode actionNode;
     private short optionIndex;
 
-    public Transition() {
-    }
-
     public Transition(ActionNode actionNode, short optionIndex) {
         this.actionNode = actionNode;
         this.optionIndex = optionIndex;

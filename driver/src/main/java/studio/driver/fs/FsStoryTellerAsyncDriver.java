@@ -148,10 +148,10 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
 
             // UUID
             deviceMetadataFis.skip(238);
-            byte[] uuid = deviceMetadataFis.readNBytes(256);
-            infos.setUuid(uuid);
+            byte[] deviceId = deviceMetadataFis.readNBytes(256);
+            infos.setDeviceId(deviceId);
             if(LOGGER.isDebugEnabled()) {
-                LOGGER.debug("UUID: {}", SecurityUtils.encodeHex(uuid));
+                LOGGER.debug("UUID: {}", SecurityUtils.encodeHex(deviceId));
             }
 
             // SD card size and used space
@@ -406,7 +406,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
                 return getDeviceInfos().thenApply(deviceInfos -> {
                     try {
                         FsStoryPackWriter writer = new FsStoryPackWriter();
-                        writer.addBootFile(folderPath, deviceInfos.getUuid());
+                        writer.addBootFile(folderPath, deviceInfos.getDeviceId());
                         return status;
                     } catch (IOException e) {
                         throw new StoryTellerException("Failed to generate device-specific boot file", e);

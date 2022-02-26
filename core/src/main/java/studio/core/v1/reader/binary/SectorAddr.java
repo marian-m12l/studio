@@ -10,10 +10,7 @@ import java.util.Objects;
 
 public class SectorAddr implements Comparable<SectorAddr> {
 
-    private int offset;
-
-    public SectorAddr() {
-    }
+    private final int offset;
 
     public SectorAddr(int offset) {
         this.offset = offset;
@@ -39,9 +36,5 @@ public class SectorAddr implements Comparable<SectorAddr> {
 
     public int getOffset() {
         return offset;
-    }
-
-    public void setOffset(int offset) {
-        this.offset = offset;
     }
 }

@@ -7,58 +7,20 @@
 package studio.driver.model.fs;
 
 import studio.core.v1.utils.SecurityUtils;
+import studio.driver.model.DeviceInfos;
 
-public class FsDeviceInfos {
+public class FsDeviceInfos extends DeviceInfos {
 
-    private byte[] uuid;
-    private short firmwareMajor;
-    private short firmwareMinor;
-    private String serialNumber;
+    private byte[] deviceId;
     private long sdCardSizeInBytes;
     private long usedSpaceInBytes;
 
-    public FsDeviceInfos() {
+    public byte[] getDeviceId() {
+        return deviceId;
     }
 
-    public FsDeviceInfos(byte[] uuid, short firmwareMajor, short firmwareMinor, String serialNumber, long sdCardSizeInBytes, long usedSpaceInBytes) {
-        this.uuid = uuid;
-        this.firmwareMajor = firmwareMajor;
-        this.firmwareMinor = firmwareMinor;
-        this.serialNumber = serialNumber;
-        this.sdCardSizeInBytes = sdCardSizeInBytes;
-        this.usedSpaceInBytes = usedSpaceInBytes;
-    }
-
-    public byte[] getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(byte[] uuid) {
-        this.uuid = uuid;
-    }
-
-    public short getFirmwareMajor() {
-        return firmwareMajor;
-    }
-
-    public void setFirmwareMajor(short firmwareMajor) {
-        this.firmwareMajor = firmwareMajor;
-    }
-
-    public short getFirmwareMinor() {
-        return firmwareMinor;
-    }
-
-    public void setFirmwareMinor(short firmwareMinor) {
-        this.firmwareMinor = firmwareMinor;
-    }
-
-    public String getSerialNumber() {
-        return serialNumber;
-    }
-
-    public void setSerialNumber(String serialNumber) {
-        this.serialNumber = serialNumber;
+    public void setDeviceId(byte[] deviceId) {
+        this.deviceId = deviceId;
     }
 
     public long getSdCardSizeInBytes() {
@@ -79,13 +41,8 @@ public class FsDeviceInfos {
 
     @Override
     public String toString() {
-        return "FsDeviceInfos{" +
-                "uuid=" + SecurityUtils.encodeHex(uuid) +
-                ", firmwareMajor=" + firmwareMajor +
-                ", firmwareMinor=" + firmwareMinor +
-                ", serialNumber='" + serialNumber + '\'' +
-                ", sdCardSizeInBytes=" + sdCardSizeInBytes +
-                ", usedSpaceInBytes=" + usedSpaceInBytes +
-                '}';
+        return "FsDeviceInfos{" + "uuid=" + SecurityUtils.encodeHex(deviceId) + ", firmwareMajor=" + getFirmwareMajor()
+                + ", firmwareMinor=" + getFirmwareMinor() + ", serialNumber='" + getSerialNumber() + '\''
+                + ", sdCardSizeInBytes=" + sdCardSizeInBytes + ", usedSpaceInBytes=" + usedSpaceInBytes + '}';
     }
 }

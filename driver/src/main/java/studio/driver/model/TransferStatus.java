@@ -13,9 +13,6 @@ public class TransferStatus {
     private long total;
     private double speed;
 
-    public TransferStatus() {
-    }
-
     public TransferStatus(boolean done, long transferred, long total, double speed) {
         this.done = done;
         this.transferred = transferred;

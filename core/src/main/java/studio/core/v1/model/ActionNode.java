@@ -14,11 +14,7 @@ public class ActionNode extends Node {
 
     private List<StageNode> options;
 
-    public ActionNode(EnrichedNodeMetadata enriched) {
-        super(enriched);
-    }
-
-    public ActionNode(List<StageNode> options, EnrichedNodeMetadata enriched) {
+    public ActionNode(EnrichedNodeMetadata enriched, List<StageNode> options) {
         super(enriched);
         this.options = options;
     }

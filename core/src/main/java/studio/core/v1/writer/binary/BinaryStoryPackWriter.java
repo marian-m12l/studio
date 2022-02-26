@@ -109,7 +109,7 @@ public class BinaryStoryPackWriter implements StoryPackWriter {
                         if (imageSize % SECTOR_SIZE > 0) {
                             imageSectors++;
                         }
-                        AssetAddr addr = new AssetAddr(nextFreeOffset, imageSectors, AssetType.IMAGE);
+                        AssetAddr addr = new AssetAddr(AssetType.IMAGE, nextFreeOffset, imageSectors);
                         assetsHashes.put(assetHash, addr);
                         assetsData.put(addr, image.getRawData());
                         nextFreeOffset += imageSectors;
@@ -131,7 +131,7 @@ public class BinaryStoryPackWriter implements StoryPackWriter {
                         if (audioSize % SECTOR_SIZE > 0) {
                             audioSectors++;
                         }
-                        AssetAddr addr = new AssetAddr(nextFreeOffset, audioSectors, AssetType.AUDIO);
+                        AssetAddr addr = new AssetAddr(AssetType.AUDIO, nextFreeOffset, audioSectors);
                         assetsHashes.put(assetHash, addr);
                         assetsData.put(addr, audio.getRawData());
                         nextFreeOffset += audioSectors;

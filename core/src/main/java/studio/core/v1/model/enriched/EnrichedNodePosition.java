@@ -8,11 +8,8 @@ package studio.core.v1.model.enriched;
 
 public class EnrichedNodePosition {
 
-    private short x;
-    private short y;
-
-    public EnrichedNodePosition() {
-    }
+    private final short x;
+    private final short y;
 
     public EnrichedNodePosition(short x, short y) {
         this.x = x;
@@ -23,15 +20,7 @@ public class EnrichedNodePosition {
         return x;
     }
 
-    public void setX(short x) {
-        this.x = x;
-    }
-
     public short getY() {
         return y;
-    }
-
-    public void setY(short y) {
-        this.y = y;
     }
 }

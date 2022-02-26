@@ -7,8 +7,8 @@ public enum ImageType {
 
     BMP("image/bmp", ".bmp"), PNG("image/png", ".png"), JPEG("image/jpeg", ".jpg", ".jpeg");
 
-    private String mime;
-    private List<String> extensions;
+    private final String mime;
+    private final List<String> extensions;
 
     private ImageType(String mime, String... extensions) {
         this.mime = mime;

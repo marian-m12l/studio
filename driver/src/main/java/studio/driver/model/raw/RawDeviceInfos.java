@@ -8,28 +8,14 @@ package studio.driver.model.raw;
 
 import java.util.UUID;
 
-public class RawDeviceInfos {
+import studio.driver.model.DeviceInfos;
+
+public class RawDeviceInfos extends DeviceInfos {
 
     private UUID uuid;
-    private short firmwareMajor;
-    private short firmwareMinor;
-    private String serialNumber;
     private int sdCardSizeInSectors;
     private int usedSpaceInSectors;
     private boolean inError;
-
-    public RawDeviceInfos() {
-    }
-
-    public RawDeviceInfos(UUID uuid, short firmwareMajor, short firmwareMinor, String serialNumber, int sdCardSizeInSectors, int usedSpaceInSectors, boolean inError) {
-        this.uuid = uuid;
-        this.firmwareMajor = firmwareMajor;
-        this.firmwareMinor = firmwareMinor;
-        this.serialNumber = serialNumber;
-        this.sdCardSizeInSectors = sdCardSizeInSectors;
-        this.usedSpaceInSectors = usedSpaceInSectors;
-        this.inError = inError;
-    }
 
     public UUID getUuid() {
         return uuid;
@@ -37,30 +23,6 @@ public class RawDeviceInfos {
 
     public void setUuid(UUID uuid) {
         this.uuid = uuid;
-    }
-
-    public short getFirmwareMajor() {
-        return firmwareMajor;
-    }
-
-    public void setFirmwareMajor(short firmwareMajor) {
-        this.firmwareMajor = firmwareMajor;
-    }
-
-    public short getFirmwareMinor() {
-        return firmwareMinor;
-    }
-
-    public void setFirmwareMinor(short firmwareMinor) {
-        this.firmwareMinor = firmwareMinor;
-    }
-
-    public String getSerialNumber() {
-        return serialNumber;
-    }
-
-    public void setSerialNumber(String serialNumber) {
-        this.serialNumber = serialNumber;
     }
 
     public int getSdCardSizeInSectors() {
@@ -89,14 +51,8 @@ public class RawDeviceInfos {
 
     @Override
     public String toString() {
-        return "RawDeviceInfos{" +
-                "uuid=" + uuid +
-                ", firmwareMajor=" + firmwareMajor +
-                ", firmwareMinor=" + firmwareMinor +
-                ", serialNumber='" + serialNumber + '\'' +
-                ", sdCardSizeInSectors=" + sdCardSizeInSectors +
-                ", usedSpaceInSectors=" + usedSpaceInSectors +
-                ", inError=" + inError +
-                '}';
+        return "RawDeviceInfos{" + "uuid=" + uuid + ", firmwareMajor=" + getFirmwareMajor() + ", firmwareMinor="
+                + getFirmwareMinor() + ", serialNumber='" + getSerialNumber() + '\'' + ", sdCardSizeInSectors="
+                + sdCardSizeInSectors + ", usedSpaceInSectors=" + usedSpaceInSectors + ", inError=" + inError + '}';
     }
 }

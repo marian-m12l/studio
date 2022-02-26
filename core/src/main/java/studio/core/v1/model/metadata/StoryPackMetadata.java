@@ -10,7 +10,7 @@ import studio.core.v1.utils.PackFormat;
 
 public class StoryPackMetadata {
 
-    private PackFormat format;
+    private final PackFormat format;
     private String uuid;
     private short version;
     private String title;
@@ -19,19 +19,12 @@ public class StoryPackMetadata {
     private Integer sectorSize;
     private boolean nightModeAvailable = false;
 
-    public StoryPackMetadata() {
-    }
-
     public StoryPackMetadata(PackFormat format) {
         this.format = format;
     }
 
     public PackFormat getFormat() {
         return format;
-    }
-
-    public void setFormat(PackFormat format) {
-        this.format = format;
     }
 
     public String getUuid() {
