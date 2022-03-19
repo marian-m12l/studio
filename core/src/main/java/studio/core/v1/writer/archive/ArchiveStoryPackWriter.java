@@ -32,7 +32,7 @@ public class ArchiveStoryPackWriter implements StoryPackWriter {
 
     public void write(StoryPack pack, Path zipPath, boolean enriched) throws IOException {
         // Zip archive contains a json file and separate assets
-        URI uri = URI.create("jar:file:" + zipPath.toString());
+        URI uri = URI.create("jar:" + zipPath.toUri());
         try (FileSystem zipFs = FileSystems.newFileSystem(uri, Map.of("create", "true"))) {
             // Store assets bytes
             TreeMap<String, byte[]> assets = new TreeMap<>();
