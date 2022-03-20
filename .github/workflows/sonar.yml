@@ -1,9 +1,7 @@
 name: Sonar
 on:
   push:
-    branches:
-      - master
-      - branch-performance
+    branches: [master, branch-performance]
   pull_request:
     types: [opened, synchronize, reopened]
 jobs:
@@ -15,21 +13,17 @@ jobs:
         with:
           fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
       - name: Set up JDK 11
-        uses: actions/setup-java@v1
+        uses: actions/setup-java@v2
         with:
-          java-version: 11
+          distribution: 'temurin'
+          java-version: '11'
+          cache: 'maven'
       - name: Cache SonarCloud packages
-        uses: actions/cache@v1
+        uses: actions/cache@v2
         with:
           path: ~/.sonar/cache
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
-      - name: Cache Maven packages
-        uses: actions/cache@v1
-        with:
-          path: ~/.m2
-          key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
-          restore-keys: ${{ runner.os }}-m2
       - name: Build and analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
@@ -37,3 +31,4 @@ jobs:
           MVN_SONAR: ${{ 'org.sonarsource.scanner.maven:sonar-maven-plugin' }}
           MVN_JACOCO: ${{ 'org.jacoco:jacoco-maven-plugin:0.8.5' }}
         run: mvn -B ${MVN_JACOCO}:prepare-agent verify ${MVN_JACOCO}:report ${MVN_SONAR}:sonar -Dmaven.test.failure.ignore=true -Dsonar.projectKey=kairoh_studio
+
