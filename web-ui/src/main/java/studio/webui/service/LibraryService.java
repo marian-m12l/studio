@@ -112,7 +112,7 @@ public class LibraryService {
                                 .filter(meta -> meta.getFormat() == PackFormat.ARCHIVE) //
                                 // update database with newest zip
                                 .findFirst().ifPresent(meta -> {
-                                    LOGGER.info("Refresh metadata from zip for {} ({})", meta.getUuid(), meta.getTitle());
+                                    LOGGER.debug("Refresh metadata from zip for {} ({})", meta.getUuid(), meta.getTitle());
                                     String thumbBase64 = Optional.ofNullable(meta.getThumbnail())
                                             .map(t -> "data:image/png;base64," + Base64.getEncoder().encodeToString(t))
                                             .orElse(null);
