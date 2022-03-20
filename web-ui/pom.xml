@@ -37,22 +37,6 @@
             <artifactId>studio-driver</artifactId>
             <version>${project.version}</version>
         </dependency>
-<!--
-        <dependency>
-            <groupId>studio</groupId>
-            <artifactId>studio-metadata</artifactId>
-            <version>${project.version}</version>
-            <classifier>jar-with-dependencies</classifier>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>studio</groupId>
-            <artifactId>studio-agent</artifactId>
-            <version>${project.version}</version>
-            <classifier>jar-with-dependencies</classifier>
-            <scope>runtime</scope>
-        </dependency>
--->
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-config</artifactId>
