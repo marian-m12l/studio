@@ -17,7 +17,6 @@
     <packaging>pom</packaging>
 
     <modules>
-        <module>agent</module>
         <module>core</module>
         <module>driver</module>
         <module>metadata</module>
