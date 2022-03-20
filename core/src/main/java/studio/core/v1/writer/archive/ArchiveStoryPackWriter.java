@@ -30,10 +30,12 @@ import studio.core.v1.writer.StoryPackWriter;
 
 public class ArchiveStoryPackWriter implements StoryPackWriter {
 
+    private static final Map<String,String> ZIPFS_OPTIONS = Map.of("create", "true");
+
     public void write(StoryPack pack, Path zipPath, boolean enriched) throws IOException {
         // Zip archive contains a json file and separate assets
         URI uri = URI.create("jar:" + zipPath.toUri());
-        try (FileSystem zipFs = FileSystems.newFileSystem(uri, Map.of("create", "true"))) {
+        try (FileSystem zipFs = FileSystems.newFileSystem(uri, ZIPFS_OPTIONS)) {
             // Store assets bytes
             TreeMap<String, byte[]> assets = new TreeMap<>();
             // Add story descriptor file: story.json
