@@ -54,7 +54,8 @@ class DeviceUtilsTests {
                 .peek(System.out::println) // Debug
                 .map(dfPattern::matcher) //
                 .filter(Matcher::matches) //
-                .filter(m -> m.group(1).startsWith("/dev/s")) // Mounted devices only (without Fuse, Loopback...)
+                // Mounted devices only (without Fuse, Loopback...)
+                .filter(m -> m.group(1).startsWith("/dev/s") || m.group(1).startsWith("/dev/disk")) //
                 .map(m -> Path.of(m.group(2))) //
                 .collect(Collectors.toList());
     }
