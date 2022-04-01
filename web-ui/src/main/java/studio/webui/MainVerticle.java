@@ -25,6 +25,7 @@ import io.vertx.ext.web.handler.ErrorHandler;
 import io.vertx.ext.web.handler.StaticHandler;
 import io.vertx.ext.web.handler.sockjs.SockJSBridgeOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSHandler;
+import studio.config.StudioConfig;
 import studio.metadata.DatabaseMetadataService;
 import studio.webui.api.DeviceController;
 import studio.webui.api.EvergreenController;
@@ -103,7 +104,7 @@ public class MainVerticle extends AbstractVerticle {
         vertx.createHttpServer().requestHandler(router).listen(8080);
 
         // Automatically open URL in browser, unless instructed otherwise
-        String openBrowser = System.getProperty("studio.open", "true");
+        String openBrowser = StudioConfig.STUDIO_OPEN_BROWSER.getValue();
         if (Boolean.parseBoolean(openBrowser)) {
             LOGGER.info("Opening URL in default browser...");
             if (Desktop.isDesktopSupported()) {
@@ -148,6 +149,6 @@ public class MainVerticle extends AbstractVerticle {
     }
 
     private boolean isDevMode() {
-        return "dev".equalsIgnoreCase(System.getProperty("env", "prod"));
+        return "dev".equalsIgnoreCase(StudioConfig.STUDIO_DEV_MODE.getValue());
     }
 }

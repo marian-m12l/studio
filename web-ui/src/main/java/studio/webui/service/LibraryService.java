@@ -23,6 +23,7 @@ import org.apache.logging.log4j.Logger;
 
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import studio.config.StudioConfig;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.utils.PackAssetsCompression;
@@ -37,9 +38,6 @@ import studio.webui.model.LibraryPack;
 public class LibraryService {
 
     private static final Logger LOGGER = LogManager.getLogger(LibraryService.class);
-
-    public static final String LOCAL_LIBRARY_PROP = "studio.library";
-    public static final String TMP_DIR_PROP = "studio.tmpdir";
 
     private static final Path libraryPath = libraryPath();
     private static final Path tmpDirPath = tmpDirPath();
@@ -308,13 +306,11 @@ public class LibraryService {
     }
 
     public static Path libraryPath() {
-        String defaultDir = System.getProperty("user.home") + "/.studio/library/";
-        return Path.of(System.getProperty(LOCAL_LIBRARY_PROP, defaultDir));
+        return Path.of(StudioConfig.STUDIO_LIBRARY.getValue());
     }
 
     public static Path tmpDirPath() {
-        String defaultDir = System.getProperty("user.home") + "/.studio/tmp/";
-        return Path.of(System.getProperty(TMP_DIR_PROP, defaultDir) );
+        return Path.of(StudioConfig.STUDIO_TMPDIR.getValue());
     }
 
     private Path createTempFile(String prefix, String suffix) throws IOException {

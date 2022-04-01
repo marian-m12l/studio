@@ -29,6 +29,7 @@ import org.apache.logging.log4j.Logger;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import studio.config.StudioConfig;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.reader.binary.BinaryStoryPackReader;
 import studio.core.v1.utils.exception.StoryTellerException;
@@ -72,7 +73,7 @@ public class MockStoryTellerService implements IStoryTellerService {
     }
 
     private static Path devicePath() {
-        return Path.of(System.getProperty("user.home") + "/.studio/device/");
+        return Path.of(StudioConfig.STUDIO_MOCK_DEVICE.getValue());
     }
 
     public CompletionStage<Optional<JsonObject>> deviceInfos() {

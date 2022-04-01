@@ -29,12 +29,11 @@ import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 import com.google.gson.stream.JsonReader;
 
+import studio.config.StudioConfig;
+
 public class DatabaseMetadataService {
 
     private static final Logger LOGGER = LogManager.getLogger(DatabaseMetadataService.class);
-
-    public static final String OFFICIAL_DB_PROP = "studio.db.official";
-    public static final String UNOFFICIAL_DB_PROP = "studio.db.unofficial";
 
     public static final String THUMBNAILS_STORAGE_ROOT = "https://storage.googleapis.com/lunii-data-prod";
     public static final String LUNII_GUEST_TOKEN_URL = "https://server-auth-prod.lunii.com/guest/create";
@@ -264,13 +263,11 @@ public class DatabaseMetadataService {
     }
 
     private static Path officialDbPath() {
-        String defaultDir = System.getProperty("user.home") + "/.studio/db/official.json";
-        return Path.of(System.getProperty(OFFICIAL_DB_PROP, defaultDir));
+        return Path.of(StudioConfig.STUDIO_DB_OFFICIAL.getValue());
     }
 
     private static Path unofficialDbPath() {
-        String defaultDir = System.getProperty("user.home") + "/.studio/db/unofficial.json";
-        return Path.of(System.getProperty(UNOFFICIAL_DB_PROP, defaultDir));
+        return Path.of(StudioConfig.STUDIO_DB_UNOFFICIAL.getValue());
     }
 
 }
