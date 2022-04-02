@@ -7,16 +7,16 @@
 import {handleJsonOrError} from "../utils/fetch";
 
 export const fetchEvergreenInfos = () => {
-    return fetch('http://localhost:8080/api/evergreen/infos')
+    return fetch('/api/evergreen/infos')
         .then(handleJsonOrError);
 };
 
 export const fetchEvergreenLatestRelease = () => {
-    return fetch('http://localhost:8080/api/evergreen/latest')
+    return fetch('/api/evergreen/latest')
         .then(handleJsonOrError);
 };
 
 export const fetchEvergreenAnnounce = () => {
-    return fetch('http://localhost:8080/api/evergreen/announce')
+    return fetch('/api/evergreen/announce')
         .then(handleJsonOrError);
 };

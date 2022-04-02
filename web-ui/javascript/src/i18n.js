@@ -20,7 +20,7 @@ i18n
     .init({
         fallbackLng: 'en',
         backend: {
-            loadPath: 'http://localhost:8080/locales/{{lng}}/{{ns}}.json',
+            loadPath: '/locales/{{lng}}/{{ns}}.json',
         },
         interpolation: {
             escapeValue: false, // not needed for react as it escapes by default

@@ -7,17 +7,17 @@
 import {handleJsonOrError} from "../utils/fetch";
 
 export const fetchDeviceInfos = () => {
-    return fetch('http://localhost:8080/api/device/infos')
+    return fetch('/api/device/infos')
         .then(handleJsonOrError);
 };
 
 export const fetchDevicePacks = () => {
-    return fetch('http://localhost:8080/api/device/packs')
+    return fetch('/api/device/packs')
         .then(handleJsonOrError);
 };
 
 export const addFromLibrary = (uuid, path) => {
-    return fetch('http://localhost:8080/api/device/addFromLibrary', {
+    return fetch('/api/device/addFromLibrary', {
         method: "POST",
         headers: { "Content-Type" : "application/json" },
         body: JSON.stringify({uuid, path})
@@ -26,7 +26,7 @@ export const addFromLibrary = (uuid, path) => {
 };
 
 export const removeFromDevice = (uuid) => {
-    return fetch('http://localhost:8080/api/device/removeFromDevice', {
+    return fetch('/api/device/removeFromDevice', {
         method: "POST",
         headers: { "Content-Type" : "application/json" },
         body: JSON.stringify({uuid})
@@ -35,7 +35,7 @@ export const removeFromDevice = (uuid) => {
 };
 
 export const reorderPacks = (uuids) => {
-    return fetch('http://localhost:8080/api/device/reorder', {
+    return fetch('/api/device/reorder', {
         method: "POST",
         headers: { "Content-Type" : "application/json" },
         body: JSON.stringify({uuids})
@@ -44,7 +44,7 @@ export const reorderPacks = (uuids) => {
 };
 
 export const addToLibrary = (uuid, driver) => {
-    return fetch('http://localhost:8080/api/device/addToLibrary', {
+    return fetch('/api/device/addToLibrary', {
         method: "POST",
         headers: { "Content-Type" : "application/json" },
         body: JSON.stringify({uuid, driver})

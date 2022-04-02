@@ -13,6 +13,7 @@ import java.util.Set;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import io.netty.handler.codec.http.HttpHeaderNames;
 import io.vertx.core.AbstractVerticle;
 import io.vertx.core.http.HttpHeaders;
 import io.vertx.core.http.HttpMethod;
@@ -65,22 +66,17 @@ public class MainVerticle extends AbstractVerticle {
             storyTellerService = new StoryTellerService(vertx.eventBus(), databaseMetadataService);
         }
 
+        // Config
+        String host = StudioConfig.STUDIO_HOST.getValue();
+        int port = Integer.parseInt(StudioConfig.STUDIO_PORT.getValue());
+
         Router router = Router.router(vertx);
         // Handle cross-origin calls
-        router.route().handler(CorsHandler.create("http://localhost:.*")
-                .allowedMethods(Set.of(
-                        HttpMethod.GET,
-                        HttpMethod.POST
-                ))
-                .allowedHeaders(Set.of(
-                        HttpHeaders.ACCEPT.toString(),
-                        HttpHeaders.CONTENT_TYPE.toString(),
-                        "x-requested-with"
-                ))
-                .exposedHeaders(Set.of(
-                        HttpHeaders.CONTENT_LENGTH.toString(),
-                        HttpHeaders.CONTENT_TYPE.toString()
-                ))
+        router.route().handler(CorsHandler.create("http://" + host + ":.*") //
+                .allowedMethods(Set.of(HttpMethod.GET, HttpMethod.POST)) //
+                .allowedHeaders(Set.of(HttpHeaders.ACCEPT.toString(), HttpHeaders.CONTENT_TYPE.toString(),
+                        HttpHeaderNames.X_REQUESTED_WITH.toString())) //
+                .exposedHeaders(Set.of(HttpHeaders.CONTENT_LENGTH.toString(), HttpHeaders.CONTENT_TYPE.toString())) //
         );
 
         // Bridge event-bus to client-side app
@@ -101,7 +97,7 @@ public class MainVerticle extends AbstractVerticle {
         });
 
         // Start HTTP server
-        vertx.createHttpServer().requestHandler(router).listen(8080);
+        vertx.createHttpServer().requestHandler(router).listen(port);
 
         // Automatically open URL in browser, unless instructed otherwise
         String openBrowser = StudioConfig.STUDIO_OPEN_BROWSER.getValue();
@@ -109,7 +105,7 @@ public class MainVerticle extends AbstractVerticle {
             LOGGER.info("Opening URL in default browser...");
             if (Desktop.isDesktopSupported()) {
                 try {
-                    Desktop.getDesktop().browse(new URI("http://localhost:8080"));
+                    Desktop.getDesktop().browse(new URI("http://" + host + ":" + port));
                 } catch (Exception e) {
                     LOGGER.error("Failed to open URL in default browser", e);
                 }

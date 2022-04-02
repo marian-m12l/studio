@@ -56,7 +56,7 @@ class App extends React.Component {
         const { t } = this.props;
         // Set up vert.x eventbus
         console.log("Setting up vert.x event bus...");
-        let eventBus = new EventBus('http://localhost:8080/eventbus');
+        let eventBus = new EventBus('/eventbus');
         this.setState({eventBus}, () => {
             // eslint-disable-next-line
             this.state.eventBus.onopen = () => {

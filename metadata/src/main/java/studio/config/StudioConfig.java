@@ -7,6 +7,10 @@ public enum StudioConfig {
 
     // auto open browser (studio.open.browser)
     STUDIO_OPEN_BROWSER("true"),
+    // http listen host (studio.host)
+    STUDIO_HOST("localhost"),
+    // http listen port (studio.port)
+    STUDIO_PORT("8080"),
     // official json database (studio.db.official)
     STUDIO_DB_OFFICIAL(home() + "/.studio/db/official.json"),
     // unofficial json database (studio.db.unofficial)
