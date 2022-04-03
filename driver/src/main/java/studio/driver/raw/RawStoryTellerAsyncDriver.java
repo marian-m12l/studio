@@ -237,7 +237,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                                             long uuidLowBytes = sdPackSectors.getLong(LibUsbMassStorageHelper.SECTOR_SIZE + 8);
                                             UUID uuid = new UUID(uuidHighBytes, uuidLowBytes);
                                             LOGGER.debug("Pack UUID: {}", uuid);
-                                            RawStoryPackInfos spInfos = new RawStoryPackInfos(); //uuid, version, startSector, sizeInSectors, statsOffset, samplingRate);
+                                            RawStoryPackInfos spInfos = new RawStoryPackInfos();
                                             spInfos.setUuid(uuid);
                                             spInfos.setVersion(version);
                                             spInfos.setStartSector(startSector);

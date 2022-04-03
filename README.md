@@ -26,7 +26,7 @@ USAGE
 
 ### Prerequisite
 
-* Java JDK 11+
+* Java JRE 11+
 * On Windows, this application requires the _libusb_ driver to be installed. The easiest way to achieve this is to have
   the official Luniistore\* software installed (but not running).
 
@@ -40,6 +40,46 @@ platform. You may need to make them executable first.
 * If it does not open automatically, **open a browser** and type the url `http://localhost:8080` to load the web UI.
 
 Note: avoid running the script as superuser/administrator, as this may create permissions issues.
+
+### Configuration
+
+Configuration order is :
+1. (if defined) Java System property (ie: `-Dstudio.port=8081` )
+2. (if defined) environment variable (ie: `STUDIO_PORT=8081` )
+3. default value (inside code)
+
+| Environment variable | Java System property | Default value | Description |
+| ------------------------ | -------------------- | ------ | ----------- |
+| `STUDIO_HOST`          | `studio.host`          | `localhost`                    | HTTP listen address |
+| `STUDIO_PORT`          | `studio.port`          | `8080`                         | HTTP listen port |
+| `STUDIO_DB_OFFICIAL`   | `studio.db.official`   | `~/.studio/db/official.json`   | Official json file database  |
+| `STUDIO_DB_UNOFFICIAL` | `studio.db.unofficial` | `~/.studio/db/unofficial.json` | Unofficial json file database |
+| `STUDIO_LIBRARY`       | `studio.library`       | `~/.studio/library/`           | Library path |
+| `STUDIO_TMPDIR`        | `studio.tmpdir`        | `~/.studio/tmp/`               | Temporary path |
+| `STUDIO_OPEN_BROWSER`  | `studio.open.browser`  | `true`                         | Auto open browser |
+| `STUDIO_DEV_MODE`      | `studio.dev.mode`      | `prod`                         | if `dev`, enable mock mode |
+| `STUDIO_MOCK_DEVICE`   | `studio.mock.device`   | `~/.studio/device/`            | Mock device path |
+
+Sample to disable browser launching (with env var) and listen on port 8081 (with system property) :
+- On Windows
+```
+set STUDIO_OPEN_BROWSER=false
+
+java -Dstudio.port=8081 \
+ -Dfile.encoding=UTF-8 -Dvertx.disableDnsResolver=true \
+ -cp $STUDIO_PATH/${project.build.finalName}.jar:$STUDIO_PATH/lib/*:. \
+ io.vertx.core.Launcher run ${vertx.main.verticle}
+```
+
+- On Linux / MacOS
+```
+export STUDIO_OPEN_BROWSER=false
+
+java -Dstudio.port=8081 \
+ -Dfile.encoding=UTF-8 -Dvertx.disableDnsResolver=true \
+ -cp $STUDIO_PATH/${project.build.finalName}.jar:$STUDIO_PATH/lib/*:. \
+ io.vertx.core.Launcher run ${vertx.main.verticle}` |
+```
 
 ### Using the application
 
@@ -107,6 +147,7 @@ FOR DEVELOPERS
 
 ### Prerequisite
 
+* Java JDK 11+
 * Maven 3+
 
 ### Building the application

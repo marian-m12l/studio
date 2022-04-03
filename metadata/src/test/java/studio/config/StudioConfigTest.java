@@ -35,6 +35,9 @@ class StudioConfigTest {
             System.setProperty(sc.getPropertyName(), exp3);
             String act3 = sc.getValue();
             assertEquals(exp3, act3, "bad system value");
+            // both sys and env : sys wins
+            String actBoth = withEnvironmentVariable(sc.name(), exp2).execute(() -> sc.getValue());
+            assertEquals(exp3, actBoth, "sys should override env");
         });
     }
 

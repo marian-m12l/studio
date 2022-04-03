@@ -62,11 +62,7 @@ public class ArchiveStoryPackWriter implements StoryPackWriter {
         // Write (optional) enriched pack metadata
         if (pack.getEnriched() != null) {
             String packTitle = pack.getEnriched().getTitle();
-            if (packTitle != null) {
-                writer.name("title").value(packTitle);
-            } else {
-                writer.name("title").value("MISSING_PACK_TITLE");
-            }
+            writer.name("title").value(packTitle != null ? packTitle : "MISSING_PACK_TITLE");
             if (pack.getEnriched().getDescription() != null) {
                 writer.name("description").value(pack.getEnriched().getDescription());
             }
@@ -87,14 +83,12 @@ public class ArchiveStoryPackWriter implements StoryPackWriter {
             StageNode node = pack.getStageNodes().get(i);
             writer.beginObject();
             writer.name("uuid").value(node.getUuid());
-
             // Write (optional) enriched node metadata
             if (node.getEnriched() != null) {
                 writeEnrichedNodeMetadata(writer, node);
             }
-
+            // The first stage node is marked as such
             if (i == 0) {
-                // The first stage node is marked as such
                 writer.name("squareOne").value(true);
             }
             writer.name("image");
@@ -181,11 +175,7 @@ public class ArchiveStoryPackWriter implements StoryPackWriter {
 
     private void writeEnrichedNodeMetadata(JsonWriter writer, Node node) throws IOException {
         String nodeName = node.getEnriched().getName();
-        if (nodeName != null) {
-            writer.name("name").value(nodeName);
-        } else {
-            writer.name("name").value("MISSING_NAME");
-        }
+        writer.name("name").value(nodeName != null ? nodeName : "MISSING_NAME");
         EnrichedNodeType nodeType = node.getEnriched().getType();
         if (nodeType != null) {
             writer.name("type").value(nodeType.label);

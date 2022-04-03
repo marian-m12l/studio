@@ -26,7 +26,7 @@ UTILISATION
 
 ### Prérequis
 
-* Java JDK 11+
+* Java JRE 11+
 * Sur Windows, cette application nécessite que le pilote _libusb_ soit installé. Le moyen le plus simple pour cela est
   d'installer le logiciel officiel Luniistore\* (mais il ne doit pas être exécuté en même temps que STUdio).
 
@@ -41,6 +41,46 @@ plate-forme. Vous devrez probablement rendre ce fichier exécutable d'abord.
 l'interface web.
 
 Note: Évitez d'exécuter le script en tant que superutilisateur/administrateur, ce qui pourrait créer des problèmes de permissions.
+
+### Configuration
+
+L'ordre de configuration est le suivant 
+1. (si présente) variable système Java (ex: `-Dstudio.port=8081` )
+2. (si présente) variable d'environnement (ex: `STUDIO_PORT=8081` )
+3. valeur par défaut (dans le code)
+
+| Variable d'environnement | Variable système Java | Défaut | Description |
+| ------------------------ | -------------------- | ------ | ----------- |
+| `STUDIO_HOST`          | `studio.host`          | `localhost`                    | Adresse d'écoute HTTP |
+| `STUDIO_PORT`          | `studio.port`          | `8080`                         | Port d'écoute HTTP |
+| `STUDIO_DB_OFFICIAL`   | `studio.db.official`   | `~/.studio/db/official.json`   | Fichier BDD json officiel  |
+| `STUDIO_DB_UNOFFICIAL` | `studio.db.unofficial` | `~/.studio/db/unofficial.json` | Fichier BDD json non-officiel |
+| `STUDIO_LIBRARY`       | `studio.library`       | `~/.studio/library/`           | Répertoire de la bibliothèque |
+| `STUDIO_TMPDIR`        | `studio.tmpdir`        | `~/.studio/tmp/`               | Répertoire temporaire |
+| `STUDIO_OPEN_BROWSER`  | `studio.open.browser`  | `true`                         | Ouverture auto du navigateur |
+| `STUDIO_DEV_MODE`      | `studio.dev.mode`      | `prod`                         | Si `dev`, active le mode bouchon |
+| `STUDIO_MOCK_DEVICE`   | `studio.mock.device`   | `~/.studio/device/`            | Répertoire de l'appareil bouchon |
+
+Ex pour ne pas lancer de navigateur (via la variable d'environnement) et écouter sur le port 8081 (via la variable systeme) :
+- sous Windows
+```
+set STUDIO_OPEN_BROWSER=false
+
+java -Dstudio.port=8081 \
+ -Dfile.encoding=UTF-8 -Dvertx.disableDnsResolver=true \
+ -cp $STUDIO_PATH/${project.build.finalName}.jar:$STUDIO_PATH/lib/*:. \
+ io.vertx.core.Launcher run ${vertx.main.verticle}
+```
+
+- sous Linux / MacOS
+```
+export STUDIO_OPEN_BROWSER=false
+
+java -Dstudio.port=8081 \
+ -Dfile.encoding=UTF-8 -Dvertx.disableDnsResolver=true \
+ -cp $STUDIO_PATH/${project.build.finalName}.jar:$STUDIO_PATH/lib/*:. \
+ io.vertx.core.Launcher run ${vertx.main.verticle}` |
+```
 
 ### Utiliser l'application
 
@@ -110,6 +150,7 @@ POUR LES DÉVELOPPEURS
 
 ### Prérequis
 
+* Java JDK 11+
 * Maven 3+
 
 ### Building the application
