@@ -224,7 +224,8 @@ public class LibUsbMassStorageHelper {
      * @param <T> The type returned by the function
      * @return The return value from the function
      */
-    public static <T> CompletionStage<T> executeOnDeviceHandle(Device device, Function<DeviceHandle, CompletionStage<T>> func) {
+    public static <T> CompletionStage<T> executeOnDeviceHandle(Device device,
+            Function<DeviceHandle, CompletionStage<T>> func) {
         return CompletableFuture.supplyAsync(() -> {
             // Open device handle
             DeviceHandle handle = new DeviceHandle();
@@ -243,19 +244,18 @@ public class LibUsbMassStorageHelper {
                 throw new StoryTellerException("Unable to claim libusb interface", new LibUsbException(result));
             }
             return handle;
-        })
-                .thenCompose(handle -> func.apply(handle)
-                        // Handler is executed in another thread to avoid deadlock (otherwise it would be called by the libusb async event handleing worker thread)
-                        .whenCompleteAsync((retval, e) -> {
-                            // Free interface
-                            int result = LibUsb.releaseInterface(handle, INTERFACE_ID);
-                            if (result != LibUsb.SUCCESS) {
-                                throw new StoryTellerException("Unable to release interface", new LibUsbException(result));
-                            }
-                            // Close handle
-                            LibUsb.close(handle);
-                        })
-                );
+        }).thenCompose(handle -> func.apply(handle)
+                // Handler is executed in another thread to avoid deadlock (otherwise it would
+                // be called by the libusb async event handleing worker thread)
+                .whenCompleteAsync((retval, e) -> {
+                    // Free interface
+                    int result = LibUsb.releaseInterface(handle, INTERFACE_ID);
+                    if (result != LibUsb.SUCCESS) {
+                        throw new StoryTellerException("Unable to release interface", new LibUsbException(result));
+                    }
+                    // Close handle
+                    LibUsb.close(handle);
+                }));
     }
 
     public static CompletionStage<ByteBuffer> asyncReadSPISectors(DeviceHandle handle, int offset, short nbSectors) {
@@ -274,47 +274,40 @@ public class LibUsbMassStorageHelper {
         // SCSI vendor-specific command to write to SD.
         ByteBuffer cbw = createCommandWrapper(SCSI_COMMAND_CODE_WRITE_TO_SD, CBWDirection.OUTBOUND, offset, nbSectors);
 
-        return asyncTransferOut(handle, cbw)
-                .thenCompose(done -> {
-                    // Write data
-                    return asyncTransferOut(handle, data)
-                            .thenCompose(dataWritten -> {
-                                // Read Command Status Wrapper
-                                ByteBuffer csw = ByteBuffer.allocateDirect(MASS_STORAGE_CSW_LENGTH);
-                                return asyncTransferIn(handle, csw)
-                                        .thenApply(cswRead -> {
-                                            // Check CSW
-                                            if (!checkCommandStatusWrapper(csw)) {
-                                                LOGGER.error("Read operation failed while writing to SD");
-                                                throw new StoryTellerException("Read operation failed while writing to SD");
-                                            }
-                                            return dataWritten;
-                                        });
-                            });
-                });
+        return asyncTransferOut(handle, cbw).thenCompose(done ->
+        // Write data
+        asyncTransferOut(handle, data).thenCompose(dataWritten -> {
+            // Read Command Status Wrapper
+            ByteBuffer csw = ByteBuffer.allocateDirect(MASS_STORAGE_CSW_LENGTH);
+            return asyncTransferIn(handle, csw).thenApply(cswRead -> {
+                // Check CSW
+                if (!checkCommandStatusWrapper(csw)) {
+                    LOGGER.error("Read operation failed while writing to SD");
+                    throw new StoryTellerException("Read operation failed while writing to SD");
+                }
+                return dataWritten;
+            });
+        }));
     }
     
     private static CompletionStage<ByteBuffer> asyncReadCommand(DeviceHandle handle, ByteBuffer cbw, short nbSectors) {
         // Read Command Status Wrapper
-        return asyncTransferOut(handle, cbw)
-                .thenCompose(done -> {
-                    // Read data
-                    ByteBuffer data = ByteBuffer.allocateDirect(nbSectors * SECTOR_SIZE);
-                    return asyncTransferIn(handle, data)
-                            .thenCompose(dataRead -> {
-                                // Read Command Status Wrapper
-                                ByteBuffer csw = ByteBuffer.allocateDirect(MASS_STORAGE_CSW_LENGTH);
-                                return asyncTransferIn(handle, csw)
-                                        .thenApply(cswRead -> {
-                                            // Check CSW
-                                            if (!checkCommandStatusWrapper(csw)) {
-                                                LOGGER.error("Read operation failed");
-                                                throw new StoryTellerException("Read operation failed");
-                                            }
-                                            return data;
-                                        });
-                            });
+        return asyncTransferOut(handle, cbw).thenCompose(done -> {
+            // Read data
+            ByteBuffer data = ByteBuffer.allocateDirect(nbSectors * SECTOR_SIZE);
+            return asyncTransferIn(handle, data).thenCompose(dataRead -> {
+                // Read Command Status Wrapper
+                ByteBuffer csw = ByteBuffer.allocateDirect(MASS_STORAGE_CSW_LENGTH);
+                return asyncTransferIn(handle, csw).thenApply(cswRead -> {
+                    // Check CSW
+                    if (!checkCommandStatusWrapper(csw)) {
+                        LOGGER.error("Read operation failed");
+                        throw new StoryTellerException("Read operation failed");
+                    }
+                    return data;
                 });
+            });
+        });
     }
 
     private static CompletionStage<Boolean> asyncTransfer(Endpoint endpoint, DeviceHandle handle, ByteBuffer data) {

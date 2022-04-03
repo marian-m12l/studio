@@ -258,47 +258,43 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
         if (this.device == null) {
             return CompletableFuture.failedFuture(noDevicePluggedException());
         }
-
-        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, handle -> {
-            return readPackIndex(handle)
-                    .thenCompose(packs -> {
-                        // Look for UUIDs in packs index (ALL uuids must match)
-                        boolean allUUIDsAreOnDevice = uuids.stream().allMatch(uuid -> packs.stream().anyMatch(p -> p.getUuid().equals(UUID.fromString(uuid))));
-                        if (allUUIDsAreOnDevice) {
-                            // Reorder list according to uuids list
-                            packs.sort(Comparator.comparingInt(p -> uuids.indexOf(p.getUuid().toString())));
-                            // Write pack index
-                            return writePackIndex(handle, packs);
-                        } else {
-                            throw new StoryTellerException("Packs on device do not match UUIDs");
-                        }
-                    });
-        });
+        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device,
+                handle -> readPackIndex(handle).thenCompose(packs -> {
+                    // Look for UUIDs in packs index (ALL uuids must match)
+                    boolean allUUIDsAreOnDevice = uuids.stream()
+                            .allMatch(uuid -> packs.stream().anyMatch(p -> p.getUuid().equals(UUID.fromString(uuid))));
+                    if (allUUIDsAreOnDevice) {
+                        // Reorder list according to uuids list
+                        packs.sort(Comparator.comparingInt(p -> uuids.indexOf(p.getUuid().toString())));
+                        // Write pack index
+                        return writePackIndex(handle, packs);
+                    } else {
+                        throw new StoryTellerException("Packs on device do not match UUIDs");
+                    }
+                }));
     }
 
     public CompletionStage<Boolean> deletePack(String uuid) {
         if (this.device == null) {
             return CompletableFuture.failedFuture(noDevicePluggedException());
         }
-
-        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, handle -> {
-            return readPackIndex(handle)
-                    .thenCompose(packs -> {
-                        // Look for UUID in packs index
-                        Optional<RawStoryPackInfos> matched = packs.stream().filter(p -> p.getUuid().equals(UUID.fromString(uuid))).findFirst();
-                        if (matched.isPresent()) {
-                            RawStoryPackInfos rspi = matched.get();
-                            LOGGER.debug("Found pack with uuid: {}", uuid);
-                            LOGGER.debug("Matched: {} - {}", rspi.getStartSector(), rspi.getSizeInSectors());
-                            // Remove from index
-                            packs.remove(rspi);
-                            // Write pack index
-                            return writePackIndex(handle, packs);
-                        } else {
-                            throw new StoryTellerException("Pack not found");
-                        }
-                    });
-        });
+        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device,
+                handle -> readPackIndex(handle).thenCompose(packs -> {
+                    // Look for UUID in packs index
+                    Optional<RawStoryPackInfos> matched = packs.stream()
+                            .filter(p -> p.getUuid().equals(UUID.fromString(uuid))).findFirst();
+                    if (matched.isPresent()) {
+                        RawStoryPackInfos rspi = matched.get();
+                        LOGGER.debug("Found pack with uuid: {}", uuid);
+                        LOGGER.debug("Matched: {} - {}", rspi.getStartSector(), rspi.getSizeInSectors());
+                        // Remove from index
+                        packs.remove(rspi);
+                        // Write pack index
+                        return writePackIndex(handle, packs);
+                    } else {
+                        throw new StoryTellerException("Pack not found");
+                    }
+                }));
     }
 
     private CompletionStage<Boolean> writePackIndex(DeviceHandle handle, List<RawStoryPackInfos> packs) {
@@ -399,9 +395,9 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                     packSizeInSectors);
         }
 
-        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, handle -> {
+        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, handle -> 
             // Find first large-enough free space
-            return findFirstSuitableSector(handle, packSizeInSectors)
+            findFirstSuitableSector(handle, packSizeInSectors)
                     .thenCompose(startSector -> {
                         if (startSector.isEmpty()) {
                             throw new StoryTellerException("Not enough free space on the device");
@@ -459,8 +455,8 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                                             // Write pack index
                                             return writePackIndex(handle, packs).thenApply(done -> status);
                                         }));
-                    });
-        });
+                    })
+        );
     }
 
     private CompletionStage<Optional<Integer>> findFirstSuitableSector(DeviceHandle handle, int packSizeInSectors) {
@@ -508,8 +504,8 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
         } catch (IOException e) {
             LOGGER.error("Fail to create dir", e);
         }
-        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, handle -> {
-            return dumpSector(handle, DEVICE_INFOS_SD_SECTOR_0, outputPath)
+        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, handle -> 
+            dumpSector(handle, DEVICE_INFOS_SD_SECTOR_0, outputPath)
                     .thenCompose(d -> dumpSector(handle, DEVICE_INFOS_SD_SECTOR_2, outputPath))
                     .thenCompose(d -> dumpSector(handle, PACK_INDEX_SD_SECTOR, outputPath))
                     .thenCompose(d -> LibUsbMassStorageHelper.asyncReadSDSectors(handle, PACK_INDEX_SD_SECTOR, (short) 1)
@@ -535,8 +531,8 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                                     }
                                     return promise;
                                 })
-                    );
-        });
+                    )
+        );
     }
 
     private CompletionStage<Void> dumpSector(DeviceHandle handle, int sector, Path outputPath) {

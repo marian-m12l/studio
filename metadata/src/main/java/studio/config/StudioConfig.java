@@ -45,15 +45,6 @@ public enum StudioConfig {
     }
 
     /**
-     * Override property value.
-     * 
-     * @param value
-     */
-    public void set(String value) {
-        System.setProperty(getPropertyName(), value);
-    }
-
-    /**
      * Return system property, then env variable and finally default value.
      * 
      * @return
@@ -67,13 +58,14 @@ public enum StudioConfig {
             return sysValue;
         }
         // search env variable
+        String envKey = name();
         String envValue = System.getenv(name());
-        LOGGER.trace("env {}={}", name(), envValue);
+        LOGGER.trace("env {}={}", envKey, envValue);
         if (envValue != null) {
             return envValue;
         }
         // default
-        LOGGER.trace("def {}={}", name(), defaultValue);
+        LOGGER.trace("def {}={}", envKey, defaultValue);
         return defaultValue;
     }
 

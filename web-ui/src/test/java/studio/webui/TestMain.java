@@ -12,8 +12,8 @@ public class TestMain {
 
         // test mode
         if (args.length > 0 && "dev".equals(args[0])) {
-            StudioConfig.STUDIO_DEV_MODE.set("dev");
-            StudioConfig.STUDIO_OPEN_BROWSER.set("false");
+            System.setProperty(StudioConfig.STUDIO_DEV_MODE.getPropertyName(), "dev");
+            System.setProperty(StudioConfig.STUDIO_OPEN_BROWSER.getPropertyName(), "false");
         }
 
         // real main

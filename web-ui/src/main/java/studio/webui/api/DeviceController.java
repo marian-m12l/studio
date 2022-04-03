@@ -129,15 +129,15 @@ public class DeviceController {
                         LOGGER.error("Failed to transfer pack from device", e);
                         ctx.fail(500, e);
                     }) //
-                    .onSuccess(optTransferId -> {
+                    .onSuccess(optTransferId -> 
                         optTransferId.ifPresentOrElse(
                                 // Return the transfer id, which is used to monitor transfer progress
                                 transferId -> ctx.json(new JsonObject().put("transferId", transferId)), //
                                 () -> {
                                     LOGGER.error("Failed to transfer pack from device");
                                     ctx.fail(500);
-                                });
-                    });
+                                })
+                    );
         });
 
         // Dump important sectors
@@ -149,9 +149,7 @@ public class DeviceController {
                         LOGGER.error("Failed to dump important sectors from device", e);
                         ctx.fail(500, e);
                     }) //
-                    .onSuccess(s -> {
-                        ctx.json(new JsonObject().put("success", true));
-                    });
+                    .onSuccess(s -> ctx.json(new JsonObject().put("success", true)));
         });
 
         return router;

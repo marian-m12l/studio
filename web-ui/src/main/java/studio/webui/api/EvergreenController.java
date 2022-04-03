@@ -25,41 +25,35 @@ public class EvergreenController {
         Router router = Router.router(vertx);
 
         // Current version
-        router.get("/infos").handler(ctx -> {
-            evergreenService.infos().onComplete(maybeJson -> {
-                if (maybeJson.succeeded()) {
-                    LOGGER.info("Current version infos: {}", maybeJson.result());
-                    ctx.json(maybeJson.result());
-                } else {
-                    LOGGER.error("Failed to get current version infos");
-                    ctx.fail(500, maybeJson.cause());
-                }
-            });
-        });
+        router.get("/infos").handler(ctx -> evergreenService.infos().onComplete(maybeJson -> {
+            if (maybeJson.succeeded()) {
+                LOGGER.info("Current version infos: {}", maybeJson.result());
+                ctx.json(maybeJson.result());
+            } else {
+                LOGGER.error("Failed to get current version infos");
+                ctx.fail(500, maybeJson.cause());
+            }
+        }));
 
         // Latest release
-        router.get("/latest").blockingHandler(ctx -> {
-            evergreenService.latest().onComplete(maybeJson -> {
-                if (maybeJson.succeeded()) {
-                    ctx.json(maybeJson.result());
-                } else {
-                    LOGGER.error("Failed to get latest release");
-                    ctx.fail(500, maybeJson.cause());
-                }
-            });
-        });
+        router.get("/latest").blockingHandler(ctx -> evergreenService.latest().onComplete(maybeJson -> {
+            if (maybeJson.succeeded()) {
+                ctx.json(maybeJson.result());
+            } else {
+                LOGGER.error("Failed to get latest release");
+                ctx.fail(500, maybeJson.cause());
+            }
+        }));
 
         // Announce
-        router.get("/announce").blockingHandler(ctx -> {
-            evergreenService.announce().onComplete(maybeJson -> {
-                if (maybeJson.succeeded()) {
-                    ctx.json(maybeJson.result());
-                } else {
-                    LOGGER.error("Failed to get announce");
-                    ctx.fail(500, maybeJson.cause());
-                }
-            });
-        });
+        router.get("/announce").blockingHandler(ctx -> evergreenService.announce().onComplete(maybeJson -> {
+            if (maybeJson.succeeded()) {
+                ctx.json(maybeJson.result());
+            } else {
+                LOGGER.error("Failed to get announce");
+                ctx.fail(500, maybeJson.cause());
+            }
+        }));
 
         return router;
     }

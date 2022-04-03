@@ -414,17 +414,17 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
                 });
             }).thenCompose(status -> {
                 // Finally, add pack UUID to index
-                return readPackIndex()
-                        .thenCompose(packUUIDs -> {
-                            try {
-                                // Add UUID in packs index
-                                packUUIDs.add(UUID.fromString(uuid));
-                                // Write pack index
-                                return writePackIndex(packUUIDs).thenApply(ok -> status);
-                            } catch (Exception e) {
-                                throw new StoryTellerException("Failed to write pack metadata on device partition", e);
-                            }
-                        });
+                LOGGER.debug("Add pack uuid to index");
+                return readPackIndex().thenCompose(packUUIDs -> {
+                    try {
+                        // Add UUID in packs index
+                        packUUIDs.add(UUID.fromString(uuid));
+                        // Write pack index
+                        return writePackIndex(packUUIDs).thenApply(ok -> status);
+                    } catch (Exception e) {
+                        throw new StoryTellerException("Failed to write pack metadata on device partition", e);
+                    }
+                });
             });
         } catch (IOException e) {
             throw new StoryTellerException("Failed to copy pack to device", e);

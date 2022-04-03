@@ -37,9 +37,7 @@ public class LibraryController {
         Router router = Router.router(vertx);
 
         // Local library device metadata
-        router.get("/infos").handler(ctx -> {
-            ctx.json(libraryService.libraryInfos());
-        });
+        router.get("/infos").handler(ctx -> ctx.json(libraryService.libraryInfos()));
 
         // Local library packs list
         router.get("/packs").blockingHandler(ctx -> {
