@@ -25,7 +25,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.TreeMap;
 
-import javax.sound.sampled.AudioFileFormat;
+import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
@@ -176,9 +176,9 @@ public class FsStoryPackWriter implements StoryPackWriter {
                         }
                         // Check that the file is MONO / 44100Hz
                         try {
-                            AudioFileFormat audioFileFormat = AudioSystem.getAudioFileFormat(new ByteArrayInputStream(audioData));
-                            if (audioFileFormat.getFormat().getChannels() != AudioConversion.CHANNELS
-                                    || audioFileFormat.getFormat().getSampleRate() != AudioConversion.MP3_SAMPLE_RATE) {
+                            AudioFormat audioFormat = AudioSystem.getAudioFileFormat(new ByteArrayInputStream(audioData)).getFormat();
+                            if (audioFormat.getChannels() != AudioConversion.CHANNELS
+                                    || audioFormat.getSampleRate() != AudioConversion.MP3_SAMPLE_RATE) {
                                 throw new IllegalArgumentException("FS pack file requires MP3 audio assets to be MONO / 44100Hz.");
                             }
                         } catch (UnsupportedAudioFileException e) {

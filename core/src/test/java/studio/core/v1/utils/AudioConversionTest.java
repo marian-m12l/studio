@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 class AudioConversionTest {
+
     private String zipName = "SimplifiedSamplePack-60f84e3d-8a37-4b4a-9e67-fc13daad9bb9-v1.zip";
 
     private static Path classpathResource(String relative) throws URISyntaxException {
@@ -50,7 +51,7 @@ class AudioConversionTest {
     }
 
     @Test
-    void convertMp3() throws Exception {
+    void convertOggToMp3() throws Exception {
         Path zipPath = classpathResource(zipName);
         try (FileSystem zipFs = FileSystems.newFileSystem(zipPath, ClassLoader.getSystemClassLoader())) {
             Path insideOgg = zipFs.getPath("assets/1a23e1732632e8bbcb7607a92edd3c3ec3c3357a.ogg");
