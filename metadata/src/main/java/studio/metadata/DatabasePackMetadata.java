@@ -6,6 +6,8 @@
 
 package studio.metadata;
 
+import java.util.Objects;
+
 public class DatabasePackMetadata {
 
     private final String uuid;
@@ -43,8 +45,27 @@ public class DatabasePackMetadata {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(description, official, thumbnail, title, uuid);
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || getClass() != obj.getClass()) {
+            return false;
+        }
+        DatabasePackMetadata other = (DatabasePackMetadata) obj;
+        return Objects.equals(description, other.description) && official == other.official
+                && Objects.equals(thumbnail, other.thumbnail) && Objects.equals(title, other.title)
+                && Objects.equals(uuid, other.uuid);
+    }
+
+    @Override
     public String toString() {
-        return "DatabasePackMetadata{" + "uuid='" + uuid + '\'' + ", title='" + title + '\'' + ", description='"
-                + description + '\'' + ", thumbnail='" + thumbnail + '\'' + ", official=" + official + '}';
+        return "DatabasePackMetadata{uuid=" + uuid + ", title=" + title + ", description=" + description
+                + ", thumbnail=" + thumbnail + ", official=" + official + "}";
     }
 }

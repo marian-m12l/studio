@@ -59,7 +59,7 @@ public class ArchiveStoryPackReader implements StoryPackReader {
             if (Files.notExists(story)) {
                 return null;
             }
-            JsonObject root = new JsonParser().parse(Files.readString(story)).getAsJsonObject();
+            JsonObject root = JsonParser.parseString(Files.readString(story)).getAsJsonObject();
 
             // Read metadata
             metadata.setVersion(root.get("version").getAsShort());
@@ -98,7 +98,7 @@ public class ArchiveStoryPackReader implements StoryPackReader {
             if (Files.notExists(story)) {
                 return null;
             }
-            JsonObject root = new JsonParser().parse(Files.readString(story)).getAsJsonObject();
+            JsonObject root = JsonParser.parseString(Files.readString(story)).getAsJsonObject();
             StoryPack storyPack = parseStoryJson(root, assetToStageNodes);
 
             // Parse assets

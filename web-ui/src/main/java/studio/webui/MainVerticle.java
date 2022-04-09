@@ -50,7 +50,7 @@ public class MainVerticle extends AbstractVerticle {
     @Override
     public void start() {
         // Service that manages pack metadata
-        DatabaseMetadataService databaseMetadataService = new DatabaseMetadataService(false);
+        DatabaseMetadataService databaseMetadataService = new DatabaseMetadataService();
 
         // Service that manages local library
         libraryService = new LibraryService(databaseMetadataService);
