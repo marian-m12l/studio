@@ -7,8 +7,8 @@
 package studio.core.v1.reader.fs;
 
 import java.io.BufferedInputStream;
-import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -56,7 +56,7 @@ public class FsStoryPackReader implements StoryPackReader {
 
         // Open 'ni' file
         Path niPath = inputFolder.resolve(NODE_INDEX_FILENAME);
-        try(DataInputStream niDis = new DataInputStream(new BufferedInputStream(Files.newInputStream(niPath)))) {
+        try(InputStream niDis = new BufferedInputStream(Files.newInputStream(niPath))) {
             ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
             metadata.setVersion(bb.getShort(2));
         }
@@ -96,7 +96,7 @@ public class FsStoryPackReader implements StoryPackReader {
 
         // Open 'ni' file
         Path niPath = inputFolder.resolve(NODE_INDEX_FILENAME);
-        try(DataInputStream niDis = new DataInputStream(new BufferedInputStream(Files.newInputStream(niPath)))) {
+        try(InputStream niDis = new BufferedInputStream(Files.newInputStream(niPath))) {
             ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
             // Nodes index file format version (1)
             bb.getShort();
@@ -172,7 +172,8 @@ public class FsStoryPackReader implements StoryPackReader {
                 }
 
                 ControlSettings ctrl = new ControlSettings(wheel, ok, home, pause, autoplay);
-                // First node should have the same UUID as the story pack FIXME node uuids from metadata file
+                // First node should have the same UUID as the story pack
+                // TODO node uuids from metadata file
                 String uu = (i == 0) ? uuid : UUID.randomUUID().toString(); 
                 StageNode stageNode = new StageNode(uu, image, audio, okTransition, homeTransition, ctrl, null);
                 stageNodes.put(i, stageNode);

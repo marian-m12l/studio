@@ -7,6 +7,10 @@
 package studio.driver.fs;
 
 import java.io.File;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -45,6 +49,18 @@ public class DeviceUtils {
             }
         }
         return l;
+    }
+
+    /** Read little endian short from stream. */
+    public static short readLittleEndianShort(InputStream is) throws IOException {
+        ByteBuffer bb = ByteBuffer.wrap(is.readNBytes(2)).order(ByteOrder.LITTLE_ENDIAN);
+        return bb.getShort();
+    }
+
+    /** Read big endian long from stream. */
+    public static long readBigEndianLong(InputStream is) throws IOException {
+        ByteBuffer bb = ByteBuffer.wrap(is.readNBytes(8)).order(ByteOrder.BIG_ENDIAN);
+        return bb.getLong();
     }
 
 }

@@ -119,25 +119,25 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
         Path mdFile = this.partitionMountPoint.resolve(DEVICE_METADATA_FILENAME);
         LOGGER.trace("Reading device infos from file: {}", mdFile);
 
-        try(InputStream deviceMetadataFis = new BufferedInputStream(Files.newInputStream(mdFile))) {
+        try(DataInputStream is = new DataInputStream(new BufferedInputStream(Files.newInputStream(mdFile)))) {
             // MD file format version
-            short mdVersion = readLittleEndianShort(deviceMetadataFis);
+            short mdVersion = DeviceUtils.readLittleEndianShort(is);
             LOGGER.trace("Device metadata format version: {}", mdVersion);
             if (mdVersion < 1 || mdVersion > 3) {
                 return CompletableFuture.failedFuture(new StoryTellerException("Unsupported device metadata format version: " + mdVersion));
             }
 
             // Firmware version
-            deviceMetadataFis.skip(4);
-            short major = readLittleEndianShort(deviceMetadataFis);
-            short minor = readLittleEndianShort(deviceMetadataFis);
+            is.skipBytes(4);
+            short major = DeviceUtils.readLittleEndianShort(is);
+            short minor = DeviceUtils.readLittleEndianShort(is);
             infos.setFirmwareMajor(major);
             infos.setFirmwareMinor(minor);
             LOGGER.debug("Firmware version: {}.{}", major, minor);
 
             // Serial number
             String serialNumber = null;
-            long sn = readBigEndianLong(deviceMetadataFis);
+            long sn = DeviceUtils.readBigEndianLong(is);
             if (sn != 0L && sn != -1L && sn != -4294967296L) {
                 serialNumber = String.format("%014d", sn);
                 LOGGER.debug("Serial Number: {}", serialNumber);
@@ -147,8 +147,8 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
             infos.setSerialNumber(serialNumber);
 
             // UUID
-            deviceMetadataFis.skip(238);
-            byte[] deviceId = deviceMetadataFis.readNBytes(256);
+            is.skipBytes(238);
+            byte[] deviceId = is.readNBytes(256);
             infos.setDeviceId(deviceId);
             if(LOGGER.isDebugEnabled()) {
                 LOGGER.debug("UUID: {}", SecurityUtils.encodeHex(deviceId));
@@ -167,24 +167,8 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
         } catch (Exception e) {
             return CompletableFuture.failedFuture(new StoryTellerException("Failed to read device metadata on partition", e));
         }
-
         return CompletableFuture.completedFuture(infos);
     }
-
-    private short readLittleEndianShort(InputStream fis) throws IOException {
-        byte[] buffer = new byte[2];
-        fis.read(buffer);
-        ByteBuffer bb = ByteBuffer.wrap(buffer).order(ByteOrder.LITTLE_ENDIAN);
-        return bb.getShort();
-    }
-
-    private long readBigEndianLong(InputStream fis) throws IOException {
-        byte[] buffer = new byte[8];
-        fis.read(buffer);
-        ByteBuffer bb = ByteBuffer.wrap(buffer).order(ByteOrder.BIG_ENDIAN);
-        return bb.getLong();
-    }
-
 
     public CompletionStage<List<FsStoryPackInfos>> getPacksList() {
         if (this.device == null || this.partitionMountPoint == null) {
@@ -208,23 +192,21 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
 
                             // Open 'ni' file
                             Path niPath = packPath.resolve(NODE_INDEX_FILENAME);
-                            try(DataInputStream niDis = new DataInputStream(new BufferedInputStream(Files.newInputStream(niPath)))) {
+                            try (InputStream niDis = new BufferedInputStream(Files.newInputStream(niPath))) {
                                 ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
                                 short version = bb.getShort(2);
                                 packInfos.setVersion(version);
                                 LOGGER.debug("Pack version: {}", version);
                             }
-
                             // Night mode is available if file 'nm' exists
                             packInfos.setNightModeAvailable(Files.exists(packPath.resolve(NIGHT_MODE_FILENAME)));
-
                             // Compute folder size
                             packInfos.setSizeInBytes(FileUtils.getFolderSize(packPath));
 
                             packs.add(packInfos);
                         }
                         return packs;
-                    } catch (Exception e) {
+                    } catch (IOException e) {
                         throw new StoryTellerException("Failed to read pack metadata on device partition", e);
                     }
                 });

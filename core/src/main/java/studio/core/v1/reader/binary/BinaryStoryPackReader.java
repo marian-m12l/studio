@@ -18,6 +18,7 @@ import static studio.core.v1.Constants.SECTOR_SIZE;
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -288,9 +289,9 @@ public class BinaryStoryPackReader implements StoryPackReader {
         }
     }
 
-    private Optional<String> readString(DataInputStream dis, int maxChars) throws IOException {
-        byte[] bytes = new byte[maxChars*2];
-        dis.read(bytes);
+    /** Read UTF16 String from stream. */
+    private Optional<String> readString(InputStream dis, int maxChars) throws IOException {
+        byte[] bytes = dis.readNBytes(maxChars*2);
         String str = new String(bytes, StandardCharsets.UTF_16);
         int firstNullChar = str.indexOf("\u0000");
         if(firstNullChar == 0) {
