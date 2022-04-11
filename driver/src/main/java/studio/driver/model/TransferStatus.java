@@ -8,24 +8,24 @@ package studio.driver.model;
 
 public class TransferStatus {
 
-    private boolean done;
     private long transferred;
     private long total;
     private double speed;
 
-    public TransferStatus(boolean done, long transferred, long total, double speed) {
-        this.done = done;
+    public TransferStatus(long transferred, long total, double speed) {
         this.transferred = transferred;
         this.total = total;
         this.speed = speed;
     }
 
+    /** Check if transfer is complete. */
     public boolean isDone() {
-        return done;
+        return transferred == total;
     }
 
-    public void setDone(boolean done) {
-        this.done = done;
+    /** Transfer percent. */
+    public double getPercent() {
+        return transferred / (double) total;
     }
 
     public long getTransferred() {
@@ -54,11 +54,6 @@ public class TransferStatus {
 
     @Override
     public String toString() {
-        return "TransferStatus{" +
-                "done=" + done +
-                ", transferred=" + transferred +
-                ", total=" + total +
-                ", speed=" + speed +
-                '}';
+        return "TransferStatus{" + ", transferred=" + transferred + ", total=" + total + ", speed=" + speed + '}';
     }
 }

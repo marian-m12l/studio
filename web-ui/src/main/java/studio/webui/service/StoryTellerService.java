@@ -218,9 +218,9 @@ public class StoryTellerService implements IStoryTellerService {
                         try {
                             rawDriver.uploadPack(uuid, packFile, status -> {
                                 // Send event on eventbus to monitor progress
-                                double p = (double) status.getTransferred() / (double) status.getTotal();
-                                LOGGER.debug("Pack add progress... {} / {} ({})", status.getTransferred(),
-                                        status.getTransferred(), p);
+                                double p = status.getPercent();
+                                LOGGER.debug("Pack add progress... {}% ({} / {})", p, status.getTransferred(),
+                                        status.getTotal());
                                 sendProgress(transferId, p);
                             }).whenComplete((status, t) -> {
                                 // Handle failure
@@ -254,9 +254,9 @@ public class StoryTellerService implements IStoryTellerService {
                             LOGGER.info("Transferring pack folder to device: {}", packFile);
                             fsDriver.uploadPack(uuid, packFile, status -> {
                                 // Send event on eventbus to monitor progress
-                                double p = (double) status.getTransferred() / (double) status.getTotal();
-                                LOGGER.debug("Pack add progress... {} / {} ({})", status.getTransferred(),
-                                        status.getTransferred(), p);
+                                double p = status.getPercent();
+                                LOGGER.debug("Pack add progress... {}% ({} / {})", p, status.getTransferred(),
+                                        status.getTotal());
                                 sendProgress(transferId, p);
                             }).whenComplete((status, t) -> {
                                 // Handle failure
@@ -316,8 +316,9 @@ public class StoryTellerService implements IStoryTellerService {
         try {
             rawDriver.downloadPack(uuid, destFile, status -> {
                 // Send event on eventbus to monitor progress
-                double p = (double) status.getTransferred() / (double) status.getTotal();
-                LOGGER.debug("Pack extraction progress... {} / {} ({})", status.getTransferred(), status.getTotal(), p);
+                double p = status.getPercent();
+                LOGGER.debug("Pack extraction progress... {}% ({} / {})", p, status.getTransferred(),
+                        status.getTotal());
                 sendProgress(transferId, p);
             }).whenComplete((status, t) -> {
                 // Handle failure
@@ -344,8 +345,9 @@ public class StoryTellerService implements IStoryTellerService {
         try {
             fsDriver.downloadPack(uuid, destFile, status -> {
                 // Send event on eventbus to monitor progress
-                double p = (double) status.getTransferred() / (double) status.getTotal();
-                LOGGER.debug("Pack extraction progress... {} / {} ({})", status.getTransferred(), status.getTotal(), p);
+                double p = status.getPercent();
+                LOGGER.debug("Pack extraction progress... {}% ({} / {})", p, status.getTransferred(),
+                        status.getTotal());
                 sendProgress(transferId, p);
             }).whenComplete((status, t) -> {
                 // Handle failure

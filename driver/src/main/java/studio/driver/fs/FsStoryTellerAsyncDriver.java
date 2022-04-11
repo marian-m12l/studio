@@ -34,6 +34,7 @@ import org.usb4java.Device;
 
 import studio.core.v1.utils.SecurityUtils;
 import studio.core.v1.utils.exception.StoryTellerException;
+import studio.core.v1.utils.stream.ThrowingConsumer;
 import studio.core.v1.writer.fs.FsStoryPackWriter;
 import studio.driver.DeviceVersion;
 import studio.driver.LibUsbDetectionHelper;
@@ -333,9 +334,8 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
                     }
 
                     try {
-                        // Create destination folder
+                        // Destination folder
                         Path destFolder = destPath.resolve(uuid);
-                        Files.createDirectories(destFolder);
                         // Copy folder with progress tracking
                         return copyPackFolder(sourceFolder, destFolder, listener);
                     } catch (IOException e) {
@@ -369,16 +369,10 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
             Path folderPath = this.partitionMountPoint.resolve(CONTENT_FOLDER).resolve(folderName);
             LOGGER.debug("Uploading pack to folder: {}", folderName);
 
-            // Create destination folder
-            Files.createDirectories(folderPath);
             // Copy folder with progress tracking
             return CompletableFuture.supplyAsync(() -> {
                 try {
-                    return copyPackFolder(inputPath, folderPath, status -> {
-                        if (listener != null) {
-                            listener.onProgress(status);
-                        }
-                    });
+                    return copyPackFolder(inputPath, folderPath, listener); 
                 } catch (IOException e) {
                     throw new StoryTellerException("Failed to copy pack from device", e);
                 }
@@ -413,52 +407,52 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
         }
     }
 
-    private TransferStatus copyPackFolder(Path sourceFolder, Path destFolder, TransferProgressListener listener) throws IOException {
+    private TransferStatus copyPackFolder(Path sourceFolder, Path destFolder, TransferProgressListener listener)
+            throws IOException {
         // Keep track of transferred bytes and elapsed time
         final long startTime = System.currentTimeMillis();
         AtomicLong transferred = new AtomicLong(0);
         long folderSize = FileUtils.getFolderSize(sourceFolder);
-        if(LOGGER.isTraceEnabled()) {
+        if (LOGGER.isTraceEnabled()) {
             LOGGER.trace("Pack folder size: {}", FileUtils.readableByteSize(folderSize));
         }
+        // Target directory
+        Files.createDirectories(destFolder);
         // Copy folders and files
-        try(Stream<Path> paths = Files.walk(sourceFolder)) {
-            paths.forEach(s -> {
-                    try {
-                        Path d = destFolder.resolve(sourceFolder.relativize(s));
-                        if (Files.isDirectory(s)) {
-                            if (!Files.isDirectory(d)) {
-                                LOGGER.debug("Creating directory {}", d);
-                                Files.createDirectory(d);
-                            }
-                        } else {
-                            long fileSize = FileUtils.getFileSize(s);
-                            if(LOGGER.isDebugEnabled()) {
-                                LOGGER.debug("Copying file {} ({}) to {}", s.getFileName(), FileUtils.readableByteSize(fileSize), d);
-                            }
-                            Files.copy(s, d, StandardCopyOption.REPLACE_EXISTING);
-
-                            // Compute progress and speed
-                            long xferred = transferred.addAndGet(fileSize);
-                            long elapsed = System.currentTimeMillis() - startTime;
-                            double speed = xferred / (elapsed / 1000.0);
-                            if(LOGGER.isTraceEnabled()) {
-                                LOGGER.trace("Transferred {} in {} ms", FileUtils.readableByteSize(xferred), elapsed);
-                                LOGGER.trace("Average speed = {}/sec", FileUtils.readableByteSize((long)speed));
-                            }
-                            TransferStatus status = new TransferStatus(xferred == folderSize, xferred, folderSize, speed);
-
-                            // Call (optional) listener with transfer status
-                            if (listener != null) {
-                                CompletableFuture.runAsync(() -> listener.onProgress(status));
-                            }
-                        }
-                    } catch (IOException e) {
-                        throw new StoryTellerException("Failed to copy pack folder", e);
+        try (Stream<Path> paths = Files.walk(sourceFolder)) {
+            paths.forEach(ThrowingConsumer.unchecked(s -> {
+                Path d = destFolder.resolve(sourceFolder.relativize(s));
+                // Copy directory
+                if (Files.isDirectory(s)) {
+                    LOGGER.debug("Creating directory {}", d);
+                    Files.createDirectories(d);
+                } else {
+                    // Copy files
+                    long fileSize = FileUtils.getFileSize(s);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Copying file {} ({}) to {}", s.getFileName(),
+                                FileUtils.readableByteSize(fileSize), d);
                     }
-                });
+                    Files.copy(s, d, StandardCopyOption.REPLACE_EXISTING);
+
+                    // Compute progress and speed
+                    long xferred = transferred.addAndGet(fileSize);
+                    long elapsed = System.currentTimeMillis() - startTime;
+                    double speed = xferred / (elapsed / 1000.0);
+                    if (LOGGER.isTraceEnabled()) {
+                        LOGGER.trace("Transferred {} in {} ms", FileUtils.readableByteSize(xferred), elapsed);
+                        LOGGER.trace("Average speed = {}/sec", FileUtils.readableByteSize((long) speed));
+                    }
+                    TransferStatus status = new TransferStatus(xferred, folderSize, speed);
+
+                    // Call (optional) listener with transfer status
+                    if (listener != null) {
+                        CompletableFuture.runAsync(() -> listener.onProgress(status));
+                    }
+                }
+            }));
         }
-        return new TransferStatus(transferred.get() == folderSize, transferred.get(), folderSize, 0.0);
+        return new TransferStatus(transferred.get(), folderSize, 0.0);
     }
 
     public CompletionStage<Void> dump(Path outputPath) {

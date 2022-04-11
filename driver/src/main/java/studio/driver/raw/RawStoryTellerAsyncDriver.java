@@ -311,16 +311,13 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
         return LibUsbMassStorageHelper.asyncWriteSDSectors(handle, PACK_INDEX_SD_SECTOR, (short) 1, bb);
     }
 
-    private void followProgress(TransferStatus status, int totalSize, long startTime) {
+    private void followProgress(TransferStatus status, long startTime) {
         long elapsed = System.currentTimeMillis() - startTime;
         double speed = status.getTransferred() / (elapsed / 1000.0);
         status.setSpeed(speed);
         if(LOGGER.isTraceEnabled()) {
             LOGGER.trace("Transferred {} bytes in {} ms", status.getTransferred(), elapsed);
             LOGGER.trace("Average speed = {}/sec", FileUtils.readableByteSize((long)speed));
-        }
-        if (status.getTransferred() == totalSize) {
-            status.setDone(true);
         }
     }
 
@@ -342,7 +339,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                             final long startTime = System.currentTimeMillis();
                             // Copy pack chunk by chunk into the output stream
                             int totalSize = rspi.getSizeInSectors() * LibUsbMassStorageHelper.SECTOR_SIZE;
-                            CompletionStage<TransferStatus> promise = CompletableFuture.completedFuture(new TransferStatus(false, 0, totalSize, 0.0));
+                            CompletionStage<TransferStatus> promise = CompletableFuture.completedFuture(new TransferStatus(0, totalSize, 0.0));
                             for(int offset = 0; offset < rspi.getSizeInSectors(); offset += PACK_TRANSFER_CHUNK_SIZE_IN_SECTORS) {
                                 int sector = PACK_INDEX_SD_SECTOR + rspi.getStartSector() + offset;
                                 short nbSectorsToRead = (short) Math.min(PACK_TRANSFER_CHUNK_SIZE_IN_SECTORS, rspi.getSizeInSectors() - offset);
@@ -358,7 +355,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                                                     fos.write(bytes);
                                                     // Compute progress
                                                     status.setTransferred(status.getTransferred() + bytes.length);
-                                                    followProgress(status, totalSize, startTime);
+                                                    followProgress(status, startTime);
                                                     // Call (optional) listener with transfer status
                                                     if (listener != null) {
                                                         CompletableFuture.runAsync(() -> listener.onProgress(status));
@@ -408,7 +405,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                         final long startTime = System.currentTimeMillis();
                         // Copy pack chunk by chunk from the input stream
                         int totalSize = packSizeInSectors * LibUsbMassStorageHelper.SECTOR_SIZE;
-                        CompletionStage<TransferStatus> promise = CompletableFuture.completedFuture(new TransferStatus(false, 0, totalSize, 0.0));
+                        CompletionStage<TransferStatus> promise = CompletableFuture.completedFuture(new TransferStatus(0, totalSize, 0.0));
                         for(int offset = 0; offset < packSizeInSectors; offset += PACK_TRANSFER_CHUNK_SIZE_IN_SECTORS) {
                             int sector = PACK_INDEX_SD_SECTOR + startSector.get() + offset;
                             short nbSectorsToWrite = (short) Math.min(PACK_TRANSFER_CHUNK_SIZE_IN_SECTORS, packSizeInSectors - offset);
@@ -426,7 +423,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                                             .thenApply(written -> {
                                                 // Compute progress
                                                 status.setTransferred(status.getTransferred() + chunkSize);
-                                                followProgress(status, totalSize, startTime);
+                                                followProgress(status, startTime);
                                                 // Call (optional) listener with transfer status
                                                 if (listener != null) {
                                                     CompletableFuture.runAsync(() -> listener.onProgress(status));

@@ -144,7 +144,7 @@ public class ArchiveStoryPackReader implements StoryPackReader {
         Optional<String> maybeDescription = Optional.ofNullable(root.get("description"))
                 .filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
         // TODO Thumbnail?
-        if (maybeTitle.isPresent() || maybeDescription.isPresent()) {
+        if (maybeTitle.or(() -> maybeDescription).isPresent()) {
             EnrichedPackMetadata enrichedPack = new EnrichedPackMetadata(maybeTitle.orElse(null), maybeDescription.orElse(null));
             storyPack.setEnriched(enrichedPack);
         }
@@ -173,13 +173,13 @@ public class ArchiveStoryPackReader implements StoryPackReader {
             Transition homeTransition = null;
 
             JsonElement okNode = node.get("okTransition");
-            if (okNode != null && okNode.isJsonObject()) {
+            if(Optional.ofNullable(okNode).filter(JsonElement::isJsonObject).isPresent()) {
                 JsonObject okObj = okNode.getAsJsonObject();
                 ActionNode actionNode = actionNodes.get(okObj.get("actionNode").getAsString());
                 okTransition = new Transition(actionNode, okObj.get("optionIndex").getAsShort());
             }
             JsonElement homeNode = node.get("homeTransition");
-            if (homeNode != null && homeNode.isJsonObject()) {
+            if(Optional.ofNullable(homeNode).filter(JsonElement::isJsonObject).isPresent()) {
                 JsonObject homeObj = homeNode.getAsJsonObject();
                 ActionNode actionNode = actionNodes.get(homeObj.get("actionNode").getAsString());
                 homeTransition = new Transition(actionNode, homeObj.get("optionIndex").getAsShort());
@@ -194,19 +194,18 @@ public class ArchiveStoryPackReader implements StoryPackReader {
             EnrichedNodeMetadata enrichedNode = readEnrichedNodeMetadata(node);
 
             StageNode stageNode = new StageNode(uuid, null, null, okTransition, homeTransition, ctrl, enrichedNode);
-
-            if (node.get("squareOne") != null && node.get("squareOne").getAsBoolean()) {
+            if(Optional.ofNullable(node.get("squareOne")).filter(JsonElement::getAsBoolean).isPresent()) {
                 squareOne = stageNode;
             }
             JsonElement imageNode = node.get("image");
-            if (imageNode != null && !imageNode.isJsonNull()) {
+            if(Optional.ofNullable(imageNode).filter(JsonElement::isJsonNull).isEmpty()) {
                 String imageAssetName = imageNode.getAsString();
                 List<StageNode> atsn = assetToStageNodes.getOrDefault(imageAssetName, new ArrayList<>());
                 atsn.add(stageNode);
                 assetToStageNodes.put(imageAssetName, atsn);
             }
             JsonElement audioNode = node.get("audio");
-            if (audioNode != null && !audioNode.isJsonNull()) {
+            if(Optional.ofNullable(audioNode).filter(JsonElement::isJsonNull).isEmpty()) {
                 String audioAssetName = audioNode.getAsString();
                 List<StageNode> atsn = assetToStageNodes.getOrDefault(audioAssetName, new ArrayList<>());
                 atsn.add(stageNode);
@@ -232,10 +231,10 @@ public class ArchiveStoryPackReader implements StoryPackReader {
 
         // Make sure the first node is actually 'square one'
         List<StageNode> nodes = new ArrayList<>(stageNodes.values());
-        if (squareOne != null) {
-            nodes.remove(squareOne);
-            nodes.add(0, squareOne);
-        }
+        Optional.ofNullable(squareOne).ifPresent(sq -> {
+            nodes.remove(sq);
+            nodes.add(0, sq);
+        });
         // add nodes
         storyPack.setStageNodes(nodes);
         // uuid
