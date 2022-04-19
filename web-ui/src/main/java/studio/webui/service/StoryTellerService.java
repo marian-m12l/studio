@@ -25,7 +25,9 @@ import io.vertx.core.json.JsonObject;
 import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.SecurityUtils;
 import studio.core.v1.utils.exception.StoryTellerException;
+import studio.driver.StoryTellerAsyncDriver;
 import studio.driver.fs.FsStoryTellerAsyncDriver;
+import studio.driver.model.StoryPackInfos;
 import studio.driver.model.fs.FsDeviceInfos;
 import studio.driver.model.fs.FsStoryPackInfos;
 import studio.driver.model.raw.RawDeviceInfos;
@@ -116,6 +118,76 @@ public class StoryTellerService implements IStoryTellerService {
                 });
     }
 
+    public CompletionStage<Optional<JsonObject>> deviceInfos() {
+        if (rawDevice != null) {
+            return rawDriver.getDeviceInfos().thenApply(this::toJson);
+        }
+        if (fsDevice != null) {
+            return fsDriver.getDeviceInfos().thenApply(this::toJson);
+        }
+        return CompletableFuture.completedFuture(Optional.empty());
+    }
+
+    public CompletionStage<JsonArray> packs() {
+        if (rawDevice != null) {
+            return rawDriver.getPacksList().thenApply(
+                    packs -> new JsonArray(packs.stream().map(this::getRawPackMetadata).collect(Collectors.toList())));
+        }
+        if (fsDevice != null) {
+            return fsDriver.getPacksList().thenApply(
+                    packs -> new JsonArray(packs.stream().map(this::getFsPackMetadata).collect(Collectors.toList())));
+        }
+        return CompletableFuture.completedFuture(new JsonArray());
+    }
+
+    public CompletionStage<Optional<String>> addPack(String uuid, Path packFile) {
+        if (rawDevice != null) {
+            return rawDriver.getPacksList().thenApply(packs -> upload(packs, rawDriver, uuid, packFile));
+        }
+        if (fsDevice != null) {
+            return fsDriver.getPacksList().thenApply(packs -> upload(packs, fsDriver, uuid, packFile));
+        }
+        return CompletableFuture.completedFuture(Optional.empty());
+    }
+
+    public CompletionStage<Boolean> deletePack(String uuid) {
+        if (rawDevice != null) {
+            return rawDriver.deletePack(uuid);
+        }
+        if (fsDevice != null) {
+            return fsDriver.deletePack(uuid);
+        }
+        return CompletableFuture.completedFuture(false);
+    }
+
+    public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
+        if (rawDevice != null) {
+            return rawDriver.reorderPacks(uuids);
+        }
+        if (fsDevice != null) {
+            return fsDriver.reorderPacks(uuids);
+        }
+        return CompletableFuture.completedFuture(false);
+    }
+
+    public CompletionStage<Optional<String>> extractPack(String uuid, Path packFile) {
+        if (rawDevice != null) {
+            return CompletableFuture.completedFuture(download(rawDriver, uuid, packFile));
+        }
+        if (fsDevice != null) {
+            return CompletableFuture.completedFuture(download(fsDriver, uuid, packFile));
+        }
+        return CompletableFuture.completedFuture(Optional.empty());
+    }
+
+    public CompletionStage<Void> dump(Path outputPath) {
+        if (rawDevice != null) {
+            return rawDriver.dump(outputPath);
+        }
+        // unavailable for fsDevice
+        return CompletableFuture.completedFuture(null);
+    }
+
     private void sendFailure() {
         eventBus.send("storyteller.failure", null);
     }
@@ -128,197 +200,19 @@ public class StoryTellerService implements IStoryTellerService {
         eventBus.send("storyteller.transfer." + id + ".done", new JsonObject().put("success", success));
     }
 
-    public CompletionStage<Optional<JsonObject>> deviceInfos() {
-        if (rawDevice != null) {
-            return deviceInfosV1();
-        } else if (fsDevice != null) {
-            return deviceInfosV2();
-        } else {
-            return CompletableFuture.completedFuture(Optional.empty());
+    private <T,U,V extends StoryPackInfos> Optional<String> upload(List<V> packs, StoryTellerAsyncDriver<T, U> driver, String uuid, Path packFile) {
+        // Check that the pack is not already on the device : Look for UUID in packs index
+        boolean matched = packs.stream().anyMatch(p -> p.getUuid().equals(UUID.fromString(uuid)));
+        if (matched) {
+            LOGGER.error("Cannot add pack to device because the pack already exists on the device");
+            return Optional.empty();
         }
-    }
-
-    private CompletionStage<Optional<JsonObject>> deviceInfosV1() {
-        return rawDriver.getDeviceInfos().thenApply(infos -> Optional.of(toJson(infos)));
-    }
-
-    private JsonObject toJson(RawDeviceInfos infos) {
-        long sdTotal = (long) infos.getSdCardSizeInSectors() * LibUsbMassStorageHelper.SECTOR_SIZE;
-        long sdUsed = (long) infos.getUsedSpaceInSectors() * LibUsbMassStorageHelper.SECTOR_SIZE;
-        String fw = infos.getFirmwareMajor() == -1 ? null : infos.getFirmwareMajor() + "." + infos.getFirmwareMinor();
-        return new JsonObject() //
-                .put("uuid", infos.getUuid().toString()) //
-                .put("serial", infos.getSerialNumber()) //
-                .put("firmware", fw) //
-                .put("storage", new JsonObject() //
-                        .put("size", sdTotal)//
-                        .put("free", sdTotal - sdUsed)//
-                        .put("taken", sdUsed))
-                .put("error", infos.isInError()) //
-                .put("driver", "raw");
-    }
-
-    private CompletionStage<Optional<JsonObject>> deviceInfosV2() {
-        return fsDriver.getDeviceInfos().thenApply(infos -> Optional.of(toJson(infos)));
-    }
-
-    private JsonObject toJson(FsDeviceInfos infos) {
-        return new JsonObject() //
-                .put("uuid", SecurityUtils.encodeHex(infos.getDeviceId())) //
-                .put("serial", infos.getSerialNumber()) //
-                .put("firmware", infos.getFirmwareMajor() + "." + infos.getFirmwareMinor()) //
-                .put("storage", new JsonObject() //
-                        .put("size", infos.getSdCardSizeInBytes()) //
-                        .put("free", infos.getSdCardSizeInBytes() - infos.getUsedSpaceInBytes()) //
-                        .put("taken", infos.getUsedSpaceInBytes())) //
-                .put("error", false) //
-                .put("driver", "fs");
-    }
-
-    public CompletionStage<JsonArray> packs() {
-        if (rawDevice != null) {
-            return packsV1();
-        } else if (fsDevice != null) {
-            return packsV2();
-        } else {
-            return CompletableFuture.completedFuture(new JsonArray());
-        }
-    }
-
-    private CompletionStage<JsonArray> packsV1() {
-        return rawDriver.getPacksList().thenApply(
-                packs -> new JsonArray(packs.stream().map(this::getRawPackMetadata).collect(Collectors.toList())));
-    }
-
-    private CompletionStage<JsonArray> packsV2() {
-        return fsDriver.getPacksList().thenApply(
-                packs -> new JsonArray(packs.stream().map(this::getFsPackMetadata).collect(Collectors.toList())));
-    }
-
-    public CompletionStage<Optional<String>> addPack(String uuid, Path packFile) {
-        if (rawDevice != null) {
-            return addPackV1(uuid, packFile);
-        } else if (fsDevice != null) {
-            return addPackV2(uuid, packFile);
-        } else {
-            return CompletableFuture.completedFuture(Optional.empty());
-        }
-    }
-    private CompletionStage<Optional<String>> addPackV1(String uuid, Path packFile) {
-        // Check that the pack is not already on the device
-        return rawDriver.getPacksList()
-                .thenApply(packs -> {
-                    // Look for UUID in packs index
-                    Optional<RawStoryPackInfos> matched = packs.stream().filter(p -> p.getUuid().equals(UUID.fromString(uuid))).findFirst();
-                    if (matched.isPresent()) {
-                        LOGGER.error("Cannot add pack to device because the pack already exists on the device");
-                        return Optional.empty();
-                    } else {
-                        String transferId = UUID.randomUUID().toString();
-                        try {
-                            rawDriver.uploadPack(uuid, packFile, status -> {
-                                // Send event on eventbus to monitor progress
-                                double p = status.getPercent();
-                                LOGGER.debug("Pack add progress... {}% ({} / {})", p, status.getTransferred(),
-                                        status.getTotal());
-                                sendProgress(transferId, p);
-                            }).whenComplete((status, t) -> {
-                                // Handle failure
-                                if (t != null) {
-                                    throw new StoryTellerException(t);
-                                }
-                                // Handle success
-                                sendDone(transferId, true);
-                            });
-                        } catch (Exception e) {
-                            LOGGER.error("Failed to add pack to device", e);
-                            // Send event on eventbus to signal transfer failure
-                            sendDone(transferId, false);
-                        }
-                        return Optional.of(transferId);
-                    }
-                });
-    }
-    private CompletionStage<Optional<String>> addPackV2(String uuid, Path packFile) {
-        // Check that the pack is not already on the device
-        return fsDriver.getPacksList()
-                .thenApply(packs -> {
-                    // Look for UUID in packs index
-                    Optional<FsStoryPackInfos> matched = packs.stream().filter(p -> p.getUuid().equals(UUID.fromString(uuid))).findFirst();
-                    if (matched.isPresent()) {
-                        LOGGER.error("Cannot add pack to device because the pack already exists on the device");
-                        return Optional.empty();
-                    } else {
-                        String transferId = UUID.randomUUID().toString();
-                        try {
-                            LOGGER.info("Transferring pack folder to device: {}", packFile);
-                            fsDriver.uploadPack(uuid, packFile, status -> {
-                                // Send event on eventbus to monitor progress
-                                double p = status.getPercent();
-                                LOGGER.debug("Pack add progress... {}% ({} / {})", p, status.getTransferred(),
-                                        status.getTotal());
-                                sendProgress(transferId, p);
-                            }).whenComplete((status, t) -> {
-                                // Handle failure
-                                if (t != null) {
-                                    throw new StoryTellerException(t);
-                                }
-                                // Handle success
-                                sendDone(transferId, true);
-                            });
-                        } catch (Exception e) {
-                            LOGGER.error("Failed to add pack to device", e);
-                            // Send event on eventbus to signal transfer failure
-                            sendDone(transferId, false);
-                        }
-                        return Optional.of(transferId);
-                    }
-                });
-    }
-
-    public CompletionStage<Boolean> deletePack(String uuid) {
-        if (rawDevice != null) {
-            return rawDriver.deletePack(uuid);
-        } else if (fsDevice != null) {
-            return fsDriver.deletePack(uuid);
-        } else {
-            return CompletableFuture.completedFuture(false);
-        }
-    }
-
-    public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
-        if (rawDevice != null) {
-            return rawDriver.reorderPacks(uuids);
-        } else if (fsDevice != null) {
-            return fsDriver.reorderPacks(uuids);
-        } else {
-            return CompletableFuture.completedFuture(false);
-        }
-    }
-
-    public CompletionStage<Optional<String>> extractPack(String uuid, Path packFile) {
-        if (rawDevice != null) {
-            return extractPackV1(uuid, packFile);
-        } else if (fsDevice != null) {
-            return extractPackV2(uuid, packFile);
-        } else {
-            return CompletableFuture.completedFuture(Optional.empty());
-        }
-    }
-    private CompletionStage<Optional<String>> extractPackV1(String uuid, Path destFile) {
         String transferId = UUID.randomUUID().toString();
-        // Check that the destination is available
-        if (Files.exists(destFile)) {
-            LOGGER.error("Cannot extract pack from device because the destination file already exists");
-            return CompletableFuture.completedFuture(Optional.empty());
-        }
-        // Open destination file
         try {
-            rawDriver.downloadPack(uuid, destFile, status -> {
+            driver.uploadPack(uuid, packFile, status -> {
                 // Send event on eventbus to monitor progress
                 double p = status.getPercent();
-                LOGGER.debug("Pack extraction progress... {}% ({} / {})", p, status.getTransferred(),
-                        status.getTotal());
+                LOGGER.debug("Pack add progress... {}% ({} / {})", p, status.getTransferred(), status.getTotal());
                 sendProgress(transferId, p);
             }).whenComplete((status, t) -> {
                 // Handle failure
@@ -329,21 +223,22 @@ public class StoryTellerService implements IStoryTellerService {
                 sendDone(transferId, true);
             });
         } catch (Exception e) {
-            LOGGER.error("Failed to extract pack from device", e);
+            LOGGER.error("Failed to add pack to device", e);
             // Send event on eventbus to signal transfer failure
             sendDone(transferId, false);
         }
-        return CompletableFuture.completedFuture(Optional.of(transferId));
+        return Optional.of(transferId);
     }
-    private CompletionStage<Optional<String>> extractPackV2(String uuid, Path destFile) {
-        String transferId = UUID.randomUUID().toString();
+
+    private <T, U> Optional<String> download(StoryTellerAsyncDriver<T, U> driver, String uuid, Path destFile) {
         // Check that the destination is available
         if (Files.exists(destFile.resolve(uuid))) {
             LOGGER.error("Cannot extract pack from device because the destination file already exists");
-            return CompletableFuture.completedFuture(Optional.empty());
+            return Optional.empty();
         }
+        String transferId = UUID.randomUUID().toString();
         try {
-            fsDriver.downloadPack(uuid, destFile, status -> {
+            driver.downloadPack(uuid, destFile, status -> {
                 // Send event on eventbus to monitor progress
                 double p = status.getPercent();
                 LOGGER.debug("Pack extraction progress... {}% ({} / {})", p, status.getTransferred(),
@@ -362,14 +257,7 @@ public class StoryTellerService implements IStoryTellerService {
             // Send event on eventbus to signal transfer failure
             sendDone(transferId, false);
         }
-        return CompletableFuture.completedFuture(Optional.of(transferId));
-    }
-
-    public CompletionStage<Void> dump(Path outputPath) {
-        if (this.rawDevice == null) {
-            return CompletableFuture.completedFuture(null);
-        }
-        return rawDriver.dump(outputPath);
+        return Optional.of(transferId);
     }
 
     private JsonObject getRawPackMetadata(RawStoryPackInfos pack) {
@@ -404,6 +292,35 @@ public class StoryTellerService implements IStoryTellerService {
                         .put("image", meta.getThumbnail()) //
                         .put("official", meta.isOfficial())) //
                 .orElse(json);
+    }
+
+    private Optional<JsonObject> toJson(RawDeviceInfos infos) {
+        long sdTotal = (long) infos.getSdCardSizeInSectors() * LibUsbMassStorageHelper.SECTOR_SIZE;
+        long sdUsed = (long) infos.getUsedSpaceInSectors() * LibUsbMassStorageHelper.SECTOR_SIZE;
+        String fw = infos.getFirmwareMajor() == -1 ? null : infos.getFirmwareMajor() + "." + infos.getFirmwareMinor();
+        return Optional.of(new JsonObject() //
+                .put("uuid", infos.getUuid().toString()) //
+                .put("serial", infos.getSerialNumber()) //
+                .put("firmware", fw) //
+                .put("storage", new JsonObject() //
+                        .put("size", sdTotal)//
+                        .put("free", sdTotal - sdUsed)//
+                        .put("taken", sdUsed))
+                .put("error", infos.isInError()) //
+                .put("driver", "raw"));
+    }
+
+    private Optional<JsonObject> toJson(FsDeviceInfos infos) {
+        return Optional.of(new JsonObject() //
+                .put("uuid", SecurityUtils.encodeHex(infos.getDeviceId())) //
+                .put("serial", infos.getSerialNumber()) //
+                .put("firmware", infos.getFirmwareMajor() + "." + infos.getFirmwareMinor()) //
+                .put("storage", new JsonObject() //
+                        .put("size", infos.getSdCardSizeInBytes()) //
+                        .put("free", infos.getSdCardSizeInBytes() - infos.getUsedSpaceInBytes()) //
+                        .put("taken", infos.getUsedSpaceInBytes())) //
+                .put("error", false) //
+                .put("driver", "fs"));
     }
 
 }

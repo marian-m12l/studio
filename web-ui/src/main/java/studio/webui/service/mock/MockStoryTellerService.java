@@ -39,7 +39,7 @@ import studio.webui.service.IStoryTellerService;
 public class MockStoryTellerService implements IStoryTellerService {
 
     private static final Logger LOGGER = LogManager.getLogger(MockStoryTellerService.class);
-    
+
     private static final int BUFFER_SIZE = 1024 * 1024 * 10;
 
     private final EventBus eventBus;
@@ -53,14 +53,12 @@ public class MockStoryTellerService implements IStoryTellerService {
         LOGGER.info("Setting up mocked story teller service");
 
         // Create the mocked device folder if needed
-        Path libraryFolder = devicePath();
-        if (!Files.isDirectory(libraryFolder)) {
-            try {
-                Files.createDirectories(libraryFolder);
-            } catch (IOException e) {
-                LOGGER.error("Failed to initialize mocked device", e);
-                throw new IllegalStateException("Failed to initialize mocked device");
-            }
+        try {
+            Path libraryFolder = devicePath();
+            Files.createDirectories(libraryFolder);
+        } catch (IOException e) {
+            LOGGER.error("Failed to initialize mocked device", e);
+            throw new IllegalStateException("Failed to initialize mocked device");
         }
     }
 
@@ -125,7 +123,7 @@ public class MockStoryTellerService implements IStoryTellerService {
             throw new StoryTellerException(e);
         }
     }
-    
+
     private Optional<StoryPackMetadata> readBinaryPackFile(Path path) {
         LOGGER.debug("Reading pack file: {}", path);
         // Handle only binary file format
@@ -152,72 +150,9 @@ public class MockStoryTellerService implements IStoryTellerService {
         Path deviceFolder = devicePath();
         if (!Files.isDirectory(deviceFolder)) {
             return CompletableFuture.completedFuture(Optional.empty());
-        } else {
-            String transferId = UUID.randomUUID().toString();
-            // Perform transfer asynchronously, and send events on eventbus to monitor
-            // progress and end of transfer
-            Executor after2s = CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS);
-            return CompletableFuture.supplyAsync(() -> {
-                // Make sure the device does not already contain this pack
-                Path destFile = deviceFolder.resolve(uuid + ".pack");
-                if (Files.exists(destFile)) {
-                    LOGGER.error("Cannot add pack to mocked device because the folder already contains this pack");
-                    sendDone(transferId, false);
-                    return Optional.empty();
-                }
-                try (InputStream input = new BufferedInputStream(Files.newInputStream(packFile));
-                        OutputStream output = new BufferedOutputStream(Files.newOutputStream(destFile))) {
-                    long fileSize = Files.size(packFile);
-                    final byte[] buffer = new byte[BUFFER_SIZE];
-                    long count = 0;
-                    int n = 0;
-                    while ((n = input.read(buffer)) != -1) {
-                        output.write(buffer, 0, n);
-                        count += n;
-                        // Send events on eventbus to monitor progress
-                        double p = count / (double) fileSize;
-                        LOGGER.debug("Pack copy progress... {} / {} ({})", count, fileSize, p);
-                        sendProgress(transferId, p);
-                    }
-                    // Send event on eventbus to signal end of transfer
-                    sendDone(transferId, true);
-                    return Optional.of(transferId);
-                } catch (IOException e) {
-                    LOGGER.error("Failed to add pack to mocked device", e);
-                    // Send event on eventbus to signal transfer failure
-                    sendDone(transferId, false);
-                }
-                return Optional.empty();
-            }, after2s);
         }
-    }
-
-    public CompletionStage<Boolean> deletePack(String uuid) {
-        // Check that mocked device folder exists
-        Path deviceFolder = devicePath();
-        if (!Files.isDirectory(deviceFolder)) {
-            return CompletableFuture.completedFuture(false);
-        } else {
-            try {
-                Path packFile = deviceFolder.resolve(uuid + ".pack");
-                if (Files.exists(packFile)) {
-                    Files.delete(packFile);
-                    return CompletableFuture.completedFuture(true);
-                } else {
-                    LOGGER.error("Cannot remove pack from mocked device because it is not in the folder");
-                    return CompletableFuture.completedFuture(false);
-                }
-            } catch (IOException e) {
-                LOGGER.error("Failed to remove pack from mocked device", e);
-                return CompletableFuture.completedFuture(false);
-            }
-        }
-    }
-
-    public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
-        // Not supported
-        LOGGER.warn("Not supported : reorderPacks");
-        return CompletableFuture.completedFuture(false);
+        Path destFile = deviceFolder.resolve(uuid + ".pack");
+        return copyPack("add pack", packFile, destFile);
     }
 
     public CompletionStage<Optional<String>> extractPack(String uuid, Path destFile) {
@@ -225,44 +160,73 @@ public class MockStoryTellerService implements IStoryTellerService {
         Path deviceFolder = devicePath();
         if (!Files.isDirectory(deviceFolder)) {
             return CompletableFuture.completedFuture(Optional.empty());
-        } else {
-            String transferId = UUID.randomUUID().toString();
-            // Perform transfer asynchronously, and send events on eventbus to monitor
-            // progress and end of transfer
-            Executor after2s = CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS);
-            return CompletableFuture.supplyAsync(() -> {
-                Path packFile = deviceFolder.resolve(uuid + ".pack");
-                // Check that source and destination are available
-                if (Files.notExists(packFile) || Files.exists(destFile)) {
-                    LOGGER.error("Cannot extract pack from mocked device because source is unavailable or destination exists");
-                    sendDone(transferId, false);
-                    return Optional.empty();
-                }
-                try (InputStream input = new BufferedInputStream(Files.newInputStream(packFile));
-                        OutputStream output = new BufferedOutputStream(Files.newOutputStream(destFile))) {
-                    long fileSize = Files.size(packFile);
-                    final byte[] buffer = new byte[BUFFER_SIZE];
-                    long count = 0;
-                    int n = 0;
-                    while ((n = input.read(buffer)) != -1) {
-                        output.write(buffer, 0, n);
-                        count += n;
-                        // Send events on eventbus to monitor progress
-                        double p = count / (double) fileSize;
-                        LOGGER.debug("Pack copy progress... {} / {} ({})", count, fileSize, p);
-                        sendProgress(transferId, p);
-                    }
-                    // Send event on eventbus to signal end of transfer
-                    sendDone(transferId, true);
-                    return Optional.of(transferId);
-                } catch (IOException e) {
-                    LOGGER.error("Failed to extract pack from mocked device", e);
-                    // Send event on eventbus to signal transfer failure
-                    sendDone(transferId, false);
-                }
-                return Optional.empty();
-            }, after2s);
         }
+        Path packFile = deviceFolder.resolve(uuid + ".pack");
+        return copyPack("extract pack", packFile, destFile);
+    }
+
+    private CompletionStage<Optional<String>> copyPack(String opName, Path packFile, Path destFile) {
+        String transferId = UUID.randomUUID().toString();
+        // Perform transfer asynchronously, and send events on eventbus to monitor
+        // progress and end of transfer
+        Executor after5s = CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS);
+        return CompletableFuture.supplyAsync(() -> {
+            // Check that source and destination are available
+            if (Files.notExists(packFile) || Files.exists(destFile)) {
+                LOGGER.error("Cannot {} on mocked device because pack doesn't exist but dest does", opName);
+                sendDone(transferId, false);
+                return Optional.empty();
+            }
+            try (InputStream input = new BufferedInputStream(Files.newInputStream(packFile));
+                    OutputStream output = new BufferedOutputStream(Files.newOutputStream(destFile))) {
+                long fileSize = Files.size(packFile);
+                final byte[] buffer = new byte[BUFFER_SIZE];
+                long count = 0;
+                int n = 0;
+                while ((n = input.read(buffer)) != -1) {
+                    output.write(buffer, 0, n);
+                    count += n;
+                    // Send events on eventbus to monitor progress
+                    double p = count / (double) fileSize;
+                    LOGGER.debug("Pack copy progress... {} / {} ({})", count, fileSize, p);
+                    sendProgress(transferId, p);
+                }
+                // Send event on eventbus to signal end of transfer
+                sendDone(transferId, true);
+                return Optional.of(transferId);
+            } catch (IOException e) {
+                LOGGER.error("Failed to {} on mocked device", opName, e);
+                // Send event on eventbus to signal transfer failure
+                sendDone(transferId, false);
+            }
+            return Optional.empty();
+        }, after5s);
+    }
+
+    public CompletionStage<Boolean> deletePack(String uuid) {
+        // Check that mocked device folder exists
+        Path deviceFolder = devicePath();
+        if (!Files.isDirectory(deviceFolder)) {
+            return CompletableFuture.completedFuture(false);
+        }
+        try {
+            Path packFile = deviceFolder.resolve(uuid + ".pack");
+            if (Files.deleteIfExists(packFile)) {
+                return CompletableFuture.completedFuture(true);
+            } else {
+                LOGGER.error("Cannot remove pack from mocked device because it is not in the folder");
+                return CompletableFuture.completedFuture(false);
+            }
+        } catch (IOException e) {
+            LOGGER.error("Failed to remove pack from mocked device", e);
+            return CompletableFuture.completedFuture(false);
+        }
+    }
+
+    public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
+        // Not supported
+        LOGGER.warn("Not supported : reorderPacks");
+        return CompletableFuture.completedFuture(false);
     }
 
     private JsonObject getPackMetadata(StoryPackMetadata packMetadata) {

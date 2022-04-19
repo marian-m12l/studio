@@ -141,76 +141,7 @@ public class BinaryStoryPackWriter implements StoryPackWriter {
 
             // Write stage nodes (from sector 2)
             for (StageNode stageNode : pack.getStageNodes()) {
-                // UUID
-                UUID nodeUuid = UUID.fromString(stageNode.getUuid());
-                dos.writeLong(nodeUuid.getMostSignificantBits());
-                dos.writeLong(nodeUuid.getLeastSignificantBits());
-
-                // Image asset
-                ImageAsset image = stageNode.getImage();
-                if (image == null) {
-                    dos.writeInt(-1);
-                    dos.writeInt(-1);
-                } else {
-                    String assetHash = SecurityUtils.sha1Hex(image.getRawData());
-                    AssetAddr assetAddr = assetsHashes.get(assetHash);
-                    dos.writeInt(assetAddr.getOffset());
-                    dos.writeInt(assetAddr.getSize());
-                }
-
-                // Audio asset
-                AudioAsset audio = stageNode.getAudio();
-                if (audio == null) {
-                    dos.writeInt(-1);
-                    dos.writeInt(-1);
-                } else {
-                    String assetHash = SecurityUtils.sha1Hex(audio.getRawData());
-                    AssetAddr assetAddr = assetsHashes.get(assetHash);
-                    dos.writeInt(assetAddr.getOffset());
-                    dos.writeInt(assetAddr.getSize());
-                }
-
-                // Transitions
-                Transition okTransition = stageNode.getOkTransition();
-                if (okTransition == null) {
-                    dos.writeShort(-1);
-                    dos.writeShort(-1);
-                    dos.writeShort(-1);
-                } else {
-                    SectorAddr nodeAddr = getKey(actionNodesMap, okTransition.getActionNode());
-                    dos.writeShort(nodeAddr.getOffset());
-                    dos.writeShort(okTransition.getActionNode().getOptions().size());
-                    dos.writeShort(okTransition.getOptionIndex());
-                }
-                Transition homeTransition = stageNode.getHomeTransition();
-                if (homeTransition == null) {
-                    dos.writeShort(-1);
-                    dos.writeShort(-1);
-                    dos.writeShort(-1);
-                } else {
-                    SectorAddr nodeAddr = getKey(actionNodesMap, homeTransition.getActionNode());
-                    dos.writeShort(nodeAddr.getOffset());
-                    dos.writeShort(homeTransition.getActionNode().getOptions().size());
-                    dos.writeShort(homeTransition.getOptionIndex());
-                }
-
-                // Control settings
-                dos.writeShort(stageNode.getControlSettings().isWheelEnabled() ? 1 : 0);
-                dos.writeShort(stageNode.getControlSettings().isOkEnabled() ? 1 : 0);
-                dos.writeShort(stageNode.getControlSettings().isHomeEnabled() ? 1 : 0);
-                dos.writeShort(stageNode.getControlSettings().isPauseEnabled() ? 1 : 0);
-                dos.writeShort(stageNode.getControlSettings().isAutoJumpEnabled() ? 1 : 0);
-
-                // Write (optional) enriched node metadata
-                int enrichedNodeMetadataSize = 0;
-                if (enriched && stageNode.getEnriched() != null) {
-                    writePadding(dos, BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING);
-                    enrichedNodeMetadataSize = BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING
-                            + writeEnrichedNodeMetadata(dos, stageNode);
-                }
-
-                // Skip to end of sector
-                writePadding(dos, SECTOR_SIZE - 54 - enrichedNodeMetadataSize);
+                writeStageNode(dos, stageNode, assetsHashes, actionNodesMap, enriched);
             }
 
             // Write action sectors
@@ -280,6 +211,79 @@ public class BinaryStoryPackWriter implements StoryPackWriter {
             // Write check bytes
             dos.write(CHECK_BYTES, 0, CHECK_BYTES.length);
         }
+    }
+
+    private void writeStageNode(DataOutputStream dos, StageNode stageNode, TreeMap<String, AssetAddr> assetsHashes,
+            TreeMap<SectorAddr, ActionNode> actionNodesMap, boolean enriched) throws IOException {
+        // UUID
+        UUID nodeUuid = UUID.fromString(stageNode.getUuid());
+        dos.writeLong(nodeUuid.getMostSignificantBits());
+        dos.writeLong(nodeUuid.getLeastSignificantBits());
+
+        // Image asset
+        ImageAsset image = stageNode.getImage();
+        if (image == null) {
+            dos.writeInt(-1);
+            dos.writeInt(-1);
+        } else {
+            String assetHash = SecurityUtils.sha1Hex(image.getRawData());
+            AssetAddr assetAddr = assetsHashes.get(assetHash);
+            dos.writeInt(assetAddr.getOffset());
+            dos.writeInt(assetAddr.getSize());
+        }
+
+        // Audio asset
+        AudioAsset audio = stageNode.getAudio();
+        if (audio == null) {
+            dos.writeInt(-1);
+            dos.writeInt(-1);
+        } else {
+            String assetHash = SecurityUtils.sha1Hex(audio.getRawData());
+            AssetAddr assetAddr = assetsHashes.get(assetHash);
+            dos.writeInt(assetAddr.getOffset());
+            dos.writeInt(assetAddr.getSize());
+        }
+
+        // Transitions
+        Transition okTransition = stageNode.getOkTransition();
+        if (okTransition == null) {
+            dos.writeShort(-1);
+            dos.writeShort(-1);
+            dos.writeShort(-1);
+        } else {
+            SectorAddr nodeAddr = getKey(actionNodesMap, okTransition.getActionNode());
+            dos.writeShort(nodeAddr.getOffset());
+            dos.writeShort(okTransition.getActionNode().getOptions().size());
+            dos.writeShort(okTransition.getOptionIndex());
+        }
+        Transition homeTransition = stageNode.getHomeTransition();
+        if (homeTransition == null) {
+            dos.writeShort(-1);
+            dos.writeShort(-1);
+            dos.writeShort(-1);
+        } else {
+            SectorAddr nodeAddr = getKey(actionNodesMap, homeTransition.getActionNode());
+            dos.writeShort(nodeAddr.getOffset());
+            dos.writeShort(homeTransition.getActionNode().getOptions().size());
+            dos.writeShort(homeTransition.getOptionIndex());
+        }
+
+        // Control settings
+        dos.writeShort(stageNode.getControlSettings().isWheelEnabled() ? 1 : 0);
+        dos.writeShort(stageNode.getControlSettings().isOkEnabled() ? 1 : 0);
+        dos.writeShort(stageNode.getControlSettings().isHomeEnabled() ? 1 : 0);
+        dos.writeShort(stageNode.getControlSettings().isPauseEnabled() ? 1 : 0);
+        dos.writeShort(stageNode.getControlSettings().isAutoJumpEnabled() ? 1 : 0);
+
+        // Write (optional) enriched node metadata
+        int enrichedNodeMetadataSize = 0;
+        if (enriched && stageNode.getEnriched() != null) {
+            writePadding(dos, BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING);
+            enrichedNodeMetadataSize = BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING
+                    + writeEnrichedNodeMetadata(dos, stageNode);
+        }
+        // Skip to end of sector
+        writePadding(dos, SECTOR_SIZE - 54 - enrichedNodeMetadataSize);
     }
 
     private int writeEnrichedNodeMetadata(DataOutputStream dos, Node node) throws IOException {
