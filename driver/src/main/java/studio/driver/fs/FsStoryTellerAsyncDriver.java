@@ -381,8 +381,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
                 LOGGER.debug("Generating device-specific boot file");
                 return getDeviceInfos().thenApply(deviceInfos -> {
                     try {
-                        FsStoryPackWriter writer = new FsStoryPackWriter();
-                        writer.addBootFile(folderPath, deviceInfos.getDeviceId());
+                        FsStoryPackWriter.addBootFile(folderPath, deviceInfos.getDeviceId());
                         return status;
                     } catch (IOException e) {
                         throw new StoryTellerException("Failed to generate device-specific boot file", e);

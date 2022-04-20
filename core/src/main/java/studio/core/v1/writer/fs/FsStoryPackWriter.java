@@ -307,7 +307,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
         Files.write(path, liCiphered);
     }
 
-    public void addBootFile(Path packFolder, byte[] deviceUuid) throws IOException {
+    public static void addBootFile(Path packFolder, byte[] deviceUuid) throws IOException {
         // Compute specific key
         byte[] specificKey = computeSpecificKeyFromUUID(deviceUuid);
         Path riPath = packFolder.resolve(IMAGE_INDEX_FILENAME);
@@ -352,7 +352,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
         return String.format("000\\%08d", index);
     }
 
-    private byte[] computeSpecificKeyFromUUID(byte[] uuid) {
+    private static byte[] computeSpecificKeyFromUUID(byte[] uuid) {
         byte[] btKey = XXTEACipher.cipherCommonKey(CipherMode.DECIPHER, uuid);
         return new byte[] { //
                 btKey[11], btKey[10], btKey[9], btKey[8], //

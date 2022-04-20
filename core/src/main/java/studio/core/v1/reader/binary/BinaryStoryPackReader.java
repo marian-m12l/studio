@@ -55,7 +55,7 @@ import studio.core.v1.utils.PackFormat;
 public class BinaryStoryPackReader implements StoryPackReader {
 
     private static final Logger LOGGER = LogManager.getLogger(BinaryStoryPackReader.class);
-    
+
     public StoryPackMetadata readMetadata(Path path) throws IOException {
         try(DataInputStream dis = new DataInputStream(new BufferedInputStream(Files.newInputStream(path)))){
             // Pack metadata model
@@ -101,7 +101,7 @@ public class BinaryStoryPackReader implements StoryPackReader {
             Optional<String> maybeTitle = readString(dis, BINARY_ENRICHED_METADATA_TITLE_TRUNCATE);
             Optional<String> maybeDescription = readString(dis, BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE);
             // TODO Thumbnail?
-            if (maybeTitle.isPresent() || maybeDescription.isPresent()) {
+            if (maybeTitle.or(() -> maybeDescription).isPresent() ) {
                 enrichedPack = new EnrichedPackMetadata(maybeTitle.orElse(null), maybeDescription.orElse(null));
             }
 
@@ -155,6 +155,9 @@ public class BinaryStoryPackReader implements StoryPackReader {
                     okActionNodeAddr = new SectorAddr(okTransitionOffset);
                     actionNodesToVisit.add(okActionNodeAddr);
                 }
+                Transition okTransition = Optional.ofNullable(okActionNodeAddr)
+                        .map(h -> new Transition(null, okTransitionIndex)).orElse(null);
+
                 short homeTransitionOffset = dis.readShort();
                 short homeTransitionCount = dis.readShort();
                 short homeTransitionIndex = dis.readShort();
@@ -164,6 +167,8 @@ public class BinaryStoryPackReader implements StoryPackReader {
                     homeActionNodeAddr = new SectorAddr(homeTransitionOffset);
                     actionNodesToVisit.add(homeActionNodeAddr);
                 }
+                Transition homeTransition = Optional.ofNullable(homeActionNodeAddr)
+                        .map(h -> new Transition(null, homeTransitionIndex)).orElse(null);
 
                 LOGGER.trace("Transitions : {} ok, {} home", okTransitionCount, homeTransitionCount);
 
@@ -173,41 +178,38 @@ public class BinaryStoryPackReader implements StoryPackReader {
                 boolean homeEnabled = dis.readShort() == 1;
                 boolean pauseEnabled = dis.readShort() == 1;
                 boolean autoJumpEnabled = dis.readShort() == 1;
+                ControlSettings ctrl = new ControlSettings(wheelEnabled, okEnabled, homeEnabled, pauseEnabled, autoJumpEnabled); 
 
                 // Read (optional) enriched node metadata
                 dis.skipBytes(BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING);
                 EnrichedNodeMetadata enrichedNode = readEnrichedNodeMetadata(dis);
 
                 // Build stage node
-                SectorAddr address = new SectorAddr(i);
-                Transition okTransition = okActionNodeAddr != null ? new Transition(null, okTransitionIndex) : null;
-                Transition homeTransition = homeActionNodeAddr != null ? new Transition(null, homeTransitionIndex) : null;
-                ControlSettings ctrl = new ControlSettings(wheelEnabled, okEnabled, homeEnabled, pauseEnabled, autoJumpEnabled); 
                 StageNode stageNode = new StageNode(uuid, null, null, okTransition, homeTransition, ctrl, enrichedNode);
-                stageNodes.put(address, stageNode);
+                stageNodes.put(new SectorAddr(i), stageNode);
 
                 // Assets will be updated when they are read
-                if (imageAssetAddr != null) {
-                    List<StageNode> swi = stagesWithImage.getOrDefault(imageAssetAddr, new ArrayList<>());
+                Optional.ofNullable(imageAssetAddr).ifPresent(adr -> {
+                    List<StageNode> swi = stagesWithImage.getOrDefault(adr, new ArrayList<>());
                     swi.add(stageNode);
-                    stagesWithImage.put(imageAssetAddr, swi);
-                }
-                if (audioAssetAddr != null) {
-                    List<StageNode> swa = stagesWithAudio.getOrDefault(audioAssetAddr, new ArrayList<>());
+                    stagesWithImage.put(adr, swi);
+                });
+                Optional.ofNullable(audioAssetAddr).ifPresent(adr -> {
+                    List<StageNode> swa = stagesWithAudio.getOrDefault(adr, new ArrayList<>());
                     swa.add(stageNode);
-                    stagesWithAudio.put(audioAssetAddr, swa);
-                }
+                    stagesWithAudio.put(adr, swa);
+                });
                 // Action nodes will be updated when they are read
-                if (okActionNodeAddr != null) {
-                    List<Transition> twa = transitionsWithAction.getOrDefault(okActionNodeAddr, new ArrayList<>());
+                Optional.ofNullable(okActionNodeAddr).ifPresent(adr -> {
+                    List<Transition> twa = transitionsWithAction.getOrDefault(adr, new ArrayList<>());
                     twa.add(okTransition);
-                    transitionsWithAction.put(okActionNodeAddr, twa);
-                }
-                if (homeActionNodeAddr != null) {
-                    List<Transition> twa = transitionsWithAction.getOrDefault(homeActionNodeAddr, new ArrayList<>());
+                    transitionsWithAction.put(adr, twa);
+                });
+                Optional.ofNullable(homeActionNodeAddr).ifPresent(adr -> {
+                    List<Transition> twa = transitionsWithAction.getOrDefault(adr, new ArrayList<>());
                     twa.add(homeTransition);
-                    transitionsWithAction.put(homeActionNodeAddr, twa);
-                }
+                    transitionsWithAction.put(adr, twa);
+                });
 
                 // Skip to end of sector
                 dis.skipBytes(SECTOR_SIZE - 54
