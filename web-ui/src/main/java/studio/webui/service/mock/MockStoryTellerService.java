@@ -169,13 +169,13 @@ public class MockStoryTellerService implements IStoryTellerService {
         String transferId = UUID.randomUUID().toString();
         // Perform transfer asynchronously, and send events on eventbus to monitor
         // progress and end of transfer
-        Executor after5s = CompletableFuture.delayedExecutor(5, TimeUnit.SECONDS);
-        return CompletableFuture.supplyAsync(() -> {
+        Executor after2s = CompletableFuture.delayedExecutor(2, TimeUnit.SECONDS);
+        CompletableFuture.runAsync(() -> {
             // Check that source and destination are available
             if (Files.notExists(packFile) || Files.exists(destFile)) {
-                LOGGER.error("Cannot {} on mocked device because pack doesn't exist but dest does", opName);
+                LOGGER.error("Cannot {} : pack doesn't exist or destination does", opName);
                 sendDone(transferId, false);
-                return Optional.empty();
+                return;
             }
             try (InputStream input = new BufferedInputStream(Files.newInputStream(packFile));
                     OutputStream output = new BufferedOutputStream(Files.newOutputStream(destFile))) {
@@ -193,14 +193,13 @@ public class MockStoryTellerService implements IStoryTellerService {
                 }
                 // Send event on eventbus to signal end of transfer
                 sendDone(transferId, true);
-                return Optional.of(transferId);
             } catch (IOException e) {
                 LOGGER.error("Failed to {} on mocked device", opName, e);
                 // Send event on eventbus to signal transfer failure
                 sendDone(transferId, false);
             }
-            return Optional.empty();
-        }, after5s);
+        }, after2s);
+        return CompletableFuture.completedFuture(Optional.of(transferId));
     }
 
     public CompletionStage<Boolean> deletePack(String uuid) {

@@ -7,7 +7,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { ToastContainer, toast } from 'react-toastify';
-import EventBus from 'vertx3-eventbus-client';
+import EventBus from '@vertx/eventbus-bridge-client.js';
 import { withTranslation } from 'react-i18next';
 import marked from 'marked';
 import 'react-toastify/dist/ReactToastify.css';

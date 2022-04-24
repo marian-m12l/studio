@@ -80,7 +80,7 @@ public class MainVerticle extends AbstractVerticle {
         );
 
         // Bridge event-bus to client-side app
-        router.route("/eventbus/*").handler(eventBusHandler());
+        router.mountSubRouter("/eventbus", eventBusHandler());
 
         // Rest API
         router.mountSubRouter("/api", apiRouter());
@@ -113,17 +113,15 @@ public class MainVerticle extends AbstractVerticle {
         }
     }
 
-    private SockJSHandler eventBusHandler() {
-        SockJSBridgeOptions options = new SockJSBridgeOptions()
-                .addOutboundPermitted(new PermittedOptions().setAddressRegex("storyteller\\.(.+)"));
-        SockJSHandler sockJSHandler = SockJSHandler.create(vertx);
-        sockJSHandler.bridge(options, event -> {
+    private Router eventBusHandler() {
+        PermittedOptions address = new PermittedOptions().setAddressRegex("storyteller\\..+");
+        SockJSBridgeOptions options = new SockJSBridgeOptions().addOutboundPermitted(address);
+        return SockJSHandler.create(vertx).bridge(options, event -> {
             if (event.type() == BridgeEventType.SOCKET_CREATED) {
                 LOGGER.debug("New sockjs client");
             }
             event.complete(true);
         });
-        return sockJSHandler;
     }
 
     private Router apiRouter() {

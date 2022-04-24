@@ -13,6 +13,7 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.HashMap;
@@ -63,6 +64,9 @@ public class DatabaseMetadataService {
             }
             // Refresh cache
             refreshOfficialCache(packsRoot);
+        } catch (NoSuchFileException  e) {
+            // create if missing
+            fetchOfficialDatabase();
         } catch (IOException | JsonParseException | IllegalStateException e) {
             // Graceful failure on invalid file content
             LOGGER.warn("Official metadata database file is invalid", e);
