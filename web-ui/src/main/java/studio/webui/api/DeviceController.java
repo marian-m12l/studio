@@ -37,10 +37,7 @@ public class DeviceController {
                     LOGGER.error("Failed to read device infos", e);
                     ctx.fail(500, e);
                 }) //
-                .onSuccess(maybeDeviceInfos -> maybeDeviceInfos.ifPresentOrElse(//
-                        deviceInfos -> ctx.json(deviceInfos.put("plugged", true)), //
-                        () -> ctx.json(new JsonObject().put("plugged", false))) //
-                ) //
+                .onSuccess(ctx::json) //
         );
 
         // Plugged device packs list

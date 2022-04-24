@@ -16,7 +16,7 @@ import io.vertx.core.json.JsonObject;
 
 public interface IStoryTellerService {
 
-    CompletionStage<Optional<JsonObject>> deviceInfos();
+    CompletionStage<JsonObject> deviceInfos();
 
     CompletionStage<JsonArray> packs();
 

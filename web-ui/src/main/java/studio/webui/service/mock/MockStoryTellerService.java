@@ -74,22 +74,21 @@ public class MockStoryTellerService implements IStoryTellerService {
         return Path.of(StudioConfig.STUDIO_MOCK_DEVICE.getValue());
     }
 
-    public CompletionStage<Optional<JsonObject>> deviceInfos() {
+    public CompletionStage<JsonObject> deviceInfos() {
         try(Stream<Path> paths = Files.list(devicePath())) {
             long files = paths.count();
-            return CompletableFuture.completedFuture(
-                    Optional.of(new JsonObject()
-                            .put("uuid", "mocked-device")
-                            .put("serial", "mocked-serial")
-                            .put("firmware", "mocked-version")
-                            .put("storage", new JsonObject()
-                                    .put("size", files)
-                                    .put("free", 0)
-                                    .put("taken", files)
-                            )
-                            .put("error", false)
+            return CompletableFuture.completedFuture( //
+                    new JsonObject() //
+                            .put("uuid", "mocked-device") //
+                            .put("serial", "mocked-serial") //
+                            .put("firmware", "mocked-version") //
+                            .put("storage", new JsonObject() //
+                                    .put("size", files) //
+                                    .put("free", 0) //
+                                    .put("taken", files) //
+                            ) //
+                            .put("error", false) //
                             .put("driver", "raw") // Simulate raw only
-                    )
             );
         } catch (IOException e) {
             LOGGER.error("Failed to initialize mocked device", e);

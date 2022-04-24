@@ -74,7 +74,7 @@ public class StoryTellerService implements IStoryTellerService {
                                 sendFailure();
                             } else {
                                 // Send 'plugged' event on bus
-                                eventBus.send("storyteller.plugged", toJson(infos));
+                                sendDevicePlugged(toJson(infos));
                             }
                             return null;
                         }));
@@ -83,8 +83,7 @@ public class StoryTellerService implements IStoryTellerService {
                 device -> {
                     LOGGER.info("Device 1.x unplugged");
                     StoryTellerService.this.rawDevice = null;
-                    // Send 'unplugged' event on bus
-                    eventBus.send("storyteller.unplugged", null);
+                    sendDeviceUnplugged();
                 });
 
         // React when a device with firmware 2.x is plugged or unplugged
@@ -104,7 +103,7 @@ public class StoryTellerService implements IStoryTellerService {
                                 sendFailure();
                             } else {
                                 // Send 'plugged' event on bus
-                                eventBus.send("storyteller.plugged", toJson(infos));
+                                sendDevicePlugged(toJson(infos));
                             }
                             return null;
                         }));
@@ -113,19 +112,18 @@ public class StoryTellerService implements IStoryTellerService {
                 device -> {
                     LOGGER.info("Device 2.x unplugged");
                     StoryTellerService.this.fsDevice = null;
-                    // Send 'unplugged' event on bus
-                    eventBus.send("storyteller.unplugged", null);
+                    sendDeviceUnplugged();
                 });
     }
 
-    public CompletionStage<Optional<JsonObject>> deviceInfos() {
+    public CompletionStage<JsonObject> deviceInfos() {
         if (rawDevice != null) {
             return rawDriver.getDeviceInfos().thenApply(this::toJson);
         }
         if (fsDevice != null) {
             return fsDriver.getDeviceInfos().thenApply(this::toJson);
         }
-        return CompletableFuture.completedFuture(Optional.empty());
+        return CompletableFuture.completedFuture(new JsonObject().put("plugged", false));
     }
 
     public CompletionStage<JsonArray> packs() {
@@ -186,6 +184,14 @@ public class StoryTellerService implements IStoryTellerService {
         }
         // unavailable for fsDevice
         return CompletableFuture.completedFuture(null);
+    }
+
+    private void sendDevicePlugged(JsonObject infos) {
+        eventBus.send("storyteller.plugged", infos);
+    }
+
+    private void sendDeviceUnplugged() {
+        eventBus.send("storyteller.unplugged", null);
     }
 
     private void sendFailure() {
@@ -294,11 +300,11 @@ public class StoryTellerService implements IStoryTellerService {
                 .orElse(json);
     }
 
-    private Optional<JsonObject> toJson(RawDeviceInfos infos) {
+    private JsonObject toJson(RawDeviceInfos infos) {
         long sdTotal = (long) infos.getSdCardSizeInSectors() * LibUsbMassStorageHelper.SECTOR_SIZE;
         long sdUsed = (long) infos.getUsedSpaceInSectors() * LibUsbMassStorageHelper.SECTOR_SIZE;
         String fw = infos.getFirmwareMajor() == -1 ? null : infos.getFirmwareMajor() + "." + infos.getFirmwareMinor();
-        return Optional.of(new JsonObject() //
+        return new JsonObject() //
                 .put("uuid", infos.getUuid().toString()) //
                 .put("serial", infos.getSerialNumber()) //
                 .put("firmware", fw) //
@@ -307,11 +313,12 @@ public class StoryTellerService implements IStoryTellerService {
                         .put("free", sdTotal - sdUsed)//
                         .put("taken", sdUsed))
                 .put("error", infos.isInError()) //
-                .put("driver", "raw"));
+                .put("plugged", true) //
+                .put("driver", "raw");
     }
 
-    private Optional<JsonObject> toJson(FsDeviceInfos infos) {
-        return Optional.of(new JsonObject() //
+    private JsonObject toJson(FsDeviceInfos infos) {
+        return new JsonObject() //
                 .put("uuid", SecurityUtils.encodeHex(infos.getDeviceId())) //
                 .put("serial", infos.getSerialNumber()) //
                 .put("firmware", infos.getFirmwareMajor() + "." + infos.getFirmwareMinor()) //
@@ -320,7 +327,8 @@ public class StoryTellerService implements IStoryTellerService {
                         .put("free", infos.getSdCardSizeInBytes() - infos.getUsedSpaceInBytes()) //
                         .put("taken", infos.getUsedSpaceInBytes())) //
                 .put("error", false) //
-                .put("driver", "fs"));
+                .put("plugged", true) //
+                .put("driver", "fs");
     }
 
 }
