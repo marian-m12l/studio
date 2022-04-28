@@ -1,6 +1,5 @@
 package studio.metadata;
 
-import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable;
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -13,6 +12,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 
 import studio.config.StudioConfig;
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 
 class DatabaseMetadataServiceTest {
 
@@ -25,14 +25,14 @@ class DatabaseMetadataServiceTest {
         // clean db
         Files.deleteIfExists(officialDbPath);
         Files.deleteIfExists(unofficialDbPath);
+        // fake env vars
+        EnvironmentVariables env = new EnvironmentVariables( //
+                StudioConfig.STUDIO_DB_OFFICIAL.name(), officialDbPath.toString(), //
+                StudioConfig.STUDIO_DB_UNOFFICIAL.name(), unofficialDbPath.toString());
 
-        // WHEN
-        DatabaseMetadataService ms = //
-                withEnvironmentVariable(StudioConfig.STUDIO_DB_OFFICIAL.name(), officialDbPath.toString()) //
-                        .and(StudioConfig.STUDIO_DB_UNOFFICIAL.name(), unofficialDbPath.toString()) //
-                        .execute(DatabaseMetadataService::new);
-
-        // THEN
+        // WHEN : create db
+        DatabaseMetadataService ms = env.execute(DatabaseMetadataService::new);
+        // THEN : missing uuid
         String fakeUuid = "0-0-0-0";
         System.out.println("Test db with uuid " + fakeUuid);
         assertAll("unofficial pack " + fakeUuid, //
@@ -40,7 +40,8 @@ class DatabaseMetadataServiceTest {
                 () -> assertTrue(ms.getUnofficialMetadata(fakeUuid).isEmpty(), "should not unofficial pack"), //
                 () -> assertTrue(ms.getPackMetadata(fakeUuid).isEmpty(), "should not be a pack") //
         );
-        // WHEN
+
+        // WHEN : new uuid
         String newUuid = "1-2-3-4";
         System.out.println("Test db with uuid " + newUuid);
         DatabasePackMetadata mpExp = new DatabasePackMetadata(newUuid, "fake", "fake pack", null, false);
@@ -49,7 +50,6 @@ class DatabaseMetadataServiceTest {
         ms.persistUnofficialDatabase();
         // THEN
         assertTrue(ms.getOfficialMetadata(newUuid).isEmpty(), "should not be official pack");
-
         DatabasePackMetadata mpAct = ms.getPackMetadata(newUuid).get();
         DatabasePackMetadata mpAct2 = ms.getUnofficialMetadata(newUuid).get();
         assertAll("unofficial pack " + newUuid, //
@@ -61,11 +61,9 @@ class DatabaseMetadataServiceTest {
                 () -> assertEquals(mpExp.hashCode(), mpAct.hashCode(), "different hashCode()") //
         );
 
-        // reload db
-        DatabaseMetadataService ms2 = withEnvironmentVariable(StudioConfig.STUDIO_DB_OFFICIAL.name(),
-                officialDbPath.toString()) //
-                        .and(StudioConfig.STUDIO_DB_UNOFFICIAL.name(), unofficialDbPath.toString()) //
-                        .execute(DatabaseMetadataService::new);
+        // WHEN reload db
+        DatabaseMetadataService ms2 = env.execute(DatabaseMetadataService::new);
+        // THEN
         assertEquals(mpExp, ms2.getUnofficialMetadata(newUuid).get(), "differs from expected");
     }
 

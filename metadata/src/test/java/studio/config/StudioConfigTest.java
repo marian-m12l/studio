@@ -1,10 +1,11 @@
 package studio.config;
 
-import static com.github.stefanbirkner.systemlambda.SystemLambda.restoreSystemProperties;
-import static com.github.stefanbirkner.systemlambda.SystemLambda.withEnvironmentVariable;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import org.junit.jupiter.api.Test;
+
+import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import uk.org.webcompere.systemstubs.properties.SystemProperties;
 
 class StudioConfigTest {
 
@@ -26,17 +27,18 @@ class StudioConfigTest {
 
         // from env
         String exp2 = "fromEnv";
-        String act2 = withEnvironmentVariable(sc.name(), exp2).execute(() -> sc.getValue());
+        EnvironmentVariables env = new EnvironmentVariables(sc.name(), exp2);
+        String act2 = env.execute(() -> sc.getValue());
         assertEquals(exp2, act2, "bad env value");
 
         // from system
-        restoreSystemProperties(() -> {
-            String exp3 = "fromSys";
-            System.setProperty(sc.getPropertyName(), exp3);
+        String exp3 = "fromSys";
+        SystemProperties sys = new SystemProperties(sc.getPropertyName(), exp3);
+        sys.execute(() -> {
             String act3 = sc.getValue();
             assertEquals(exp3, act3, "bad system value");
             // both sys and env : sys wins
-            String actBoth = withEnvironmentVariable(sc.name(), exp2).execute(() -> sc.getValue());
+            String actBoth = env.execute(() -> sc.getValue());
             assertEquals(exp3, actBoth, "sys should override env");
         });
     }
