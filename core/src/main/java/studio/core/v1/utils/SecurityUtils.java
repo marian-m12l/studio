@@ -25,7 +25,7 @@ public class SecurityUtils {
      */
     public static String sha1Hex(byte[] array) {
         try {
-            byte[] digest = MessageDigest.getInstance("SHA1").digest(array);
+            byte[] digest = MessageDigest.getInstance("SHA1").digest(array); // NOSONAR sha1 is required
             return encodeHex(digest);
         } catch (NoSuchAlgorithmException e) {
             LOGGER.error("sha1 not supported", e);
