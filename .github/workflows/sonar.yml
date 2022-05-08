@@ -1,12 +1,11 @@
 name: Sonar
 on:
   push:
-    branches: [master, branch-performance]
+    branches: [ '!master' ]
   pull_request:
-    types: [opened, synchronize, reopened]
+    types: [ opened, synchronize, reopened ]
 jobs:
   build:
-    name: Build
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
@@ -27,12 +26,13 @@ jobs:
           key: ${{ runner.os }}-sonar
           restore-keys: ${{ runner.os }}-sonar
 
-      - name: Build and analyze
+      - name: Sonar analyze
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
           SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
           MVN_SONAR: ${{ 'org.sonarsource.scanner.maven:sonar-maven-plugin' }}
           MVN_JACOCO: ${{ 'org.jacoco:jacoco-maven-plugin:0.8.5' }}
+          MVN_PARAMS: '-Dmaven.test.failure.ignore=true -Dsonar.projectKey=kairoh_studio -Pide'
         # Ide profile to skip javascript 
-        run: mvn -B ${MVN_JACOCO}:prepare-agent verify ${MVN_JACOCO}:report ${MVN_SONAR}:sonar -Dmaven.test.failure.ignore=true -Dsonar.projectKey=kairoh_studio -Pide
+        run: mvn -B ${MVN_JACOCO}:prepare-agent verify ${MVN_JACOCO}:report ${MVN_SONAR}:sonar ${MVN_PARAMS}
 
