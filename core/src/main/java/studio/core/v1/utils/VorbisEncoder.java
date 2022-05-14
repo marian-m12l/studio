@@ -9,14 +9,15 @@ import java.security.SecureRandom;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.xiph.libogg.ogg_packet;
-import org.xiph.libogg.ogg_page;
-import org.xiph.libogg.ogg_stream_state;
-import org.xiph.libvorbis.vorbis_block;
-import org.xiph.libvorbis.vorbis_comment;
-import org.xiph.libvorbis.vorbis_dsp_state;
-import org.xiph.libvorbis.vorbis_info;
-import org.xiph.libvorbis.vorbisenc;
+
+import com.github.axet.libogg.Jogg_packet;
+import com.github.axet.libogg.Jogg_page;
+import com.github.axet.libogg.Jogg_stream_state;
+import com.github.axet.libvorbis.Jvorbis_block;
+import com.github.axet.libvorbis.Jvorbis_comment;
+import com.github.axet.libvorbis.Jvorbis_dsp_state;
+import com.github.axet.libvorbis.Jvorbis_info;
+import com.github.axet.libvorbis.Jvorbis_pcm;
 
 /**
  * This class is *heavily* inspired by the OggVorbis software codec source code,
@@ -51,7 +52,8 @@ import org.xiph.libvorbis.vorbisenc;
  * OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE
  * OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
  *
- * @see https://www.javatips.net/api/musique-master/dependencies/vorbis-java/src/main/java/org/xiph/VorbisEncoder.java
+ * @see https://gitlab.com/axet/jvorbis/
+ * @see https://gitlab.com/axet/jvorbis/-/blob/master/src/test/java/com/github/axet/jvorbis/examples/Jencoder_example.java
  */
 public class VorbisEncoder {
 
@@ -70,62 +72,65 @@ public class VorbisEncoder {
     }
 
     public static byte[] encode(InputStream is) throws VorbisEncodingException {
-        // struct that stores all the static vorbis bitstream settings
-        vorbis_info vi = new vorbis_info();
-
         LOGGER.debug("Start encoding with {} channels, {}Hz, quality {}", CHANNELS, RATE, QUALITY);
-        vorbisenc encoder = new vorbisenc();
-        if (!encoder.vorbis_encode_init_vbr(vi, CHANNELS, RATE, QUALITY)) {
+
+        // struct that stores all the static vorbis bitstream settings
+        Jvorbis_info vi = new Jvorbis_info();
+        vi.vorbis_info_init();
+        if (vi.vorbis_encode_init_vbr(CHANNELS, RATE, QUALITY) != 0) {
             throw new VorbisEncodingException("Failed to Initialize vorbisenc");
         }
 
         // struct that stores all the user comments
-        vorbis_comment vc = new vorbis_comment();
+        Jvorbis_comment vc = new Jvorbis_comment();
+        vc.vorbis_comment_init();
         vc.vorbis_comment_add_tag("ENCODER", "Java Vorbis Encoder");
 
         // central working state for the packet->PCM decoder
-        vorbis_dsp_state vd = new vorbis_dsp_state();
-        if (!vd.vorbis_analysis_init(vi)) {
+        Jvorbis_dsp_state vd = new Jvorbis_dsp_state();
+        if (vd.vorbis_analysis_init(vi)) {
             throw new VorbisEncodingException("Failed to Initialize vorbis_dsp_state");
         }
 
         // local working space for packet->PCM decode
-        vorbis_block vb = new vorbis_block(vd);
+        Jvorbis_block vb = new Jvorbis_block();
+        vd.vorbis_block_init(vb);
 
         // take physical pages, weld into a logical stream of packets
-        ogg_stream_state os = new ogg_stream_state(prng.nextInt(256));
+        Jogg_stream_state os = new Jogg_stream_state();
+        os.ogg_stream_init(prng.nextInt(256));
 
         LOGGER.trace("Writing header.");
-        ogg_packet header = new ogg_packet();
-        ogg_packet headerComm = new ogg_packet();
-        ogg_packet headerCode = new ogg_packet();
+        Jogg_packet header = new Jogg_packet();
+        Jogg_packet headerComm = new Jogg_packet();
+        Jogg_packet headerCode = new Jogg_packet();
 
         vd.vorbis_analysis_headerout(vc, header, headerComm, headerCode);
-
         os.ogg_stream_packetin(header); // automatically placed in its own page
         os.ogg_stream_packetin(headerComm);
         os.ogg_stream_packetin(headerCode);
 
         // one Ogg bitstream page. Vorbis packets are inside
-        ogg_page og = new ogg_page();
+        Jogg_page og = new Jogg_page();
 
         try (DataInputStream dis = new DataInputStream(is); ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            // skip first 44 bytes
+            // skip first 44 bytes (simplest WAV header is 44 bytes) and
+            // assume that the data is 44.1khz, stereo, 16 bit little endian pcm samples.
             dis.skipBytes(44);
 
             // headers
-            while (os.ogg_stream_flush(og)) {
+            while (os.ogg_stream_flush(og) != 0) {
                 writeOggPage(baos, og, 0);
             }
 
             LOGGER.trace("Writing header done.\nEncoding");
             int page = 0;
             byte[] readbuffer = new byte[READ_BLOCK_SIZE];
-            while (og.ogg_page_eos() <= 0) {
+            while (!og.ogg_page_eos()) {
                 // stereo hardwired here
                 int readBytes = dis.readNBytes(readbuffer, 0, READ_BLOCK_SIZE);
 
-                if (readBytes == 0) {
+                if (readBytes <= 0) {
                     // end of file. this can be done implicitly in the mainline,
                     // but it's easier to see here in non-clever fashion.
                     // Tell the library we're at end of stream so that it can handle
@@ -134,13 +139,13 @@ public class VorbisEncoder {
                 } else {
                     // data to encode
                     // expose the buffer to submit data
-                    float[][] buffer = vd.vorbis_analysis_buffer(READ_BLOCK_SIZE / 4);
+                    Jvorbis_pcm data = vd.vorbis_analysis_buffer(READ_BLOCK_SIZE / 4);
                     int i;
                     // duplicate mono channel
                     for (i = 0; i < readBytes / 2; i++) {
                         float fb = ((readbuffer[i * 2 + 1] << 8) | (0x00ff & readbuffer[i * 2])) / 32768f;
-                        buffer[0][vd.pcm_current + i] = fb;
-                        buffer[1][vd.pcm_current + i] = fb;
+                        data.pcm[0][data.pcmret + i] = fb;
+                        data.pcm[1][data.pcmret + i] = fb;
                     }
 
                     // tell the library how much we actually submitted
@@ -149,18 +154,18 @@ public class VorbisEncoder {
 
                 // vorbis does some data preanalysis, then divvies up blocks for more involved
                 // (potentially parallel) processing. Get a single block for encoding now
-                while (vb.vorbis_analysis_blockout(vd)) {
+                while (vd.vorbis_analysis_blockout(vb)) {
                     // analysis, assume we want to use bitrate management
                     vb.vorbis_analysis(null);
                     vb.vorbis_bitrate_addblock();
 
                     // one raw packet of data for decode
-                    ogg_packet op = new ogg_packet();
+                    Jogg_packet op = new Jogg_packet();
                     while (vd.vorbis_bitrate_flushpacket(op)) {
                         // weld the packet into the bitstream
                         os.ogg_stream_packetin(op);
                         // write out pages (if any)
-                        while (os.ogg_stream_pageout(og)) {
+                        while (os.ogg_stream_pageout(og) != 0) {
                             writeOggPage(baos, og, ++page);
                         }
                     }
@@ -173,12 +178,18 @@ public class VorbisEncoder {
             return baos.toByteArray();
         } catch (IOException e) {
             throw new VorbisEncodingException(e);
+        } finally {
+            os.ogg_stream_clear();
+            vb.vorbis_block_clear();
+            vd.vorbis_dsp_clear();
+            vc.vorbis_comment_clear();
+            vi.vorbis_info_clear();
         }
     }
 
-    private static void writeOggPage(OutputStream os, ogg_page og, int page) throws IOException {
-        os.write(og.header, 0, og.header_len);
-        os.write(og.body, 0, og.body_len);
+    private static void writeOggPage(OutputStream os, Jogg_page og, int page) throws IOException {
+        os.write(og.header_base, og.header, og.header_len);
+        os.write(og.body_base, og.body, og.body_len);
         LOGGER.debug("Writing page {}: head ({}) and body ({})", page, og.header_len, og.body_len);
     }
 }

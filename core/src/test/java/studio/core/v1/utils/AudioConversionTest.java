@@ -45,7 +45,8 @@ class AudioConversionTest {
 
             System.out.println("Write ogg");
             // FIXME : size difference between java 11 and 17
-            int expectedOggSize = detectJavaVersion() > 11 ? 17476 : 17002;
+            int expectedOggSize = detectJavaVersion() > 11 ? 17361 : 16920; 
+            // with vorbis-java : detectJavaVersion() > 11 ? 17476 : 17002;
             byte[] outsideOggBytes = AudioConversion.waveToOgg(outsideWavBytes);
             Path outsideOgg = Files.write(zipPath.resolveSibling("new.ogg"), outsideOggBytes);
             long outsideOggSize = Files.size(outsideOgg);

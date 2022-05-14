@@ -44,11 +44,9 @@
             </exclusions>
         </dependency>
         <dependency>
-            <groupId>org.xiph</groupId>
-            <artifactId>vorbis-java</artifactId>
-            <version>1.0.0-beta</version>
-            <scope>system</scope>
-            <systemPath>${project.basedir}/../libs/vorbis-java-1.0.0-beta.jar</systemPath>
+            <groupId>com.github.axet</groupId>
+            <artifactId>jvorbis</artifactId>
+            <version>1.3.6</version>
         </dependency>
         <dependency>
             <groupId>de.sciss</groupId>
