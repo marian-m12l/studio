@@ -175,8 +175,8 @@ public class FsStoryPackWriter implements StoryPackWriter {
                             throw new IllegalArgumentException("FS pack file does not support ID3 tags in MP3 files.");
                         }
                         // Check that the file is MONO / 44100Hz
-                        try {
-                            AudioFormat audioFormat = AudioSystem.getAudioFileFormat(new ByteArrayInputStream(audioData)).getFormat();
+                        try (ByteArrayInputStream bais = new ByteArrayInputStream(audioData)) {
+                            AudioFormat audioFormat = AudioSystem.getAudioFileFormat(bais).getFormat();
                             if (audioFormat.getChannels() != AudioConversion.CHANNELS
                                     || audioFormat.getSampleRate() != AudioConversion.MP3_SAMPLE_RATE) {
                                 throw new IllegalArgumentException("FS pack file requires MP3 audio assets to be MONO / 44100Hz.");

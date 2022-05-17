@@ -124,12 +124,13 @@ public class PackAssetsCompression {
                 audioData = ID3Tags.removeID3v1Tag(audioData);
                 audioData = ID3Tags.removeID3v2Tag(audioData);
                 // Check that the file is MONO / 44100Hz
-                AudioFormat audioFormat = AudioSystem.getAudioFileFormat(new ByteArrayInputStream(audioData))
-                        .getFormat();
-                if (audioFormat.getChannels() != AudioConversion.CHANNELS
-                        || audioFormat.getSampleRate() != AudioConversion.MP3_SAMPLE_RATE) {
-                    LOGGER.debug("Re-encoding MP3 audio asset");
-                    audioData = AudioConversion.anyToMp3(audioData);
+                try (ByteArrayInputStream bais = new ByteArrayInputStream(audioData)) {
+                    AudioFormat audioFormat = AudioSystem.getAudioFileFormat(bais).getFormat();
+                    if (audioFormat.getChannels() != AudioConversion.CHANNELS
+                            || audioFormat.getSampleRate() != AudioConversion.MP3_SAMPLE_RATE) {
+                        LOGGER.debug("Re-encoding MP3 audio asset");
+                        audioData = AudioConversion.anyToMp3(audioData);
+                    }
                 }
             }
             return audioData;

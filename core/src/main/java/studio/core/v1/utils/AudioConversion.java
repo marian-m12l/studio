@@ -71,15 +71,14 @@ public class AudioConversion {
 
             try (AudioInputStream pcm = AudioSystem.getAudioInputStream(pcmFormat, inputAudio);
                     AudioInputStream pcm32000 = AudioSystem.getAudioInputStream(pcm32000Format, pcm);
-                    ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
+                    ByteArrayOutputStream baos = new ByteArrayOutputStream(data.length)) {
 
                 // Read the whole stream in a byte array because length must be known
                 baos.writeBytes(pcm32000.readAllBytes());
 
                 try (ByteArrayInputStream bais = new ByteArrayInputStream(baos.toByteArray());
-                        AudioInputStream waveStream = new AudioInputStream(bais, pcm32000Format,
-                                baos.toByteArray().length);
-                        ByteArrayOutputStream output = new ByteArrayOutputStream();) {
+                        AudioInputStream waveStream = new AudioInputStream(bais, pcm32000Format, baos.size());
+                        ByteArrayOutputStream output = new ByteArrayOutputStream(baos.size())) {
                     AudioSystem.write(waveStream, AudioFileFormat.Type.WAVE, output);
                     return output.toByteArray();
                 }
@@ -87,14 +86,15 @@ public class AudioConversion {
         }
     }
 
-    public static byte[] waveToOgg(byte[] waveData) throws IOException, VorbisEncodingException, UnsupportedAudioFileException {
+    public static byte[] waveToOgg(byte[] waveData)
+            throws IOException, VorbisEncodingException, UnsupportedAudioFileException {
         // Convert sample rate to 44100Hz (the only rate that is supported by the vorbis
         // encoding library)
         AudioFormat pcm44100Format = new AudioFormat(AudioFormat.Encoding.PCM_SIGNED, OGG_SAMPLE_RATE, BITSIZE, //
                 CHANNELS, CHANNELS * 2, OGG_SAMPLE_RATE, false);
 
         try (AudioInputStream inputAudio = AudioSystem.getAudioInputStream(new ByteArrayInputStream(waveData));
-                AudioInputStream pcm44100 = AudioSystem.getAudioInputStream(pcm44100Format, inputAudio);) {
+                AudioInputStream pcm44100 = AudioSystem.getAudioInputStream(pcm44100Format, inputAudio)) {
             return VorbisEncoder.encode(pcm44100);
         }
     }
@@ -120,7 +120,7 @@ public class AudioConversion {
 
             try (AudioInputStream pcm = AudioSystem.getAudioInputStream(pcmFormat, inputAudio);
                     AudioInputStream pcmOverSampled = AudioSystem.getAudioInputStream(pcmOverSampledFormat, pcm);
-                    AudioInputStream pcm44100 = AudioSystem.getAudioInputStream(pcm44100Format, pcmOverSampled);) {
+                    AudioInputStream pcm44100 = AudioSystem.getAudioInputStream(pcm44100Format, pcmOverSampled)) {
                 return encodeMP3(pcm44100);
             }
         }
@@ -132,10 +132,10 @@ public class AudioConversion {
                 4, true);
 
         try (LameEncoderWrapper lameEncoderWrapper = new LameEncoderWrapper(encoder);
-                ByteArrayOutputStream mp3 = new ByteArrayOutputStream()) {
+                ByteArrayOutputStream mp3 = new ByteArrayOutputStream(encoder.getOutputBufferSize())) {
 
-            byte[] inputBuffer = new byte[encoder.getPCMBufferSize()];
-            byte[] outputBuffer = new byte[encoder.getPCMBufferSize()];
+            byte[] inputBuffer = new byte[encoder.getInputBufferSize()];
+            byte[] outputBuffer = new byte[encoder.getOutputBufferSize()];
 
             int bytesRead;
             int bytesWritten;
