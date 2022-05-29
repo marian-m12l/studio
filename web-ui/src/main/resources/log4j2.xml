@@ -10,7 +10,7 @@
         <Appender type="Console" name="STDOUT">
             <Layout type="PatternLayout" pattern="%highlight{%date [%-5level] [%logger{1.}]: %msg%n%throwable}"/>
         </Appender>
-        <Appender type="RollingFile" name="RollingFile" fileName="studio-latest.log" filePattern="studio-%d{yyyyMMdd}-%i.log">
+        <Appender type="RollingFile" name="RollingFile" fileName="log/studio-latest.log" filePattern="log/studio-%d{yyyyMMdd}-%i.log">
             <Layout type="PatternLayout" pattern="%date [%-5level] [%logger] [%file:%line]: %msg%n%throwable"/>
             <Policies>
                 <OnStartupTriggeringPolicy />
