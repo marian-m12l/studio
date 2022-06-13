@@ -1,7 +1,7 @@
 name: Sonar
 on:
   push:
-    branches: [ '!master' ]
+    branches-ignore: [ master ]
   pull_request:
     types: [ opened, synchronize, reopened ]
 jobs:
