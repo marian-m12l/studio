@@ -6,29 +6,13 @@
 
 package studio.core.v1.model;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+@Data
+@AllArgsConstructor
 public class Transition {
 
     private ActionNode actionNode;
     private short optionIndex;
-
-    public Transition(ActionNode actionNode, short optionIndex) {
-        this.actionNode = actionNode;
-        this.optionIndex = optionIndex;
-    }
-
-    public ActionNode getActionNode() {
-        return actionNode;
-    }
-
-    public void setActionNode(ActionNode actionNode) {
-        this.actionNode = actionNode;
-    }
-
-    public short getOptionIndex() {
-        return optionIndex;
-    }
-
-    public void setOptionIndex(short optionIndex) {
-        this.optionIndex = optionIndex;
-    }
 }

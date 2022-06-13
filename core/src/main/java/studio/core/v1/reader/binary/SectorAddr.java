@@ -6,35 +6,15 @@
 
 package studio.core.v1.reader.binary;
 
-import java.util.Objects;
+import lombok.Value;
 
+@Value
 public class SectorAddr implements Comparable<SectorAddr> {
 
-    private final int offset;
-
-    public SectorAddr(int offset) {
-        this.offset = offset;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        SectorAddr that = (SectorAddr) o;
-        return offset == that.offset;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(offset);
-    }
+    private int offset;
 
     @Override
     public int compareTo(SectorAddr o) {
         return this.offset - o.offset;
-    }
-
-    public int getOffset() {
-        return offset;
     }
 }

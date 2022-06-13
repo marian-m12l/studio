@@ -16,12 +16,6 @@ import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
 
 class DatabaseMetadataServiceTest {
 
-    private static class DatabasePackMetadataChild extends DatabasePackMetadata {
-        public DatabasePackMetadataChild() {
-            super("", "", "", "", false);
-        }
-    }
-
     @Test
     void testMetadataService() throws Exception {
         // GIVEN
@@ -52,7 +46,6 @@ class DatabaseMetadataServiceTest {
         System.out.println("Test db with uuid " + newUuid);
         DatabasePackMetadata mpExp = new DatabasePackMetadata(newUuid, "fake", "fake pack", null, false);
         DatabasePackMetadata mpBadId = new DatabasePackMetadata("badId", "fake", "fake pack", null, false);
-        DatabasePackMetadataChild mpBadType = new DatabasePackMetadataChild();
         // add and write to disk
         ms.refreshUnofficialCache(mpExp);
         ms.persistUnofficialDatabase();
@@ -63,7 +56,7 @@ class DatabaseMetadataServiceTest {
         DatabasePackMetadata mpActClone = mpAct;
 
         assertAll("unofficial pack " + newUuid, //
-                () -> assertNotEquals(mpBadType, mpAct, "wrong type"), //
+                () -> assertNotEquals("", mpAct, "wrong type"), //
                 () -> assertNotEquals(mpBadId, mpAct, "should differ by uuid"), //
                 () -> assertFalse(mpAct.isOfficial(), "should not be official"), //
                 () -> assertEquals(mpActClone, mpAct, "differs from itself"), //

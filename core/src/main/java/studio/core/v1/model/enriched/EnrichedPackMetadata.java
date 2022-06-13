@@ -6,22 +6,12 @@
 
 package studio.core.v1.model.enriched;
 
+import lombok.Value;
+
+@Value
 public class EnrichedPackMetadata {
 
-    private final String title;
-    private final String description;
+    private String title;
+    private String description;
     // TODO Thumbnail?
-
-    public EnrichedPackMetadata(String title, String description) {
-        this.title = title;
-        this.description = description;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public String getDescription() {
-        return description;
-    }
 }

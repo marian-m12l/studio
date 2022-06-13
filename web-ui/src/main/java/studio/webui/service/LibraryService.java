@@ -11,6 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Base64;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -18,11 +19,11 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.enterprise.context.ApplicationScoped;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
 import studio.config.StudioConfig;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.metadata.StoryPackMetadata;
@@ -33,8 +34,12 @@ import studio.core.v1.writer.fs.FsStoryPackWriter;
 import studio.driver.fs.FileUtils;
 import studio.metadata.DatabaseMetadataService;
 import studio.metadata.DatabasePackMetadata;
-import studio.webui.model.LibraryPack;
+import studio.webui.model.LibraryDTOs.LibraryPackDTO;
+import studio.webui.model.LibraryDTOs.MetaPackDTO;
+import studio.webui.model.LibraryDTOs.PathDTO;
+import studio.webui.model.LibraryDTOs.UuidPacksDTO;
 
+@ApplicationScoped
 public class LibraryService {
 
     private static final Logger LOGGER = LogManager.getLogger(LibraryService.class);
@@ -68,22 +73,25 @@ public class LibraryService {
         }
     }
 
-    public JsonObject libraryInfos() {
-        return new JsonObject().put("path", libraryPath.toString());
+    public PathDTO infos() {
+        PathDTO p = new PathDTO();
+        p.setPath(libraryPath.toString());
+        return p;
     }
 
-    public JsonArray packs() {
+    // public JsonArray packs() {
+    public List<UuidPacksDTO> packs() {
         // Check that local library folder exists
         if (!Files.isDirectory(libraryPath)) {
-            return new JsonArray();
+            return Collections.emptyList();
         }
         // List pack files in library folder
         try (Stream<Path> paths = Files.walk(libraryPath, 1).filter(p -> p != libraryPath)) {
             // sort by timestamp DESC (=newest first)
-            Comparator<LibraryPack> newestComparator = Comparator.comparingLong(LibraryPack::getTimestamp).reversed();
+            Comparator<LibraryPackDTO> newestComparator = Comparator.comparingLong(LibraryPackDTO::getTimestamp).reversed();
 
             // Group pack by uuid
-            Map<String, List<LibraryPack>> metadataByUuid = paths
+            Map<String, List<LibraryPackDTO>> metadataByUuid = paths
                     // debuging
                     .filter(p -> {
                         LOGGER.info("Read metadata from `{}`", p.getFileName());
@@ -99,37 +107,36 @@ public class LibraryService {
                     .collect(Collectors.groupingBy(p -> p.getMetadata().getUuid()));
 
             // Converts metadata to Json
-            List<JsonObject> jsonMetasByUuid = metadataByUuid.entrySet().stream()
+            List<UuidPacksDTO> jsonMetasByUuid = metadataByUuid.entrySet().stream()
                     // convert
                     .map(e -> {
                         // find first zip pack
                         e.getValue().stream()
                                 // get Metadata
-                                .map(LibraryPack::getMetadata)
+                                .map(LibraryPackDTO::getMetadata)
                                 // only zip
                                 .filter(meta -> meta.getFormat() == PackFormat.ARCHIVE) //
                                 // update database with newest zip
                                 .findFirst().ifPresent(meta -> {
-                                    LOGGER.debug("Refresh metadata from zip for {} ({})", meta.getUuid(), meta.getTitle());
-                                    String thumbBase64 = Optional.ofNullable(meta.getThumbnail())
-                                            .map(t -> "data:image/png;base64," + Base64.getEncoder().encodeToString(t))
+                                    LOGGER.debug("Refresh metadata from zip for {} ({})", meta.getUuid(),
+                                            meta.getTitle());
+                                    String thumbBase64 = Optional.ofNullable(meta.getThumbnail()).map(this::base64)
                                             .orElse(null);
                                     databaseMetadataService.refreshUnofficialCache(new DatabasePackMetadata( //
                                             meta.getUuid(), meta.getTitle(), meta.getDescription(), thumbBase64,
                                             false));
                                 });
-                        // Convert to JsonObject
-                        List<JsonObject> jsonMetaList = e.getValue().stream()//
-                                .map(this::libraryPackToJson)//
+                        // Convert to MetaPackDTO
+                        List<MetaPackDTO> jsonMetaList = e.getValue().stream() //
+                                .map(this::buildMetaPack) //
                                 .collect(Collectors.toList());
 
-                        return new JsonObject().put("uuid", e.getKey()).put("packs", new JsonArray(jsonMetaList));
+                        return new UuidPacksDTO(e.getKey(), jsonMetaList);
                     }) //
                     .collect(Collectors.toList());
             // persist unofficial database cache (if needed)
             databaseMetadataService.persistUnofficialDatabase();
-            // return
-            return new JsonArray(jsonMetasByUuid);
+            return jsonMetasByUuid;
         } catch (IOException e) {
             LOGGER.error("Failed to read packs from local library", e);
             throw new StoryTellerException(e);
@@ -200,7 +207,7 @@ public class LibraryService {
         PackFormat outputFormat = PackFormat.ARCHIVE;
         if (packFile.endsWith(".zip")) {
             assertFormat(outputFormat);
-        } 
+        }
         // expected input format type
         PackFormat inputFormat = packFile.endsWith(".pack") ? PackFormat.RAW : PackFormat.FS;
         LOGGER.info("Pack is in {} format. Converting to {} format", inputFormat, outputFormat);
@@ -210,7 +217,7 @@ public class LibraryService {
             LOGGER.info("Reading {} format pack", inputFormat);
             StoryPack storyPack = inputFormat.getReader().read(packPath);
             // Compress pack assets
-            if(inputFormat == PackFormat.RAW) {
+            if (inputFormat == PackFormat.RAW) {
                 LOGGER.info("Compressing pack assets");
                 PackAssetsCompression.processCompressed(storyPack);
             }
@@ -237,7 +244,7 @@ public class LibraryService {
         PackFormat outputFormat = PackFormat.FS;
         if (!packFile.endsWith(".zip") && !packFile.endsWith(".pack")) {
             assertFormat(outputFormat);
-        } 
+        }
         // expected input format type
         PackFormat inputFormat = packFile.endsWith(".zip") ? PackFormat.ARCHIVE : PackFormat.RAW;
         LOGGER.info("Pack is in {} format. Converting to {} format", inputFormat, outputFormat);
@@ -272,6 +279,7 @@ public class LibraryService {
 
     public boolean addPackFile(String destPath, String uploadedFilePath) {
         try {
+            LOGGER.info("Add pack {} from {}", destPath, uploadedFilePath);
             // Copy temporary file to local library
             Path src = Path.of(uploadedFilePath);
             Path dest = libraryPath.resolve(destPath);
@@ -284,24 +292,20 @@ public class LibraryService {
     }
 
     public boolean deletePack(String packPath) {
+        LOGGER.info("Delete pack '{}'", packPath);
         if (!Files.isDirectory(libraryPath)) {
             return false;
         }
         Path packFile = libraryPath.resolve(packPath);
-        if(Files.notExists(packFile)) {
-            LOGGER.error("Cannot remove pack from library because it is not in the folder");
-            return false;
-        }
         try {
-            if(Files.isDirectory(packFile)) {
+            if (Files.isDirectory(packFile)) {
                 FileUtils.deleteDirectory(packFile);
             } else {
-                Files.delete(packFile);
+                Files.deleteIfExists(packFile);
             }
             return true;
         } catch (IOException e) {
-            LOGGER.error("Failed to remove pack from library", e);
-            return false;
+            throw new StoryTellerException("Failed to remove pack from library", e);
         }
     }
 
@@ -321,11 +325,15 @@ public class LibraryService {
         return Files.createTempDirectory(tmpDirPath, prefix);
     }
 
-    private Optional<LibraryPack> readMetadata(Path path) {
+    private String base64(byte[] thumbnail) {
+        return "data:image/png;base64," + Base64.getEncoder().encodeToString(thumbnail);
+    }
+
+    private Optional<LibraryPackDTO> readMetadata(Path path) {
         // Select reader
         PackFormat inputFormat = PackFormat.fromPath(path);
         // Ignore other files
-        if(inputFormat == null) {
+        if (inputFormat == null) {
             return Optional.empty();
         }
         // read Metadata
@@ -334,7 +342,7 @@ public class LibraryService {
             StoryPackMetadata meta = inputFormat.getReader().readMetadata(path);
             if (meta != null) {
                 meta.setSectorSize((int) Math.ceil(Files.size(path) / 512d));
-                return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis(), meta));
+                return Optional.of(new LibraryPackDTO(path, Files.getLastModifiedTime(path).toMillis(), meta));
             }
         } catch (IOException e) {
             LOGGER.atError().withThrowable(e).log("Failed to read metadata {} from pack: {}", inputFormat, path);
@@ -343,27 +351,27 @@ public class LibraryService {
         return Optional.empty();
     }
 
-    private JsonObject libraryPackToJson(LibraryPack pack) {
+    private MetaPackDTO buildMetaPack(LibraryPackDTO pack) {
         StoryPackMetadata spMeta = pack.getMetadata();
-        JsonObject json = new JsonObject()
-                .put("format", spMeta.getFormat().getLabel())
-                .put("uuid", spMeta.getUuid())
-                .put("version", spMeta.getVersion())
-                .put("path", pack.getPath().getFileName().toString())
-                .put("timestamp", pack.getTimestamp())
-                .put("nightModeAvailable", spMeta.isNightModeAvailable());
-        Optional.ofNullable(spMeta.getTitle()).ifPresent(title -> json.put("title", title));
-        Optional.ofNullable(spMeta.getDescription()).ifPresent(desc -> json.put("description", desc));
-        Optional.ofNullable(spMeta.getThumbnail()).ifPresent(thumb -> json.put("image", "data:image/png;base64," + Base64.getEncoder().encodeToString(thumb)));
-        Optional.ofNullable(spMeta.getSectorSize()).ifPresent(size -> json.put("sectorSize", size));
-        return databaseMetadataService.getPackMetadata(spMeta.getUuid())
-                .map(metadata -> json
-                        .put("title", metadata.getTitle())
-                        .put("description", metadata.getDescription())
-                        .put("image", metadata.getThumbnail())
-                        .put("official", metadata.isOfficial())
-                )
-                .orElse(json);
+        MetaPackDTO mp = new MetaPackDTO();
+        mp.setFormat(spMeta.getFormat().getLabel());
+        mp.setUuid(spMeta.getUuid());
+        mp.setVersion(spMeta.getVersion());
+        mp.setPath(pack.getPath().getFileName().toString());
+        mp.setTimestamp(pack.getTimestamp());
+        mp.setNightModeAvailable(spMeta.isNightModeAvailable());
+        mp.setSectorSize(spMeta.getSectorSize());
+        mp.setTitle(spMeta.getTitle());
+        mp.setDescription(spMeta.getDescription());
+        Optional.ofNullable(spMeta.getThumbnail()).ifPresent(this::base64);
+
+        return databaseMetadataService.getPackMetadata(spMeta.getUuid()).map(metadata -> {
+            mp.setTitle(metadata.getTitle());
+            mp.setDescription(metadata.getDescription());
+            mp.setImage(metadata.getThumbnail());
+            mp.setOfficial(metadata.isOfficial());
+            return mp;
+        }).orElse(mp);
     }
 
 }

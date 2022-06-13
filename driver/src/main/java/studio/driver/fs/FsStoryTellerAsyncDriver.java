@@ -114,7 +114,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
 
     public CompletionStage<FsDeviceInfos> getDeviceInfos() {
         if (this.device == null || this.partitionMountPoint == null) {
-            return CompletableFuture.failedFuture(noDevicePluggedException());
+            return CompletableFuture.failedStage(noDevicePluggedException());
         }
         FsDeviceInfos infos = new FsDeviceInfos();
         Path mdFile = this.partitionMountPoint.resolve(DEVICE_METADATA_FILENAME);
@@ -125,7 +125,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
             short mdVersion = DeviceUtils.readLittleEndianShort(is);
             LOGGER.trace("Device metadata format version: {}", mdVersion);
             if (mdVersion < 1 || mdVersion > 3) {
-                return CompletableFuture.failedFuture(new StoryTellerException("Unsupported device metadata format version: " + mdVersion));
+                return CompletableFuture.failedStage(new StoryTellerException("Unsupported device metadata format version: " + mdVersion));
             }
 
             // Firmware version
@@ -166,14 +166,14 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
                 LOGGER.debug("SD card used : {}% ({} / {})", percent, FileUtils.readableByteSize(sdCardUsedSpace), FileUtils.readableByteSize(sdCardTotalSpace) );
             }
         } catch (Exception e) {
-            return CompletableFuture.failedFuture(new StoryTellerException("Failed to read device metadata on partition", e));
+            return CompletableFuture.failedStage(new StoryTellerException("Failed to read device metadata on partition", e));
         }
-        return CompletableFuture.completedFuture(infos);
+        return CompletableFuture.completedStage(infos);
     }
 
     public CompletionStage<List<FsStoryPackInfos>> getPacksList() {
         if (this.device == null || this.partitionMountPoint == null) {
-            return CompletableFuture.failedFuture(noDevicePluggedException());
+            return CompletableFuture.failedStage(noDevicePluggedException());
         }
 
         return readPackIndex()
@@ -235,7 +235,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
 
     public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
         if (this.device == null || this.partitionMountPoint == null) {
-            return CompletableFuture.failedFuture(noDevicePluggedException());
+            return CompletableFuture.failedStage(noDevicePluggedException());
         }
 
         return readPackIndex()
@@ -259,7 +259,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
 
     public CompletionStage<Boolean> deletePack(String uuid) {
         if (this.device == null || this.partitionMountPoint == null) {
-            return CompletableFuture.failedFuture(noDevicePluggedException());
+            return CompletableFuture.failedStage(noDevicePluggedException());
         }
 
         return readPackIndex()
@@ -280,9 +280,9 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
                                         LOGGER.debug("Removing pack folder: {}", folderPath);
                                         try {
                                             FileUtils.deleteDirectory(folderPath);
-                                            return CompletableFuture.completedFuture(ok);
+                                            return CompletableFuture.completedStage(ok);
                                         } catch (IOException e) {
-                                            return CompletableFuture.failedFuture(new StoryTellerException("Failed to delete pack folder on device partition", e));
+                                            return CompletableFuture.failedStage(new StoryTellerException("Failed to delete pack folder on device partition", e));
                                         }
                                     });
                         } else {
@@ -306,15 +306,15 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
             }
             Files.write(piFile, bb.array());
 
-            return CompletableFuture.completedFuture(true);
+            return CompletableFuture.completedStage(true);
         } catch (Exception e) {
-            return CompletableFuture.failedFuture(new StoryTellerException("Failed to write pack index on device partition", e));
+            return CompletableFuture.failedStage(new StoryTellerException("Failed to write pack index on device partition", e));
         }
     }
 
     public CompletionStage<TransferStatus> downloadPack(String uuid, Path destPath, TransferProgressListener listener) {
         if (this.device == null || this.partitionMountPoint == null) {
-            return CompletableFuture.failedFuture(noDevicePluggedException());
+            return CompletableFuture.failedStage(noDevicePluggedException());
         }
         return readPackIndex()
                 .thenCompose(packUUIDs -> CompletableFuture.supplyAsync(() -> {
@@ -346,7 +346,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
 
     public CompletionStage<TransferStatus> uploadPack(String uuid, Path inputPath, TransferProgressListener listener) {
         if (this.device == null || this.partitionMountPoint == null) {
-            return CompletableFuture.failedFuture(noDevicePluggedException());
+            return CompletableFuture.failedStage(noDevicePluggedException());
         }
 
         try {
@@ -457,7 +457,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
     public CompletionStage<Void> dump(Path outputPath) {
         // Not supported
         LOGGER.warn("Not supported : dump");
-        return CompletableFuture.completedFuture(null);
+        return CompletableFuture.completedStage(null);
     }
 
     private StoryTellerException noDevicePluggedException() {

@@ -6,31 +6,13 @@
 
 package studio.core.v1.model.asset;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+@Data
+@AllArgsConstructor
 public class ImageAsset {
 
     private ImageType type;
     private byte[] rawData;
-
-    public ImageAsset(ImageType type, byte[] rawData) {
-        super();
-        this.type = type;
-        this.rawData = rawData;
-    }
-
-    public ImageType getType() {
-        return type;
-    }
-
-    public void setType(ImageType imageType) {
-        this.type = imageType;
-    }
-
-    public byte[] getRawData() {
-        return rawData;
-    }
-
-    public void setRawData(byte[] rawData) {
-        this.rawData = rawData;
-    }
-
 }

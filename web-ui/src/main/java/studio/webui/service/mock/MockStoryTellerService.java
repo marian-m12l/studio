@@ -13,6 +13,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -23,84 +24,118 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.inject.Inject;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
-import io.vertx.core.eventbus.EventBus;
+import io.quarkus.arc.profile.IfBuildProfile;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
+import io.vertx.mutiny.core.eventbus.EventBus;
 import studio.config.StudioConfig;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.reader.binary.BinaryStoryPackReader;
+import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.exception.StoryTellerException;
 import studio.metadata.DatabaseMetadataService;
+import studio.webui.model.DeviceDTOs.DeviceInfosDTO;
+import studio.webui.model.DeviceDTOs.DeviceInfosDTO.StorageDTO;
+import studio.webui.model.LibraryDTOs.MetaPackDTO;
 import studio.webui.service.IStoryTellerService;
 
+@IfBuildProfile("dev")
+@ApplicationScoped
 public class MockStoryTellerService implements IStoryTellerService {
 
     private static final Logger LOGGER = LogManager.getLogger(MockStoryTellerService.class);
 
     private static final int BUFFER_SIZE = 1024 * 1024 * 10;
 
-    private final EventBus eventBus;
+    @Inject
+    EventBus eventBus;
 
-    private final DatabaseMetadataService databaseMetadataService;
+    @Inject
+    DatabaseMetadataService databaseMetadataService;
 
-    public MockStoryTellerService(EventBus eventBus, DatabaseMetadataService databaseMetadataService) {
-        this.eventBus = eventBus;
-        this.databaseMetadataService = databaseMetadataService;
-
+    public MockStoryTellerService() {
         LOGGER.info("Setting up mocked story teller service");
-
-        // Create the mocked device folder if needed
         try {
-            Path libraryFolder = devicePath();
-            Files.createDirectories(libraryFolder);
+            // Create the mocked device folder if needed
+            Files.createDirectories(devicePath());
         } catch (IOException e) {
-            LOGGER.error("Failed to initialize mocked device", e);
-            throw new IllegalStateException("Failed to initialize mocked device");
+            throw new StoryTellerException("Failed to initialize mocked device");
         }
     }
 
+    private void sendDevicePlugged(DeviceInfosDTO infosDTO) {
+        JsonObject jo = JsonObject.mapFrom(infosDTO);
+        LOGGER.debug("storyteller.plugged evt : {}", jo);
+        eventBus.publish("storyteller.plugged", jo);
+    }
+
     private void sendProgress(String id, double p) {
-        eventBus.send("storyteller.transfer." + id + ".progress", new JsonObject().put("progress", p));
+        eventBus.publish("storyteller.transfer." + id + ".progress", new JsonObject().put("progress", p));
     }
 
     private void sendDone(String id, boolean success) {
-        eventBus.send("storyteller.transfer." + id + ".done", new JsonObject().put("success", success));
+        eventBus.publish("storyteller.transfer." + id + ".done", new JsonObject().put("success", success));
     }
 
     private static Path devicePath() {
         return Path.of(StudioConfig.STUDIO_MOCK_DEVICE.getValue());
     }
 
-    public CompletionStage<JsonObject> deviceInfos() {
-        try(Stream<Path> paths = Files.list(devicePath())) {
+    public CompletionStage<DeviceInfosDTO> deviceInfos() {
+        try (Stream<Path> paths = Files.list(devicePath())) {
             long files = paths.count();
-            return CompletableFuture.completedFuture( //
-                    new JsonObject() //
-                            .put("uuid", "mocked-device") //
-                            .put("serial", "mocked-serial") //
-                            .put("firmware", "mocked-version") //
-                            .put("storage", new JsonObject() //
-                                    .put("size", files) //
-                                    .put("free", 0) //
-                                    .put("taken", files) //
-                            ) //
-                            .put("error", false) //
-                            .put("driver", "raw") // Simulate raw only
-            );
+            DeviceInfosDTO di = new DeviceInfosDTO();
+            di.setUuid("mocked-device");
+            di.setSerial("mocked-serial");
+            di.setFirmware("mocked-version"); //
+            di.setError(false); //
+            di.setPlugged(true); //
+            di.setDriver("raw"); // Simulate raw only
+            di.setStorage(new StorageDTO(files, 0, files));
+//            JsonObject jo = new JsonObject() //
+//                    .put("uuid", "mocked-device") //
+//                    .put("serial", "mocked-serial") //
+//                    .put("firmware", "mocked-version") //
+//                    .put("storage", new JsonObject() //
+//                            .put("size", files) //
+//                            .put("free", 0) //
+//                            .put("taken", files) //
+//                    ) //
+//                    .put("error", false) //
+//                    .put("plugged", true) //
+//                    .put("driver", "raw"); // Simulate raw only
+
+            // TODO : remove
+            sendDevicePlugged(di);
+
+            return CompletableFuture.completedStage(di);
         } catch (IOException e) {
             LOGGER.error("Failed to initialize mocked device", e);
             throw new StoryTellerException(e);
         }
     }
 
-    public CompletionStage<JsonArray> packs() {
+    public CompletionStage<List<MetaPackDTO>> packs() {
         // Check that mocked device folder exists
         Path deviceFolder = devicePath();
         if (!Files.isDirectory(deviceFolder)) {
-            return CompletableFuture.completedFuture(new JsonArray());
+            return CompletableFuture.completedStage(Arrays.asList());
+        }
+        return readPackIndex(deviceFolder).thenApply(p -> p.stream().map(this::toDto).collect(Collectors.toList()));
+    }
+
+    @Deprecated
+    public CompletionStage<JsonArray> packs0() {
+        // Check that mocked device folder exists
+        Path deviceFolder = devicePath();
+        if (!Files.isDirectory(deviceFolder)) {
+            return CompletableFuture.completedStage(new JsonArray());
         } else {
             return readPackIndex(deviceFolder).thenApply(packs -> new JsonArray( //
                     packs.stream().map(this::getPackMetadata).collect(Collectors.toList()) //
@@ -111,11 +146,11 @@ public class MockStoryTellerService implements IStoryTellerService {
     private CompletionStage<List<StoryPackMetadata>> readPackIndex(Path deviceFolder) {
         // List binary pack files in mocked device folder
         try (Stream<Path> paths = Files.walk(deviceFolder).filter(Files::isRegularFile)) {
-            return CompletableFuture.completedFuture( //
+            return CompletableFuture.completedStage( //
                     paths.map(this::readBinaryPackFile) //
-                    .filter(Optional::isPresent) //
-                    .map(Optional::get) //
-                    .collect(Collectors.toList()) //
+                            .filter(Optional::isPresent) //
+                            .map(Optional::get) //
+                            .collect(Collectors.toList()) //
             );
         } catch (IOException e) {
             LOGGER.error("Failed to read packs from mocked device", e);
@@ -131,7 +166,7 @@ public class MockStoryTellerService implements IStoryTellerService {
                 LOGGER.debug("Reading binary pack metadata.");
                 StoryPackMetadata meta = new BinaryStoryPackReader().readMetadata(path);
                 if (meta != null) {
-                    meta.setSectorSize((int)Math.ceil(Files.size(path) / 512d));
+                    meta.setSectorSize((int) Math.ceil(Files.size(path) / 512d));
                     return Optional.of(meta);
                 }
             } catch (IOException e) {
@@ -144,36 +179,43 @@ public class MockStoryTellerService implements IStoryTellerService {
         return Optional.empty();
     }
 
-    public CompletionStage<Optional<String>> addPack(String uuid, Path packFile) {
+    public CompletionStage<String> addPack(String uuid, Path packFile) {
         // Check that mocked device folder exists
         Path deviceFolder = devicePath();
         if (!Files.isDirectory(deviceFolder)) {
-            return CompletableFuture.completedFuture(Optional.empty());
+            // return CompletableFuture.completedStage(Optional.empty());
+            return CompletableFuture.completedStage(uuid);
         }
         Path destFile = deviceFolder.resolve(uuid + ".pack");
         return copyPack("add pack", packFile, destFile);
     }
 
-    public CompletionStage<Optional<String>> extractPack(String uuid, Path destFile) {
+    public CompletionStage<String> extractPack(String uuid, Path destFile) {
         // Check that mocked device folder exists
         Path deviceFolder = devicePath();
         if (!Files.isDirectory(deviceFolder)) {
-            return CompletableFuture.completedFuture(Optional.empty());
+            // return CompletableFuture.completedStage(Optional.empty());
+            return CompletableFuture.completedStage(uuid);
         }
         Path packFile = deviceFolder.resolve(uuid + ".pack");
         return copyPack("extract pack", packFile, destFile);
     }
 
-    private CompletionStage<Optional<String>> copyPack(String opName, Path packFile, Path destFile) {
+    private CompletionStage<String> copyPack(String opName, Path packFile, Path destFile) {
         String transferId = UUID.randomUUID().toString();
         // Perform transfer asynchronously, and send events on eventbus to monitor
         // progress and end of transfer
         Executor after2s = CompletableFuture.delayedExecutor(2, TimeUnit.SECONDS);
         CompletableFuture.runAsync(() -> {
             // Check that source and destination are available
-            if (Files.notExists(packFile) || Files.exists(destFile)) {
-                LOGGER.error("Cannot {} : pack doesn't exist or destination does", opName);
+            if (Files.notExists(packFile)) {
+                LOGGER.warn("Cannot {} : pack doesn't exist {}", opName, packFile);
                 sendDone(transferId, false);
+                return;
+            }
+            if (Files.exists(destFile)) {
+                LOGGER.warn("{} : destination already exists : {}", opName, destFile);
+                sendDone(transferId, true);
                 return;
             }
             try (InputStream input = new BufferedInputStream(Files.newInputStream(packFile));
@@ -187,7 +229,7 @@ public class MockStoryTellerService implements IStoryTellerService {
                     count += n;
                     // Send events on eventbus to monitor progress
                     double p = count / (double) fileSize;
-                    LOGGER.debug("Pack copy progress... {} / {} ({})", count, fileSize, p);
+                    LOGGER.info("Pack copy progress... {} / {} ({})", count, fileSize, p);
                     sendProgress(transferId, p);
                 }
                 // Send event on eventbus to signal end of transfer
@@ -198,55 +240,73 @@ public class MockStoryTellerService implements IStoryTellerService {
                 sendDone(transferId, false);
             }
         }, after2s);
-        return CompletableFuture.completedFuture(Optional.of(transferId));
+        // return CompletableFuture.completedStage(Optional.of(transferId));
+        return CompletableFuture.completedStage(transferId);
     }
 
     public CompletionStage<Boolean> deletePack(String uuid) {
         // Check that mocked device folder exists
         Path deviceFolder = devicePath();
         if (!Files.isDirectory(deviceFolder)) {
-            return CompletableFuture.completedFuture(false);
+            return CompletableFuture.completedStage(false);
         }
         try {
             Path packFile = deviceFolder.resolve(uuid + ".pack");
             if (Files.deleteIfExists(packFile)) {
-                return CompletableFuture.completedFuture(true);
+                return CompletableFuture.completedStage(true);
             } else {
                 LOGGER.error("Cannot remove pack from mocked device because it is not in the folder");
-                return CompletableFuture.completedFuture(false);
+                return CompletableFuture.completedStage(false);
             }
         } catch (IOException e) {
             LOGGER.error("Failed to remove pack from mocked device", e);
-            return CompletableFuture.completedFuture(false);
+            return CompletableFuture.completedStage(false);
         }
     }
 
     public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
         // Not supported
         LOGGER.warn("Not supported : reorderPacks");
-        return CompletableFuture.completedFuture(false);
+        return CompletableFuture.completedStage(false);
     }
 
+    @Deprecated
     private JsonObject getPackMetadata(StoryPackMetadata packMetadata) {
-        JsonObject json = new JsonObject()
+        JsonObject json = new JsonObject() //
                 .put("uuid", packMetadata.getUuid())
-                .put("format", packMetadata.getFormat().getLabel())
-                .put("version", packMetadata.getVersion())
+                .put("format", packMetadata.getFormat().getLabel()) //
+                .put("version", packMetadata.getVersion()) //
                 .put("sectorSize", packMetadata.getSectorSize());
         return databaseMetadataService.getPackMetadata(packMetadata.getUuid())
-                .map(metadata -> json
-                        .put("title", metadata.getTitle())
+                .map(metadata -> json.put("title", metadata.getTitle()) //
                         .put("description", metadata.getDescription())
-                        .put("image", metadata.getThumbnail())
-                        .put("official", metadata.isOfficial())
-                )
+                        .put("image", metadata.getThumbnail()) //
+                        .put("official", metadata.isOfficial())) //
                 .orElse(json);
+    }
+    
+    private MetaPackDTO toDto(StoryPackMetadata pack) {
+        MetaPackDTO mp = new MetaPackDTO();
+        mp.setUuid(pack.getUuid());
+        mp.setFormat(PackFormat.RAW.getLabel());
+        mp.setVersion(pack.getVersion());
+
+        mp.setSectorSize(pack.getSectorSize());
+        // add meta
+        databaseMetadataService.getPackMetadata(pack.getUuid()).ifPresent(meta -> {//
+            mp.setTitle(meta.getTitle());
+            mp.setDescription(meta.getDescription());
+            mp.setImage(meta.getThumbnail());
+            mp.setOfficial(meta.isOfficial());
+        });
+        LOGGER.debug("toDto : {}", mp);
+        return mp;
     }
 
     public CompletionStage<Void> dump(Path outputPath) {
         // Not supported
         LOGGER.warn("Not supported : dump");
-        return CompletableFuture.completedFuture(null);
+        return CompletableFuture.completedStage(null);
     }
 
 }

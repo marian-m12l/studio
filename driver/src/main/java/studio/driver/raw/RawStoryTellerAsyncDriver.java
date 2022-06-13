@@ -86,7 +86,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
 
     public CompletionStage<RawDeviceInfos> getDeviceInfos() {
         if (this.device == null) {
-            return CompletableFuture.failedFuture(noDevicePluggedException());
+            return CompletableFuture.failedStage(noDevicePluggedException());
         }
         return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, this::readDeviceInfos);
     }
@@ -204,7 +204,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
 
     public CompletionStage<List<RawStoryPackInfos>> getPacksList() {
         if (this.device == null) {
-            return CompletableFuture.failedFuture(noDevicePluggedException());
+            return CompletableFuture.failedStage(noDevicePluggedException());
         }
         // Read pack index
         return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, this::readPackIndex);
@@ -217,7 +217,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                     short nbPacks = sdPackIndexSector.getShort();
                     LOGGER.debug("Number of packs in index: {}", nbPacks);
 
-                    CompletionStage<List<RawStoryPackInfos>> promise = CompletableFuture.completedFuture(new ArrayList<>());
+                    CompletionStage<List<RawStoryPackInfos>> promise = CompletableFuture.completedStage(new ArrayList<>());
                     for (short i = 0; i < nbPacks; i++) {
                         int startSector = sdPackIndexSector.getInt();
                         int sizeInSectors = sdPackIndexSector.getInt();
@@ -256,7 +256,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
 
     public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
         if (this.device == null) {
-            return CompletableFuture.failedFuture(noDevicePluggedException());
+            return CompletableFuture.failedStage(noDevicePluggedException());
         }
         return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device,
                 handle -> readPackIndex(handle).thenCompose(packs -> {
@@ -276,7 +276,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
 
     public CompletionStage<Boolean> deletePack(String uuid) {
         if (this.device == null) {
-            return CompletableFuture.failedFuture(noDevicePluggedException());
+            return CompletableFuture.failedStage(noDevicePluggedException());
         }
         return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device,
                 handle -> readPackIndex(handle).thenCompose(packs -> {
@@ -323,7 +323,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
 
     public CompletionStage<TransferStatus> downloadPack(String uuid, Path destPath, TransferProgressListener listener) {
         if (this.device == null) {
-            return CompletableFuture.failedFuture(noDevicePluggedException());
+            return CompletableFuture.failedStage(noDevicePluggedException());
         }
 
         return LibUsbMassStorageHelper.executeOnDeviceHandle(device, handle ->
@@ -339,7 +339,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                             final long startTime = System.currentTimeMillis();
                             // Copy pack chunk by chunk into the output stream
                             int totalSize = rspi.getSizeInSectors() * LibUsbMassStorageHelper.SECTOR_SIZE;
-                            CompletionStage<TransferStatus> promise = CompletableFuture.completedFuture(new TransferStatus(0, totalSize, 0.0));
+                            CompletionStage<TransferStatus> promise = CompletableFuture.completedStage(new TransferStatus(0, totalSize, 0.0));
                             for(int offset = 0; offset < rspi.getSizeInSectors(); offset += PACK_TRANSFER_CHUNK_SIZE_IN_SECTORS) {
                                 int sector = PACK_INDEX_SD_SECTOR + rspi.getStartSector() + offset;
                                 short nbSectorsToRead = (short) Math.min(PACK_TRANSFER_CHUNK_SIZE_IN_SECTORS, rspi.getSizeInSectors() - offset);
@@ -377,14 +377,14 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
 
     public CompletionStage<TransferStatus> uploadPack(String uuid, Path inputPath, TransferProgressListener listener) {
         if (this.device == null) {
-            return CompletableFuture.failedFuture(noDevicePluggedException());
+            return CompletableFuture.failedStage(noDevicePluggedException());
         }
         // file size and sectors
         long packSize = 0;
         try {
             packSize = Files.size(inputPath);
         } catch (IOException e) {
-            return CompletableFuture.failedFuture(e);
+            return CompletableFuture.failedStage(e);
         }
         int packSizeInSectors = (int) (packSize / LibUsbMassStorageHelper.SECTOR_SIZE);
         if(LOGGER.isInfoEnabled()) {
@@ -405,7 +405,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                         final long startTime = System.currentTimeMillis();
                         // Copy pack chunk by chunk from the input stream
                         int totalSize = packSizeInSectors * LibUsbMassStorageHelper.SECTOR_SIZE;
-                        CompletionStage<TransferStatus> promise = CompletableFuture.completedFuture(new TransferStatus(0, totalSize, 0.0));
+                        CompletionStage<TransferStatus> promise = CompletableFuture.completedStage(new TransferStatus(0, totalSize, 0.0));
                         for(int offset = 0; offset < packSizeInSectors; offset += PACK_TRANSFER_CHUNK_SIZE_IN_SECTORS) {
                             int sector = PACK_INDEX_SD_SECTOR + startSector.get() + offset;
                             short nbSectorsToWrite = (short) Math.min(PACK_TRANSFER_CHUNK_SIZE_IN_SECTORS, packSizeInSectors - offset);
@@ -470,7 +470,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                         int freeSpace = nextUsedSector - previousUsedSector;
                         if (freeSpace >= packSizeInSectors) {
                             // Free space is large enough, use it
-                            return CompletableFuture.completedFuture(Optional.of(previousUsedSector + 1));
+                            return CompletableFuture.completedStage(Optional.of(previousUsedSector + 1));
                         }
                         previousUsedSector = pack.getStartSector() + pack.getSizeInSectors() - 1;
                     }
@@ -492,7 +492,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
 
     public CompletionStage<Void> dump(Path outputPath) {
         if (this.device == null) {
-            return CompletableFuture.failedFuture(noDevicePluggedException());
+            return CompletableFuture.failedStage(noDevicePluggedException());
         }
         try {
             if(!Files.isDirectory(outputPath)) {
@@ -511,7 +511,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                                     short nbPacks = sdPackIndexSector.getShort();
                                     LOGGER.info("Number of packs to dump: {}", nbPacks);
 
-                                    CompletionStage<Void> promise = CompletableFuture.completedFuture(null);
+                                    CompletionStage<Void> promise = CompletableFuture.completedStage(null);
                                     for (short i = 0; i < nbPacks; i++) {
                                         int startSector = sdPackIndexSector.getInt();
                                         int sizeInSectors = sdPackIndexSector.getInt();

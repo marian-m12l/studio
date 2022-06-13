@@ -12,7 +12,7 @@
 
     <groupId>studio</groupId>
     <artifactId>studio-parent</artifactId>
-    <version>0.4.3-SNAPSHOT</version>
+    <version>quarkus-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
@@ -29,14 +29,20 @@
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
         <java.version>11</java.version>
         <maven.compiler.release>${java.version}</maven.compiler.release>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
         <!-- Maven plugins -->
         <mvn.compiler.version>3.8.1</mvn.compiler.version>
-        <mvn.surefire.version>2.22.2</mvn.surefire.version>
+        <mvn.surefire.version>3.0.0-M5</mvn.surefire.version>
         <mvn.assembly.version>3.3.0</mvn.assembly.version>
         <!-- Devops -->
         <sonar.organization>kairoh</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <!-- quarkus -->
+        <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
+        <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
+        <quarkus.platform.version>2.9.2.Final</quarkus.platform.version>
         <!-- Dependencies -->
+        <lombok.version>1.18.22</lombok.version>
         <log4j2.version>2.17.1</log4j2.version>
         <gson.version>2.9.0</gson.version>
         <junit.version>5.8.2</junit.version>
@@ -44,6 +50,19 @@
 
     <dependencyManagement>
         <dependencies>
+            <dependency>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>${quarkus.platform.artifact-id}</artifactId>
+                <version>${quarkus.platform.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+            <dependency>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+                <scope>provided</scope>
+            </dependency>
             <dependency>
                 <groupId>org.apache.logging.log4j</groupId>
                 <artifactId>log4j-core</artifactId>
@@ -54,12 +73,12 @@
                 <artifactId>gson</artifactId>
                 <version>${gson.version}</version>
             </dependency>
-            <dependency>
+            <!--<dependency>
                 <groupId>org.junit.jupiter</groupId>
                 <artifactId>junit-jupiter</artifactId>
                 <version>${junit.version}</version>
                 <scope>test</scope>
-           </dependency>
+           </dependency>-->
         </dependencies>
    </dependencyManagement>
 
@@ -73,11 +92,17 @@
             <plugin>
                <artifactId>maven-surefire-plugin</artifactId>
                <version>${mvn.surefire.version}</version>
+               <configuration>
+                   <systemPropertyVariables>
+                       <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                       <maven.home>${maven.home}</maven.home>
+                   </systemPropertyVariables>
+               </configuration>
             </plugin>
-            <plugin>
+            <!--<plugin>
                <artifactId>maven-assembly-plugin</artifactId>
                <version>${mvn.assembly.version}</version>
-            </plugin>
+            </plugin>-->
          </plugins>
       </pluginManagement>
    </build>

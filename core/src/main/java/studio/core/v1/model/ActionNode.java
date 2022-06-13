@@ -6,24 +6,20 @@
 
 package studio.core.v1.model;
 
-import studio.core.v1.model.enriched.EnrichedNodeMetadata;
-
 import java.util.List;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
+import studio.core.v1.model.enriched.EnrichedNodeMetadata;
+
+@Data
+@EqualsAndHashCode(callSuper = true)
 public class ActionNode extends Node {
 
     private List<StageNode> options;
 
     public ActionNode(EnrichedNodeMetadata enriched, List<StageNode> options) {
         super(enriched);
-        this.options = options;
-    }
-
-    public List<StageNode> getOptions() {
-        return options;
-    }
-
-    public void setOptions(List<StageNode> options) {
         this.options = options;
     }
 }

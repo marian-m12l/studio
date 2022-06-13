@@ -6,43 +6,14 @@
 
 package studio.driver.model.fs;
 
-import studio.core.v1.utils.SecurityUtils;
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import studio.driver.model.DeviceInfos;
 
+@Data
+@EqualsAndHashCode(callSuper = true)
 public class FsDeviceInfos extends DeviceInfos {
-
     private byte[] deviceId;
     private long sdCardSizeInBytes;
     private long usedSpaceInBytes;
-
-    public byte[] getDeviceId() {
-        return deviceId;
-    }
-
-    public void setDeviceId(byte[] deviceId) {
-        this.deviceId = deviceId;
-    }
-
-    public long getSdCardSizeInBytes() {
-        return sdCardSizeInBytes;
-    }
-
-    public void setSdCardSizeInBytes(long sdCardSizeInBytes) {
-        this.sdCardSizeInBytes = sdCardSizeInBytes;
-    }
-
-    public long getUsedSpaceInBytes() {
-        return usedSpaceInBytes;
-    }
-
-    public void setUsedSpaceInBytes(long usedSpaceInBytes) {
-        this.usedSpaceInBytes = usedSpaceInBytes;
-    }
-
-    @Override
-    public String toString() {
-        return "FsDeviceInfos{" + "uuid=" + SecurityUtils.encodeHex(deviceId) + ", firmwareMajor=" + getFirmwareMajor()
-                + ", firmwareMinor=" + getFirmwareMinor() + ", serialNumber='" + getSerialNumber() + '\''
-                + ", sdCardSizeInBytes=" + sdCardSizeInBytes + ", usedSpaceInBytes=" + usedSpaceInBytes + '}';
-    }
 }

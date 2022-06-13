@@ -8,25 +8,24 @@ package studio.webui.service;
 
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.concurrent.CompletionStage;
 
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
+import studio.webui.model.DeviceDTOs.DeviceInfosDTO;
+import studio.webui.model.LibraryDTOs.MetaPackDTO;
 
 public interface IStoryTellerService {
 
-    CompletionStage<JsonObject> deviceInfos();
+    CompletionStage<DeviceInfosDTO> deviceInfos();
 
-    CompletionStage<JsonArray> packs();
+    CompletionStage<List<MetaPackDTO>> packs();
 
-    CompletionStage<Optional<String>> addPack(String uuid, Path packFile);
+    CompletionStage<String> addPack(String uuid, Path packFile);
 
     CompletionStage<Boolean> deletePack(String uuid);
 
     CompletionStage<Boolean> reorderPacks(List<String> uuids);
 
-    CompletionStage<Optional<String>> extractPack(String uuid, Path destFile);
+    CompletionStage<String> extractPack(String uuid, Path destFile);
 
     CompletionStage<Void> dump(Path outputPath);
 }

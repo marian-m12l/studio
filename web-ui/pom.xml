@@ -11,7 +11,7 @@
     <parent>
         <artifactId>studio-parent</artifactId>
         <groupId>studio</groupId>
-        <version>0.4.3-SNAPSHOT</version>
+        <version>quarkus-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -22,8 +22,10 @@
         <node.version>v12.3.1</node.version>
         <yarn.version>v1.16.0</yarn.version>
         <frontend-maven-plugin.version>1.12.1</frontend-maven-plugin.version>
+<!--
         <vertx.version>4.2.4</vertx.version>
         <vertx.main.verticle>studio.webui.MainVerticle</vertx.main.verticle>
+-->
     </properties>
 
     <dependencies>
@@ -37,6 +39,7 @@
             <artifactId>studio-driver</artifactId>
             <version>${project.version}</version>
         </dependency>
+<!--
         <dependency>
             <groupId>io.vertx</groupId>
             <artifactId>vertx-config</artifactId>
@@ -52,9 +55,42 @@
             <artifactId>vertx-web-client</artifactId>
             <version>${vertx.version}</version>
         </dependency>
+-->
+        <dependency>
+           <groupId>org.projectlombok</groupId>
+           <artifactId>lombok</artifactId>
+           <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-arc</artifactId>
+        </dependency>
+      <!--  <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-vertx</artifactId>
+        </dependency> -->
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-rest-client-reactive-jackson</artifactId>
+        </dependency>
+
+        <dependency>
+            <groupId>io.quarkus</groupId>
+            <artifactId>quarkus-junit5-mockito</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>io.rest-assured</groupId>
+            <artifactId>rest-assured</artifactId>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 
@@ -120,7 +156,7 @@
                         </goals>
                         <phase>prepare-package</phase>
                         <configuration>
-                            <outputDirectory>${project.build.outputDirectory}/webroot</outputDirectory>
+                            <outputDirectory>${project.build.outputDirectory}/META-INF/resources</outputDirectory>
                             <resources>
                                 <resource>
                                     <directory>${frontend-src-dir}/build</directory>
@@ -132,7 +168,24 @@
                 </executions>
             </plugin>
 
+            <plugin>
+                <groupId>${quarkus.platform.group-id}</groupId>
+                <artifactId>quarkus-maven-plugin</artifactId>
+                <version>${quarkus.platform.version}</version>
+                <extensions>true</extensions>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>build</goal>
+                            <goal>generate-code</goal>
+                            <goal>generate-code-tests</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+
             <!-- Distributable assembly -->
+            <!--
             <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <executions>
@@ -150,8 +203,10 @@
                     </descriptors>
                 </configuration>
             </plugin>
+            -->
 
             <!-- Run the app with `mvn exec:java` -->
+            <!--
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -161,6 +216,7 @@
                     <classpathScope>test</classpathScope>
                 </configuration>
             </plugin>
+            -->
         </plugins>
 
     </build>

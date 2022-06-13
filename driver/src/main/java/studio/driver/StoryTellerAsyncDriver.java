@@ -26,5 +26,4 @@ public interface StoryTellerAsyncDriver<T, U> {
     CompletionStage<TransferStatus> uploadPack(String uuid, Path inputPath, TransferProgressListener listener);
 
     CompletionStage<Void> dump(Path outputPath);
-
 }

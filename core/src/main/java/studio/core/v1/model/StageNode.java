@@ -6,10 +6,14 @@
 
 package studio.core.v1.model;
 
+import lombok.Data;
+import lombok.EqualsAndHashCode;
 import studio.core.v1.model.asset.AudioAsset;
 import studio.core.v1.model.asset.ImageAsset;
 import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 
+@Data
+@EqualsAndHashCode(callSuper = true)
 public class StageNode extends Node {
 
     private String uuid;
@@ -26,54 +30,6 @@ public class StageNode extends Node {
         this.audio = audio;
         this.okTransition = okTransition;
         this.homeTransition = homeTransition;
-        this.controlSettings = controlSettings;
-    }
-
-    public String getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(String uuid) {
-        this.uuid = uuid;
-    }
-
-    public ImageAsset getImage() {
-        return image;
-    }
-
-    public void setImage(ImageAsset image) {
-        this.image = image;
-    }
-
-    public AudioAsset getAudio() {
-        return audio;
-    }
-
-    public void setAudio(AudioAsset audio) {
-        this.audio = audio;
-    }
-
-    public Transition getOkTransition() {
-        return okTransition;
-    }
-
-    public void setOkTransition(Transition okTransition) {
-        this.okTransition = okTransition;
-    }
-
-    public Transition getHomeTransition() {
-        return homeTransition;
-    }
-
-    public void setHomeTransition(Transition homeTransition) {
-        this.homeTransition = homeTransition;
-    }
-
-    public ControlSettings getControlSettings() {
-        return controlSettings;
-    }
-
-    public void setControlSettings(ControlSettings controlSettings) {
         this.controlSettings = controlSettings;
     }
 }

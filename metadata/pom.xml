@@ -11,13 +11,18 @@
     <parent>
         <artifactId>studio-parent</artifactId>
         <groupId>studio</groupId>
-        <version>0.4.3-SNAPSHOT</version>
+        <version>quarkus-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>studio-metadata</artifactId>
 
     <dependencies>
+        <dependency>
+           <groupId>org.projectlombok</groupId>
+           <artifactId>lombok</artifactId>
+           <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>

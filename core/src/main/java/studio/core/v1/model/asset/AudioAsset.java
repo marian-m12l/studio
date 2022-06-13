@@ -6,31 +6,13 @@
 
 package studio.core.v1.model.asset;
 
+import lombok.AllArgsConstructor;
+import lombok.Data;
+
+@Data
+@AllArgsConstructor
 public class AudioAsset {
 
     private AudioType type;
     private byte[] rawData;
-
-    public AudioAsset(AudioType type, byte[] rawData) {
-        super();
-        this.type = type;
-        this.rawData = rawData;
-    }
-
-    public AudioType getType() {
-        return type;
-    }
-
-    public void setType(AudioType type) {
-        this.type = type;
-    }
-
-    public byte[] getRawData() {
-        return rawData;
-    }
-
-    public void setRawData(byte[] rawData) {
-        this.rawData = rawData;
-    }
-
 }

@@ -11,13 +11,18 @@
     <parent>
         <artifactId>studio-parent</artifactId>
         <groupId>studio</groupId>
-        <version>0.4.3-SNAPSHOT</version>
+        <version>quarkus-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
     <artifactId>studio-driver</artifactId>
 
     <dependencies>
+        <dependency>
+           <groupId>org.projectlombok</groupId>
+           <artifactId>lombok</artifactId>
+           <scope>provided</scope>
+        </dependency>
         <dependency>
             <groupId>studio</groupId>
             <artifactId>studio-core</artifactId>
