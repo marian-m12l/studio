@@ -182,8 +182,8 @@ LICENSE
 This project is licensed under the terms of the **Mozilla Public License 2.0**. The terms of the license are in
 the `LICENSE` file.
 
-The `vorbis-java` library, as well as the `VorbisEncoder` class are licensed by the Xiph.org Foundation. The terms of
-the license can be found in the `LICENSE.vorbis-java` file.
+The `jvorbis` library, as well as the `VorbisEncoder` class are licensed by the Xiph.org Foundation. The terms of
+the license can be found in the `LICENSE.jvorbis` file.
 
 The `com.jhlabs.image` package is licensed by Jerry Huxtable under the terms of the Apache License 2.0. The terms of
 the license can be found in the `LICENSE.jhlabs` file.
