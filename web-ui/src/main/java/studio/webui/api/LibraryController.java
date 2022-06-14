@@ -103,6 +103,7 @@ public class LibraryController {
     @POST
     @Path("convert")
     public CompletionStage<SuccessPathDTO> convert(PackDTO pack) {
+        // Perform conversion/uncompression asynchronously
         return CompletableFuture.supplyAsync(() -> {
             PackFormat packFormat = PackFormat.valueOf(pack.getFormat().toUpperCase());
             var newPackPath = libraryService.addConvertedPack(pack.getPath(), packFormat, pack.isAllowEnriched());
@@ -118,92 +119,4 @@ public class LibraryController {
         boolean removed = libraryService.deletePack(pathData.getPath());
         return new SuccessDTO(removed);
     }
-
-//    public static Router apiRouter(Router router, LibraryService libraryService) {
-//
-//        // Local library device metadata
-//        router.get("/infos").handler(ctx -> ctx.json(libraryService.infos()));
-//
-//        // Local library packs list
-//        router.get("/packs").blockingHandler(ctx -> {
-//            long t1 = System.currentTimeMillis();
-//            JsonArray libraryPacks = libraryService.packs();
-//            long t2 = System.currentTimeMillis();
-//            LOGGER.info("Library packs scanned in {}ms", t2 - t1);
-//            ctx.json(libraryPacks);
-//        });
-//
-//        // Local library pack download
-//        router.post("/download").handler(ctx -> {
-//            String packPath = ctx.getBodyAsJson().getString("path");
-//            LOGGER.info("Download {}", packPath);
-//            ctx.response().sendFile(libraryService.getPackFile(packPath).toString());
-//        });
-//
-//        // Local library pack upload
-//        router.post("/upload").handler(BodyHandler.create() //
-//                .setMergeFormAttributes(true) //
-//                .setUploadsDirectory(LibraryService.tmpDirPath().toString()));
-//
-//        router.post("/upload").handler(ctx -> {
-//            String packPath = ctx.request().getFormAttribute("path");
-//            LOGGER.info("Upload {}", packPath);
-//            boolean added = false;
-//            Iterator<io.vertx.mutiny.ext.web.FileUpload> it = ctx.fileUploads().iterator();
-//            if (it.hasNext()) {
-//                added = libraryService.addPackFile(packPath, it.next().uploadedFileName());
-//            }
-//            if (added) {
-//                ctx.json(new JsonObject().put("success", true));
-//            } else {
-//                LOGGER.error("Pack {} was not added to library", packPath);
-//                ctx.fail(500);
-//            }
-//        });
-//
-//        // Local library pack conversion
-//        router.post("/convert").handler(ctx -> {
-//            JsonObject body = ctx.getBodyAsJson();
-//            String packPath = body.getString("path");
-//            Boolean allowEnriched = body.getBoolean("allowEnriched", false);
-//            String format = body.getString("format");
-
-    // Perform conversion/uncompression asynchronously
-//            WorkerExecutor executor = vertx.createSharedWorkerExecutor("pack-converter", 1, 20, TimeUnit.MINUTES);
-//            executor.executeBlocking( //
-//                    future -> {
-//                        try {
-//                            PackFormat packFormat = PackFormat.valueOf(format.toUpperCase());
-//                            Path newPackPath = libraryService.addConvertedPack(packPath, packFormat, allowEnriched);
-//                            future.complete(newPackPath);
-//                        } catch (IllegalArgumentException | StoryTellerException e) {
-//                            future.fail(e);
-//                        }
-//                    }, //
-//                    res -> {
-//                        if (res.succeeded)()) {
-//                            // Return path to converted file within library
-//                            ctx.json(new JsonObject().put("success", true).put("path", res.result().toString()));
-//                        } else {
-//                            LOGGER.error("Failed to read or convert pack");
-//                            ctx.fail(500, res.cause());
-//                        }
-//                    });
-//        });
-//
-//        // Remove pack from device
-//        router.post("/remove").handler(ctx -> {
-//            String packPath = ctx.getBodyAsJson().getString("path");
-//            boolean removed = libraryService.deletePack(packPath);
-//            if (removed) {
-//                ctx.json(new JsonObject().put("success", true));
-//            } else {
-//                LOGGER.error("Pack was not removed from library");
-//                ctx.fail(500);
-//            }
-//        });
-//
-//        return router;
-//    }
-
 }

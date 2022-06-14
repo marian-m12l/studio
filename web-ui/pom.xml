@@ -22,10 +22,6 @@
         <node.version>v12.3.1</node.version>
         <yarn.version>v1.16.0</yarn.version>
         <frontend-maven-plugin.version>1.12.1</frontend-maven-plugin.version>
-<!--
-        <vertx.version>4.2.4</vertx.version>
-        <vertx.main.verticle>studio.webui.MainVerticle</vertx.main.verticle>
--->
     </properties>
 
     <dependencies>
@@ -39,23 +35,6 @@
             <artifactId>studio-driver</artifactId>
             <version>${project.version}</version>
         </dependency>
-<!--
-        <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-config</artifactId>
-            <version>${vertx.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-web</artifactId>
-            <version>${vertx.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-web-client</artifactId>
-            <version>${vertx.version}</version>
-        </dependency>
--->
         <dependency>
            <groupId>org.projectlombok</groupId>
            <artifactId>lombok</artifactId>
@@ -69,10 +48,6 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
         </dependency>
-      <!--  <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-vertx</artifactId>
-        </dependency> -->
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-resteasy-reactive-jackson</artifactId>
@@ -205,18 +180,6 @@
             </plugin>
             -->
 
-            <!-- Run the app with `mvn exec:java` -->
-            <!--
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>exec-maven-plugin</artifactId>
-                <version>3.0.0</version>
-                <configuration>
-                    <mainClass>studio.webui.TestMain</mainClass>
-                    <classpathScope>test</classpathScope>
-                </configuration>
-            </plugin>
-            -->
         </plugins>
 
     </build>

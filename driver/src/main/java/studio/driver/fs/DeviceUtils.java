@@ -30,9 +30,10 @@ public class DeviceUtils {
     }
 
     /** List root mount points. */
-    public static List<Path> listMountPoints() {
-        List<Path> l = new ArrayList<>();
+    @SuppressWarnings("resource")
+    public static List<Path> listMountPoints() throws IOException {
         FileSystem fs = FileSystems.getDefault();
+        List<Path> l = new ArrayList<>();
         // Windows
         if (isWindows()) {
             for (Path p : fs.getRootDirectories()) {

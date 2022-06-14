@@ -11,8 +11,10 @@ import java.io.BufferedOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
+import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.text.DecimalFormat;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
@@ -25,20 +27,22 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import io.quarkus.arc.profile.IfBuildProfile;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.eventbus.EventBus;
+import io.vertx.mutiny.ext.web.Router;
 import studio.config.StudioConfig;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.reader.binary.BinaryStoryPackReader;
 import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.exception.StoryTellerException;
+import studio.driver.fs.FileUtils;
 import studio.metadata.DatabaseMetadataService;
 import studio.webui.model.DeviceDTOs.DeviceInfosDTO;
 import studio.webui.model.DeviceDTOs.DeviceInfosDTO.StorageDTO;
@@ -59,7 +63,7 @@ public class MockStoryTellerService implements IStoryTellerService {
     @Inject
     DatabaseMetadataService databaseMetadataService;
 
-    public MockStoryTellerService() {
+    public void init(@Observes Router router) {
         LOGGER.info("Setting up mocked story teller service");
         try {
             // Create the mocked device folder if needed
@@ -67,6 +71,77 @@ public class MockStoryTellerService implements IStoryTellerService {
         } catch (IOException e) {
             throw new StoryTellerException("Failed to initialize mocked device");
         }
+        // plug event
+        sendDevicePlugged(getDeviceInfo());
+    }
+
+    public CompletionStage<DeviceInfosDTO> deviceInfos() {
+        return CompletableFuture.completedStage(getDeviceInfo());
+    }
+
+    public CompletionStage<List<MetaPackDTO>> packs() {
+        // Check that mocked device folder exists
+        Path deviceFolder = devicePath();
+        if (!Files.isDirectory(deviceFolder)) {
+            return CompletableFuture.completedStage(Arrays.asList());
+        }
+        return readPackIndex(deviceFolder).thenApply(p -> p.stream().map(this::toDto).collect(Collectors.toList()));
+    }
+
+    public CompletionStage<String> addPack(String uuid, Path packFile) {
+        // Check that mocked device folder exists
+        Path deviceFolder = devicePath();
+        if (!Files.isDirectory(deviceFolder)) {
+            return CompletableFuture.completedStage(uuid);
+        }
+        Path destFile = deviceFolder.resolve(uuid + ".pack");
+        return copyPack("add pack", packFile, destFile);
+    }
+
+    public CompletionStage<String> extractPack(String uuid, Path destFile) {
+        // Check that mocked device folder exists
+        Path deviceFolder = devicePath();
+        if (!Files.isDirectory(deviceFolder)) {
+            return CompletableFuture.completedStage(uuid);
+        }
+        Path packFile = deviceFolder.resolve(uuid + ".pack");
+        return copyPack("extract pack", packFile, destFile);
+    }
+
+    public CompletionStage<Boolean> deletePack(String uuid) {
+        // Check that mocked device folder exists
+        Path deviceFolder = devicePath();
+        if (!Files.isDirectory(deviceFolder)) {
+            return CompletableFuture.completedStage(false);
+        }
+        try {
+            Path packFile = deviceFolder.resolve(uuid + ".pack");
+            if (Files.deleteIfExists(packFile)) {
+                return CompletableFuture.completedStage(true);
+            } else {
+                LOGGER.error("Cannot remove pack from mocked device because it is not in the folder");
+                return CompletableFuture.completedStage(false);
+            }
+        } catch (IOException e) {
+            LOGGER.error("Failed to remove pack from mocked device", e);
+            return CompletableFuture.completedStage(false);
+        }
+    }
+
+    public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
+        // Not supported
+        LOGGER.warn("Not supported : reorderPacks");
+        return CompletableFuture.completedStage(false);
+    }
+
+    public CompletionStage<Void> dump(Path outputPath) {
+        // Not supported
+        LOGGER.warn("Not supported : dump");
+        return CompletableFuture.completedStage(null);
+    }
+
+    private static Path devicePath() {
+        return Path.of(StudioConfig.STUDIO_MOCK_DEVICE.getValue());
     }
 
     private void sendDevicePlugged(DeviceInfosDTO infosDTO) {
@@ -81,66 +156,6 @@ public class MockStoryTellerService implements IStoryTellerService {
 
     private void sendDone(String id, boolean success) {
         eventBus.publish("storyteller.transfer." + id + ".done", new JsonObject().put("success", success));
-    }
-
-    private static Path devicePath() {
-        return Path.of(StudioConfig.STUDIO_MOCK_DEVICE.getValue());
-    }
-
-    public CompletionStage<DeviceInfosDTO> deviceInfos() {
-        try (Stream<Path> paths = Files.list(devicePath())) {
-            long files = paths.count();
-            DeviceInfosDTO di = new DeviceInfosDTO();
-            di.setUuid("mocked-device");
-            di.setSerial("mocked-serial");
-            di.setFirmware("mocked-version"); //
-            di.setError(false); //
-            di.setPlugged(true); //
-            di.setDriver("raw"); // Simulate raw only
-            di.setStorage(new StorageDTO(files, 0, files));
-//            JsonObject jo = new JsonObject() //
-//                    .put("uuid", "mocked-device") //
-//                    .put("serial", "mocked-serial") //
-//                    .put("firmware", "mocked-version") //
-//                    .put("storage", new JsonObject() //
-//                            .put("size", files) //
-//                            .put("free", 0) //
-//                            .put("taken", files) //
-//                    ) //
-//                    .put("error", false) //
-//                    .put("plugged", true) //
-//                    .put("driver", "raw"); // Simulate raw only
-
-            // TODO : remove
-            sendDevicePlugged(di);
-
-            return CompletableFuture.completedStage(di);
-        } catch (IOException e) {
-            LOGGER.error("Failed to initialize mocked device", e);
-            throw new StoryTellerException(e);
-        }
-    }
-
-    public CompletionStage<List<MetaPackDTO>> packs() {
-        // Check that mocked device folder exists
-        Path deviceFolder = devicePath();
-        if (!Files.isDirectory(deviceFolder)) {
-            return CompletableFuture.completedStage(Arrays.asList());
-        }
-        return readPackIndex(deviceFolder).thenApply(p -> p.stream().map(this::toDto).collect(Collectors.toList()));
-    }
-
-    @Deprecated
-    public CompletionStage<JsonArray> packs0() {
-        // Check that mocked device folder exists
-        Path deviceFolder = devicePath();
-        if (!Files.isDirectory(deviceFolder)) {
-            return CompletableFuture.completedStage(new JsonArray());
-        } else {
-            return readPackIndex(deviceFolder).thenApply(packs -> new JsonArray( //
-                    packs.stream().map(this::getPackMetadata).collect(Collectors.toList()) //
-            ));
-        }
     }
 
     private CompletionStage<List<StoryPackMetadata>> readPackIndex(Path deviceFolder) {
@@ -179,28 +194,6 @@ public class MockStoryTellerService implements IStoryTellerService {
         return Optional.empty();
     }
 
-    public CompletionStage<String> addPack(String uuid, Path packFile) {
-        // Check that mocked device folder exists
-        Path deviceFolder = devicePath();
-        if (!Files.isDirectory(deviceFolder)) {
-            // return CompletableFuture.completedStage(Optional.empty());
-            return CompletableFuture.completedStage(uuid);
-        }
-        Path destFile = deviceFolder.resolve(uuid + ".pack");
-        return copyPack("add pack", packFile, destFile);
-    }
-
-    public CompletionStage<String> extractPack(String uuid, Path destFile) {
-        // Check that mocked device folder exists
-        Path deviceFolder = devicePath();
-        if (!Files.isDirectory(deviceFolder)) {
-            // return CompletableFuture.completedStage(Optional.empty());
-            return CompletableFuture.completedStage(uuid);
-        }
-        Path packFile = deviceFolder.resolve(uuid + ".pack");
-        return copyPack("extract pack", packFile, destFile);
-    }
-
     private CompletionStage<String> copyPack(String opName, Path packFile, Path destFile) {
         String transferId = UUID.randomUUID().toString();
         // Perform transfer asynchronously, and send events on eventbus to monitor
@@ -229,9 +222,13 @@ public class MockStoryTellerService implements IStoryTellerService {
                     count += n;
                     // Send events on eventbus to monitor progress
                     double p = count / (double) fileSize;
-                    LOGGER.info("Pack copy progress... {} / {} ({})", count, fileSize, p);
+                    if (LOGGER.isInfoEnabled()) {
+                        LOGGER.info("Copying pack... {} ({} / {})", new DecimalFormat("#%").format(p),
+                                FileUtils.readableByteSize(count), FileUtils.readableByteSize(fileSize));
+                    }
                     sendProgress(transferId, p);
                 }
+                LOGGER.info("Pack copied ({})", transferId);
                 // Send event on eventbus to signal end of transfer
                 sendDone(transferId, true);
             } catch (IOException e) {
@@ -240,51 +237,31 @@ public class MockStoryTellerService implements IStoryTellerService {
                 sendDone(transferId, false);
             }
         }, after2s);
-        // return CompletableFuture.completedStage(Optional.of(transferId));
         return CompletableFuture.completedStage(transferId);
     }
 
-    public CompletionStage<Boolean> deletePack(String uuid) {
-        // Check that mocked device folder exists
-        Path deviceFolder = devicePath();
-        if (!Files.isDirectory(deviceFolder)) {
-            return CompletableFuture.completedStage(false);
-        }
+    private DeviceInfosDTO getDeviceInfo() {
         try {
-            Path packFile = deviceFolder.resolve(uuid + ".pack");
-            if (Files.deleteIfExists(packFile)) {
-                return CompletableFuture.completedStage(true);
-            } else {
-                LOGGER.error("Cannot remove pack from mocked device because it is not in the folder");
-                return CompletableFuture.completedStage(false);
-            }
+            FileStore mdFd = Files.getFileStore(devicePath());
+            long total = mdFd.getTotalSpace();
+            long used = mdFd.getTotalSpace() - mdFd.getUnallocatedSpace();
+
+            // long files = paths.count();
+            DeviceInfosDTO di = new DeviceInfosDTO();
+            di.setUuid("mocked-device");
+            di.setSerial("mocked-serial");
+            di.setFirmware("mocked-version");
+            di.setError(false);
+            di.setPlugged(true);
+            di.setDriver("raw"); // Simulate raw only
+            di.setStorage(new StorageDTO(total, total - used, used));
+            return di;
         } catch (IOException e) {
-            LOGGER.error("Failed to remove pack from mocked device", e);
-            return CompletableFuture.completedStage(false);
+            LOGGER.error("Failed to initialize mocked device", e);
+            throw new StoryTellerException(e);
         }
     }
 
-    public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
-        // Not supported
-        LOGGER.warn("Not supported : reorderPacks");
-        return CompletableFuture.completedStage(false);
-    }
-
-    @Deprecated
-    private JsonObject getPackMetadata(StoryPackMetadata packMetadata) {
-        JsonObject json = new JsonObject() //
-                .put("uuid", packMetadata.getUuid())
-                .put("format", packMetadata.getFormat().getLabel()) //
-                .put("version", packMetadata.getVersion()) //
-                .put("sectorSize", packMetadata.getSectorSize());
-        return databaseMetadataService.getPackMetadata(packMetadata.getUuid())
-                .map(metadata -> json.put("title", metadata.getTitle()) //
-                        .put("description", metadata.getDescription())
-                        .put("image", metadata.getThumbnail()) //
-                        .put("official", metadata.isOfficial())) //
-                .orElse(json);
-    }
-    
     private MetaPackDTO toDto(StoryPackMetadata pack) {
         MetaPackDTO mp = new MetaPackDTO();
         mp.setUuid(pack.getUuid());
@@ -301,12 +278,6 @@ public class MockStoryTellerService implements IStoryTellerService {
         });
         LOGGER.debug("toDto : {}", mp);
         return mp;
-    }
-
-    public CompletionStage<Void> dump(Path outputPath) {
-        // Not supported
-        LOGGER.warn("Not supported : dump");
-        return CompletableFuture.completedStage(null);
     }
 
 }

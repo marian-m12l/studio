@@ -16,7 +16,7 @@ import lombok.Data;
 import lombok.Value;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 
-public class LibraryDTOs {
+public interface LibraryDTOs {
 
     @Value
     public static class LibraryPackDTO {

@@ -73,7 +73,7 @@ class ArchiveStoryPackReaderTest {
         StoryPack spActual = reader.read(zipPath);
         long t2 = System.currentTimeMillis();
 
-        System.out.printf("readStoryPack (%s ms) : %s\n", t2 - t1, spActual);
+        System.out.printf("readStoryPack (%s ms) : %s\n", t2 - t1, spActual.getUuid());
 
         StoryPack spExpected = new StoryPack();
         spExpected.setVersion((short) 1);

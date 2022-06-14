@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 import lombok.Data;
 import lombok.Value;
 
-public class EvergreenDTOs {
+public interface EvergreenDTOs {
 
     @Value
     public static class AnnounceDTO {

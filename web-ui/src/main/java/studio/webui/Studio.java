@@ -36,12 +36,7 @@ public class Studio {
     }
 
     @ApplicationScoped
-    static class MainVerticle { // extends AbstractVerticle {
-
-//      public static final String MIME_JSON = "application/json";
-
-//    private LibraryService libraryService;
-//    private IStoryTellerService storyTellerService;
+    static class MainVerticle {
 
         @ConfigProperty(name = "studio.host")
         String host;
@@ -53,58 +48,7 @@ public class Studio {
         boolean openBrowser;
 
         public void init(@Observes Router router) {
-            // Service that manages pack metadata
-//        DatabaseMetadataService databaseMetadataService = new DatabaseMetadataService();
-
-            // Service that manages local library
-//        libraryService = new LibraryService(databaseMetadataService);
-
-            // Service that manages updates
-//        evergreenService = new EvergreenService(vertx);
-
-            // Service that manages link with the story teller device
-//        if (isDevMode()) {
-//            LOGGER.warn("[DEV MODE] Initializing mock storyteller service");
-//            storyTellerService = new MockStoryTellerService(vertx.eventBus(), databaseMetadataService);
-//        } else {
-//            storyTellerService = new StoryTellerService(vertx.eventBus(), databaseMetadataService);
-//        }
-
-            // Config
-            // String host = StudioConfig.STUDIO_HOST.getValue();
-            // int port = Integer.parseInt(StudioConfig.STUDIO_PORT.getValue());
-
-            // Handle cross-origin calls
-//        router.route().handler(CorsHandler.create("http://" + host + ":.*") //
-//                .allowedMethods(Set.of(HttpMethod.GET, HttpMethod.POST)) //
-//                .allowedHeaders(Set.of(HttpHeaders.ACCEPT.toString(), HttpHeaders.CONTENT_TYPE.toString(),
-//                        HttpHeaderNames.X_REQUESTED_WITH.toString())) //
-//                .exposedHeaders(Set.of(HttpHeaders.CONTENT_LENGTH.toString(), HttpHeaders.CONTENT_TYPE.toString())) //
-//        );
-
-            // Bridge event-bus to client-side app
-//        router.mountSubRouter("/eventbus", eventBusHandler(vertx));
-
-            // Rest API
-//        router.mountSubRouter("/api", apiRouter(router));
-
-            // Static resources (/webroot)
-//        router.route().handler(StaticHandler.create().setCachingEnabled(false));
-
-            // Error handler
-//        ErrorHandler errorHandler = ErrorHandler.create(vertx, true);
-//        router.route().failureHandler(ctx -> {
-//            Throwable failure = ctx.failure();
-//            LOGGER.error("Exception thrown", failure);
-//            errorHandler.handle(ctx);
-//        });
-
-            // Start HTTP server
-            // vertx.createHttpServer().requestHandler(router).listen(port);
-
             // Automatically open URL in browser, unless instructed otherwise
-//        String openBrowser = StudioConfig.STUDIO_OPEN_BROWSER.getValue();
-            // if (Boolean.parseBoolean(openBrowser)) {
             if (openBrowser) {
                 LOGGER.info("Opening URL in default browser...");
                 if (Desktop.isDesktopSupported()) {
@@ -116,42 +60,5 @@ public class Studio {
                 }
             }
         }
-
-//    private SockJSHandler eventBusHandler(Vertx vertx) {
-//        LOGGER.info("Init sockjs EventBus");
-//        PermittedOptions address = new PermittedOptions().setAddressRegex("storyteller\\..+");
-//        SockJSBridgeOptions options = new SockJSBridgeOptions().addOutboundPermitted(address);
-//        SockJSHandler sock = SockJSHandler.create(vertx);
-//        sock.bridge(options, event -> {
-//            if (event.type() == BridgeEventType.SOCKET_CREATED) {
-//                LOGGER.info("New sockjs client");
-//            }
-//            event.complete(true);
-//        });
-//        return sock;
-//    }
-
-//    private Router apiRouter(Router router) {
-//        Router router = Router.router(vertx);
-
-        // Handle JSON
-//        router.route().handler(BodyHandler.create()).consumes(MIME_JSON).produces(MIME_JSON);
-
-        // Device services
-//        router.mountSubRouter("/device", DeviceController.apiRouter(router, storyTellerService));
-
-        // Library services
-//        router.mountSubRouter("/library", LibraryController.apiRouter(router, libraryService));
-
-        // Evergreen services
-        // router.mountSubRouter("/evergreen", EvergreenController.apiRouter(router,
-        // evergreenService));
-
-//        return router;
-//    }
-
-//    private boolean isDevMode() {
-//        return "dev".equals(ProfileManager.getActiveProfile());
-//    }
     }
 }

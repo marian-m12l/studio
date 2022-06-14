@@ -24,7 +24,7 @@ import studio.webui.service.EvergreenService.GithubRawClient;
 
 @QuarkusTest
 @TestHTTPEndpoint(EvergreenController.class)
-public class EvergreenControllerTest {
+class EvergreenControllerTest {
 
     @ConfigProperty(name = "version")
     String version;
@@ -35,13 +35,13 @@ public class EvergreenControllerTest {
     @InjectMock
     @RestClient
     GithubClient githubClient;
-//
+
     @InjectMock
     @RestClient
     GithubRawClient githubRawClient;
 
     @Test
-    public void testInfos() {
+    void testInfos() {
         when().get("infos") //
                 .then().statusCode(200) //
                 .body("version", is(version)) //
@@ -49,7 +49,7 @@ public class EvergreenControllerTest {
     }
 
     @Test
-    public void testLatest() {
+    void testLatest() {
         LatestVersionDTO v = new LatestVersionDTO("0.3.1", "2021-08-15T13:04:41Z",
                 "https://github.com/marian-m12l/studio/releases/tag/0.3.1");
         Mockito.when(githubClient.latestRelease()).thenReturn(CompletableFuture.completedStage(v));
@@ -62,7 +62,7 @@ public class EvergreenControllerTest {
     }
 
     @Test
-    public void testAnnounceDefault() {
+    void testAnnounceDefault() {
         // no commit -> default
         Mockito.when(githubClient.commits("ANNOUNCE.md")) //
                 .thenReturn(CompletableFuture.completedStage(Arrays.asList()));
@@ -74,7 +74,7 @@ public class EvergreenControllerTest {
     }
 
     @Test
-    public void testAnnounceFirst() {
+    void testAnnounceFirst() {
         String date = "2000-01-01T00:00:00.000Z";
         String content = "Hello world!";
 

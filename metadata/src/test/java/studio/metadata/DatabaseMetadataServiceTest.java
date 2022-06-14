@@ -56,7 +56,6 @@ class DatabaseMetadataServiceTest {
         DatabasePackMetadata mpActClone = mpAct;
 
         assertAll("unofficial pack " + newUuid, //
-                () -> assertNotEquals("", mpAct, "wrong type"), //
                 () -> assertNotEquals(mpBadId, mpAct, "should differ by uuid"), //
                 () -> assertFalse(mpAct.isOfficial(), "should not be official"), //
                 () -> assertEquals(mpActClone, mpAct, "differs from itself"), //

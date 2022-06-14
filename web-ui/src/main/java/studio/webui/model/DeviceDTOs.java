@@ -6,7 +6,7 @@ import java.util.List;
 import lombok.Data;
 import lombok.Value;
 
-public class DeviceDTOs {
+public interface DeviceDTOs {
 
     @Data
     public static class UuidDTO {

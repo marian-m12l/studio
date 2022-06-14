@@ -7,9 +7,11 @@
 package studio.core.v1.model.metadata;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 import studio.core.v1.utils.PackFormat;
 
 @Data
+@EqualsAndHashCode(exclude = "thumbnail")
 public class StoryPackMetadata {
 
     private final PackFormat format;

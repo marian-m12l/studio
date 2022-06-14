@@ -8,9 +8,11 @@ package studio.core.v1.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
 @AllArgsConstructor
+@EqualsAndHashCode(exclude = "actionNode")
 public class Transition {
 
     private ActionNode actionNode;

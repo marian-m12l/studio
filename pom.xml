@@ -73,12 +73,6 @@
                 <artifactId>gson</artifactId>
                 <version>${gson.version}</version>
             </dependency>
-            <!--<dependency>
-                <groupId>org.junit.jupiter</groupId>
-                <artifactId>junit-jupiter</artifactId>
-                <version>${junit.version}</version>
-                <scope>test</scope>
-           </dependency>-->
         </dependencies>
    </dependencyManagement>
 
@@ -92,17 +86,15 @@
             <plugin>
                <artifactId>maven-surefire-plugin</artifactId>
                <version>${mvn.surefire.version}</version>
+<!-- Reactivate later ?
                <configuration>
                    <systemPropertyVariables>
                        <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
                        <maven.home>${maven.home}</maven.home>
                    </systemPropertyVariables>
                </configuration>
+-->
             </plugin>
-            <!--<plugin>
-               <artifactId>maven-assembly-plugin</artifactId>
-               <version>${mvn.assembly.version}</version>
-            </plugin>-->
          </plugins>
       </pluginManagement>
    </build>

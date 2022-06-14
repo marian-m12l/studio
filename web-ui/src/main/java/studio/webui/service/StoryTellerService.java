@@ -23,7 +23,6 @@ import org.apache.logging.log4j.Logger;
 import org.usb4java.Device;
 
 import io.quarkus.arc.profile.UnlessBuildProfile;
-import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import studio.core.v1.utils.PackFormat;
@@ -61,11 +60,6 @@ public class StoryTellerService implements IStoryTellerService {
     private Device fsDevice;
 
     public StoryTellerService() {
-        // public StoryTellerService(EventBus eventBus, DatabaseMetadataService
-        // databaseMetadataService) {
-//        this.eventBus = eventBus;
-//        this.databaseMetadataService = databaseMetadataService;
-
         LOGGER.info("Setting up story teller driver");
         rawDriver = new RawStoryTellerAsyncDriver();
         fsDriver = new FsStoryTellerAsyncDriver();
@@ -139,8 +133,6 @@ public class StoryTellerService implements IStoryTellerService {
         DeviceInfosDTO failed = new DeviceInfosDTO();
         failed.setPlugged(false);
         return CompletableFuture.completedStage(failed);
-        // return CompletableFuture.completedStage(new JsonObject().put("plugged",
-        // false));
     }
 
     public CompletionStage<List<MetaPackDTO>> packs() {
@@ -153,19 +145,6 @@ public class StoryTellerService implements IStoryTellerService {
         return CompletableFuture.completedStage(Arrays.asList());
     }
 
-    @Deprecated
-    public CompletionStage<JsonArray> packs0() {
-        if (rawDevice != null) {
-            return rawDriver.getPacksList().thenApply(
-                    packs -> new JsonArray(packs.stream().map(this::getRawPackMetadata).collect(Collectors.toList())));
-        }
-        if (fsDevice != null) {
-            return fsDriver.getPacksList().thenApply(
-                    packs -> new JsonArray(packs.stream().map(this::getFsPackMetadata).collect(Collectors.toList())));
-        }
-        return CompletableFuture.completedStage(new JsonArray());
-    }
-
     public CompletionStage<String> addPack(String uuid, Path packFile) {
         if (rawDevice != null) {
             return rawDriver.getPacksList().thenApply(packs -> upload(packs, rawDriver, uuid, packFile));
@@ -173,7 +152,6 @@ public class StoryTellerService implements IStoryTellerService {
         if (fsDevice != null) {
             return fsDriver.getPacksList().thenApply(packs -> upload(packs, fsDriver, uuid, packFile));
         }
-        // return CompletableFuture.completedStage(Optional.empty());
         return CompletableFuture.completedStage(uuid);
     }
 
@@ -204,7 +182,6 @@ public class StoryTellerService implements IStoryTellerService {
         if (fsDevice != null) {
             return CompletableFuture.completedStage(download(fsDriver, uuid, packFile));
         }
-        // return CompletableFuture.completedStage(Optional.empty());
         return CompletableFuture.completedStage(uuid);
     }
 
@@ -236,16 +213,12 @@ public class StoryTellerService implements IStoryTellerService {
         eventBus.send("storyteller.transfer." + id + ".done", new JsonObject().put("success", success));
     }
 
-    // private <T, U, V extends StoryPackInfos> Optional<String> upload(List<V>
-    // packs, StoryTellerAsyncDriver<T, U> driver,
     private <T, U, V extends StoryPackInfos> String upload(List<V> packs, StoryTellerAsyncDriver<T, U> driver,
             String uuid, Path packFile) {
-        // Check that the pack is not already on the device : Look for UUID in packs
-        // index
+        // Check that the pack on device : Look for UUID in packs index
         boolean matched = packs.stream().anyMatch(p -> p.getUuid().equals(UUID.fromString(uuid)));
         if (matched) {
             LOGGER.warn("Pack already exists on device");
-            // return Optional.empty();
             sendDone(uuid, true);
             return uuid;
         }
@@ -269,17 +242,13 @@ public class StoryTellerService implements IStoryTellerService {
             // Send event on eventbus to signal transfer failure
             sendDone(transferId, false);
         }
-        // return Optional.of(transferId);
         return transferId;
     }
 
-    // private <T, U> Optional<String> download(StoryTellerAsyncDriver<T, U> driver,
-    // String uuid, Path destFile) {
     private <T, U> String download(StoryTellerAsyncDriver<T, U> driver, String uuid, Path destFile) {
         // Check that the destination is available
         if (Files.exists(destFile.resolve(uuid))) {
             LOGGER.warn("Cannot extract pack from device because the destination file already exists");
-            // return Optional.empty();
             sendDone(uuid, true);
             return uuid;
         }
@@ -304,7 +273,6 @@ public class StoryTellerService implements IStoryTellerService {
             // Send event on eventbus to signal transfer failure
             sendDone(transferId, false);
         }
-        // return Optional.of(transferId);
         return transferId;
     }
 
@@ -322,7 +290,7 @@ public class StoryTellerService implements IStoryTellerService {
             mp.setImage(meta.getThumbnail());
             mp.setOfficial(meta.isOfficial());
         });
-        LOGGER.info("toDto : {}", mp);
+        LOGGER.trace("toDto : {}", mp);
         return mp;
     }
 
@@ -342,42 +310,8 @@ public class StoryTellerService implements IStoryTellerService {
             mp.setImage(meta.getThumbnail());
             mp.setOfficial(meta.isOfficial());
         });
-        LOGGER.debug("toDto : {}", mp);
+        LOGGER.trace("toDto : {}", mp);
         return mp;
-    }
-
-    @Deprecated
-    private JsonObject getRawPackMetadata(RawStoryPackInfos pack) {
-        JsonObject json = new JsonObject() //
-                .put("uuid", pack.getUuid().toString()) //
-                .put("format", PackFormat.RAW.getLabel()) //
-                .put("version", pack.getVersion()) //
-                .put("sectorSize", pack.getSizeInSectors());
-
-        return databaseMetadataService.getPackMetadata(pack.getUuid().toString()).map(meta -> json //
-                .put("title", meta.getTitle()) //
-                .put("description", meta.getDescription()) //
-                .put("image", meta.getThumbnail()) //
-                .put("official", meta.isOfficial())) //
-                .orElse(json);
-    }
-
-    @Deprecated
-    private JsonObject getFsPackMetadata(FsStoryPackInfos pack) {
-        JsonObject json = new JsonObject() //
-                .put("uuid", pack.getUuid().toString()) //
-                .put("format", PackFormat.FS.getLabel()) //
-                .put("version", pack.getVersion()) //
-                .put("folderName", pack.getFolderName()) //
-                .put("sizeInBytes", pack.getSizeInBytes()) //
-                .put("nightModeAvailable", pack.isNightModeAvailable());
-
-        return databaseMetadataService.getPackMetadata(pack.getUuid().toString()).map(meta -> json //
-                .put("title", meta.getTitle()) //
-                .put("description", meta.getDescription()) //
-                .put("image", meta.getThumbnail()) //
-                .put("official", meta.isOfficial())) //
-                .orElse(json);
     }
 
     private DeviceInfosDTO toDto(RawDeviceInfos infos) {
@@ -394,17 +328,6 @@ public class StoryTellerService implements IStoryTellerService {
         di.setDriver(PackFormat.RAW.getLabel());
         di.setStorage(new StorageDTO(total, total - used, used));
         return di;
-//        return new JsonObject() //
-//                .put("uuid", infos.getUuid().toString()) //
-//                .put("serial", infos.getSerialNumber()) //
-//                .put("firmware", fw) //
-//                .put("storage", new JsonObject() //
-//                        .put("size", total)//
-//                        .put("free", total - used)//
-//                        .put("taken", used))
-//                .put("error", infos.isInError()) //
-//                .put("plugged", true) //
-//                .put("driver", "raw");
     }
 
     private DeviceInfosDTO toDto(FsDeviceInfos infos) {
@@ -420,17 +343,6 @@ public class StoryTellerService implements IStoryTellerService {
         di.setDriver(PackFormat.FS.getLabel());
         di.setStorage(new StorageDTO(total, total - used, used));
         return di;
-//        return new JsonObject() //
-//                .put("uuid", SecurityUtils.encodeHex(infos.getDeviceId())) //
-//                .put("serial", infos.getSerialNumber()) //
-//                .put("firmware", infos.getFirmwareMajor() + "." + infos.getFirmwareMinor()) //
-//                .put("storage", new JsonObject() //
-//                        .put("size", infos.getSdCardSizeInBytes()) //
-//                        .put("free", infos.getSdCardSizeInBytes() - infos.getUsedSpaceInBytes()) //
-//                        .put("taken", infos.getUsedSpaceInBytes())) //
-//                .put("error", false) //
-//                .put("plugged", true) //
-//                .put("driver", "fs");
     }
 
 }

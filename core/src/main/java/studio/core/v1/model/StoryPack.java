@@ -6,13 +6,14 @@
 
 package studio.core.v1.model;
 
-import studio.core.v1.model.enriched.EnrichedPackMetadata;
-
 import java.util.List;
 
 import lombok.Data;
+import lombok.EqualsAndHashCode;
+import studio.core.v1.model.enriched.EnrichedPackMetadata;
 
 @Data
+@EqualsAndHashCode(exclude = "stageNodes")
 public class StoryPack {
 
     private String uuid;

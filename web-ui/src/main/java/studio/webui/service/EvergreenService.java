@@ -82,7 +82,7 @@ public class EvergreenService {
         LOGGER.debug("Search announce");
         return githubClient.commits("ANNOUNCE.md").thenCompose(commits -> {
             // 1st commmit -> 1st announce
-            if (commits.size() == 0) {
+            if (commits.isEmpty()) {
                 LOGGER.debug("1st commmit -> 1st announce");
                 var res = new AnnounceDTO(DEFAULT_ANNOUNCE_DATE, DEFAULT_ANNOUNCE_CONTENT);
                 return CompletableFuture.completedStage(res);
@@ -91,9 +91,7 @@ public class EvergreenService {
             String commitDate = commits.get(0).getCommit().getCommitter().getDate();
             LOGGER.debug("Get announce content at {}", commitDate);
             // Get announce content (from github)
-            return githubRawClient.announce().thenApply(content -> {
-                return new AnnounceDTO(commitDate, content);
-            });
+            return githubRawClient.announce().thenApply(content -> new AnnounceDTO(commitDate, content));
         });
     }
 }

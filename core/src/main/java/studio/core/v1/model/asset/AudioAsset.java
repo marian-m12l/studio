@@ -8,9 +8,11 @@ package studio.core.v1.model.asset;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 @Data
 @AllArgsConstructor
+@EqualsAndHashCode(exclude = "rawData")
 public class AudioAsset {
 
     private AudioType type;

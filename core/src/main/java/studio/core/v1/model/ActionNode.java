@@ -13,7 +13,7 @@ import lombok.EqualsAndHashCode;
 import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 
 @Data
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = "options")
 public class ActionNode extends Node {
 
     private List<StageNode> options;

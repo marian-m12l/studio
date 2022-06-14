@@ -13,7 +13,7 @@ import studio.core.v1.model.asset.ImageAsset;
 import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 
 @Data
-@EqualsAndHashCode(callSuper = true)
+@EqualsAndHashCode(callSuper = true, exclude = { "okTransition", "homeTransition" })
 public class StageNode extends Node {
 
     private String uuid;
@@ -23,7 +23,8 @@ public class StageNode extends Node {
     private Transition homeTransition;
     private ControlSettings controlSettings;
 
-    public StageNode(String uuid, ImageAsset image, AudioAsset audio, Transition okTransition, Transition homeTransition, ControlSettings controlSettings, EnrichedNodeMetadata enriched) {
+    public StageNode(String uuid, ImageAsset image, AudioAsset audio, Transition okTransition,
+            Transition homeTransition, ControlSettings controlSettings, EnrichedNodeMetadata enriched) {
         super(enriched);
         this.uuid = uuid;
         this.image = image;

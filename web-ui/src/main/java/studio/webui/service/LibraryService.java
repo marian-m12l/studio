@@ -20,10 +20,13 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
+import javax.inject.Inject;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import io.vertx.mutiny.ext.web.Router;
 import studio.config.StudioConfig;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.metadata.StoryPackMetadata;
@@ -47,18 +50,16 @@ public class LibraryService {
     private static final Path libraryPath = libraryPath();
     private static final Path tmpDirPath = tmpDirPath();
 
-    private final DatabaseMetadataService databaseMetadataService;
+    @Inject
+    DatabaseMetadataService databaseMetadataService;
 
-    public LibraryService(DatabaseMetadataService databaseMetadataService) {
-        this.databaseMetadataService = databaseMetadataService;
-
+    public void init(@Observes Router router)  {
         // Create the local library folder if needed
         if (!Files.isDirectory(libraryPath)) {
             try {
                 Files.createDirectories(libraryPath);
             } catch (IOException e) {
-                LOGGER.error("Failed to initialize local library", e);
-                throw new IllegalStateException("Failed to initialize local library");
+                throw new StoryTellerException("Failed to initialize local library", e);
             }
         }
 
@@ -67,8 +68,7 @@ public class LibraryService {
             try {
                 Files.createDirectories(tmpDirPath);
             } catch (IOException e) {
-                LOGGER.error("Failed to initialize temp folder", e);
-                throw new IllegalStateException("Failed to initialize temp folder");
+                throw new StoryTellerException("Failed to initialize temp folder", e);
             }
         }
     }
@@ -79,7 +79,6 @@ public class LibraryService {
         return p;
     }
 
-    // public JsonArray packs() {
     public List<UuidPacksDTO> packs() {
         // Check that local library folder exists
         if (!Files.isDirectory(libraryPath)) {
@@ -88,7 +87,8 @@ public class LibraryService {
         // List pack files in library folder
         try (Stream<Path> paths = Files.walk(libraryPath, 1).filter(p -> p != libraryPath)) {
             // sort by timestamp DESC (=newest first)
-            Comparator<LibraryPackDTO> newestComparator = Comparator.comparingLong(LibraryPackDTO::getTimestamp).reversed();
+            Comparator<LibraryPackDTO> newestComparator = Comparator.comparingLong(LibraryPackDTO::getTimestamp)
+                    .reversed();
 
             // Group pack by uuid
             Map<String, List<LibraryPackDTO>> metadataByUuid = paths
@@ -128,7 +128,7 @@ public class LibraryService {
                                 });
                         // Convert to MetaPackDTO
                         List<MetaPackDTO> jsonMetaList = e.getValue().stream() //
-                                .map(this::buildMetaPack) //
+                                .map(this::toDto) //
                                 .collect(Collectors.toList());
 
                         return new UuidPacksDTO(e.getKey(), jsonMetaList);
@@ -145,12 +145,6 @@ public class LibraryService {
 
     public Path getPackFile(String packPath) {
         return libraryPath.resolve(packPath);
-    }
-
-    private void assertFormat(PackFormat outputFormat) {
-        String msg = "Pack is already in " + outputFormat + " format";
-        LOGGER.error(msg);
-        throw new StoryTellerException(msg);
     }
 
     public Path addConvertedPack(String packPath, PackFormat packFormat, boolean allowEnriched) {
@@ -325,6 +319,12 @@ public class LibraryService {
         return Files.createTempDirectory(tmpDirPath, prefix);
     }
 
+    private void assertFormat(PackFormat outputFormat) {
+        String msg = "Pack is already in " + outputFormat + " format";
+        LOGGER.error(msg);
+        throw new StoryTellerException(msg);
+    }
+
     private String base64(byte[] thumbnail) {
         return "data:image/png;base64," + Base64.getEncoder().encodeToString(thumbnail);
     }
@@ -351,7 +351,7 @@ public class LibraryService {
         return Optional.empty();
     }
 
-    private MetaPackDTO buildMetaPack(LibraryPackDTO pack) {
+    private MetaPackDTO toDto(LibraryPackDTO pack) {
         StoryPackMetadata spMeta = pack.getMetadata();
         MetaPackDTO mp = new MetaPackDTO();
         mp.setFormat(spMeta.getFormat().getLabel());
