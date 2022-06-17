@@ -68,7 +68,7 @@ public class DeviceController {
         var packFile = LibraryService.libraryPath();
         // oldDriver
         if (PackFormat.RAW.getLabel().equals(uuidDTO.getDriver())) {
-            packFile = LibraryService.libraryPath().resolve(uuidDTO.getUuid() + ".pack");
+            packFile = LibraryService.libraryPath().resolve(uuidDTO.getUuid() + PackFormat.RAW.getExtension());
         }
         // Return the transfer id, which is used to monitor transfer progress
         return storyTellerService.extractPack(uuidDTO.getUuid(), packFile).thenApply(TransferDTO::new);

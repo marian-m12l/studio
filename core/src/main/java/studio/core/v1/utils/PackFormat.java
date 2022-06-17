@@ -14,17 +14,17 @@ import studio.core.v1.writer.fs.FsStoryPackWriter;
 
 public enum PackFormat {
 
-    ARCHIVE(new ArchiveStoryPackReader(), new ArchiveStoryPackWriter()),
+    ARCHIVE(".zip", new ArchiveStoryPackReader(), new ArchiveStoryPackWriter()),
 
-    RAW(new BinaryStoryPackReader(), new BinaryStoryPackWriter()),
+    RAW(".pack", new BinaryStoryPackReader(), new BinaryStoryPackWriter()),
 
-    FS(new FsStoryPackReader(), new FsStoryPackWriter());
+    FS(null, new FsStoryPackReader(), new FsStoryPackWriter());
 
     /** Guess format from file input. */
     public static PackFormat fromPath(Path path) {
-        if (path.toString().endsWith(".zip")) {
+        if (path.toString().endsWith(ARCHIVE.extension)) {
             return ARCHIVE;
-        } else if (path.toString().endsWith(".pack")) {
+        } else if (path.toString().endsWith(RAW.extension)) {
             return RAW;
         } else if (Files.isDirectory(path)) {
             return FS;
@@ -32,11 +32,13 @@ public enum PackFormat {
         return null;
     }
 
-    private PackFormat(StoryPackReader reader, StoryPackWriter writer) {
+    private PackFormat(String extension, StoryPackReader reader, StoryPackWriter writer) {
+        this.extension = extension;
         this.reader = reader;
         this.writer = writer;
     }
 
+    private final String extension;
     private final StoryPackReader reader;
     private final StoryPackWriter writer;
 
@@ -51,5 +53,9 @@ public enum PackFormat {
 
     public StoryPackWriter getWriter() {
         return writer;
+    }
+
+    public String getExtension() {
+        return extension;
     }
 }

@@ -53,7 +53,7 @@ public class LibraryService {
     @Inject
     DatabaseMetadataService databaseMetadataService;
 
-    public void init(@Observes Router router)  {
+    public void init(@Observes Router router) {
         // Create the local library folder if needed
         if (!Files.isDirectory(libraryPath)) {
             try {
@@ -161,16 +161,13 @@ public class LibraryService {
     }
 
     public Path addConvertedRawPackFile(String packFile, boolean allowEnriched) {
+        Path packPath = libraryPath.resolve(packFile);
+        PackFormat inputFormat = PackFormat.fromPath(packPath);
         PackFormat outputFormat = PackFormat.RAW;
-        if (packFile.endsWith(".pack")) {
-            assertFormat(outputFormat);
-        }
-        // expected input format type
-        PackFormat inputFormat = packFile.endsWith(".zip") ? PackFormat.ARCHIVE : PackFormat.FS;
+        assertFormat(inputFormat, outputFormat);
         LOGGER.info("Pack is in {} format. Converting to {} format", inputFormat, outputFormat);
         try {
             // Packs must first be converted to raw format
-            Path packPath = libraryPath.resolve(packFile);
             LOGGER.info("Reading {} format pack", inputFormat);
             StoryPack storyPack = inputFormat.getReader().read(packPath);
 
@@ -180,11 +177,12 @@ public class LibraryService {
                 PackAssetsCompression.processUncompressed(storyPack);
             }
 
-            Path tmp = createTempFile(packFile, ".pack");
+            Path tmp = createTempFile(packFile, outputFormat.getExtension());
             LOGGER.info("Writing {} format pack, using temporary file: {}", outputFormat, tmp);
             outputFormat.getWriter().write(storyPack, tmp, allowEnriched);
 
-            String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis() + ".pack";
+            String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis()
+                    + outputFormat.getExtension();
             Path destinationPath = libraryPath.resolve(destinationFileName);
             LOGGER.info("Moving {} format pack into local library: {}", outputFormat, destinationPath);
             Files.move(tmp, destinationPath);
@@ -198,16 +196,13 @@ public class LibraryService {
     }
 
     public Path addConvertedArchivePackFile(String packFile) {
+        Path packPath = libraryPath.resolve(packFile);
+        PackFormat inputFormat = PackFormat.fromPath(packPath);
         PackFormat outputFormat = PackFormat.ARCHIVE;
-        if (packFile.endsWith(".zip")) {
-            assertFormat(outputFormat);
-        }
-        // expected input format type
-        PackFormat inputFormat = packFile.endsWith(".pack") ? PackFormat.RAW : PackFormat.FS;
+        assertFormat(inputFormat, outputFormat);
         LOGGER.info("Pack is in {} format. Converting to {} format", inputFormat, outputFormat);
         try {
             // Packs must first be converted to raw format
-            Path packPath = libraryPath.resolve(packFile);
             LOGGER.info("Reading {} format pack", inputFormat);
             StoryPack storyPack = inputFormat.getReader().read(packPath);
             // Compress pack assets
@@ -235,16 +230,13 @@ public class LibraryService {
     }
 
     public Path addConvertedFsPackFile(String packFile) {
+        Path packPath = libraryPath.resolve(packFile);
+        PackFormat inputFormat = PackFormat.fromPath(packPath);
         PackFormat outputFormat = PackFormat.FS;
-        if (!packFile.endsWith(".zip") && !packFile.endsWith(".pack")) {
-            assertFormat(outputFormat);
-        }
-        // expected input format type
-        PackFormat inputFormat = packFile.endsWith(".zip") ? PackFormat.ARCHIVE : PackFormat.RAW;
+        assertFormat(inputFormat, outputFormat);
         LOGGER.info("Pack is in {} format. Converting to {} format", inputFormat, outputFormat);
         try {
             // Packs must first be converted to raw format
-            Path packPath = libraryPath.resolve(packFile);
             LOGGER.info("Reading {} format pack", inputFormat);
             StoryPack storyPack = inputFormat.getReader().read(packPath);
 
@@ -319,10 +311,12 @@ public class LibraryService {
         return Files.createTempDirectory(tmpDirPath, prefix);
     }
 
-    private void assertFormat(PackFormat outputFormat) {
-        String msg = "Pack is already in " + outputFormat + " format";
-        LOGGER.error(msg);
-        throw new StoryTellerException(msg);
+    private void assertFormat(PackFormat inputFormat, PackFormat outputFormat) {
+        if (inputFormat == outputFormat) {
+            String msg = "Pack is already in " + outputFormat + " format";
+            LOGGER.error(msg);
+            throw new StoryTellerException(msg);
+        }
     }
 
     private String base64(byte[] thumbnail) {

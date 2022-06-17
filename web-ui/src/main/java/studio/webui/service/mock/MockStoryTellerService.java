@@ -94,7 +94,7 @@ public class MockStoryTellerService implements IStoryTellerService {
         if (!Files.isDirectory(deviceFolder)) {
             return CompletableFuture.completedStage(uuid);
         }
-        Path destFile = deviceFolder.resolve(uuid + ".pack");
+        Path destFile = deviceFolder.resolve(uuid + PackFormat.RAW.getExtension());
         return copyPack("add pack", packFile, destFile);
     }
 
@@ -104,7 +104,7 @@ public class MockStoryTellerService implements IStoryTellerService {
         if (!Files.isDirectory(deviceFolder)) {
             return CompletableFuture.completedStage(uuid);
         }
-        Path packFile = deviceFolder.resolve(uuid + ".pack");
+        Path packFile = deviceFolder.resolve(uuid + PackFormat.RAW.getExtension());
         return copyPack("extract pack", packFile, destFile);
     }
 
@@ -115,7 +115,7 @@ public class MockStoryTellerService implements IStoryTellerService {
             return CompletableFuture.completedStage(false);
         }
         try {
-            Path packFile = deviceFolder.resolve(uuid + ".pack");
+            Path packFile = deviceFolder.resolve(uuid + PackFormat.RAW.getExtension());
             if (Files.deleteIfExists(packFile)) {
                 return CompletableFuture.completedStage(true);
             } else {
@@ -176,7 +176,7 @@ public class MockStoryTellerService implements IStoryTellerService {
     private Optional<StoryPackMetadata> readBinaryPackFile(Path path) {
         LOGGER.debug("Reading pack file: {}", path);
         // Handle only binary file format
-        if (path.toString().endsWith(".pack")) {
+        if (PackFormat.fromPath(path) == PackFormat.RAW) {
             try {
                 LOGGER.debug("Reading binary pack metadata.");
                 StoryPackMetadata meta = new BinaryStoryPackReader().readMetadata(path);
@@ -187,8 +187,8 @@ public class MockStoryTellerService implements IStoryTellerService {
             } catch (IOException e) {
                 LOGGER.atError().withThrowable(e).log("Failed to read binary-format pack {} from mocked device", path);
             }
-        } else if (path.toString().endsWith(".zip")) {
-            LOGGER.error("Mocked device should not contain archive-format packs");
+        } else {
+            LOGGER.error("Mocked device should only contain .pack files");
         }
         // Ignore other files
         return Optional.empty();

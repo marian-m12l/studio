@@ -284,7 +284,7 @@ public class StoryTellerService implements IStoryTellerService {
         // raw data
         mp.setSectorSize(pack.getSizeInSectors());
         // add meta
-        databaseMetadataService.getPackMetadata(pack.getUuid().toString()).ifPresent(meta -> {//
+        databaseMetadataService.getPackMetadata(pack.getUuid().toString()).ifPresent(meta -> { //
             mp.setTitle(meta.getTitle());
             mp.setDescription(meta.getDescription());
             mp.setImage(meta.getThumbnail());
@@ -304,7 +304,7 @@ public class StoryTellerService implements IStoryTellerService {
         mp.setSizeInBytes(pack.getSizeInBytes());
         mp.setNightModeAvailable(pack.isNightModeAvailable());
         // add meta
-        databaseMetadataService.getPackMetadata(pack.getUuid().toString()).ifPresent(meta -> {//
+        databaseMetadataService.getPackMetadata(pack.getUuid().toString()).ifPresent(meta -> { //
             mp.setTitle(meta.getTitle());
             mp.setDescription(meta.getDescription());
             mp.setImage(meta.getThumbnail());
@@ -322,9 +322,9 @@ public class StoryTellerService implements IStoryTellerService {
         DeviceInfosDTO di = new DeviceInfosDTO();
         di.setUuid(infos.getUuid().toString());
         di.setSerial(infos.getSerialNumber());
-        di.setFirmware(fw); //
-        di.setError(infos.isInError()); //
-        di.setPlugged(true); //
+        di.setFirmware(fw);
+        di.setError(infos.isInError());
+        di.setPlugged(true);
         di.setDriver(PackFormat.RAW.getLabel());
         di.setStorage(new StorageDTO(total, total - used, used));
         return di;
@@ -337,9 +337,9 @@ public class StoryTellerService implements IStoryTellerService {
         DeviceInfosDTO di = new DeviceInfosDTO();
         di.setUuid(SecurityUtils.encodeHex(infos.getDeviceId()));
         di.setSerial(infos.getSerialNumber());
-        di.setFirmware(infos.getFirmwareMajor() + "." + infos.getFirmwareMinor()); //
-        di.setError(false); //
-        di.setPlugged(true); //
+        di.setFirmware(infos.getFirmwareMajor() + "." + infos.getFirmwareMinor());
+        di.setError(false);
+        di.setPlugged(true);
         di.setDriver(PackFormat.FS.getLabel());
         di.setStorage(new StorageDTO(total, total - used, used));
         return di;
