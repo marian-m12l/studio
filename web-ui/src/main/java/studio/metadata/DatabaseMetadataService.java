@@ -21,8 +21,12 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 
+import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
+
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
@@ -31,8 +35,9 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParseException;
 import com.google.gson.JsonParser;
 
-import studio.config.StudioConfig;
+import io.vertx.mutiny.ext.web.Router;
 
+@ApplicationScoped
 public class DatabaseMetadataService {
 
     private static final Logger LOGGER = LogManager.getLogger(DatabaseMetadataService.class);
@@ -41,16 +46,18 @@ public class DatabaseMetadataService {
     private static final String LUNII_GUEST_TOKEN_URL = "https://server-auth-prod.lunii.com/guest/create";
     private static final String LUNII_PACKS_DATABASE_URL = "https://server-data-prod.lunii.com/v2/packs";
 
-    // databases paths
-    private Path officialDbPath = officialDbPath();
-    private Path unofficialDbPath = unofficialDbPath();
+    @ConfigProperty(name = "studio.db.official")
+    Path officialDbPath;
+
+    @ConfigProperty(name = "studio.db.unofficial")
+    Path unofficialDbPath;
 
     // databases caches : <uuid, packMetadata>
-    private final Map<String, JsonObject> cachedOfficialDatabase = new HashMap<>();
-    private final JsonObject unofficialJsonCache;
+    private Map<String, JsonObject> cachedOfficialDatabase = new HashMap<>();
+    private JsonObject unofficialJsonCache;
     private long lastModifiedCache = 0;
 
-    public DatabaseMetadataService() {
+    public void init(@Observes Router router) {
         try {
             // Read official metadata database file
             LOGGER.info("Reading official metadata in {}", officialDbPath);
@@ -64,7 +71,7 @@ public class DatabaseMetadataService {
             }
             // Refresh cache
             refreshOfficialCache(packsRoot);
-        } catch (NoSuchFileException  e) {
+        } catch (NoSuchFileException e) {
             // create if missing
             fetchOfficialDatabase();
         } catch (IOException | JsonParseException | IllegalStateException e) {
@@ -169,6 +176,7 @@ public class DatabaseMetadataService {
             // Update official database on RAM
             refreshOfficialCache(packsJson);
             // Update official database on disk
+            Files.createDirectories(officialDbPath.getParent());
             writeDatabaseFile(officialDbPath, packsJson);
         } catch (IOException e) {
             LOGGER.error("Failed to fetch official metadata database.", e);
@@ -215,12 +223,12 @@ public class DatabaseMetadataService {
         }
     }
 
-    private synchronized void writeDatabaseFile(Path databasePath, JsonObject json) throws IOException {
+    private static void writeDatabaseFile(Path databasePath, JsonObject json) throws IOException {
         Gson gson = new GsonBuilder().setPrettyPrinting().create();
         Files.writeString(databasePath, gson.toJson(json));
     }
 
-    private JsonObject restGet(String url, String token) {
+    private static JsonObject restGet(String url, String token) {
         // client request
         HttpClient httpClient = HttpClient.newHttpClient();
         HttpRequest.Builder reqBuilder = HttpRequest.newBuilder(URI.create(url)) //
@@ -235,14 +243,6 @@ public class DatabaseMetadataService {
                 .thenApply(JsonParser::parseString) //
                 .thenApply(JsonElement::getAsJsonObject) //
                 .join();
-    }
-
-    private static Path officialDbPath() {
-        return Path.of(StudioConfig.STUDIO_DB_OFFICIAL.getValue());
-    }
-
-    private static Path unofficialDbPath() {
-        return Path.of(StudioConfig.STUDIO_DB_UNOFFICIAL.getValue());
     }
 
 }

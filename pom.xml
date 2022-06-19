@@ -19,7 +19,6 @@
     <modules>
         <module>core</module>
         <module>driver</module>
-        <module>metadata</module>
         <module>web-ui</module>
     </modules>
 

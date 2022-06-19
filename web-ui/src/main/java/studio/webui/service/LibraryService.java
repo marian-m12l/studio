@@ -25,9 +25,9 @@ import javax.inject.Inject;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.vertx.mutiny.ext.web.Router;
-import studio.config.StudioConfig;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.utils.PackAssetsCompression;
@@ -47,13 +47,17 @@ public class LibraryService {
 
     private static final Logger LOGGER = LogManager.getLogger(LibraryService.class);
 
-    private static final Path libraryPath = libraryPath();
-    private static final Path tmpDirPath = tmpDirPath();
-
     @Inject
     DatabaseMetadataService databaseMetadataService;
 
+    @ConfigProperty(name = "studio.library")
+    Path libraryPath;
+
+    @ConfigProperty(name = "studio.tmpdir")
+    Path tmpDirPath;
+
     public void init(@Observes Router router) {
+        LOGGER.info("library path : {} (tmpdir path : {})", libraryPath, tmpDirPath);
         // Create the local library folder if needed
         if (!Files.isDirectory(libraryPath)) {
             try {
@@ -79,7 +83,7 @@ public class LibraryService {
         return p;
     }
 
-    public List<UuidPacksDTO> packs() {
+    public List<UuidPacksDTO> packs() { 
         // Check that local library folder exists
         if (!Files.isDirectory(libraryPath)) {
             return Collections.emptyList();
@@ -93,10 +97,7 @@ public class LibraryService {
             // Group pack by uuid
             Map<String, List<LibraryPackDTO>> metadataByUuid = paths
                     // debuging
-                    .filter(p -> {
-                        LOGGER.info("Read metadata from `{}`", p.getFileName());
-                        return true;
-                    })
+                    .peek(p -> LOGGER.info("Read metadata from `{}`", p.getFileName()))
                     // actual read
                     .map(this::readMetadata)
                     // filter empty
@@ -295,14 +296,6 @@ public class LibraryService {
         }
     }
 
-    public static Path libraryPath() {
-        return Path.of(StudioConfig.STUDIO_LIBRARY.getValue());
-    }
-
-    public static Path tmpDirPath() {
-        return Path.of(StudioConfig.STUDIO_TMPDIR.getValue());
-    }
-
     private Path createTempFile(String prefix, String suffix) throws IOException {
         return Files.createTempFile(tmpDirPath, prefix, suffix);
     }
@@ -311,7 +304,7 @@ public class LibraryService {
         return Files.createTempDirectory(tmpDirPath, prefix);
     }
 
-    private void assertFormat(PackFormat inputFormat, PackFormat outputFormat) {
+    private static void assertFormat(PackFormat inputFormat, PackFormat outputFormat) {
         if (inputFormat == outputFormat) {
             String msg = "Pack is already in " + outputFormat + " format";
             LOGGER.error(msg);
@@ -367,5 +360,4 @@ public class LibraryService {
             return mp;
         }).orElse(mp);
     }
-
 }

@@ -25,11 +25,6 @@
     </properties>
 
     <dependencies>
-       <dependency>
-            <groupId>studio</groupId>
-            <artifactId>studio-metadata</artifactId>
-            <version>${project.version}</version>
-        </dependency>
         <dependency>
             <groupId>studio</groupId>
             <artifactId>studio-driver</artifactId>

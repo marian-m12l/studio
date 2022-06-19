@@ -9,29 +9,35 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import javax.inject.Inject;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import studio.config.StudioConfig;
-import uk.org.webcompere.systemstubs.environment.EnvironmentVariables;
+import io.quarkus.test.junit.QuarkusTest;
 
+@QuarkusTest
 class DatabaseMetadataServiceTest {
+
+    @ConfigProperty(name = "studio.db.official")
+    Path officialDbPath;
+    @ConfigProperty(name = "studio.db.unofficial")
+    Path unofficialDbPath;
+
+    @Inject
+    DatabaseMetadataService ms;
+
+    @BeforeEach
+    void before() throws Exception {
+        // clean json databases
+        Files.deleteIfExists(officialDbPath);
+        Files.deleteIfExists(unofficialDbPath);
+    }
 
     @Test
     void testMetadataService() throws Exception {
-        // GIVEN
-        Path target = Path.of("./target");
-        Path officialDbPath = target.resolve("official.json");
-        Path unofficialDbPath = target.resolve("unofficial.json");
-        // clean db
-        Files.deleteIfExists(officialDbPath);
-        Files.deleteIfExists(unofficialDbPath);
-        // fake env vars
-        EnvironmentVariables env = new EnvironmentVariables( //
-                StudioConfig.STUDIO_DB_OFFICIAL.name(), officialDbPath.toString(), //
-                StudioConfig.STUDIO_DB_UNOFFICIAL.name(), unofficialDbPath.toString());
-
-        // WHEN : create db
-        DatabaseMetadataService ms = env.execute(DatabaseMetadataService::new);
+        // GIVEN & WHEN : init DatabaseMetadataService
         // THEN : missing uuid
         String fakeUuid = "0-0-0-0";
         System.out.println("Test db with uuid " + fakeUuid);
@@ -67,9 +73,9 @@ class DatabaseMetadataServiceTest {
         );
 
         // WHEN reload db
-        DatabaseMetadataService ms2 = env.execute(DatabaseMetadataService::new);
+        ms.init(null);
         // THEN
-        assertEquals(mpExp, ms2.getUnofficialMetadata(newUuid).get(), "differs from expected");
+        assertEquals(mpExp, ms.getUnofficialMetadata(newUuid).get(), "differs from expected");
     }
 
 }

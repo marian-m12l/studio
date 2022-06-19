@@ -11,7 +11,6 @@ import java.net.URI;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
-import javax.enterprise.inject.Produces;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,15 +19,11 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.annotations.QuarkusMain;
 import io.vertx.mutiny.ext.web.Router;
-import studio.metadata.DatabaseMetadataService;
 
 @QuarkusMain
 public class Studio {
 
     private static final Logger LOGGER = LogManager.getLogger(Studio.class);
-
-    @Produces
-    DatabaseMetadataService databaseMetadataService = new DatabaseMetadataService();
 
     public static void main(String... args) {
         LOGGER.info("Running Studio");

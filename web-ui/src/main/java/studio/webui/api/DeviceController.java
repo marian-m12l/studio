@@ -16,6 +16,7 @@ import javax.ws.rs.Path;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import studio.core.v1.utils.PackFormat;
 import studio.webui.model.DeviceDTOs.DeviceInfosDTO;
@@ -26,12 +27,14 @@ import studio.webui.model.LibraryDTOs.MetaPackDTO;
 import studio.webui.model.LibraryDTOs.SuccessDTO;
 import studio.webui.model.LibraryDTOs.TransferDTO;
 import studio.webui.service.IStoryTellerService;
-import studio.webui.service.LibraryService;
 
 @Path("/api/device")
 public class DeviceController {
 
     private static final Logger LOGGER = LogManager.getLogger(DeviceController.class);
+
+    @ConfigProperty(name = "studio.library")
+    java.nio.file.Path libraryPath;
 
     @Inject
     IStoryTellerService storyTellerService;
@@ -54,7 +57,7 @@ public class DeviceController {
     @POST
     @Path("addFromLibrary")
     public CompletionStage<TransferDTO> copyToDevice(UuidDTO uuidDTO) {
-        var packFile = LibraryService.libraryPath().resolve(uuidDTO.getPath());
+        var packFile = libraryPath.resolve(uuidDTO.getPath());
         // Return the transfer id, which is used to monitor transfer progress
         return storyTellerService.addPack(uuidDTO.getUuid(), packFile).thenApply(TransferDTO::new);
     }
@@ -65,10 +68,10 @@ public class DeviceController {
     public CompletionStage<TransferDTO> extractFromDevice(UuidDTO uuidDTO) {
         LOGGER.info("addToLibrary : {}", uuidDTO);
         // newDriver
-        var packFile = LibraryService.libraryPath();
+        var packFile = libraryPath;
         // oldDriver
         if (PackFormat.RAW.getLabel().equals(uuidDTO.getDriver())) {
-            packFile = LibraryService.libraryPath().resolve(uuidDTO.getUuid() + PackFormat.RAW.getExtension());
+            packFile = libraryPath.resolve(uuidDTO.getUuid() + PackFormat.RAW.getExtension());
         }
         // Return the transfer id, which is used to monitor transfer progress
         return storyTellerService.extractPack(uuidDTO.getUuid(), packFile).thenApply(TransferDTO::new);

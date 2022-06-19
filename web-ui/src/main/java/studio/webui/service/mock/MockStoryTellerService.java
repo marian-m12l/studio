@@ -32,12 +32,12 @@ import javax.inject.Inject;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.ext.web.Router;
-import studio.config.StudioConfig;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.reader.binary.BinaryStoryPackReader;
 import studio.core.v1.utils.PackFormat;
@@ -63,11 +63,14 @@ public class MockStoryTellerService implements IStoryTellerService {
     @Inject
     DatabaseMetadataService databaseMetadataService;
 
+    @ConfigProperty(name = "studio.mock.device")
+    Path devicePath;
+
     public void init(@Observes Router router) {
-        LOGGER.info("Setting up mocked story teller service");
+        LOGGER.info("Setting up mocked story teller service in {}", devicePath);
         try {
             // Create the mocked device folder if needed
-            Files.createDirectories(devicePath());
+            Files.createDirectories(devicePath);
         } catch (IOException e) {
             throw new StoryTellerException("Failed to initialize mocked device");
         }
@@ -81,7 +84,7 @@ public class MockStoryTellerService implements IStoryTellerService {
 
     public CompletionStage<List<MetaPackDTO>> packs() {
         // Check that mocked device folder exists
-        Path deviceFolder = devicePath();
+        Path deviceFolder = devicePath;
         if (!Files.isDirectory(deviceFolder)) {
             return CompletableFuture.completedStage(Arrays.asList());
         }
@@ -90,7 +93,7 @@ public class MockStoryTellerService implements IStoryTellerService {
 
     public CompletionStage<String> addPack(String uuid, Path packFile) {
         // Check that mocked device folder exists
-        Path deviceFolder = devicePath();
+        Path deviceFolder = devicePath;
         if (!Files.isDirectory(deviceFolder)) {
             return CompletableFuture.completedStage(uuid);
         }
@@ -100,7 +103,7 @@ public class MockStoryTellerService implements IStoryTellerService {
 
     public CompletionStage<String> extractPack(String uuid, Path destFile) {
         // Check that mocked device folder exists
-        Path deviceFolder = devicePath();
+        Path deviceFolder = devicePath;
         if (!Files.isDirectory(deviceFolder)) {
             return CompletableFuture.completedStage(uuid);
         }
@@ -110,7 +113,7 @@ public class MockStoryTellerService implements IStoryTellerService {
 
     public CompletionStage<Boolean> deletePack(String uuid) {
         // Check that mocked device folder exists
-        Path deviceFolder = devicePath();
+        Path deviceFolder = devicePath;
         if (!Files.isDirectory(deviceFolder)) {
             return CompletableFuture.completedStage(false);
         }
@@ -138,10 +141,6 @@ public class MockStoryTellerService implements IStoryTellerService {
         // Not supported
         LOGGER.warn("Not supported : dump");
         return CompletableFuture.completedStage(null);
-    }
-
-    private static Path devicePath() {
-        return Path.of(StudioConfig.STUDIO_MOCK_DEVICE.getValue());
     }
 
     private void sendDevicePlugged(DeviceInfosDTO infosDTO) {
@@ -242,11 +241,10 @@ public class MockStoryTellerService implements IStoryTellerService {
 
     private DeviceInfosDTO getDeviceInfo() {
         try {
-            FileStore mdFd = Files.getFileStore(devicePath());
+            FileStore mdFd = Files.getFileStore(devicePath);
             long total = mdFd.getTotalSpace();
             long used = mdFd.getTotalSpace() - mdFd.getUnallocatedSpace();
 
-            // long files = paths.count();
             DeviceInfosDTO di = new DeviceInfosDTO();
             di.setUuid("mocked-device");
             di.setSerial("mocked-serial");
@@ -279,5 +277,4 @@ public class MockStoryTellerService implements IStoryTellerService {
         LOGGER.debug("toDto : {}", mp);
         return mp;
     }
-
 }
