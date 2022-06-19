@@ -82,7 +82,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
                                     LOGGER.info("FS device partition located: {}", partitionMountPoint);
                                 }
                             });
-                        } catch (InterruptedException e) {
+                        } catch (IOException | InterruptedException e) {
                             LOGGER.error("Failed to locate device partition", e);
                             Thread.currentThread().interrupt();
                         }
@@ -406,7 +406,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
         }
     }
 
-    private TransferStatus copyPackFolder(Path sourceFolder, Path destFolder, TransferProgressListener listener)
+    private static TransferStatus copyPackFolder(Path sourceFolder, Path destFolder, TransferProgressListener listener)
             throws IOException {
         // Keep track of transferred bytes and elapsed time
         final long startTime = System.currentTimeMillis();
@@ -460,7 +460,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
         return CompletableFuture.completedStage(null);
     }
 
-    private StoryTellerException noDevicePluggedException() {
+    private static StoryTellerException noDevicePluggedException() {
         return new StoryTellerException("No device plugged");
     }
 }

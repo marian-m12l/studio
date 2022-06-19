@@ -292,7 +292,7 @@ public class BinaryStoryPackReader implements StoryPackReader {
     }
 
     /** Read UTF16 String from stream. */
-    private Optional<String> readString(InputStream dis, int maxChars) throws IOException {
+    private static Optional<String> readString(InputStream dis, int maxChars) throws IOException {
         byte[] bytes = dis.readNBytes(maxChars*2);
         String str = new String(bytes, StandardCharsets.UTF_16);
         int firstNullChar = str.indexOf("\u0000");
@@ -305,7 +305,7 @@ public class BinaryStoryPackReader implements StoryPackReader {
         return Optional.of(str.substring(0, firstNullChar));
     }
 
-    private EnrichedNodeMetadata readEnrichedNodeMetadata(DataInputStream dis) throws IOException {
+    private static EnrichedNodeMetadata readEnrichedNodeMetadata(DataInputStream dis) throws IOException {
         Optional<String> maybeName = readString(dis, BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE);
         Optional<String> maybeGroupId = Optional.empty();
         long groupIdLowBytes = dis.readLong();

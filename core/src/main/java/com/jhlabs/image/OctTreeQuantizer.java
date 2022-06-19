@@ -93,7 +93,7 @@ public class OctTreeQuantizer implements Quantizer {
         }
     }
 
-    private int getChildIndex(int rgb, int level) {
+    private static int getChildIndex(int rgb, int level) {
         int red = (rgb >> 16) & 0xff;
         int green = (rgb >> 8) & 0xff;
         int blue = rgb & 0xff;

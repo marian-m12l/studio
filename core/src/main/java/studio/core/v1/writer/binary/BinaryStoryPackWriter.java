@@ -160,7 +160,7 @@ public class BinaryStoryPackWriter implements StoryPackWriter {
         }
     }
 
-    private void prepareAssets(StoryPack pack, Map<SectorAddr, ActionNode> actionNodesMap,
+    private static void prepareAssets(StoryPack pack, Map<SectorAddr, ActionNode> actionNodesMap,
             Map<String, AssetAddr> assetsHashes, Map<AssetAddr, byte[]> assetsData) {
         // action nodes
         int nextFreeOffset = pack.getStageNodes().size();
@@ -222,7 +222,7 @@ public class BinaryStoryPackWriter implements StoryPackWriter {
         }
     }
 
-    private void writeStageNodes(DataOutputStream dos, List<StageNode> stageNodes,
+    private static void writeStageNodes(DataOutputStream dos, List<StageNode> stageNodes,
             TreeMap<String, AssetAddr> assetsHashes, TreeMap<SectorAddr, ActionNode> actionNodesMap, boolean enriched)
             throws IOException {
         for (StageNode stageNode : stageNodes) {
@@ -301,7 +301,7 @@ public class BinaryStoryPackWriter implements StoryPackWriter {
         }
     }
 
-    private int writeEnrichedNodeMetadata(DataOutputStream dos, Node node) throws IOException {
+    private static int writeEnrichedNodeMetadata(DataOutputStream dos, Node node) throws IOException {
         writeTruncatedString(dos, node.getEnriched().getName(), BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE);
         String nodeGroupId = node.getEnriched().getGroupId();
         if (nodeGroupId != null) {
@@ -327,7 +327,7 @@ public class BinaryStoryPackWriter implements StoryPackWriter {
         return BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE * 2 + 16 + 1 + 4;
     }
 
-    private void writeTruncatedString(DataOutputStream dos, String str, int maxChars) throws IOException {
+    private static void writeTruncatedString(DataOutputStream dos, String str, int maxChars) throws IOException {
         if (str != null) {
             int strLength = Math.min(str.length(), maxChars);
             dos.writeChars(str.substring(0, strLength));
@@ -340,12 +340,12 @@ public class BinaryStoryPackWriter implements StoryPackWriter {
         }
     }
 
-    private void writePadding(DataOutputStream dos, int length) throws IOException {
+    private static void writePadding(DataOutputStream dos, int length) throws IOException {
         byte[] padding = new byte[length];
         dos.write(padding, 0, length);
     }
 
-    private <K, V> Stream<K> getKeys(Map<K, V> map, V value) {
+    private static <K, V> Stream<K> getKeys(Map<K, V> map, V value) {
         return map.entrySet().stream() //
                 .filter(entry -> value.equals(entry.getValue())) //
                 .map(Map.Entry::getKey);

@@ -72,7 +72,8 @@ public class FsStoryPackWriter implements StoryPackWriter {
     /** Blank MP3 file. */
     private static final byte[] BLANK_MP3 = readRelative("blank.mp3");
 
-    // TODO Enriched metadata in a dedicated file (pack's title, description and thumbnail, nodes' name, group, type and position)
+    // TODO Enriched metadata in a dedicated file (pack's title, description and
+    // thumbnail, nodes' name, group, type and position)
 
     public void write(StoryPack pack, Path packFolder, boolean enriched) throws IOException {
         // Write night mode
@@ -90,9 +91,9 @@ public class FsStoryPackWriter implements StoryPackWriter {
 
         // Add nodes index file: ni
         Path niPath = packFolder.resolve(NODE_INDEX_FILENAME);
-        try( DataOutputStream niDos = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(niPath)))) {
+        try (DataOutputStream niDos = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(niPath)))) {
             ByteBuffer bb = ByteBuffer.allocate(512).order(ByteOrder.LITTLE_ENDIAN);
-    
+
             // Nodes index file format version (1)
             bb.putShort((short) 1);
             // Story pack version (1)
@@ -104,26 +105,17 @@ public class FsStoryPackWriter implements StoryPackWriter {
             // Number of stage nodes in this file
             bb.putInt(pack.getStageNodes().size());
             // Number of images (in RI file and rf/ folder)
-            bb.putInt((int) pack.getStageNodes().stream()
-                    .map(StageNode::getImage)
-                    .filter(Objects::nonNull)
-                    .map(ImageAsset::getRawData)
-                    .map(SecurityUtils::sha1Hex)
-                    .distinct()
-                    .count());
+            bb.putInt((int) pack.getStageNodes().stream().map(StageNode::getImage).filter(Objects::nonNull)
+                    .map(ImageAsset::getRawData).map(SecurityUtils::sha1Hex).distinct().count());
             // Number of sounds (in SI file and sf/ folder)
-            bb.putInt((int) pack.getStageNodes().stream()
-                    .map(StageNode::getAudio)
-                    .filter(Objects::nonNull)
-                    .map(AudioAsset::getRawData)
-                    .map(SecurityUtils::sha1Hex)
-                    .distinct()
-                    .count());
-            // Is factory pack (boolean) set to true to avoid pack inspection by official Luniistore application
+            bb.putInt((int) pack.getStageNodes().stream().map(StageNode::getAudio).filter(Objects::nonNull)
+                    .map(AudioAsset::getRawData).map(SecurityUtils::sha1Hex).distinct().count());
+            // Is factory pack (boolean) set to true to avoid pack inspection by official
+            // Luniistore application
             bb.put((byte) 1);
 
             // Jump to address 0x200 for actual list of nodes
-            bb.put(new byte[512-25]);
+            bb.put(new byte[512 - 25]);
             niDos.write(bb.array());
             bb.clear();
 
@@ -145,11 +137,13 @@ public class FsStoryPackWriter implements StoryPackWriter {
                         bmpBuffer.order(ByteOrder.LITTLE_ENDIAN);
                         // Make sure the BMP file is RLE-compressed / 4-bits depth
                         if (bmpBuffer.getShort(28) != 0x0004 || bmpBuffer.getInt(30) != 0x00000002) {
-                            throw new IllegalArgumentException("FS pack file requires image assets to use 4-bit depth and RLE encoding.");
+                            throw new IllegalArgumentException(
+                                    "FS pack file requires image assets to use 4-bit depth and RLE encoding.");
                         }
                         // Check image dimensions
                         if (bmpBuffer.getInt(18) != 320 || bmpBuffer.getInt(22) != 240) {
-                            throw new IllegalArgumentException("FS pack file requires image assets to be 320x240 pixels.");
+                            throw new IllegalArgumentException(
+                                    "FS pack file requires image assets to be 320x240 pixels.");
                         }
                         imageIndex = imageHashOrdered.size();
                         imageHashOrdered.add(imageHash);
@@ -179,10 +173,11 @@ public class FsStoryPackWriter implements StoryPackWriter {
                             AudioFormat audioFormat = AudioSystem.getAudioFileFormat(bais).getFormat();
                             if (audioFormat.getChannels() != AudioConversion.CHANNELS
                                     || audioFormat.getSampleRate() != AudioConversion.MP3_SAMPLE_RATE) {
-                                throw new IllegalArgumentException("FS pack file requires MP3 audio assets to be MONO / 44100Hz.");
+                                throw new IllegalArgumentException(
+                                        "FS pack file requires MP3 audio assets to be MONO / 44100Hz.");
                             }
                         } catch (UnsupportedAudioFileException e) {
-                            throw new IllegalArgumentException("Unsupported Audio File",e);
+                            throw new IllegalArgumentException("Unsupported Audio File", e);
                         }
                     }
                     audioIndex = audioHashOrdered.size();
@@ -211,7 +206,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
                 bb.putInt(imageIndex);
                 // Sound index in SI file (index 0 == first sound) --> sf/000/11111111
                 bb.putInt(audioIndex);
-                // OK transition 
+                // OK transition
                 if (okTransition != null) {
                     // Action node index in LI file (index 0 == first action node)
                     bb.putInt(actionNodesIndexes.get(okTransition.getActionNode()));
@@ -249,6 +244,9 @@ public class FsStoryPackWriter implements StoryPackWriter {
                 bb.clear();
             }
         }
+
+        // cleanup
+        actionNodesIndexes.clear();
 
         // Add lists index file: li
         Path liPath = packFolder.resolve(LIST_INDEX_FILENAME);
@@ -301,7 +299,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
         }
     }
 
-    private void writeCypheredFile(Path path, byte[] byteArray) throws IOException {
+    private static void writeCypheredFile(Path path, byte[] byteArray) throws IOException {
         // The first block of bytes must be ciphered with the common key
         byte[] liCiphered = XXTEACipher.cipherCommonKey(CipherMode.CIPHER, byteArray);
         Files.write(path, liCiphered);
@@ -323,7 +321,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
             Files.write(btPath, btCiphered);
         }
     }
-    
+
     // Create pack folder: last 8 digits of uuid
     public static Path createPackFolder(StoryPack storyPack, Path tmp) throws IOException {
         Path packFolder = tmp.resolve(transformUuid(storyPack.getUuid()));
@@ -332,7 +330,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
 
     public static String transformUuid(String uuid) {
         String uuidStr = uuid.replace("-", "");
-        return uuidStr.substring(uuidStr.length()-8).toUpperCase();
+        return uuidStr.substring(uuidStr.length() - 8).toUpperCase();
     }
 
     private static short boolToShort(boolean b) {
@@ -365,8 +363,8 @@ public class FsStoryPackWriter implements StoryPackWriter {
     /** Read classpath relative file. */
     private static byte[] readRelative(String relative) {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
-        try {
-            return classLoader.getResourceAsStream(relative).readAllBytes();
+        try (InputStream is = classLoader.getResourceAsStream(relative)) {
+            return is.readAllBytes();
         } catch (IOException e) {
             LOGGER.atError().withThrowable(e).log("Cannot load relative resource {}!", relative);
             return new byte[0];

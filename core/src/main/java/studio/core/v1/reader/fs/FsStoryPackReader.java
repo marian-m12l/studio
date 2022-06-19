@@ -207,12 +207,12 @@ public class FsStoryPackReader implements StoryPackReader {
         return sp;
     }
 
-    private byte[] readCipheredFile(Path path) throws IOException {
+    private static byte[] readCipheredFile(Path path) throws IOException {
         byte[] content = Files.readAllBytes(path);
         return XXTEACipher.cipherCommonKey(CipherMode.DECIPHER, content);
     }
 
-    private byte[] readAsset(Path assetFolder, byte[] assetContent, int assetIndex) throws IOException {
+    private static byte[] readAsset(Path assetFolder, byte[] assetContent, int assetIndex) throws IOException {
         // Read asset name, each entry takes 12 bytes
         String assetName = new String(assetContent, assetIndex * 12, 12, StandardCharsets.UTF_8).replace("\\", "/");
         // Read asset file

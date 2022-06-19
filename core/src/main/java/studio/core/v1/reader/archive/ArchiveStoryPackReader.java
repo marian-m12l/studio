@@ -127,7 +127,7 @@ public class ArchiveStoryPackReader implements StoryPackReader {
      * @param assetToStageNodes keeps links between assets and nodes
      * @return StoryPack
      */
-    private StoryPack parseStoryJson( JsonObject root, Map<String, List<StageNode>> assetToStageNodes ) {
+    private static StoryPack parseStoryJson( JsonObject root, Map<String, List<StageNode>> assetToStageNodes ) {
         StoryPack storyPack = new StoryPack();
 
         // Keep first node
@@ -248,7 +248,7 @@ public class ArchiveStoryPackReader implements StoryPackReader {
      * @param assets keeps asset binary
      * @param assetToStageNodes keeps links between assets and nodes 
      */
-    private void enrichAssets(TreeMap<String, byte[]> assets, Map<String, List<StageNode>> assetToStageNodes ) {
+    private static void enrichAssets(TreeMap<String, byte[]> assets, Map<String, List<StageNode>> assetToStageNodes ) {
         for (Map.Entry<String, byte[]> assetEntry : assets.entrySet()) {
             String assetName = assetEntry.getKey();
             // Stage nodes explicitly reference their assets' filenames
@@ -278,7 +278,7 @@ public class ArchiveStoryPackReader implements StoryPackReader {
      * @param node node
      * @return 
      */
-    private EnrichedNodeMetadata readEnrichedNodeMetadata(JsonObject node) {
+    private static EnrichedNodeMetadata readEnrichedNodeMetadata(JsonObject node) {
         Optional<String> maybeName = Optional.ofNullable(node.get("name")).filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
         Optional<String> maybeType = Optional.ofNullable(node.get("type")).filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);
         Optional<String> maybeGroupId = Optional.ofNullable(node.get("groupId")).filter(JsonElement::isJsonPrimitive).map(JsonElement::getAsString);

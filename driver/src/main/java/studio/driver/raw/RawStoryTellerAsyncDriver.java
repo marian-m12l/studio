@@ -297,7 +297,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                 }));
     }
 
-    private CompletionStage<Boolean> writePackIndex(DeviceHandle handle, List<RawStoryPackInfos> packs) {
+    private static CompletionStage<Boolean> writePackIndex(DeviceHandle handle, List<RawStoryPackInfos> packs) {
         // Compute packs index bytes
         ByteBuffer bb = ByteBuffer.allocateDirect(LibUsbMassStorageHelper.SECTOR_SIZE);
         bb.putShort((short) packs.size());
@@ -311,7 +311,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
         return LibUsbMassStorageHelper.asyncWriteSDSectors(handle, PACK_INDEX_SD_SECTOR, (short) 1, bb);
     }
 
-    private void followProgress(TransferStatus status, long startTime) {
+    private static void followProgress(TransferStatus status, long startTime) {
         long elapsed = System.currentTimeMillis() - startTime;
         double speed = status.getTransferred() / (elapsed / 1000.0);
         status.setSpeed(speed);
@@ -532,7 +532,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
         );
     }
 
-    private CompletionStage<Void> dumpSector(DeviceHandle handle, int sector, Path outputPath) {
+    private static CompletionStage<Void> dumpSector(DeviceHandle handle, int sector, Path outputPath) {
         Path destPath = outputPath.resolve("sector" + sector + ".bin");
         LOGGER.info("Dumping sector {} into {}", sector, destPath.getFileName());
         return LibUsbMassStorageHelper.asyncReadSDSectors(handle, sector, (short) 1) //
@@ -545,7 +545,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
                 });
     }
 
-    private StoryTellerException noDevicePluggedException() {
+    private static StoryTellerException noDevicePluggedException() {
         return new StoryTellerException("No device plugged");
     }
 }

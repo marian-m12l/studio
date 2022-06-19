@@ -120,7 +120,7 @@ public class VorbisEncoder {
 
             // headers
             while (os.ogg_stream_flush(og) != 0) {
-                writeOggPage(baos, og, 0);
+                writeOggPage(og, baos, 0);
             }
 
             LOGGER.trace("Writing header done.\nEncoding");
@@ -166,7 +166,7 @@ public class VorbisEncoder {
                         os.ogg_stream_packetin(op);
                         // write out pages (if any)
                         while (os.ogg_stream_pageout(og) != 0) {
-                            writeOggPage(baos, og, ++page);
+                            writeOggPage(og, baos, ++page);
                         }
                     }
                 }
@@ -179,6 +179,7 @@ public class VorbisEncoder {
         } catch (IOException e) {
             throw new VorbisEncodingException(e);
         } finally {
+            og.clear();
             os.ogg_stream_clear();
             vb.vorbis_block_clear();
             vd.vorbis_dsp_clear();
@@ -187,7 +188,7 @@ public class VorbisEncoder {
         }
     }
 
-    private static void writeOggPage(OutputStream os, Jogg_page og, int page) throws IOException {
+    private static void writeOggPage(Jogg_page og, OutputStream os, int page) throws IOException {
         os.write(og.header_base, og.header, og.header_len);
         os.write(og.body_base, og.body, og.body_len);
         LOGGER.debug("Writing page {}: head ({}) and body ({})", page, og.header_len, og.body_len);

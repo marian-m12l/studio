@@ -44,20 +44,21 @@ class DeviceUtilsTests {
     }
 
     /** Replace Runtime.exec with ProcessBuilder */
-    private List<Path> dfCommand() throws IOException {
+    private static List<Path> dfCommand() throws IOException {
         final Process p = new ProcessBuilder("df", "-l").start();
         final Pattern dfPattern = Pattern.compile("^(\\/[^ ]+)[^/]+(/.*)$");
 
         System.out.println("df -l");
-        return new BufferedReader(new InputStreamReader(p.getInputStream()))//
-                .lines() //
-                .peek(System.out::println) // Debug
-                .map(dfPattern::matcher) //
-                .filter(Matcher::matches) //
-                // Mounted devices only (without Fuse, Loopback...)
-                .filter(m -> m.group(1).startsWith("/dev/s") || m.group(1).startsWith("/dev/disk")) //
-                .map(m -> Path.of(m.group(2))) //
-                .collect(Collectors.toList());
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+            return br.lines() //
+                    .peek(System.out::println) // Debug
+                    .map(dfPattern::matcher) //
+                    .filter(Matcher::matches) //
+                    // Mounted devices only (without Fuse, Loopback...)
+                    .filter(m -> m.group(1).startsWith("/dev/s") || m.group(1).startsWith("/dev/disk")) //
+                    .map(m -> Path.of(m.group(2))) //
+                    .collect(Collectors.toList());
+        }
     }
 
 }
