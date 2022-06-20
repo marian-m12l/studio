@@ -77,12 +77,8 @@ public class PackAssetsCompression {
                 LOGGER.debug("Uncompressing 4-bits/RLE BMP image asset into BMP");
                 imageData = ImageConversion.anyToBitmap(imageData);
             }
-            if (ImageType.JPEG == ia.getType()) {
-                LOGGER.debug("Uncompressing JPG image asset into BMP");
-                imageData = ImageConversion.anyToBitmap(imageData);
-            }
-            if (ImageType.PNG == ia.getType()) {
-                LOGGER.debug("Uncompressing PNG image asset into BMP");
+            if (ImageType.JPEG == ia.getType() || ImageType.PNG == ia.getType()) {
+                LOGGER.debug("Uncompressing {} image asset into BMP", ia.getType());
                 imageData = ImageConversion.anyToBitmap(imageData);
             }
             return imageData;

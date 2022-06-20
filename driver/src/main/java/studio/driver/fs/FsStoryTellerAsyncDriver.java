@@ -6,8 +6,6 @@
 
 package studio.driver.fs;
 
-import static studio.core.v1.writer.fs.FsStoryPackWriter.transformUuid;
-
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -458,6 +456,11 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
         // Not supported
         LOGGER.warn("Not supported : dump");
         return CompletableFuture.completedStage(null);
+    }
+
+    public static String transformUuid(String uuid) {
+        String uuidStr = uuid.replace("-", "");
+        return uuidStr.substring(uuidStr.length() - 8).toUpperCase();
     }
 
     private static StoryTellerException noDevicePluggedException() {

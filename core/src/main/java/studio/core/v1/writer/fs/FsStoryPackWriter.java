@@ -76,6 +76,8 @@ public class FsStoryPackWriter implements StoryPackWriter {
     // thumbnail, nodes' name, group, type and position)
 
     public void write(StoryPack pack, Path packFolder, boolean enriched) throws IOException {
+        // Create output dir
+        Files.createDirectories(packFolder);
         // Write night mode
         if (pack.isNightModeAvailable()) {
             Files.createFile(packFolder.resolve(NIGHT_MODE_FILENAME));
@@ -320,17 +322,6 @@ public class FsStoryPackWriter implements StoryPackWriter {
             // Add boot file: bt
             Files.write(btPath, btCiphered);
         }
-    }
-
-    // Create pack folder: last 8 digits of uuid
-    public static Path createPackFolder(StoryPack storyPack, Path tmp) throws IOException {
-        Path packFolder = tmp.resolve(transformUuid(storyPack.getUuid()));
-        return Files.createDirectories(packFolder);
-    }
-
-    public static String transformUuid(String uuid) {
-        String uuidStr = uuid.replace("-", "");
-        return uuidStr.substring(uuidStr.length() - 8).toUpperCase();
     }
 
     private static short boolToShort(boolean b) {

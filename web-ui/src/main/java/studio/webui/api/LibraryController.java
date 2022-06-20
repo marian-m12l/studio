@@ -106,7 +106,7 @@ public class LibraryController {
         // Perform conversion/uncompression asynchronously
         return CompletableFuture.supplyAsync(() -> {
             PackFormat packFormat = PackFormat.valueOf(pack.getFormat().toUpperCase());
-            var newPackPath = libraryService.addConvertedPack(pack.getPath(), packFormat, pack.isAllowEnriched());
+            var newPackPath = libraryService.convertPack(pack.getPath(), packFormat, pack.isAllowEnriched());
             return new SuccessPathDTO(true, newPackPath.toString());
         });
     }

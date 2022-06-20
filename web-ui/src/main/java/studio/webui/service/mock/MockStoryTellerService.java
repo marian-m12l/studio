@@ -84,41 +84,37 @@ public class MockStoryTellerService implements IStoryTellerService {
 
     public CompletionStage<List<MetaPackDTO>> packs() {
         // Check that mocked device folder exists
-        Path deviceFolder = devicePath;
-        if (!Files.isDirectory(deviceFolder)) {
+        if (!Files.isDirectory(devicePath)) {
             return CompletableFuture.completedStage(Arrays.asList());
         }
-        return readPackIndex(deviceFolder).thenApply(p -> p.stream().map(this::toDto).collect(Collectors.toList()));
+        return readPackIndex(devicePath).thenApply(p -> p.stream().map(this::toDto).collect(Collectors.toList()));
     }
 
     public CompletionStage<String> addPack(String uuid, Path packFile) {
         // Check that mocked device folder exists
-        Path deviceFolder = devicePath;
-        if (!Files.isDirectory(deviceFolder)) {
+        if (!Files.isDirectory(devicePath)) {
             return CompletableFuture.completedStage(uuid);
         }
-        Path destFile = deviceFolder.resolve(uuid + PackFormat.RAW.getExtension());
+        Path destFile = devicePath.resolve(uuid + PackFormat.RAW.getExtension());
         return copyPack("add pack", packFile, destFile);
     }
 
     public CompletionStage<String> extractPack(String uuid, Path destFile) {
         // Check that mocked device folder exists
-        Path deviceFolder = devicePath;
-        if (!Files.isDirectory(deviceFolder)) {
+        if (!Files.isDirectory(devicePath)) {
             return CompletableFuture.completedStage(uuid);
         }
-        Path packFile = deviceFolder.resolve(uuid + PackFormat.RAW.getExtension());
+        Path packFile = devicePath.resolve(uuid + PackFormat.RAW.getExtension());
         return copyPack("extract pack", packFile, destFile);
     }
 
     public CompletionStage<Boolean> deletePack(String uuid) {
         // Check that mocked device folder exists
-        Path deviceFolder = devicePath;
-        if (!Files.isDirectory(deviceFolder)) {
+        if (!Files.isDirectory(devicePath)) {
             return CompletableFuture.completedStage(false);
         }
         try {
-            Path packFile = deviceFolder.resolve(uuid + PackFormat.RAW.getExtension());
+            Path packFile = devicePath.resolve(uuid + PackFormat.RAW.getExtension());
             if (Files.deleteIfExists(packFile)) {
                 return CompletableFuture.completedStage(true);
             } else {

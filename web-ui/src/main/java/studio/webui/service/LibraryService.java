@@ -33,7 +33,6 @@ import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.utils.PackAssetsCompression;
 import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.exception.StoryTellerException;
-import studio.core.v1.writer.fs.FsStoryPackWriter;
 import studio.driver.fs.FileUtils;
 import studio.metadata.DatabaseMetadataService;
 import studio.metadata.DatabasePackMetadata;
@@ -83,7 +82,7 @@ public class LibraryService {
         return p;
     }
 
-    public List<UuidPacksDTO> packs() { 
+    public List<UuidPacksDTO> packs() {
         // Check that local library folder exists
         if (!Files.isDirectory(libraryPath)) {
             return Collections.emptyList();
@@ -97,7 +96,10 @@ public class LibraryService {
             // Group pack by uuid
             Map<String, List<LibraryPackDTO>> metadataByUuid = paths
                     // debuging
-                    .peek(p -> LOGGER.info("Read metadata from `{}`", p.getFileName()))
+                    .filter(p -> {
+                        LOGGER.info("Read metadata from `{}`", p.getFileName());
+                        return true;
+                    })
                     // actual read
                     .map(this::readMetadata)
                     // filter empty
@@ -148,118 +150,60 @@ public class LibraryService {
         return libraryPath.resolve(packPath);
     }
 
-    public Path addConvertedPack(String packPath, PackFormat packFormat, boolean allowEnriched) {
-        if (PackFormat.RAW == packFormat) {
-            return addConvertedRawPackFile(packPath, allowEnriched);
-        }
-        if (PackFormat.FS == packFormat) {
-            return addConvertedFsPackFile(packPath);
-        }
-        if (PackFormat.ARCHIVE == packFormat) {
-            return addConvertedArchivePackFile(packPath);
-        }
-        throw new StoryTellerException("Unknown pack format " + packFormat);
-    }
-
-    public Path addConvertedRawPackFile(String packFile, boolean allowEnriched) {
-        Path packPath = libraryPath.resolve(packFile);
+    public Path convertPack(String packName, PackFormat outputFormat, boolean allowEnriched) {
+        Path packPath = libraryPath.resolve(packName);
         PackFormat inputFormat = PackFormat.fromPath(packPath);
-        PackFormat outputFormat = PackFormat.RAW;
-        assertFormat(inputFormat, outputFormat);
         LOGGER.info("Pack is in {} format. Converting to {} format", inputFormat, outputFormat);
+        // check formats
+        if (inputFormat == outputFormat) {
+            throw new StoryTellerException("Pack is already in " + outputFormat + " format : " + packName);
+        }
         try {
-            // Packs must first be converted to raw format
+            // Read pack
             LOGGER.info("Reading {} format pack", inputFormat);
             StoryPack storyPack = inputFormat.getReader().read(packPath);
 
-            // Uncompress pack assets
-            if (PackAssetsCompression.hasCompressedAssets(storyPack)) {
-                LOGGER.info("Uncompressing pack assets");
-                PackAssetsCompression.processUncompressed(storyPack);
+            // Convert
+            switch (outputFormat) {
+            case ARCHIVE:
+                // Compress pack assets
+                if (inputFormat == PackFormat.RAW) {
+                    LOGGER.info("Compressing pack assets");
+                    PackAssetsCompression.processCompressed(storyPack);
+                }
+                // force enriched pack
+                allowEnriched = true;
+                break;
+            case FS:
+                // Prepare assets (RLE-encoded BMP, audio must already be MP3)
+                LOGGER.info("Converting assets if necessary");
+                PackAssetsCompression.processFirmware2dot4(storyPack);
+                // force enriched pack
+                allowEnriched = true;
+                break;
+            case RAW:
+                // Uncompress pack assets
+                if (PackAssetsCompression.hasCompressedAssets(storyPack)) {
+                    LOGGER.info("Uncompressing pack assets");
+                    PackAssetsCompression.processUncompressed(storyPack);
+                }
+                break;
             }
 
-            Path tmp = createTempFile(packFile, outputFormat.getExtension());
-            LOGGER.info("Writing {} format pack, using temporary file: {}", outputFormat, tmp);
-            outputFormat.getWriter().write(storyPack, tmp, allowEnriched);
-
-            String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis()
+            // Write to temporary dir
+            String destName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis()
                     + outputFormat.getExtension();
-            Path destinationPath = libraryPath.resolve(destinationFileName);
-            LOGGER.info("Moving {} format pack into local library: {}", outputFormat, destinationPath);
-            Files.move(tmp, destinationPath);
+            Path tmpPath = tmpDirPath.resolve(destName);
+            LOGGER.info("Writing {} format pack, using temporary : {}", outputFormat, tmpPath);
+            outputFormat.getWriter().write(storyPack, tmpPath, allowEnriched);
 
-            return destinationPath;
-        } catch (Exception e) {
+            // Move to library
+            Path destPath = libraryPath.resolve(destName);
+            LOGGER.info("Moving {} format pack into local library: {}", outputFormat, destPath);
+            Files.move(tmpPath, destPath);
+            return destPath;
+        } catch (IOException e) {
             String msg = "Failed to convert " + inputFormat + " format pack to " + outputFormat + " format";
-            LOGGER.error(msg, e);
-            throw new StoryTellerException(msg, e);
-        }
-    }
-
-    public Path addConvertedArchivePackFile(String packFile) {
-        Path packPath = libraryPath.resolve(packFile);
-        PackFormat inputFormat = PackFormat.fromPath(packPath);
-        PackFormat outputFormat = PackFormat.ARCHIVE;
-        assertFormat(inputFormat, outputFormat);
-        LOGGER.info("Pack is in {} format. Converting to {} format", inputFormat, outputFormat);
-        try {
-            // Packs must first be converted to raw format
-            LOGGER.info("Reading {} format pack", inputFormat);
-            StoryPack storyPack = inputFormat.getReader().read(packPath);
-            // Compress pack assets
-            if (inputFormat == PackFormat.RAW) {
-                LOGGER.info("Compressing pack assets");
-                PackAssetsCompression.processCompressed(storyPack);
-            }
-
-            String zipName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis() + ".zip";
-            Path tmp = tmpDirPath.resolve(zipName);
-
-            LOGGER.info("Writing {} format pack, using temporary file: {}", outputFormat, tmp);
-            outputFormat.getWriter().write(storyPack, tmp, true);
-
-            Path destinationPath = libraryPath.resolve(zipName);
-            LOGGER.info("Moving {} format pack into local library: {}", outputFormat, destinationPath);
-            Files.move(tmp, destinationPath);
-
-            return destinationPath;
-        } catch (Exception e) {
-            String msg = "Failed to convert " + inputFormat + " format pack to " + outputFormat + " format";
-            LOGGER.error(msg, e);
-            throw new StoryTellerException(msg, e);
-        }
-    }
-
-    public Path addConvertedFsPackFile(String packFile) {
-        Path packPath = libraryPath.resolve(packFile);
-        PackFormat inputFormat = PackFormat.fromPath(packPath);
-        PackFormat outputFormat = PackFormat.FS;
-        assertFormat(inputFormat, outputFormat);
-        LOGGER.info("Pack is in {} format. Converting to {} format", inputFormat, outputFormat);
-        try {
-            // Packs must first be converted to raw format
-            LOGGER.info("Reading {} format pack", inputFormat);
-            StoryPack storyPack = inputFormat.getReader().read(packPath);
-
-            // Prepare assets (RLE-encoded BMP, audio must already be MP3)
-            LOGGER.info("Converting assets if necessary");
-            PackAssetsCompression.processFirmware2dot4(storyPack);
-
-            Path tmp = createTempDirectory(packFile);
-            LOGGER.info("Writing {} format pack, using temporary folder: {}", outputFormat, tmp);
-            // should we not keep uuid instead ?
-            Path tmpPath = FsStoryPackWriter.createPackFolder(storyPack, tmp);
-            outputFormat.getWriter().write(storyPack, tmpPath, true);
-
-            String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis();
-            Path destinationPath = libraryPath.resolve(destinationFileName);
-            LOGGER.info("Moving {} format pack into local library: {}", outputFormat, destinationPath);
-            Files.move(tmpPath, destinationPath);
-
-            return destinationPath;
-        } catch (Exception e) {
-            String msg = "Failed to convert " + inputFormat + " format pack to " + outputFormat + " format";
-            LOGGER.error(msg, e);
             throw new StoryTellerException(msg, e);
         }
     }
@@ -293,22 +237,6 @@ public class LibraryService {
             return true;
         } catch (IOException e) {
             throw new StoryTellerException("Failed to remove pack from library", e);
-        }
-    }
-
-    private Path createTempFile(String prefix, String suffix) throws IOException {
-        return Files.createTempFile(tmpDirPath, prefix, suffix);
-    }
-
-    private Path createTempDirectory(String prefix) throws IOException {
-        return Files.createTempDirectory(tmpDirPath, prefix);
-    }
-
-    private static void assertFormat(PackFormat inputFormat, PackFormat outputFormat) {
-        if (inputFormat == outputFormat) {
-            String msg = "Pack is already in " + outputFormat + " format";
-            LOGGER.error(msg);
-            throw new StoryTellerException(msg);
         }
     }
 

@@ -170,7 +170,6 @@ public class ArchiveStoryPackWriter implements StoryPackWriter {
             writer.endObject();
             // cleanup
             actionNodeToId.clear();
-            // writer.flush();
         }
     }
 

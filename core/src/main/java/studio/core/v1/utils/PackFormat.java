@@ -18,7 +18,7 @@ public enum PackFormat {
 
     RAW(".pack", new BinaryStoryPackReader(), new BinaryStoryPackWriter()),
 
-    FS(null, new FsStoryPackReader(), new FsStoryPackWriter());
+    FS("", new FsStoryPackReader(), new FsStoryPackWriter());
 
     /** Guess format from file input. */
     public static PackFormat fromPath(Path path) {
