@@ -16,14 +16,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import io.quarkus.test.junit.QuarkusTest;
+import studio.metadata.DatabaseMetadataDTOs.DatabasePackMetadata;
 
 @QuarkusTest
 class DatabaseMetadataServiceTest {
 
     @ConfigProperty(name = "studio.db.official")
-    Path officialDbPath;
+    Path dbOfficialPath;
     @ConfigProperty(name = "studio.db.unofficial")
-    Path unofficialDbPath;
+    Path dbLibraryPath;
 
     @Inject
     DatabaseMetadataService ms;
@@ -31,8 +32,8 @@ class DatabaseMetadataServiceTest {
     @BeforeEach
     void before() throws Exception {
         // clean json databases
-        Files.deleteIfExists(officialDbPath);
-        Files.deleteIfExists(unofficialDbPath);
+        Files.deleteIfExists(dbOfficialPath);
+        Files.deleteIfExists(dbLibraryPath);
     }
 
     @Test
@@ -42,8 +43,8 @@ class DatabaseMetadataServiceTest {
         String fakeUuid = "0-0-0-0";
         System.out.println("Test db with uuid " + fakeUuid);
         assertAll("unofficial pack " + fakeUuid, //
-                () -> assertTrue(ms.getOfficialMetadata(fakeUuid).isEmpty(), "should not be official pack"), //
-                () -> assertTrue(ms.getUnofficialMetadata(fakeUuid).isEmpty(), "should not unofficial pack"), //
+                () -> assertTrue(ms.getMetadataOfficial(fakeUuid).isEmpty(), "should not be official pack"), //
+                () -> assertTrue(ms.getMetadataLibrary(fakeUuid).isEmpty(), "should not unofficial pack"), //
                 () -> assertTrue(ms.getPackMetadata(fakeUuid).isEmpty(), "should not be a pack") //
         );
 
@@ -53,12 +54,12 @@ class DatabaseMetadataServiceTest {
         DatabasePackMetadata mpExp = new DatabasePackMetadata(newUuid, "fake", "fake pack", null, false);
         DatabasePackMetadata mpBadId = new DatabasePackMetadata("badId", "fake", "fake pack", null, false);
         // add and write to disk
-        ms.refreshUnofficialCache(mpExp);
-        ms.persistUnofficialDatabase();
+        ms.updateDatabaseLibrary(mpExp);
+        ms.persistDatabaseLibrary();
         // THEN
-        assertTrue(ms.getOfficialMetadata(newUuid).isEmpty(), "should not be official pack");
+        assertTrue(ms.getMetadataOfficial(newUuid).isEmpty(), "should not be official pack");
         DatabasePackMetadata mpAct = ms.getPackMetadata(newUuid).get();
-        DatabasePackMetadata mpAct2 = ms.getUnofficialMetadata(newUuid).get();
+        DatabasePackMetadata mpAct2 = ms.getMetadataLibrary(newUuid).get();
         DatabasePackMetadata mpActClone = mpAct;
 
         assertAll("unofficial pack " + newUuid, //
@@ -75,7 +76,7 @@ class DatabaseMetadataServiceTest {
         // WHEN reload db
         ms.init(null);
         // THEN
-        assertEquals(mpExp, ms.getUnofficialMetadata(newUuid).get(), "differs from expected");
+        assertEquals(mpExp, ms.getMetadataLibrary(newUuid).get(), "differs from expected");
     }
 
 }

@@ -80,7 +80,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
                                     LOGGER.info("FS device partition located: {}", partitionMountPoint);
                                 }
                             });
-                        } catch (IOException | InterruptedException e) {
+                        } catch (InterruptedException e) {
                             LOGGER.error("Failed to locate device partition", e);
                             Thread.currentThread().interrupt();
                         }
@@ -164,7 +164,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
                 LOGGER.debug("SD card used : {}% ({} / {})", percent, FileUtils.readableByteSize(sdCardUsedSpace), FileUtils.readableByteSize(sdCardTotalSpace) );
             }
         } catch (Exception e) {
-            return CompletableFuture.failedStage(new StoryTellerException("Failed to read device metadata on partition", e));
+            return CompletableFuture.failedStage(noMetadataPackException(e));
         }
         return CompletableFuture.completedStage(infos);
     }
@@ -206,7 +206,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
                         }
                         return packs;
                     } catch (IOException e) {
-                        throw new StoryTellerException("Failed to read pack metadata on device partition", e);
+                        throw noMetadataPackException(e);
                     }
                 });
     }
@@ -250,7 +250,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
                             throw new StoryTellerException("Packs on device do not match UUIDs");
                         }
                     } catch (Exception e) {
-                        throw new StoryTellerException("Failed to read pack metadata on device partition", e);
+                        throw noMetadataPackException(e);
                     }
                 });
     }
@@ -465,5 +465,9 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
 
     private static StoryTellerException noDevicePluggedException() {
         return new StoryTellerException("No device plugged");
+    }
+    
+    private static StoryTellerException noMetadataPackException(Exception e) {
+        return new StoryTellerException("Failed to read pack metadata on device partition", e);
     }
 }

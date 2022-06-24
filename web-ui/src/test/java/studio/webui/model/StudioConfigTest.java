@@ -24,9 +24,9 @@ class StudioConfigTest {
     Path tmpdirPath;
 
     @ConfigProperty(name = "studio.db.official")
-    Path officialDbPath;
+    Path dbOfficialPath;
     @ConfigProperty(name = "studio.db.unofficial")
-    Path unofficialDbPath;
+    Path dbLibraryPath;
 
     @ConfigProperty(name = "version")
     String version;
@@ -48,8 +48,8 @@ class StudioConfigTest {
                 () -> assertEquals(target.resolve("library"), libraryPath, "Different libraryPath"), //
                 () -> assertEquals(target.resolve("tmp"), tmpdirPath, "Different tmpdirPath"), //
                 () -> assertEquals(target.resolve("device"), devicePath, "Different devicePath"), //
-                () -> assertEquals(target.resolve("db/official.json"), officialDbPath, "Different officialDbPath"), //
-                () -> assertEquals(target.resolve("db/unofficial.json"), unofficialDbPath, "Different unofficialDbPath") //
+                () -> assertEquals(target.resolve("db/official.json"), dbOfficialPath, "Different dbOfficialPath"), //
+                () -> assertEquals(target.resolve("db/unofficial.json"), dbLibraryPath, "Different dbLibraryPath") //
         );
     }
 

@@ -1,0 +1,93 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+package studio.metadata;
+
+import java.util.Locale;
+import java.util.Map;
+import java.util.concurrent.CompletionStage;
+
+import javax.ws.rs.GET;
+import javax.ws.rs.HeaderParam;
+import javax.ws.rs.Path;
+
+import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
+
+import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.PropertyNamingStrategies;
+import com.fasterxml.jackson.databind.annotation.JsonNaming;
+
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+
+public interface DatabaseMetadataDTOs {
+
+    String THUMBNAILS_STORAGE_ROOT = "https://storage.googleapis.com/lunii-data-prod";
+
+    @RegisterRestClient(baseUri = "https://server-auth-prod.lunii.com/guest")
+    interface LuniiGuestClient {
+        @GET
+        @Path("create")
+        CompletionStage<TokenResponse> auth();
+    }
+
+    @RegisterRestClient(baseUri = "https://server-data-prod.lunii.com/v2")
+    interface LuniiPacksClient {
+        @GET
+        @Path("packs")
+        CompletionStage<PacksResponse> packs(@HeaderParam("X-AUTH-TOKEN") String token);
+    }
+
+    @Data
+    @NoArgsConstructor
+    @AllArgsConstructor
+    final class DatabasePackMetadata {
+        private String uuid;
+        private String title;
+        private String description;
+        private String thumbnail;
+        private boolean official;
+    }
+
+    @Data
+    final class TokenResponse {
+        private String token;
+
+        // Extract nested : response.token.server
+        @JsonProperty("response")
+        private void unpackToken(JsonNode response) {
+            token = response.get("token").get("server").asText();
+        }
+    }
+
+    @Data
+    final class PacksResponse {
+        private Map<String, OfficialPack> response;
+
+        @Data
+        @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
+        public static class OfficialPack {
+            private String uuid;
+            private Map<Locale, Boolean> localesAvailable;
+            private Map<Locale, Infos> localizedInfos;
+
+            @Data
+            public static class Infos {
+                private String title;
+                private String description;
+                private String thumbnail;
+
+                // Extract nested : image.image_url
+                @JsonProperty("image")
+                private void unpackImageUrl(Map<String, String> image) {
+                    thumbnail = THUMBNAILS_STORAGE_ROOT + image.get("image_url");
+                }
+            }
+        }
+    }
+}

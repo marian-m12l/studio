@@ -14,13 +14,13 @@ import org.mockito.Mockito;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.mockito.InjectMock;
+import studio.webui.model.EvergreenDTOs;
 import studio.webui.model.EvergreenDTOs.CommitDto;
 import studio.webui.model.EvergreenDTOs.CommitDto.Commit;
 import studio.webui.model.EvergreenDTOs.CommitDto.Committer;
+import studio.webui.model.EvergreenDTOs.GithubClient;
+import studio.webui.model.EvergreenDTOs.GithubRawClient;
 import studio.webui.model.EvergreenDTOs.LatestVersionDTO;
-import studio.webui.service.EvergreenService;
-import studio.webui.service.EvergreenService.GithubClient;
-import studio.webui.service.EvergreenService.GithubRawClient;
 
 @QuarkusTest
 @TestHTTPEndpoint(EvergreenController.class)
@@ -69,8 +69,8 @@ class EvergreenControllerTest {
 
         when().get("announce") //
                 .then().statusCode(200) //
-                .body("date", is(EvergreenService.DEFAULT_ANNOUNCE_DATE)) //
-                .body("content", is(EvergreenService.DEFAULT_ANNOUNCE_CONTENT));
+                .body("date", is(EvergreenDTOs.DEFAULT_ANNOUNCE_DATE)) //
+                .body("content", is(EvergreenDTOs.DEFAULT_ANNOUNCE_CONTENT));
     }
 
     @Test

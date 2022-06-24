@@ -6,243 +6,185 @@
 
 package studio.metadata;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
-import java.net.http.HttpResponse.BodyHandlers;
 import java.nio.file.Files;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.HashMap;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
+import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
+import javax.inject.Inject;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.rest.client.inject.RestClient;
 
-import com.google.gson.Gson;
-import com.google.gson.GsonBuilder;
-import com.google.gson.JsonElement;
-import com.google.gson.JsonObject;
-import com.google.gson.JsonParseException;
-import com.google.gson.JsonParser;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.vertx.mutiny.ext.web.Router;
+import studio.core.v1.utils.stream.ThrowingConsumer;
+import studio.metadata.DatabaseMetadataDTOs.DatabasePackMetadata;
+import studio.metadata.DatabaseMetadataDTOs.LuniiGuestClient;
+import studio.metadata.DatabaseMetadataDTOs.LuniiPacksClient;
+import studio.metadata.DatabaseMetadataDTOs.PacksResponse.OfficialPack.Infos;
 
 @ApplicationScoped
 public class DatabaseMetadataService {
 
     private static final Logger LOGGER = LogManager.getLogger(DatabaseMetadataService.class);
 
-    private static final String THUMBNAILS_STORAGE_ROOT = "https://storage.googleapis.com/lunii-data-prod";
-    private static final String LUNII_GUEST_TOKEN_URL = "https://server-auth-prod.lunii.com/guest/create";
-    private static final String LUNII_PACKS_DATABASE_URL = "https://server-data-prod.lunii.com/v2/packs";
+    @RestClient
+    LuniiGuestClient luniiGuestClient;
+
+    @RestClient
+    LuniiPacksClient luniiPacksClient;
+
+    @Inject
+    ObjectMapper objectMapper;
 
     @ConfigProperty(name = "studio.db.official")
-    Path officialDbPath;
+    Path dbOfficialPath;
 
     @ConfigProperty(name = "studio.db.unofficial")
-    Path unofficialDbPath;
+    Path dbLibraryPath;
 
-    // databases caches : <uuid, packMetadata>
-    private Map<String, JsonObject> cachedOfficialDatabase = new HashMap<>();
-    private JsonObject unofficialJsonCache;
+    // databases caches
+    private Map<String, DatabasePackMetadata> dbLibraryCache;
+    private Map<String, DatabasePackMetadata> dbOfficialCache;
     private long lastModifiedCache = 0;
 
     public void init(@Observes Router router) {
         try {
             // Read official metadata database file
-            LOGGER.info("Reading official metadata in {}", officialDbPath);
-            String jsonString = Files.readString(officialDbPath);
-            JsonObject jsonRoot = JsonParser.parseString(jsonString).getAsJsonObject();
-            // Support newer file which has an additional wrapper: { "code": "0.0",
-            // "response": { ...
-            JsonObject packsRoot = jsonRoot.has("response") ? jsonRoot.getAsJsonObject("response") : jsonRoot;
-            if (packsRoot == null) {
-                throw new IllegalStateException("Failed to get json root node");
-            }
-            // Refresh cache
-            refreshOfficialCache(packsRoot);
-        } catch (NoSuchFileException e) {
+            LOGGER.info("Reading official metadata in {}", dbOfficialPath);
+            dbOfficialCache = readDatabaseFile(dbOfficialPath);
+        } catch (FileNotFoundException e) {
             // create if missing
             fetchOfficialDatabase();
-        } catch (IOException | JsonParseException | IllegalStateException e) {
+        } catch (IOException e) {
             // Graceful failure on invalid file content
             LOGGER.warn("Official metadata database file is invalid", e);
             fetchOfficialDatabase();
         }
 
         try {
-            LOGGER.info("Reading unofficial database in {}", unofficialDbPath);
-            // Initialize empty unofficial database if needed
-            if (!Files.isRegularFile(unofficialDbPath)) {
-                unofficialJsonCache = new JsonObject();
+            LOGGER.info("Reading library database in {}", dbLibraryPath);
+            if (Files.isRegularFile(dbLibraryPath)) {
+                // Read json from disk
+                dbLibraryCache = readDatabaseFile(dbLibraryPath);
+            } else {
+                // Initialize empty database
+                dbLibraryCache = new HashMap<>();
                 lastModifiedCache = System.currentTimeMillis();
-                persistUnofficialDatabase();
-                return;
             }
-            // Read json from disk
-            String jsonString = Files.readString(unofficialDbPath);
-            unofficialJsonCache = JsonParser.parseString(jsonString).getAsJsonObject();
-            // Otherwise clear unofficial database from official packs metadata
-            LOGGER.debug("Cleaning unofficial database.");
-            // Remove official packs from unofficial metadata database file
-            for (String uuid : unofficialJsonCache.keySet()) {
-                if (isOfficialPack(uuid)) {
-                    unofficialJsonCache.remove(uuid);
-                    lastModifiedCache = System.currentTimeMillis();
-                }
+            // Remove official packs from library database
+            LOGGER.debug("Cleaning library database.");
+            if (dbLibraryCache.keySet().removeAll(dbOfficialCache.keySet())) {
+                LOGGER.warn("Removing official packs found in library database!");
+                lastModifiedCache = System.currentTimeMillis();
             }
-            persistUnofficialDatabase();
+            // write to disk
+            persistDatabaseLibrary();
         } catch (IOException e) {
-            LOGGER.error("Failed to initialize unofficial metadata database", e);
-            throw new IllegalStateException("Failed to initialize unofficial metadata database");
+            throw new IllegalStateException("Failed to initialize library database", e);
         }
     }
 
     public Optional<DatabasePackMetadata> getPackMetadata(String uuid) {
         LOGGER.debug("Fetching metadata for pack: {}", uuid);
-        return getOfficialMetadata(uuid).or(() -> getUnofficialMetadata(uuid));
+        return getMetadataOfficial(uuid).or(() -> getMetadataLibrary(uuid));
     }
 
-    public boolean isOfficialPack(String uuid) {
+    private boolean isOfficialPack(String uuid) {
         LOGGER.debug("Looking in official database for pack: {}", uuid);
-        return cachedOfficialDatabase.containsKey(uuid);
+        return dbOfficialCache.containsKey(uuid);
     }
 
-    private void refreshOfficialCache(JsonObject packsRoot) {
-        for (String key : packsRoot.keySet()) {
-            JsonObject packMetadata = packsRoot.getAsJsonObject(key);
-            String uuid = packMetadata.get("uuid").getAsString();
-            cachedOfficialDatabase.put(uuid, packMetadata);
-        }
-    }
-
-    public Optional<DatabasePackMetadata> getOfficialMetadata(String uuid) {
+    public Optional<DatabasePackMetadata> getMetadataOfficial(String uuid) {
         LOGGER.debug("Fetching metadata from official database for pack: {}", uuid);
-        // missing
-        if (!isOfficialPack(uuid)) {
-            return Optional.empty();
-        }
-        return Optional.ofNullable(cachedOfficialDatabase.get(uuid)).map(packMetadata -> {
-            Set<String> localesAvailable = packMetadata.getAsJsonObject("locales_available").keySet();
-            String locale = localesAvailable.contains("fr_FR") ? "fr_FR" : localesAvailable.iterator().next();
-            JsonObject localizedInfos = packMetadata.getAsJsonObject("localized_infos").getAsJsonObject(locale);
-            return new DatabasePackMetadata(uuid, localizedInfos.get("title").getAsString(),
-                    localizedInfos.get("description").getAsString(),
-                    THUMBNAILS_STORAGE_ROOT + localizedInfos.getAsJsonObject("image").get("image_url").getAsString(),
-                    true);
-        });
+        return Optional.ofNullable(dbOfficialCache.get(uuid));
     }
 
-    public Optional<DatabasePackMetadata> getUnofficialMetadata(String uuid) {
-        LOGGER.debug("Fetching metadata from unofficial database for pack: {}", uuid);
-        // Fetch from unofficial metadata cache database
-        if (unofficialJsonCache.has(uuid)) {
-            LOGGER.debug("Unofficial metadata found for pack: {}", uuid);
-            JsonObject packMetadata = unofficialJsonCache.getAsJsonObject(uuid);
-            return Optional.of(new DatabasePackMetadata(uuid,
-                    Optional.ofNullable(packMetadata.get("title")).map(JsonElement::getAsString).orElse(null),
-                    Optional.ofNullable(packMetadata.get("description")).map(JsonElement::getAsString).orElse(null),
-                    Optional.ofNullable(packMetadata.get("image")).map(JsonElement::getAsString).orElse(null), false));
-        }
-        // Missing metadata
-        return Optional.empty();
+    public Optional<DatabasePackMetadata> getMetadataLibrary(String uuid) {
+        LOGGER.debug("Fetching metadata from library database for pack: {}", uuid);
+        return Optional.ofNullable(dbLibraryCache.get(uuid));
     }
 
     private void fetchOfficialDatabase() {
-        try {
-            JsonObject resJson;
-            LOGGER.debug("Fetching official metadata database");
-            // Get a guest token
-            resJson = restGet(LUNII_GUEST_TOKEN_URL, null);
-            String token = resJson.getAsJsonObject("response").getAsJsonObject("token").get("server").getAsString();
-            LOGGER.debug("Guest token: {}", token);
-
-            // Call service to fetch metadata for all packs
-            resJson = restGet(LUNII_PACKS_DATABASE_URL, token);
-            JsonObject packsJson = resJson.get("response").getAsJsonObject();
-            // Try and update official database
-            LOGGER.info("Fetched metadata, updating local database");
-
-            // Update official database on RAM
-            refreshOfficialCache(packsJson);
-            // Update official database on disk
-            Files.createDirectories(officialDbPath.getParent());
-            writeDatabaseFile(officialDbPath, packsJson);
-        } catch (IOException e) {
-            LOGGER.error("Failed to fetch official metadata database.", e);
-        }
+        // default value
+        dbOfficialCache = new HashMap<>();
+        LOGGER.info("Fetching official database.");
+        luniiGuestClient.auth() // get token
+                .thenCompose(res -> luniiPacksClient.packs(res.getToken())) // get packs
+                .thenApply(res -> res.getResponse().values()) // get OfficialPack list
+                // convert OfficialPack to DatabasePackMetadata
+                .thenAccept(ThrowingConsumer.unchecked(packs -> {
+                    dbOfficialCache = packs.stream().map(op -> {
+                        var locales = op.getLocalesAvailable().keySet();
+                        Locale l = locales.contains(Locale.FRANCE) ? Locale.FRANCE : locales.iterator().next();
+                        Infos i = op.getLocalizedInfos().get(l);
+                        return new DatabasePackMetadata(op.getUuid(), i.getTitle(), i.getDescription(),
+                                i.getThumbnail(), true);
+                    }).filter(pm -> {
+                        LOGGER.debug("Official pack: {} {}", pm.getUuid(), pm.getTitle());
+                        return true;
+                    }).collect(Collectors.toMap(DatabasePackMetadata::getUuid, pm -> pm, (o1, o2) -> o1));
+                    // cache to disk
+                    writeDatabaseFile(dbOfficialPath, dbOfficialCache);
+                })) //
+                .whenComplete((result, e) -> {
+                    if (e != null) {
+                        throw new IllegalStateException("Failed to initialize official database", e);
+                    } else {
+                        LOGGER.info("Fetched metadata, local database updated");
+                    }
+                });
     }
 
-    public void refreshUnofficialCache(DatabasePackMetadata meta) {
-        // Refresh unofficial database only if the pack isn't an official one
-        if (isOfficialPack(meta.getUuid())) {
+    public void updateDatabaseLibrary(DatabasePackMetadata meta) {
+        String uuid = meta.getUuid();
+        // Refresh library database only if the pack isn't an official one
+        if (isOfficialPack(uuid)) {
             return;
         }
-        // Update unofficial database
-        String uuid = meta.getUuid();
-        LOGGER.debug("Updating unofficial metadata cache for {}", uuid);
+        LOGGER.debug("Updating library metadata cache for {}", uuid);
         // Find old value
-        JsonObject oldValue = null;
-        if (unofficialJsonCache.has(uuid)) {
-            oldValue = unofficialJsonCache.getAsJsonObject(uuid);
-        }
-        // New pack metadata
-        JsonObject newValue = new JsonObject();
-        newValue.addProperty("uuid", uuid);
-        Optional.ofNullable(meta.getTitle()).ifPresent(t -> newValue.addProperty("title", t));
-        Optional.ofNullable(meta.getDescription()).ifPresent(t -> newValue.addProperty("description", t));
-        Optional.ofNullable(meta.getThumbnail()).ifPresent(t -> newValue.addProperty("image", t));
+        DatabasePackMetadata oldMeta = dbLibraryCache.get(uuid);
         // Need cache update if different
-        if (!newValue.equals(oldValue)) {
+        if (!meta.equals(oldMeta)) {
             LOGGER.info("Cache updating of {}", uuid);
             lastModifiedCache = System.currentTimeMillis();
-            unofficialJsonCache.add(uuid, newValue);
+            dbLibraryCache.put(uuid, meta);
         }
     }
 
-    public void persistUnofficialDatabase() throws IOException {
+    public void persistDatabaseLibrary() throws IOException {
         // file last modified time
         long lastModifiedFile = -1l;
-        if (Files.isRegularFile(unofficialDbPath)) {
-            lastModifiedFile = Files.getLastModifiedTime(unofficialDbPath).toMillis();
+        if (Files.isRegularFile(dbLibraryPath)) {
+            lastModifiedFile = Files.getLastModifiedTime(dbLibraryPath).toMillis();
         }
         // if cache updated, write json database to file
         if (lastModifiedCache > lastModifiedFile) {
-            LOGGER.info("Persisting unofficial database to disk");
-            writeDatabaseFile(unofficialDbPath, unofficialJsonCache);
+            LOGGER.info("Persisting library database to disk");
+            writeDatabaseFile(dbLibraryPath, dbLibraryCache);
         }
     }
 
-    private static void writeDatabaseFile(Path databasePath, JsonObject json) throws IOException {
-        Gson gson = new GsonBuilder().setPrettyPrinting().create();
-        Files.writeString(databasePath, gson.toJson(json));
+    private Map<String, DatabasePackMetadata> readDatabaseFile(Path dbPath) throws IOException {
+        return objectMapper.readValue(dbPath.toFile(), new TypeReference<Map<String, DatabasePackMetadata>>() {
+        });
     }
 
-    private static JsonObject restGet(String url, String token) {
-        // client request
-        HttpClient httpClient = HttpClient.newHttpClient();
-        HttpRequest.Builder reqBuilder = HttpRequest.newBuilder(URI.create(url)) //
-                .GET().header("Accept", "application/json").timeout(Duration.ofSeconds(10));
-        // add token
-        if (token != null) {
-            reqBuilder.header("X-AUTH-TOKEN", token);
-        }
-        // http call
-        return httpClient.sendAsync(reqBuilder.build(), BodyHandlers.ofString()) //
-                .thenApply(HttpResponse::body) //
-                .thenApply(JsonParser::parseString) //
-                .thenApply(JsonElement::getAsJsonObject) //
-                .join();
+    private void writeDatabaseFile(Path dbPath, Map<String, DatabasePackMetadata> dbCache) throws IOException {
+        Files.createDirectories(dbPath.getParent());
+        objectMapper.writeValue(dbPath.toFile(), dbCache);
     }
-
 }

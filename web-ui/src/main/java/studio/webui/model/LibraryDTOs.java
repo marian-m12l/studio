@@ -19,49 +19,49 @@ import studio.core.v1.model.metadata.StoryPackMetadata;
 public interface LibraryDTOs {
 
     @Value
-    public static class LibraryPackDTO {
+    static class LibraryPackDTO {
         private Path path;
         private long timestamp;
         private StoryPackMetadata metadata;
     }
 
     @Value
-    public static class TransferDTO {
+    static class TransferDTO {
         private String transferId;
     }
 
     @Value
-    public static class SuccessDTO {
+    static class SuccessDTO {
         private boolean success;
     }
 
     @Data
-    public static class PathDTO {
+    static final class PathDTO {
         private String path;
     }
 
     @Value
-    public static class SuccessPathDTO {
+    static class SuccessPathDTO {
         private boolean success;
         private String path;
     }
 
     @Data
-    public static class PackDTO {
+    static final class PackDTO {
         private String path;
         private boolean allowEnriched;
         private String format;
     }
 
     @Value
-    public static class UuidPacksDTO {
+    static class UuidPacksDTO {
         private String uuid;
         private List<MetaPackDTO> packs;
     }
 
     @Data
     @JsonInclude(Include.NON_NULL)
-    public static class MetaPackDTO {
+    static final class MetaPackDTO {
         private String format; // PackFormat (in lowercase)
         private String uuid;
         private short version;

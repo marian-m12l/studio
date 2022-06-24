@@ -34,8 +34,8 @@ import studio.core.v1.utils.PackAssetsCompression;
 import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.exception.StoryTellerException;
 import studio.driver.fs.FileUtils;
+import studio.metadata.DatabaseMetadataDTOs.DatabasePackMetadata;
 import studio.metadata.DatabaseMetadataService;
-import studio.metadata.DatabasePackMetadata;
 import studio.webui.model.LibraryDTOs.LibraryPackDTO;
 import studio.webui.model.LibraryDTOs.MetaPackDTO;
 import studio.webui.model.LibraryDTOs.PathDTO;
@@ -125,7 +125,7 @@ public class LibraryService {
                                             meta.getTitle());
                                     String thumbBase64 = Optional.ofNullable(meta.getThumbnail()).map(this::base64)
                                             .orElse(null);
-                                    databaseMetadataService.refreshUnofficialCache(new DatabasePackMetadata( //
+                                    databaseMetadataService.updateDatabaseLibrary(new DatabasePackMetadata( //
                                             meta.getUuid(), meta.getTitle(), meta.getDescription(), thumbBase64,
                                             false));
                                 });
@@ -138,7 +138,7 @@ public class LibraryService {
                     }) //
                     .collect(Collectors.toList());
             // persist unofficial database cache (if needed)
-            databaseMetadataService.persistUnofficialDatabase();
+            databaseMetadataService.persistDatabaseLibrary();
             return jsonMetasByUuid;
         } catch (IOException e) {
             LOGGER.error("Failed to read packs from local library", e);

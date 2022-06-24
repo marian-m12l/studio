@@ -9,24 +9,24 @@ import lombok.Value;
 public interface DeviceDTOs {
 
     @Data
-    public static class UuidDTO {
+    static final class UuidDTO {
         private String uuid;
         private String path;
         private String driver; // PackFormat (in lowercase)
     }
 
     @Data
-    public static class UuidsDTO {
+    static final class UuidsDTO {
         private List<String> uuids;
     }
 
     @Value
-    public static class OutputDTO {
+    static class OutputDTO {
         private Path outputPath;
     }
 
     @Data
-    public static class DeviceInfosDTO {
+    static final class DeviceInfosDTO {
         private String uuid;
         private String serial;
         private String firmware;
