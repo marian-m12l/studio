@@ -12,49 +12,58 @@ import java.util.List;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
+import lombok.AllArgsConstructor;
 import lombok.Data;
-import lombok.Value;
+import lombok.Getter;
+import lombok.Setter;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 
 public interface LibraryDTOs {
 
-    @Value
-    static class LibraryPackDTO {
+    @Getter
+    @AllArgsConstructor
+    final class LibraryPackDTO {
         private Path path;
         private long timestamp;
         private StoryPackMetadata metadata;
     }
 
-    @Value
-    static class TransferDTO {
+    @Getter
+    @AllArgsConstructor
+    final class TransferDTO {
         private String transferId;
     }
 
-    @Value
-    static class SuccessDTO {
+    @Getter
+    @AllArgsConstructor
+    final class SuccessDTO {
         private boolean success;
     }
 
-    @Data
-    static final class PathDTO {
+    @Getter
+    @Setter
+    final class PathDTO {
         private String path;
     }
 
-    @Value
-    static class SuccessPathDTO {
+    @Getter
+    @AllArgsConstructor
+    final class SuccessPathDTO {
         private boolean success;
         private String path;
     }
 
-    @Data
-    static final class PackDTO {
+    @Getter
+    @Setter
+    final class PackDTO {
         private String path;
         private boolean allowEnriched;
         private String format;
     }
 
-    @Value
-    static class UuidPacksDTO {
+    @Getter
+    @AllArgsConstructor
+    final class UuidPacksDTO {
         private String uuid;
         private List<MetaPackDTO> packs;
     }

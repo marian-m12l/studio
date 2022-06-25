@@ -79,10 +79,7 @@ class EvergreenControllerTest {
         String content = "Hello world!";
 
         // 1 commit -> latest
-        Commit cc = new Commit();
-        cc.setCommitter(new Committer("hello", date));
-        CommitDto commitDto = new CommitDto();
-        commitDto.setCommit(cc);
+        CommitDto commitDto = new CommitDto(new Commit(new Committer("hello", date)));
         Mockito.when(githubClient.commits("ANNOUNCE.md")) //
                 .thenReturn(CompletableFuture.completedStage(Arrays.asList(commitDto)));
         Mockito.when(githubRawClient.announce()) //

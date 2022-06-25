@@ -23,7 +23,9 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 public interface DatabaseMetadataDTOs {
 
@@ -54,7 +56,7 @@ public interface DatabaseMetadataDTOs {
         private boolean official;
     }
 
-    @Data
+    @Getter
     final class TokenResponse {
         private String token;
 
@@ -65,19 +67,22 @@ public interface DatabaseMetadataDTOs {
         }
     }
 
-    @Data
+    @Getter
+    @Setter
     final class PacksResponse {
         private Map<String, OfficialPack> response;
 
-        @Data
+        @Getter
+        @Setter
         @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-        public static class OfficialPack {
+        static final class OfficialPack {
             private String uuid;
             private Map<Locale, Boolean> localesAvailable;
             private Map<Locale, Infos> localizedInfos;
 
-            @Data
-            public static class Infos {
+            @Getter
+            @Setter
+            static final class Infos {
                 private String title;
                 private String description;
                 private String thumbnail;

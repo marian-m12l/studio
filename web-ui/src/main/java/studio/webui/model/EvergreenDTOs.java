@@ -12,8 +12,8 @@ import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
-import lombok.Data;
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
 
 public interface EvergreenDTOs {
 
@@ -40,37 +40,43 @@ public interface EvergreenDTOs {
         CompletionStage<String> announce();
     }
 
-    @Value
-    static class AnnounceDTO {
+    @Getter
+    @AllArgsConstructor
+    final class AnnounceDTO {
         private String date;
         private String content;
     }
 
-    @Value
-    static class VersionDTO {
+    @Getter
+    @AllArgsConstructor
+    final class VersionDTO {
         private String version;
         private String timestamp;
     }
 
-    @Value
+    @Getter
+    @AllArgsConstructor
     @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
-    static class LatestVersionDTO {
+    final class LatestVersionDTO {
         private String name;
         private String publishedAt;
         private String htmlUrl;
     }
 
-    @Data
-    static final class CommitDto {
+    @Getter
+    @AllArgsConstructor
+    final class CommitDto {
         private Commit commit;
 
-        @Data
-        public static class Commit {
+        @Getter
+        @AllArgsConstructor
+        public static final class Commit {
             private Committer committer;
         }
 
-        @Value
-        public static class Committer {
+        @Getter
+        @AllArgsConstructor
+        public static final class Committer {
             private String name;
             private String date;
         }
