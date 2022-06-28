@@ -15,20 +15,22 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.usb4java.Device;
 
-import io.quarkus.arc.profile.UnlessBuildProfile;
+import io.quarkus.arc.profile.IfBuildProfile;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.SecurityUtils;
 import studio.core.v1.utils.exception.StoryTellerException;
 import studio.driver.StoryTellerAsyncDriver;
+import studio.driver.event.DevicePluggedListener;
+import studio.driver.event.DeviceUnpluggedListener;
 import studio.driver.fs.FsStoryTellerAsyncDriver;
 import studio.driver.model.StoryPackInfos;
 import studio.driver.model.fs.FsDeviceInfos;
@@ -42,8 +44,8 @@ import studio.webui.model.DeviceDTOs.DeviceInfosDTO;
 import studio.webui.model.DeviceDTOs.DeviceInfosDTO.StorageDTO;
 import studio.webui.model.LibraryDTOs.MetaPackDTO;
 
-@UnlessBuildProfile("dev")
-@ApplicationScoped
+@IfBuildProfile("prod")
+@Singleton
 public class StoryTellerService implements IStoryTellerService {
 
     private static final Logger LOGGER = LogManager.getLogger(StoryTellerService.class);
@@ -56,78 +58,62 @@ public class StoryTellerService implements IStoryTellerService {
 
     private RawStoryTellerAsyncDriver rawDriver;
     private FsStoryTellerAsyncDriver fsDriver;
-    private Device rawDevice;
-    private Device fsDevice;
 
     public StoryTellerService() {
         LOGGER.info("Setting up story teller driver");
-        rawDriver = new RawStoryTellerAsyncDriver();
-        fsDriver = new FsStoryTellerAsyncDriver();
 
         // React when a device with firmware 1.x is plugged or unplugged
-        rawDriver.registerDeviceListener( //
-                device -> {
-                    if (device == null) {
-                        LOGGER.error("Device 1.x plugged but got null device");
-                        // Send 'failure' event on bus
-                        sendFailure();
-                    } else {
-                        LOGGER.info("Device 1.x plugged");
-                        StoryTellerService.this.rawDevice = device;
-                        CompletableFuture.runAsync(() -> rawDriver.getDeviceInfos().handle((infos, e) -> {
-                            if (e != null) {
-                                LOGGER.error("Failed to plug device 1.x", e);
-                                // Send 'failure' event on bus
-                                sendFailure();
-                            } else {
-                                // Send 'plugged' event on bus
-                                sendDevicePlugged(toDto(infos));
-                            }
-                            return null;
-                        }));
-                    }
-                }, //
-                device -> {
-                    LOGGER.info("Device 1.x unplugged");
-                    StoryTellerService.this.rawDevice = null;
-                    sendDeviceUnplugged();
-                });
+        rawDriver = new RawStoryTellerAsyncDriver();
+        DeviceListener dev1Listener = new DeviceListener("1.x");
+        rawDriver.registerDeviceListener(dev1Listener, dev1Listener);
 
         // React when a device with firmware 2.x is plugged or unplugged
-        fsDriver.registerDeviceListener( //
-                device -> {
-                    if (device == null) {
-                        LOGGER.error("Device 2.x plugged but got null device");
+        fsDriver = new FsStoryTellerAsyncDriver();
+        DeviceListener dev2Listener = new DeviceListener("2.x");
+        fsDriver.registerDeviceListener(dev2Listener, dev2Listener);
+    }
+
+    /** Generic DeviceListener (for 1.x or 2.x). */
+    private class DeviceListener implements DevicePluggedListener, DeviceUnpluggedListener {
+        private final String version;
+
+        private DeviceListener(String version) {
+            this.version = version;
+        }
+
+        @Override
+        public void onDevicePlugged(Device device) {
+            if (device == null) {
+                LOGGER.error("Device {} plugged but got null device", version);
+                // Send 'failure' event on bus
+                sendFailure();
+            } else {
+                LOGGER.info("Device {} plugged", version);
+                deviceInfos().whenComplete((infos, e) -> {
+                    if (e != null) {
+                        LOGGER.atError().withThrowable(e).log("Failed to plug device {}", version);
                         // Send 'failure' event on bus
                         sendFailure();
                     } else {
-                        LOGGER.info("Device 2.x plugged");
-                        StoryTellerService.this.fsDevice = device;
-                        CompletableFuture.runAsync(() -> fsDriver.getDeviceInfos().handle((infos, e) -> {
-                            if (e != null) {
-                                LOGGER.error("Failed to plug device 2.x", e);
-                                // Send 'failure' event on bus
-                                sendFailure();
-                            } else {
-                                // Send 'plugged' event on bus
-                                sendDevicePlugged(toDto(infos));
-                            }
-                            return null;
-                        }));
+                        // Send 'plugged' event on bus
+                        sendDevicePlugged(infos);
                     }
-                }, //
-                device -> {
-                    LOGGER.info("Device 2.x unplugged");
-                    StoryTellerService.this.fsDevice = null;
-                    sendDeviceUnplugged();
                 });
+            }
+        }
+
+        @Override
+        public void onDeviceUnplugged(Device device) {
+            LOGGER.info("Device {} unplugged", version);
+            sendDeviceUnplugged();
+        }
     }
 
     public CompletionStage<DeviceInfosDTO> deviceInfos() {
-        if (rawDevice != null) {
+        if (rawDriver.hasDevice()) {
             return rawDriver.getDeviceInfos().thenApply(this::toDto);
         }
-        if (fsDevice != null) {
+        if (fsDriver.hasDevice()) {
             return fsDriver.getDeviceInfos().thenApply(this::toDto);
         }
         DeviceInfosDTO failed = new DeviceInfosDTO();
@@ -136,57 +122,57 @@ public class StoryTellerService implements IStoryTellerService {
     }
 
     public CompletionStage<List<MetaPackDTO>> packs() {
-        if (rawDevice != null) {
+        if (rawDriver.hasDevice()) {
             return rawDriver.getPacksList().thenApply(p -> p.stream().map(this::toDto).collect(Collectors.toList()));
         }
-        if (fsDevice != null) {
+        if (fsDriver.hasDevice()) {
             return fsDriver.getPacksList().thenApply(p -> p.stream().map(this::toDto).collect(Collectors.toList()));
         }
         return CompletableFuture.completedStage(Arrays.asList());
     }
 
     public CompletionStage<String> addPack(String uuid, Path packFile) {
-        if (rawDevice != null) {
+        if (rawDriver.hasDevice()) {
             return rawDriver.getPacksList().thenApply(packs -> upload(packs, rawDriver, uuid, packFile));
         }
-        if (fsDevice != null) {
+        if (fsDriver.hasDevice()) {
             return fsDriver.getPacksList().thenApply(packs -> upload(packs, fsDriver, uuid, packFile));
         }
         return CompletableFuture.completedStage(uuid);
     }
 
     public CompletionStage<Boolean> deletePack(String uuid) {
-        if (rawDevice != null) {
+        if (rawDriver.hasDevice()) {
             return rawDriver.deletePack(uuid);
         }
-        if (fsDevice != null) {
+        if (fsDriver.hasDevice()) {
             return fsDriver.deletePack(uuid);
         }
         return CompletableFuture.completedStage(false);
     }
 
     public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
-        if (rawDevice != null) {
+        if (rawDriver.hasDevice()) {
             return rawDriver.reorderPacks(uuids);
         }
-        if (fsDevice != null) {
+        if (fsDriver.hasDevice()) {
             return fsDriver.reorderPacks(uuids);
         }
         return CompletableFuture.completedStage(false);
     }
 
     public CompletionStage<String> extractPack(String uuid, Path packFile) {
-        if (rawDevice != null) {
+        if (rawDriver.hasDevice()) {
             return CompletableFuture.completedStage(download(rawDriver, uuid, packFile));
         }
-        if (fsDevice != null) {
+        if (fsDriver.hasDevice()) {
             return CompletableFuture.completedStage(download(fsDriver, uuid, packFile));
         }
         return CompletableFuture.completedStage(uuid);
     }
 
     public CompletionStage<Void> dump(Path outputPath) {
-        if (rawDevice != null) {
+        if (rawDriver.hasDevice()) {
             return rawDriver.dump(outputPath);
         }
         // unavailable for fsDevice

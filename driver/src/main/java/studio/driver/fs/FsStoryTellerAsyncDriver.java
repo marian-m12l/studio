@@ -57,7 +57,6 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
     private static final long FS_MOUNTPOINT_POLL_DELAY = 1000L;
     private static final long FS_MOUNTPOINT_RETRY = 10;
 
-
     private Device device = null;
     private Path partitionMountPoint = null;
     private List<DevicePluggedListener> pluggedlisteners = new ArrayList<>();
@@ -89,29 +88,30 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
                         throw new StoryTellerException("Could not locate device partition");
                     }
                     // Update device reference
-                    FsStoryTellerAsyncDriver.this.device = device2;
+                    device = device2;
                     // Notify listeners
-                    FsStoryTellerAsyncDriver.this.pluggedlisteners.forEach(l -> l.onDevicePlugged(device2));
+                    pluggedlisteners.forEach(l -> l.onDevicePlugged(device2));
                 }, //
                 device2 -> {
                     // Update device reference
-                    FsStoryTellerAsyncDriver.this.device = null;
-                    FsStoryTellerAsyncDriver.this.partitionMountPoint = null;
+                    device = null;
+                    partitionMountPoint = null;
                     // Notify listeners
-                    FsStoryTellerAsyncDriver.this.unpluggedlisteners.forEach(l -> l.onDeviceUnplugged(device2));
+                    unpluggedlisteners.forEach(l -> l.onDeviceUnplugged(device2));
                 });
+    }
+
+    public boolean hasDevice() {
+        return device != null;
     }
 
     public void registerDeviceListener(DevicePluggedListener pluggedlistener, DeviceUnpluggedListener unpluggedlistener) {
         this.pluggedlisteners.add(pluggedlistener);
         this.unpluggedlisteners.add(unpluggedlistener);
-        if (this.device != null) {
-            pluggedlistener.onDevicePlugged(this.device);
-        }
     }
 
     public CompletionStage<FsDeviceInfos> getDeviceInfos() {
-        if (this.device == null || this.partitionMountPoint == null) {
+        if (!hasDevice() || this.partitionMountPoint == null) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         FsDeviceInfos infos = new FsDeviceInfos();
@@ -170,7 +170,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
     }
 
     public CompletionStage<List<FsStoryPackInfos>> getPacksList() {
-        if (this.device == null || this.partitionMountPoint == null) {
+        if (!hasDevice() || this.partitionMountPoint == null) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
 
@@ -232,7 +232,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
 
 
     public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
-        if (this.device == null || this.partitionMountPoint == null) {
+        if (!hasDevice() || this.partitionMountPoint == null) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
 
@@ -256,7 +256,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
     }
 
     public CompletionStage<Boolean> deletePack(String uuid) {
-        if (this.device == null || this.partitionMountPoint == null) {
+        if (!hasDevice() || this.partitionMountPoint == null) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
 
@@ -311,7 +311,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
     }
 
     public CompletionStage<TransferStatus> downloadPack(String uuid, Path destPath, TransferProgressListener listener) {
-        if (this.device == null || this.partitionMountPoint == null) {
+        if (!hasDevice() || this.partitionMountPoint == null) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         return readPackIndex()
@@ -343,10 +343,9 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver<FsDevice
     }
 
     public CompletionStage<TransferStatus> uploadPack(String uuid, Path inputPath, TransferProgressListener listener) {
-        if (this.device == null || this.partitionMountPoint == null) {
+        if (!hasDevice() || this.partitionMountPoint == null) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
-
         try {
             // Check free space
             long folderSize = FileUtils.getFolderSize(inputPath);

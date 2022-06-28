@@ -77,9 +77,7 @@ public interface EvergreenDTOs {
         @Getter
         @AllArgsConstructor
         public static final class Committer {
-            private String name;
             private String date;
         }
     }
-
 }

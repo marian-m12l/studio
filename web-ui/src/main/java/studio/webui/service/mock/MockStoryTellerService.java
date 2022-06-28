@@ -15,7 +15,6 @@ import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -26,15 +25,15 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import io.quarkus.arc.profile.IfBuildProfile;
+import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.ext.web.Router;
@@ -49,8 +48,8 @@ import studio.webui.model.DeviceDTOs.DeviceInfosDTO.StorageDTO;
 import studio.webui.model.LibraryDTOs.MetaPackDTO;
 import studio.webui.service.IStoryTellerService;
 
-@IfBuildProfile("dev")
-@ApplicationScoped
+@UnlessBuildProfile("prod")
+@Singleton
 public class MockStoryTellerService implements IStoryTellerService {
 
     private static final Logger LOGGER = LogManager.getLogger(MockStoryTellerService.class);
@@ -83,44 +82,24 @@ public class MockStoryTellerService implements IStoryTellerService {
     }
 
     public CompletionStage<List<MetaPackDTO>> packs() {
-        // Check that mocked device folder exists
-        if (!Files.isDirectory(devicePath)) {
-            return CompletableFuture.completedStage(Arrays.asList());
-        }
         return readPackIndex(devicePath).thenApply(p -> p.stream().map(this::toDto).collect(Collectors.toList()));
     }
 
     public CompletionStage<String> addPack(String uuid, Path packFile) {
-        // Check that mocked device folder exists
-        if (!Files.isDirectory(devicePath)) {
-            return CompletableFuture.completedStage(uuid);
-        }
         Path destFile = devicePath.resolve(uuid + PackFormat.RAW.getExtension());
         return copyPack("add pack", packFile, destFile);
     }
 
     public CompletionStage<String> extractPack(String uuid, Path destFile) {
-        // Check that mocked device folder exists
-        if (!Files.isDirectory(devicePath)) {
-            return CompletableFuture.completedStage(uuid);
-        }
         Path packFile = devicePath.resolve(uuid + PackFormat.RAW.getExtension());
         return copyPack("extract pack", packFile, destFile);
     }
 
     public CompletionStage<Boolean> deletePack(String uuid) {
-        // Check that mocked device folder exists
-        if (!Files.isDirectory(devicePath)) {
-            return CompletableFuture.completedStage(false);
-        }
         try {
             Path packFile = devicePath.resolve(uuid + PackFormat.RAW.getExtension());
-            if (Files.deleteIfExists(packFile)) {
-                return CompletableFuture.completedStage(true);
-            } else {
-                LOGGER.error("Cannot remove pack from mocked device because it is not in the folder");
-                return CompletableFuture.completedStage(false);
-            }
+            LOGGER.warn("Remove pack {}", packFile);
+            return CompletableFuture.completedStage(Files.deleteIfExists(packFile));
         } catch (IOException e) {
             LOGGER.error("Failed to remove pack from mocked device", e);
             return CompletableFuture.completedStage(false);
@@ -128,13 +107,11 @@ public class MockStoryTellerService implements IStoryTellerService {
     }
 
     public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
-        // Not supported
         LOGGER.warn("Not supported : reorderPacks");
         return CompletableFuture.completedStage(false);
     }
 
     public CompletionStage<Void> dump(Path outputPath) {
-        // Not supported
         LOGGER.warn("Not supported : dump");
         return CompletableFuture.completedStage(null);
     }

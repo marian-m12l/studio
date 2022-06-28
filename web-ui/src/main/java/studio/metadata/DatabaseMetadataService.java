@@ -6,10 +6,12 @@
 
 package studio.metadata;
 
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.FileTime;
+import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
@@ -64,10 +66,13 @@ public class DatabaseMetadataService {
         try {
             // Read official metadata database file
             LOGGER.info("Reading official metadata in {}", dbOfficialPath);
-            dbOfficialCache = readDatabaseFile(dbOfficialPath);
-        } catch (FileNotFoundException e) {
-            // create if missing
-            fetchOfficialDatabase();
+            if (Files.notExists(dbOfficialPath) || olderThanDays(Files.getLastModifiedTime(dbOfficialPath), 15)) {
+                // (re-)create json
+                fetchOfficialDatabase();
+            } else {
+                // Read json from disk
+                dbOfficialCache = readDatabaseFile(dbOfficialPath);
+            }
         } catch (IOException e) {
             // Graceful failure on invalid file content
             LOGGER.warn("Official metadata database file is invalid", e);
@@ -76,13 +81,13 @@ public class DatabaseMetadataService {
 
         try {
             LOGGER.info("Reading library database in {}", dbLibraryPath);
-            if (Files.isRegularFile(dbLibraryPath)) {
-                // Read json from disk
-                dbLibraryCache = readDatabaseFile(dbLibraryPath);
-            } else {
+            if (Files.notExists(dbLibraryPath)) {
                 // Initialize empty database
                 dbLibraryCache = new HashMap<>();
                 lastModifiedCache = System.currentTimeMillis();
+            } else {
+                // Read json from disk
+                dbLibraryCache = readDatabaseFile(dbLibraryPath);
             }
             // Remove official packs from library database
             LOGGER.debug("Cleaning library database.");
@@ -95,6 +100,10 @@ public class DatabaseMetadataService {
         } catch (IOException e) {
             throw new IllegalStateException("Failed to initialize library database", e);
         }
+    }
+
+    private static boolean olderThanDays(FileTime ft, long days) {
+        return ChronoUnit.DAYS.between(ft.toInstant(), Instant.now()) > days;
     }
 
     public Optional<DatabasePackMetadata> getPackMetadata(String uuid) {

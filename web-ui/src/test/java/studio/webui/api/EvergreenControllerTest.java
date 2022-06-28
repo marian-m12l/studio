@@ -44,8 +44,10 @@ class EvergreenControllerTest {
     void testInfos() {
         when().get("infos") //
                 .then().statusCode(200) //
-                .body("version", is(version)) //
-                .body("timestamp", is(timestamp));
+                .body( //
+                        "version", is(version), //
+                        "timestamp", is(timestamp) //
+                );
     }
 
     @Test
@@ -56,9 +58,11 @@ class EvergreenControllerTest {
 
         when().get("latest") //
                 .then().statusCode(200) //
-                .body("name", is(v.getName())) //
-                .body("published_at", is(v.getPublishedAt())) //
-                .body("html_url", is(v.getHtmlUrl()));
+                .body( //
+                        "name", is(v.getName()), //
+                        "published_at", is(v.getPublishedAt()), //
+                        "html_url", is(v.getHtmlUrl()) //
+                );
     }
 
     @Test
@@ -69,8 +73,10 @@ class EvergreenControllerTest {
 
         when().get("announce") //
                 .then().statusCode(200) //
-                .body("date", is(EvergreenDTOs.DEFAULT_ANNOUNCE_DATE)) //
-                .body("content", is(EvergreenDTOs.DEFAULT_ANNOUNCE_CONTENT));
+                .body( //
+                        "date", is(EvergreenDTOs.DEFAULT_ANNOUNCE_DATE), //
+                        "content", is(EvergreenDTOs.DEFAULT_ANNOUNCE_CONTENT) //
+                );
     }
 
     @Test
@@ -79,7 +85,7 @@ class EvergreenControllerTest {
         String content = "Hello world!";
 
         // 1 commit -> latest
-        CommitDto commitDto = new CommitDto(new Commit(new Committer("hello", date)));
+        CommitDto commitDto = new CommitDto(new Commit(new Committer(date)));
         Mockito.when(githubClient.commits("ANNOUNCE.md")) //
                 .thenReturn(CompletableFuture.completedStage(Arrays.asList(commitDto)));
         Mockito.when(githubRawClient.announce()) //
@@ -87,9 +93,10 @@ class EvergreenControllerTest {
 
         when().get("announce") //
                 .then().statusCode(200) //
-                .body("date", is(date)) //
-                .body("content", is(content));
-
+                .body( //
+                        "date", is(date), //
+                        "content", is(content) //
+                );
     }
 
 }

@@ -11,7 +11,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Base64;
-import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
@@ -83,10 +82,6 @@ public class LibraryService {
     }
 
     public List<UuidPacksDTO> packs() {
-        // Check that local library folder exists
-        if (!Files.isDirectory(libraryPath)) {
-            return Collections.emptyList();
-        }
         // List pack files in library folder
         try (Stream<Path> paths = Files.walk(libraryPath, 1).filter(p -> p != libraryPath)) {
             // sort by timestamp DESC (=newest first)
@@ -224,9 +219,6 @@ public class LibraryService {
 
     public boolean deletePack(String packPath) {
         LOGGER.info("Delete pack '{}'", packPath);
-        if (!Files.isDirectory(libraryPath)) {
-            return false;
-        }
         Path packFile = libraryPath.resolve(packPath);
         try {
             if (Files.isDirectory(packFile)) {

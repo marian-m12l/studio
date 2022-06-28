@@ -120,7 +120,7 @@ public class LibUsbDetectionHelper {
             LibUsb.exit(context);
         }));
     }
-    
+
     private static void registerCallback(Context context, int vendorId, int productId,
             DevicePluggedListener pluggedlistener, DeviceUnpluggedListener unpluggedlistener) {
         LibUsb.hotplugRegisterCallback(context, LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED | LibUsb.HOTPLUG_EVENT_DEVICE_LEFT,

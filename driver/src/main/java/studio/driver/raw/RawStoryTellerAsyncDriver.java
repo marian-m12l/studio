@@ -65,27 +65,28 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
         LOGGER.debug("Registering hotplug listener");
         LibUsbDetectionHelper.initializeLibUsb(DeviceVersion.DEVICE_VERSION_1, device2 -> {
             // Update device reference
-            RawStoryTellerAsyncDriver.this.device = device2;
+            this.device = device2;
             // Notify listeners
-            RawStoryTellerAsyncDriver.this.pluggedlisteners.forEach(l -> l.onDevicePlugged(device2));
+            this.pluggedlisteners.forEach(l -> l.onDevicePlugged(device2));
         }, device2 -> {
             // Update device reference
-            RawStoryTellerAsyncDriver.this.device = null;
+            this.device = null;
             // Notify listeners
-            RawStoryTellerAsyncDriver.this.unpluggedlisteners.forEach(l -> l.onDeviceUnplugged(device2));
+            this.unpluggedlisteners.forEach(l -> l.onDeviceUnplugged(device2));
         });
+    }
+
+    public boolean hasDevice() {
+        return device != null;
     }
 
     public void registerDeviceListener(DevicePluggedListener pluggedlistener, DeviceUnpluggedListener unpluggedlistener) {
         this.pluggedlisteners.add(pluggedlistener);
         this.unpluggedlisteners.add(unpluggedlistener);
-        if (this.device != null) {
-            pluggedlistener.onDevicePlugged(this.device);
-        }
     }
 
     public CompletionStage<RawDeviceInfos> getDeviceInfos() {
-        if (this.device == null) {
+        if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, this::readDeviceInfos);
@@ -203,7 +204,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
 
 
     public CompletionStage<List<RawStoryPackInfos>> getPacksList() {
-        if (this.device == null) {
+        if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         // Read pack index
@@ -255,7 +256,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
 
 
     public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
-        if (this.device == null) {
+        if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device,
@@ -275,7 +276,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
     }
 
     public CompletionStage<Boolean> deletePack(String uuid) {
-        if (this.device == null) {
+        if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device,
@@ -322,7 +323,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
     }
 
     public CompletionStage<TransferStatus> downloadPack(String uuid, Path destPath, TransferProgressListener listener) {
-        if (this.device == null) {
+        if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
 
@@ -376,7 +377,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
     }
 
     public CompletionStage<TransferStatus> uploadPack(String uuid, Path inputPath, TransferProgressListener listener) {
-        if (this.device == null) {
+        if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         // file size and sectors
@@ -491,7 +492,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
     }
 
     public CompletionStage<Void> dump(Path outputPath) {
-        if (this.device == null) {
+        if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         try {

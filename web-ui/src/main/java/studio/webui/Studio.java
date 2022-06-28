@@ -46,14 +46,12 @@ public class Studio {
 
         public void init(@Observes Router router) {
             // Automatically open URL in browser, unless instructed otherwise
-            if (openBrowser) {
+            if (openBrowser && Desktop.isDesktopSupported()) {
                 LOGGER.info("Opening URL in default browser...");
-                if (Desktop.isDesktopSupported()) {
-                    try {
-                        Desktop.getDesktop().browse(new URI("http://" + host + ":" + port));
-                    } catch (IOException | URISyntaxException e) {
-                        LOGGER.error("Failed to open URL in default browser", e);
-                    }
+                try {
+                    Desktop.getDesktop().browse(new URI("http://" + host + ":" + port));
+                } catch (IOException | URISyntaxException e) {
+                    LOGGER.error("Failed to open URL in default browser", e);
                 }
             }
         }
