@@ -34,7 +34,6 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.arc.profile.UnlessBuildProfile;
-import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import io.vertx.mutiny.ext.web.Router;
 import studio.core.v1.model.metadata.StoryPackMetadata;
@@ -74,7 +73,7 @@ public class MockStoryTellerService implements IStoryTellerService {
             throw new StoryTellerException("Failed to initialize mocked device");
         }
         // plug event
-        sendDevicePlugged(getDeviceInfo());
+        sendDevicePlugged(eventBus, getDeviceInfo());
     }
 
     public CompletionStage<DeviceInfosDTO> deviceInfos() {
@@ -86,20 +85,17 @@ public class MockStoryTellerService implements IStoryTellerService {
     }
 
     public CompletionStage<String> addPack(String uuid, Path packFile) {
-        Path destFile = devicePath.resolve(uuid + PackFormat.RAW.getExtension());
-        return copyPack("add pack", packFile, destFile);
+        return copyPack("add pack", packFile, getLibPack(uuid));
     }
 
     public CompletionStage<String> extractPack(String uuid, Path destFile) {
-        Path packFile = devicePath.resolve(uuid + PackFormat.RAW.getExtension());
-        return copyPack("extract pack", packFile, destFile);
+        return copyPack("extract pack", getLibPack(uuid), destFile);
     }
 
     public CompletionStage<Boolean> deletePack(String uuid) {
         try {
-            Path packFile = devicePath.resolve(uuid + PackFormat.RAW.getExtension());
-            LOGGER.warn("Remove pack {}", packFile);
-            return CompletableFuture.completedStage(Files.deleteIfExists(packFile));
+            LOGGER.warn("Remove pack {}", uuid);
+            return CompletableFuture.completedStage(Files.deleteIfExists(getLibPack(uuid)));
         } catch (IOException e) {
             LOGGER.error("Failed to remove pack from mocked device", e);
             return CompletableFuture.completedStage(false);
@@ -116,18 +112,8 @@ public class MockStoryTellerService implements IStoryTellerService {
         return CompletableFuture.completedStage(null);
     }
 
-    private void sendDevicePlugged(DeviceInfosDTO infosDTO) {
-        JsonObject jo = JsonObject.mapFrom(infosDTO);
-        LOGGER.debug("storyteller.plugged evt : {}", jo);
-        eventBus.publish("storyteller.plugged", jo);
-    }
-
-    private void sendProgress(String id, double p) {
-        eventBus.publish("storyteller.transfer." + id + ".progress", new JsonObject().put("progress", p));
-    }
-
-    private void sendDone(String id, boolean success) {
-        eventBus.publish("storyteller.transfer." + id + ".done", new JsonObject().put("success", success));
+    private Path getLibPack(String uuid) {
+        return devicePath.resolve(uuid + PackFormat.RAW.getExtension());
     }
 
     private CompletionStage<List<StoryPackMetadata>> readPackIndex(Path deviceFolder) {
@@ -175,12 +161,12 @@ public class MockStoryTellerService implements IStoryTellerService {
             // Check that source and destination are available
             if (Files.notExists(packFile)) {
                 LOGGER.warn("Cannot {} : pack doesn't exist {}", opName, packFile);
-                sendDone(transferId, false);
+                sendDone(eventBus, transferId, false);
                 return;
             }
             if (Files.exists(destFile)) {
                 LOGGER.warn("{} : destination already exists : {}", opName, destFile);
-                sendDone(transferId, true);
+                sendDone(eventBus, transferId, true);
                 return;
             }
             try (InputStream input = new BufferedInputStream(Files.newInputStream(packFile));
@@ -198,15 +184,15 @@ public class MockStoryTellerService implements IStoryTellerService {
                         LOGGER.info("Copying pack... {} ({} / {})", new DecimalFormat("#%").format(p),
                                 FileUtils.readableByteSize(count), FileUtils.readableByteSize(fileSize));
                     }
-                    sendProgress(transferId, p);
+                    sendProgress(eventBus, transferId, p);
                 }
                 LOGGER.info("Pack copied ({})", transferId);
                 // Send event on eventbus to signal end of transfer
-                sendDone(transferId, true);
+                sendDone(eventBus, transferId, true);
             } catch (IOException e) {
                 LOGGER.error("Failed to {} on mocked device", opName, e);
                 // Send event on eventbus to signal transfer failure
-                sendDone(transferId, false);
+                sendDone(eventBus, transferId, false);
             }
         }, after2s);
         return CompletableFuture.completedStage(transferId);

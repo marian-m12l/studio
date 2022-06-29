@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 import javax.inject.Inject;
@@ -23,16 +24,16 @@ import org.apache.logging.log4j.Logger;
 import org.usb4java.Device;
 
 import io.quarkus.arc.profile.IfBuildProfile;
-import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.SecurityUtils;
-import studio.core.v1.utils.exception.StoryTellerException;
 import studio.driver.StoryTellerAsyncDriver;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
+import studio.driver.event.TransferProgressListener;
 import studio.driver.fs.FsStoryTellerAsyncDriver;
 import studio.driver.model.StoryPackInfos;
+import studio.driver.model.TransferStatus;
 import studio.driver.model.fs.FsDeviceInfos;
 import studio.driver.model.fs.FsStoryPackInfos;
 import studio.driver.model.raw.RawDeviceInfos;
@@ -46,15 +47,15 @@ import studio.webui.model.LibraryDTOs.MetaPackDTO;
 
 @IfBuildProfile("prod")
 @Singleton
-public class StoryTellerService implements IStoryTellerService {
+public class StoryTellerService implements IStoryTellerService, DevicePluggedListener, DeviceUnpluggedListener {
 
     private static final Logger LOGGER = LogManager.getLogger(StoryTellerService.class);
 
     @Inject
-    EventBus eventBus;
+    DatabaseMetadataService databaseMetadataService;
 
     @Inject
-    DatabaseMetadataService databaseMetadataService;
+    EventBus eventBus;
 
     private RawStoryTellerAsyncDriver rawDriver;
     private FsStoryTellerAsyncDriver fsDriver;
@@ -64,49 +65,35 @@ public class StoryTellerService implements IStoryTellerService {
 
         // React when a device with firmware 1.x is plugged or unplugged
         rawDriver = new RawStoryTellerAsyncDriver();
-        DeviceListener dev1Listener = new DeviceListener("1.x");
-        rawDriver.registerDeviceListener(dev1Listener, dev1Listener);
+        rawDriver.registerDeviceListener(this, this);
 
         // React when a device with firmware 2.x is plugged or unplugged
         fsDriver = new FsStoryTellerAsyncDriver();
-        DeviceListener dev2Listener = new DeviceListener("2.x");
-        fsDriver.registerDeviceListener(dev2Listener, dev2Listener);
+        fsDriver.registerDeviceListener(this, this);
     }
 
-    /** Generic DeviceListener (for 1.x or 2.x). */
-    private class DeviceListener implements DevicePluggedListener, DeviceUnpluggedListener {
-        private final String version;
-
-        private DeviceListener(String version) {
-            this.version = version;
+    @Override
+    public void onDevicePlugged(Device device) {
+        if (device == null) {
+            LOGGER.error("Device plugged but is null");
+            sendFailure(eventBus);
+        } else {
+            LOGGER.info("Device plugged");
+            deviceInfos().whenComplete((infos, e) -> {
+                if (e != null) {
+                    LOGGER.error("Failed to plug device", e);
+                    sendFailure(eventBus);
+                } else {
+                    sendDevicePlugged(eventBus, infos);
+                }
+            });
         }
+    }
 
-        @Override
-        public void onDevicePlugged(Device device) {
-            if (device == null) {
-                LOGGER.error("Device {} plugged but got null device", version);
-                // Send 'failure' event on bus
-                sendFailure();
-            } else {
-                LOGGER.info("Device {} plugged", version);
-                deviceInfos().whenComplete((infos, e) -> {
-                    if (e != null) {
-                        LOGGER.atError().withThrowable(e).log("Failed to plug device {}", version);
-                        // Send 'failure' event on bus
-                        sendFailure();
-                    } else {
-                        // Send 'plugged' event on bus
-                        sendDevicePlugged(infos);
-                    }
-                });
-            }
-        }
-
-        @Override
-        public void onDeviceUnplugged(Device device) {
-            LOGGER.info("Device {} unplugged", version);
-            sendDeviceUnplugged();
-        }
+    @Override
+    public void onDeviceUnplugged(Device device) {
+        LOGGER.info("Device unplugged");
+        sendDeviceUnplugged(eventBus);
     }
 
     public CompletionStage<DeviceInfosDTO> deviceInfos() {
@@ -179,24 +166,24 @@ public class StoryTellerService implements IStoryTellerService {
         return CompletableFuture.completedStage(null);
     }
 
-    private void sendDevicePlugged(DeviceInfosDTO infosDTO) {
-        eventBus.publish("storyteller.plugged", JsonObject.mapFrom(infosDTO));
+    // Send event on eventbus to monitor progress
+    private TransferProgressListener onTransferProgress(String transferId) {
+        return status -> {
+            double p = status.getPercent();
+            LOGGER.debug("Transfer progress... {}% ({} / {})", p, status.getTransferred(), status.getTotal());
+            sendProgress(eventBus, transferId, p);
+        };
     }
 
-    private void sendDeviceUnplugged() {
-        eventBus.send("storyteller.unplugged", null);
-    }
-
-    private void sendFailure() {
-        eventBus.send("storyteller.failure", null);
-    }
-
-    private void sendProgress(String id, double p) {
-        eventBus.send("storyteller.transfer." + id + ".progress", new JsonObject().put("progress", p));
-    }
-
-    private void sendDone(String id, boolean success) {
-        eventBus.send("storyteller.transfer." + id + ".done", new JsonObject().put("success", success));
+    private BiConsumer<TransferStatus, Throwable> onTransferEnd(String transferId) {
+        return (status, t) -> {
+            boolean state = true;
+            if (t != null) {
+                LOGGER.error("Failed to transfer pack", t);
+                state = false;
+            }
+            sendDone(eventBus, transferId, state);
+        };
     }
 
     private <T, U, V extends StoryPackInfos> String upload(List<V> packs, StoryTellerAsyncDriver<T, U> driver,
@@ -205,29 +192,11 @@ public class StoryTellerService implements IStoryTellerService {
         boolean matched = packs.stream().anyMatch(p -> p.getUuid().equals(UUID.fromString(uuid)));
         if (matched) {
             LOGGER.warn("Pack already exists on device");
-            sendDone(uuid, true);
+            sendDone(eventBus, uuid, true);
             return uuid;
         }
         String transferId = UUID.randomUUID().toString();
-        try {
-            driver.uploadPack(uuid, packFile, status -> {
-                // Send event on eventbus to monitor progress
-                double p = status.getPercent();
-                LOGGER.debug("Pack add progress... {}% ({} / {})", p, status.getTransferred(), status.getTotal());
-                sendProgress(transferId, p);
-            }).whenComplete((status, t) -> {
-                // Handle failure
-                if (t != null) {
-                    throw new StoryTellerException(t);
-                }
-                // Handle success
-                sendDone(transferId, true);
-            });
-        } catch (Exception e) {
-            LOGGER.error("Failed to add pack to device", e);
-            // Send event on eventbus to signal transfer failure
-            sendDone(transferId, false);
-        }
+        driver.uploadPack(uuid, packFile, onTransferProgress(transferId)).whenComplete(onTransferEnd(transferId));
         return transferId;
     }
 
@@ -235,30 +204,11 @@ public class StoryTellerService implements IStoryTellerService {
         // Check that the destination is available
         if (Files.exists(destFile.resolve(uuid))) {
             LOGGER.warn("Cannot extract pack from device because the destination file already exists");
-            sendDone(uuid, true);
+            sendDone(eventBus, uuid, true);
             return uuid;
         }
         String transferId = UUID.randomUUID().toString();
-        try {
-            driver.downloadPack(uuid, destFile, status -> {
-                // Send event on eventbus to monitor progress
-                double p = status.getPercent();
-                LOGGER.debug("Pack extraction progress... {}% ({} / {})", p, status.getTransferred(),
-                        status.getTotal());
-                sendProgress(transferId, p);
-            }).whenComplete((status, t) -> {
-                // Handle failure
-                if (t != null) {
-                    throw new StoryTellerException(t);
-                }
-                // Handle success
-                sendDone(transferId, true);
-            });
-        } catch (Exception e) {
-            LOGGER.error("Failed to extract pack from device", e);
-            // Send event on eventbus to signal transfer failure
-            sendDone(transferId, false);
-        }
+        driver.downloadPack(uuid, destFile, onTransferProgress(transferId)).whenComplete(onTransferEnd(transferId));
         return transferId;
     }
 
