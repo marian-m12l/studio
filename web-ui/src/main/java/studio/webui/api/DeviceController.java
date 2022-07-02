@@ -57,6 +57,7 @@ public class DeviceController {
     @POST
     @Path("addFromLibrary")
     public CompletionStage<TransferDTO> copyToDevice(UuidDTO uuidDTO) {
+        LOGGER.info("addFromLibrary : {}", uuidDTO);
         var packFile = libraryPath.resolve(uuidDTO.getPath());
         // Return the transfer id, which is used to monitor transfer progress
         return storyTellerService.addPack(uuidDTO.getUuid(), packFile).thenApply(TransferDTO::new);

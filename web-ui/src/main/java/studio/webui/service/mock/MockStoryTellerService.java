@@ -25,9 +25,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -48,7 +48,7 @@ import studio.webui.model.LibraryDTOs.MetaPackDTO;
 import studio.webui.service.IStoryTellerService;
 
 @UnlessBuildProfile("prod")
-@Singleton
+@ApplicationScoped
 public class MockStoryTellerService implements IStoryTellerService {
 
     private static final Logger LOGGER = LogManager.getLogger(MockStoryTellerService.class);
@@ -85,17 +85,17 @@ public class MockStoryTellerService implements IStoryTellerService {
     }
 
     public CompletionStage<String> addPack(String uuid, Path packFile) {
-        return copyPack("add pack", packFile, getLibPack(uuid));
+        return copyPack("add pack", packFile, getDevicePack(uuid));
     }
 
     public CompletionStage<String> extractPack(String uuid, Path destFile) {
-        return copyPack("extract pack", getLibPack(uuid), destFile);
+        return copyPack("extract pack", getDevicePack(uuid), destFile);
     }
 
     public CompletionStage<Boolean> deletePack(String uuid) {
         try {
             LOGGER.warn("Remove pack {}", uuid);
-            return CompletableFuture.completedStage(Files.deleteIfExists(getLibPack(uuid)));
+            return CompletableFuture.completedStage(Files.deleteIfExists(getDevicePack(uuid)));
         } catch (IOException e) {
             LOGGER.error("Failed to remove pack from mocked device", e);
             return CompletableFuture.completedStage(false);
@@ -112,7 +112,7 @@ public class MockStoryTellerService implements IStoryTellerService {
         return CompletableFuture.completedStage(null);
     }
 
-    private Path getLibPack(String uuid) {
+    private Path getDevicePack(String uuid) {
         return devicePath.resolve(uuid + PackFormat.RAW.getExtension());
     }
 
@@ -156,7 +156,7 @@ public class MockStoryTellerService implements IStoryTellerService {
         String transferId = UUID.randomUUID().toString();
         // Perform transfer asynchronously, and send events on eventbus to monitor
         // progress and end of transfer
-        Executor after2s = CompletableFuture.delayedExecutor(2, TimeUnit.SECONDS);
+        Executor after300ms = CompletableFuture.delayedExecutor(300, TimeUnit.MILLISECONDS);
         CompletableFuture.runAsync(() -> {
             // Check that source and destination are available
             if (Files.notExists(packFile)) {
@@ -194,7 +194,7 @@ public class MockStoryTellerService implements IStoryTellerService {
                 // Send event on eventbus to signal transfer failure
                 sendDone(eventBus, transferId, false);
             }
-        }, after2s);
+        }, after300ms);
         return CompletableFuture.completedStage(transferId);
     }
 

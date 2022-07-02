@@ -16,8 +16,8 @@ import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
+import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
-import javax.inject.Singleton;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -46,7 +46,7 @@ import studio.webui.model.DeviceDTOs.DeviceInfosDTO.StorageDTO;
 import studio.webui.model.LibraryDTOs.MetaPackDTO;
 
 @IfBuildProfile("prod")
-@Singleton
+@ApplicationScoped
 public class StoryTellerService implements IStoryTellerService, DevicePluggedListener, DeviceUnpluggedListener {
 
     private static final Logger LOGGER = LogManager.getLogger(StoryTellerService.class);

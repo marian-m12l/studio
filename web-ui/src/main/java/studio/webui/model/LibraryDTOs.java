@@ -13,8 +13,8 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 
 import lombok.AllArgsConstructor;
-import lombok.Data;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 import lombok.Setter;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 
@@ -30,6 +30,7 @@ public interface LibraryDTOs {
 
     @Getter
     @AllArgsConstructor
+    @NoArgsConstructor
     final class TransferDTO {
         private String transferId;
     }
@@ -41,13 +42,15 @@ public interface LibraryDTOs {
     }
 
     @Getter
-    @Setter
+    @AllArgsConstructor
+    @NoArgsConstructor
     final class PathDTO {
         private String path;
     }
 
     @Getter
     @AllArgsConstructor
+    @NoArgsConstructor
     final class SuccessPathDTO {
         private boolean success;
         private String path;
@@ -68,7 +71,8 @@ public interface LibraryDTOs {
         private List<MetaPackDTO> packs;
     }
 
-    @Data
+    @Getter
+    @Setter
     @JsonInclude(Include.NON_NULL)
     static final class MetaPackDTO {
         private String format; // PackFormat (in lowercase)

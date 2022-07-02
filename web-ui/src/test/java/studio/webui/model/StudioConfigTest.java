@@ -2,6 +2,8 @@ package studio.webui.model;
 
 import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 import java.nio.file.Path;
 
@@ -28,13 +30,13 @@ class StudioConfigTest {
     @ConfigProperty(name = "studio.db.unofficial")
     Path dbLibraryPath;
 
+    @ConfigProperty(name = "studio.mock.device")
+    Path devicePath;
+
     @ConfigProperty(name = "version")
     String version;
     @ConfigProperty(name = "timestamp")
     String timestamp;
-
-    @ConfigProperty(name = "studio.mock.device")
-    Path devicePath;
 
     @ConfigProperty(name = "studio.open.browser", defaultValue = "false")
     boolean openBrowser;
@@ -49,8 +51,10 @@ class StudioConfigTest {
                 () -> assertEquals(target.resolve("tmp"), tmpdirPath, "Different tmpdirPath"), //
                 () -> assertEquals(target.resolve("device"), devicePath, "Different devicePath"), //
                 () -> assertEquals(target.resolve("db/official.json"), dbOfficialPath, "Different dbOfficialPath"), //
-                () -> assertEquals(target.resolve("db/unofficial.json"), dbLibraryPath, "Different dbLibraryPath") //
+                () -> assertEquals(target.resolve("db/unofficial.json"), dbLibraryPath, "Different dbLibraryPath"), //
+                () -> assertNotNull(version, "Null version"), //
+                () -> assertNotNull(timestamp, "Null timestamp"), //
+                () -> assertFalse(openBrowser, "openBrowser should be false") //
         );
     }
-
 }

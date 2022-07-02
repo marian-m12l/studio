@@ -12,7 +12,7 @@ import org.junit.jupiter.api.Test;
 
 class AudioConversionTest {
 
-    private String zipName = "SimplifiedSamplePack-60f84e3d-8a37-4b4a-9e67-fc13daad9bb9-v1.zip";
+    private String zipName = "SimplifiedSamplePack.zip";
 
     private static Path classpathResource(String relative) throws URISyntaxException {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();

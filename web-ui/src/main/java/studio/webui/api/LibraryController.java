@@ -116,7 +116,7 @@ public class LibraryController {
     @Path("remove")
     @NonBlocking
     public SuccessDTO remove(PathDTO pathData) {
-        LOGGER.info("Remove lib pack '{}'", pathData);
+        LOGGER.info("Remove lib pack '{}'", pathData.getPath());
         boolean removed = libraryService.deletePack(pathData.getPath());
         return new SuccessDTO(removed);
     }

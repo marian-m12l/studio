@@ -76,17 +76,12 @@ public class LibraryService {
     }
 
     public PathDTO infos() {
-        PathDTO p = new PathDTO();
-        p.setPath(libraryPath.toString());
-        return p;
+        return new PathDTO(libraryPath.toString());
     }
 
     public List<UuidPacksDTO> packs() {
         // List pack files in library folder
         try (Stream<Path> paths = Files.walk(libraryPath, 1).filter(p -> p != libraryPath)) {
-            // sort by timestamp DESC (=newest first)
-            Comparator<LibraryPackDTO> newestComparator = Comparator.comparingLong(LibraryPackDTO::getTimestamp)
-                    .reversed();
 
             // Group pack by uuid
             Map<String, List<LibraryPackDTO>> metadataByUuid = paths
@@ -100,7 +95,7 @@ public class LibraryService {
                     // filter empty
                     .filter(Optional::isPresent).map(Optional::get)
                     // sort by timestamp DESC (=newer first)
-                    .sorted(newestComparator)
+                    .sorted(Comparator.comparingLong(LibraryPackDTO::getTimestamp).reversed())
                     // Group packs by UUID
                     .collect(Collectors.groupingBy(p -> p.getMetadata().getUuid()));
 
@@ -145,24 +140,24 @@ public class LibraryService {
         return libraryPath.resolve(packPath);
     }
 
-    public Path convertPack(String packName, PackFormat outputFormat, boolean allowEnriched) {
+    public Path convertPack(String packName, PackFormat outFormat, boolean allowEnriched) {
         Path packPath = libraryPath.resolve(packName);
-        PackFormat inputFormat = PackFormat.fromPath(packPath);
-        LOGGER.info("Pack is in {} format. Converting to {} format", inputFormat, outputFormat);
+        PackFormat inFormat = PackFormat.fromPath(packPath);
+        LOGGER.info("Pack is in {} format. Converting to {} format", inFormat, outFormat);
         // check formats
-        if (inputFormat == outputFormat) {
-            throw new StoryTellerException("Pack is already in " + outputFormat + " format : " + packName);
+        if (inFormat == outFormat) {
+            throw new StoryTellerException("Pack is already in " + outFormat + " format : " + packName);
         }
         try {
             // Read pack
-            LOGGER.info("Reading {} format pack", inputFormat);
-            StoryPack storyPack = inputFormat.getReader().read(packPath);
+            LOGGER.info("Reading {} format pack", inFormat);
+            StoryPack storyPack = inFormat.getReader().read(packPath);
 
             // Convert
-            switch (outputFormat) {
+            switch (outFormat) {
             case ARCHIVE:
                 // Compress pack assets
-                if (inputFormat == PackFormat.RAW) {
+                if (inFormat == PackFormat.RAW) {
                     LOGGER.info("Compressing pack assets");
                     PackAssetsCompression.processCompressed(storyPack);
                 }
@@ -187,19 +182,17 @@ public class LibraryService {
 
             // Write to temporary dir
             String destName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis()
-                    + outputFormat.getExtension();
+                    + outFormat.getExtension();
             Path tmpPath = tmpDirPath.resolve(destName);
-            LOGGER.info("Writing {} format pack, using temporary : {}", outputFormat, tmpPath);
-            outputFormat.getWriter().write(storyPack, tmpPath, allowEnriched);
+            LOGGER.info("Writing {} format pack, using temporary : {}", outFormat, tmpPath);
+            outFormat.getWriter().write(storyPack, tmpPath, allowEnriched);
 
             // Move to library
             Path destPath = libraryPath.resolve(destName);
-            LOGGER.info("Moving {} format pack into local library: {}", outputFormat, destPath);
-            Files.move(tmpPath, destPath);
-            return destPath;
+            LOGGER.info("Moving {} format pack into local library: {}", outFormat, destPath);
+            return Files.move(tmpPath, destPath);
         } catch (IOException e) {
-            String msg = "Failed to convert " + inputFormat + " format pack to " + outputFormat + " format";
-            throw new StoryTellerException(msg, e);
+            throw new StoryTellerException("Failed to convert " + inFormat + " pack to " + outFormat, e);
         }
     }
 
@@ -212,8 +205,7 @@ public class LibraryService {
             Files.move(src, dest, StandardCopyOption.REPLACE_EXISTING);
             return true;
         } catch (IOException e) {
-            LOGGER.error("Failed to add pack to local library", e);
-            throw new StoryTellerException(e);
+            throw new StoryTellerException("Failed to add pack to local library", e);
         }
     }
 

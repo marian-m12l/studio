@@ -31,6 +31,7 @@
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <!-- Maven plugins -->
         <mvn.compiler.version>3.8.1</mvn.compiler.version>
+        <mvn.resources.version>3.2.0</mvn.resources.version>
         <mvn.surefire.version>3.0.0-M5</mvn.surefire.version>
         <mvn.assembly.version>3.3.0</mvn.assembly.version>
         <!-- Devops -->
@@ -81,6 +82,18 @@
             <plugin>
                <artifactId>maven-compiler-plugin</artifactId>
                <version>${mvn.compiler.version}</version>
+            </plugin>
+            <plugin>
+               <artifactId>maven-resources-plugin</artifactId>
+               <version>${mvn.resources.version}</version>
+               <configuration>
+                   <propertiesEncoding>ISO-8859-1</propertiesEncoding>
+                   <nonFilteredFileExtensions>
+                      <nonFilteredFileExtension>zip</nonFilteredFileExtension>
+                      <nonFilteredFileExtension>pack</nonFilteredFileExtension>
+                      <nonFilteredFileExtension>mp3</nonFilteredFileExtension>
+                  </nonFilteredFileExtensions>
+               </configuration>
             </plugin>
             <plugin>
                <artifactId>maven-surefire-plugin</artifactId>
