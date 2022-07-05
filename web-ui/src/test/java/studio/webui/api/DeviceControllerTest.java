@@ -38,8 +38,8 @@ import studio.webui.model.DeviceDTOs.UuidsDTO;
 import studio.webui.model.LibraryDTOs.TransferDTO;
 
 @QuarkusTest
-@ExtendWith(TestNameExtension.class)
 @TestHTTPEndpoint(DeviceController.class)
+@ExtendWith(TestNameExtension.class)
 class DeviceControllerTest {
 
     @ConfigProperty(name = "studio.library")
@@ -108,37 +108,35 @@ class DeviceControllerTest {
                 );
     }
 
-    boolean waitTransfer(TransferDTO transferDTO) throws InterruptedException {
+    static void restSuccess(String operation, Object dto, boolean expectedState) {
+        // Get SuccessDTO
+        givenJson().body(dto) //
+                .when().post(operation) //
+                .then().statusCode(200) //
+                .body("success", is(expectedState));
+    }
+
+    void restTransfer(String operation, UuidDTO uuidDto, boolean expectedState) throws InterruptedException {
+        // Get TransferDTO
+        TransferDTO transferDTO = givenJson().body(uuidDto) //
+                .when().post(operation) //
+                .then().statusCode(200) //
+                .extract().as(TransferDTO.class);
+        // Wait for transfer
         CountDownLatch latch = new CountDownLatch(1);
         AtomicBoolean success = new AtomicBoolean();
         eventBus.localConsumer("storyteller.transfer." + transferDTO.getTransferId() + ".progress", m -> {
             System.out.println("progress: " + m.body());
         });
         eventBus.localConsumer("storyteller.transfer." + transferDTO.getTransferId() + ".done", m -> {
-            System.out.println("done: " + m.body());
             JsonObject jo = (JsonObject) m.body();
+            System.out.println("done: " + jo);
             success.set(jo.getBoolean("success"));
             latch.countDown();
         });
         latch.await(10, TimeUnit.SECONDS);
-        return success.get();
-    }
-
-    static void removePack(UuidDTO uuidDto, boolean state) {
-        givenJson().body(uuidDto) //
-                .when().post("removeFromDevice") //
-                .then().statusCode(200) //
-                .body("success", is(state));
-    }
-
-    void transfer(String operation, UuidDTO uuidDto, boolean state) throws InterruptedException {
-        TransferDTO transferDTO = givenJson().body(uuidDto) //
-                .when().post(operation) //
-                .then().statusCode(200) //
-                .extract().as(TransferDTO.class);
-        // wait transfer complete KO
-        boolean success = waitTransfer(transferDTO);
-        assertEquals(success, state, "transfer should be " + state);
+        // test
+        assertEquals(expectedState, success.get(), "transfer should be " + expectedState);
     }
 
     @Test
@@ -158,19 +156,13 @@ class DeviceControllerTest {
     @Test
     void testReorder() {
         UuidsDTO uuids = new UuidsDTO(Arrays.asList("123", "456"));
-        givenJson().body(uuids) //
-                .when().post("reorder") //
-                .then().statusCode(200) //
-                .body("success", is(false));
+        restSuccess("reorder", uuids, false);
     }
 
     @Test
     void testDump() {
         OutputDTO output = new OutputDTO(libraryPath.resolve("dump.txt"));
-        givenJson().body(output) //
-                .when().post("dump") //
-                .then().statusCode(200) //
-                .body("success", is(true));
+        restSuccess("dump", output, true);
     }
 
     @Test
@@ -178,11 +170,11 @@ class DeviceControllerTest {
         // list 1 test pack
         list1Pack();
         // remove pack
-        removePack(testUuidDto, true);
+        restSuccess("removeFromDevice", testUuidDto, true);
         list0Pack();
         // don't need to remove fake pack
         UuidDTO fakeUuidDto = new UuidDTO(TEST_RAW_PACK_UUID, "fake.pack", PackFormat.RAW.getLabel());
-        removePack(fakeUuidDto, false);
+        restSuccess("removeFromDevice", fakeUuidDto, false);
         list0Pack();
     }
 
@@ -190,15 +182,15 @@ class DeviceControllerTest {
     void testAddToLibrary() throws IOException, InterruptedException {
         // KO: absent on device
         UuidDTO fakeUuidDto = new UuidDTO("1234", "fake.pack", PackFormat.FS.getLabel());
-        transfer("addToLibrary", fakeUuidDto, false);
+        restTransfer("addToLibrary", fakeUuidDto, false);
 
         // OK: copy from device to library
-        transfer("addToLibrary", testUuidDto, true);
+        restTransfer("addToLibrary", testUuidDto, true);
         Path newPack = libraryPath.resolve(TEST_RAW_PACK_UUID + PackFormat.RAW.getExtension());
         assertTrue(Files.exists(newPack), "Pack is absent from library");
 
         // KO: present on device
-        transfer("addToLibrary", testUuidDto, true);
+        restTransfer("addToLibrary", testUuidDto, true);
     }
 
     @Test
@@ -209,7 +201,7 @@ class DeviceControllerTest {
         Files.copy(testPackSource, testPackLibrary);
         list0Pack();
         // copy from library to device
-        transfer("addFromLibrary", testUuidDto, true);
+        restTransfer("addFromLibrary", testUuidDto, true);
         // list device
         list1Pack();
     }

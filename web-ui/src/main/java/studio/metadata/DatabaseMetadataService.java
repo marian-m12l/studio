@@ -18,8 +18,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import org.apache.logging.log4j.LogManager;
@@ -30,7 +30,6 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.vertx.mutiny.ext.web.Router;
 import studio.core.v1.utils.stream.ThrowingConsumer;
 import studio.metadata.DatabaseMetadataDTOs.DatabasePackMetadata;
 import studio.metadata.DatabaseMetadataDTOs.LuniiGuestClient;
@@ -62,7 +61,8 @@ public class DatabaseMetadataService {
     private Map<String, DatabasePackMetadata> dbOfficialCache;
     private long lastModifiedCache = 0;
 
-    public void init(@Observes Router router) {
+    @PostConstruct
+    public void init() {
         try {
             // Read official metadata database file
             LOGGER.info("Reading official metadata in {}", dbOfficialPath);

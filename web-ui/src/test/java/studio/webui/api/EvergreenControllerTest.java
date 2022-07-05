@@ -9,11 +9,13 @@ import java.util.concurrent.CompletableFuture;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mockito;
 
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.quarkus.test.junit.mockito.InjectMock;
+import studio.junit.TestNameExtension;
 import studio.webui.model.EvergreenDTOs;
 import studio.webui.model.EvergreenDTOs.CommitDto;
 import studio.webui.model.EvergreenDTOs.CommitDto.Commit;
@@ -24,6 +26,7 @@ import studio.webui.model.EvergreenDTOs.LatestVersionDTO;
 
 @QuarkusTest
 @TestHTTPEndpoint(EvergreenController.class)
+@ExtendWith(TestNameExtension.class)
 class EvergreenControllerTest {
 
     @ConfigProperty(name = "version")

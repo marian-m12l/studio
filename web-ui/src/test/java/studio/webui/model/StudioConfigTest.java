@@ -9,10 +9,13 @@ import java.nio.file.Path;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import io.quarkus.test.junit.QuarkusTest;
+import studio.junit.TestNameExtension;
 
 @QuarkusTest
+@ExtendWith(TestNameExtension.class)
 class StudioConfigTest {
 
     @ConfigProperty(name = "studio.host")

@@ -14,11 +14,14 @@ import javax.inject.Inject;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 
 import io.quarkus.test.junit.QuarkusTest;
+import studio.junit.TestNameExtension;
 import studio.metadata.DatabaseMetadataDTOs.DatabasePackMetadata;
 
 @QuarkusTest
+@ExtendWith(TestNameExtension.class)
 class DatabaseMetadataServiceTest {
 
     @ConfigProperty(name = "studio.db.official")
@@ -74,7 +77,7 @@ class DatabaseMetadataServiceTest {
         );
 
         // WHEN reload db
-        ms.init(null);
+        ms.init();
         // THEN
         assertEquals(mpExp, ms.getMetadataLibrary(newUuid).get(), "differs from expected");
     }

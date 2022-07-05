@@ -31,8 +31,8 @@ import studio.webui.model.LibraryDTOs.PathDTO;
 import studio.webui.model.LibraryDTOs.SuccessPathDTO;
 
 @QuarkusTest
-@ExtendWith(TestNameExtension.class)
 @TestHTTPEndpoint(LibraryController.class)
+@ExtendWith(TestNameExtension.class)
 class LibraryControllerTest {
 
     @ConfigProperty(name = "studio.library")

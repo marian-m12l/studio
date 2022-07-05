@@ -25,8 +25,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import org.apache.logging.log4j.LogManager;
@@ -35,7 +35,6 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.vertx.mutiny.core.eventbus.EventBus;
-import io.vertx.mutiny.ext.web.Router;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.reader.binary.BinaryStoryPackReader;
 import studio.core.v1.utils.PackFormat;
@@ -64,7 +63,8 @@ public class MockStoryTellerService implements IStoryTellerService {
     @ConfigProperty(name = "studio.mock.device")
     Path devicePath;
 
-    public void init(@Observes Router router) {
+    @PostConstruct
+    public void init() {
         LOGGER.info("Setting up mocked story teller service in {}", devicePath);
         try {
             // Create the mocked device folder if needed
