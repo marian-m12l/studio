@@ -18,14 +18,15 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import io.quarkus.runtime.StartupEvent;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.utils.PackAssetsCompression;
@@ -53,8 +54,7 @@ public class LibraryService {
     @ConfigProperty(name = "studio.tmpdir")
     Path tmpDirPath;
 
-    @PostConstruct
-    public void init() {
+    public void init(@Observes StartupEvent ev) {
         LOGGER.info("library path : {} (tmpdir path : {})", libraryPath, tmpDirPath);
         // Create the local library folder if needed
         if (!Files.isDirectory(libraryPath)) {

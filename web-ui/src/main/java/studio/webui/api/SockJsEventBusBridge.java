@@ -1,6 +1,7 @@
 package studio.webui.api;
 
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,7 +17,7 @@ public class SockJsEventBusBridge {
 
     private static final Logger LOGGER = LogManager.getLogger(SockJsEventBusBridge.class);
 
-    SockJsEventBusBridge(Router router, Vertx vertx) {
+    public void init(@Observes Router router, Vertx vertx) {
         LOGGER.info("Start Sockjs EventBus");
         PermittedOptions address = new PermittedOptions().setAddressRegex("storyteller\\..+");
         SockJSBridgeOptions options = new SockJSBridgeOptions().addOutboundPermitted(address);

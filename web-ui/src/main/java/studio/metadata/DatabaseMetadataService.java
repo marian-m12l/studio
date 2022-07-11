@@ -30,7 +30,7 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import io.vertx.ext.web.Router;
+import io.quarkus.runtime.StartupEvent;
 import studio.core.v1.utils.exception.StoryTellerException;
 import studio.metadata.DatabaseMetadataDTOs.DatabasePackMetadata;
 import studio.metadata.DatabaseMetadataDTOs.LuniiGuestClient;
@@ -65,7 +65,7 @@ public class DatabaseMetadataService {
     private Map<String, DatabasePackMetadata> dbOfficialCache;
     private long lastModifiedCache = 0;
 
-    public void init(@Observes Router router) {
+    public void init(@Observes StartupEvent ev) {
         try {
             dbLibraryCache = initDbLibrary();
             dbOfficialCache = initDbOfficial();
