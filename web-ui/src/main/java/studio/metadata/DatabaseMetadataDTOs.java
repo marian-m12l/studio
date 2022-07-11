@@ -8,7 +8,6 @@ package studio.metadata;
 
 import java.util.Locale;
 import java.util.Map;
-import java.util.concurrent.CompletionStage;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
@@ -35,14 +34,14 @@ public interface DatabaseMetadataDTOs {
     interface LuniiGuestClient {
         @GET
         @Path("create")
-        CompletionStage<TokenResponse> auth();
+        TokenResponse auth();
     }
 
     @RegisterRestClient(baseUri = "https://server-data-prod.lunii.com/v2")
     interface LuniiPacksClient {
         @GET
         @Path("packs")
-        CompletionStage<PacksResponse> packs(@HeaderParam("X-AUTH-TOKEN") String token);
+        PacksResponse packs(@HeaderParam("X-AUTH-TOKEN") String token);
     }
 
     @Data

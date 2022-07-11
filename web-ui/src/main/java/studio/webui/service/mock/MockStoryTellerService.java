@@ -227,7 +227,7 @@ public class MockStoryTellerService implements IStoryTellerService {
 
         mp.setSectorSize(pack.getSectorSize());
         // add meta
-        databaseMetadataService.getPackMetadata(pack.getUuid()).ifPresent(meta -> {//
+        databaseMetadataService.getMetadata(pack.getUuid()).ifPresent(meta -> {//
             mp.setTitle(meta.getTitle());
             mp.setDescription(meta.getDescription());
             mp.setImage(meta.getThumbnail());

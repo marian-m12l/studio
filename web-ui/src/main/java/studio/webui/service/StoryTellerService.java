@@ -220,7 +220,7 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
         // raw data
         mp.setSectorSize(pack.getSizeInSectors());
         // add meta
-        databaseMetadataService.getPackMetadata(pack.getUuid().toString()).ifPresent(meta -> { //
+        databaseMetadataService.getMetadata(pack.getUuid().toString()).ifPresent(meta -> { //
             mp.setTitle(meta.getTitle());
             mp.setDescription(meta.getDescription());
             mp.setImage(meta.getThumbnail());
@@ -240,7 +240,7 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
         mp.setSizeInBytes(pack.getSizeInBytes());
         mp.setNightModeAvailable(pack.isNightModeAvailable());
         // add meta
-        databaseMetadataService.getPackMetadata(pack.getUuid().toString()).ifPresent(meta -> { //
+        databaseMetadataService.getMetadata(pack.getUuid().toString()).ifPresent(meta -> { //
             mp.setTitle(meta.getTitle());
             mp.setDescription(meta.getDescription());
             mp.setImage(meta.getThumbnail());

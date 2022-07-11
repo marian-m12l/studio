@@ -4,82 +4,113 @@ import static org.junit.jupiter.api.Assertions.assertAll;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
+import java.io.IOException;
+import java.util.Map;
 
 import javax.inject.Inject;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Order;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
 import io.quarkus.test.junit.QuarkusTest;
+import io.quarkus.test.junit.QuarkusTestProfile;
+import io.quarkus.test.junit.TestProfile;
 import studio.junit.TestNameExtension;
 import studio.metadata.DatabaseMetadataDTOs.DatabasePackMetadata;
+import studio.metadata.DatabaseMetadataServiceTest.ResetDatabaseTestProfile;
 
 @QuarkusTest
 @ExtendWith(TestNameExtension.class)
+@TestProfile(ResetDatabaseTestProfile.class)
 class DatabaseMetadataServiceTest {
-
-    @ConfigProperty(name = "studio.db.official")
-    Path dbOfficialPath;
-    @ConfigProperty(name = "studio.db.unofficial")
-    Path dbLibraryPath;
 
     @Inject
     DatabaseMetadataService ms;
 
-    @BeforeEach
-    void before() throws Exception {
-        // clean json databases
-        Files.deleteIfExists(dbOfficialPath);
-        Files.deleteIfExists(dbLibraryPath);
+    final DatabasePackMetadata metaOfficial = new DatabasePackMetadata("c4139d59-872a-4d15-8cf1-76d34cdf38c6",
+            "official", "official pack", null, true);
+    final DatabasePackMetadata metaUnofficial = new DatabasePackMetadata("1-2-3-4", "new", "new pack", null, false);
+    final DatabasePackMetadata metaFake = new DatabasePackMetadata("0-0-0-0", "fake", "fake pack", null, false);
+
+    // Quarkus profile for resetting databases
+    public static class ResetDatabaseTestProfile implements QuarkusTestProfile {
+        @Override
+        public Map<String, String> getConfigOverrides() {
+            return Map.of("studio.db.reset", "true");
+        }
+    }
+
+    private void assertPackMetadata(String uuid, boolean isOfficial, boolean isUnofficial) {
+        assertAll("pack " + uuid, //
+                () -> assertEquals(isOfficial, ms.getMetadataOfficial(uuid).isPresent(), "should be official"), //
+                () -> assertEquals(isUnofficial, ms.getMetadataLibrary(uuid).isPresent(), "should be unofficial"), //
+                () -> assertEquals(isOfficial || isUnofficial, ms.getMetadata(uuid).isPresent(), "should be a pack") //
+        );
     }
 
     @Test
-    void testMetadataService() throws Exception {
-        // GIVEN & WHEN : init DatabaseMetadataService
-        // THEN : missing uuid
-        String fakeUuid = "0-0-0-0";
-        System.out.println("Test db with uuid " + fakeUuid);
-        assertAll("unofficial pack " + fakeUuid, //
-                () -> assertTrue(ms.getMetadataOfficial(fakeUuid).isEmpty(), "should not be official pack"), //
-                () -> assertTrue(ms.getMetadataLibrary(fakeUuid).isEmpty(), "should not unofficial pack"), //
-                () -> assertTrue(ms.getPackMetadata(fakeUuid).isEmpty(), "should not be a pack") //
-        );
-
-        // WHEN : new uuid
-        String newUuid = "1-2-3-4";
-        System.out.println("Test db with uuid " + newUuid);
-        DatabasePackMetadata mpExp = new DatabasePackMetadata(newUuid, "fake", "fake pack", null, false);
-        DatabasePackMetadata mpBadId = new DatabasePackMetadata("badId", "fake", "fake pack", null, false);
-        // add and write to disk
-        ms.updateDatabaseLibrary(mpExp);
-        ms.persistDatabaseLibrary();
+    void testDatabases() throws IOException {
+        // GIVEN : started
+        // WHEN : add unofficial pack
+        ms.updateLibrary(metaUnofficial);
+        // ms.persistLibrary();
         // THEN
-        assertTrue(ms.getMetadataOfficial(newUuid).isEmpty(), "should not be official pack");
-        DatabasePackMetadata mpAct = ms.getPackMetadata(newUuid).get();
-        DatabasePackMetadata mpAct2 = ms.getMetadataLibrary(newUuid).get();
-        DatabasePackMetadata mpActClone = mpAct;
-
-        assertAll("unofficial pack " + newUuid, //
-                () -> assertNotEquals(mpBadId, mpAct, "should differ by uuid"), //
-                () -> assertFalse(mpAct.isOfficial(), "should not be official"), //
-                () -> assertEquals(mpActClone, mpAct, "differs from itself"), //
-                () -> assertEquals(mpExp, mpAct, "differs from expected"), //
-                () -> assertEquals(mpExp, mpAct2, "differs from unoffical db"), //
-                () -> assertEquals(mpAct, mpAct2, "differs from each other"), //
-                () -> assertEquals(mpExp.toString(), mpAct.toString(), "different toString()"), //
-                () -> assertEquals(mpExp.hashCode(), mpAct.hashCode(), "different hashCode()") //
+        assertAll("metadata databases", //
+                () -> assertPackMetadata(metaFake.getUuid(), false, false), //
+                () -> assertPackMetadata(metaOfficial.getUuid(), true, false), //
+                () -> assertPackMetadata(metaUnofficial.getUuid(), false, true) //
         );
-
-        // WHEN reload db
-        ms.init();
-        // THEN
-        assertEquals(mpExp, ms.getMetadataLibrary(newUuid).get(), "differs from expected");
     }
 
+    @Test
+    void testDatabasePackMetadata() throws IOException {
+        // GIVEN : started
+        DatabasePackMetadata mpActClone = metaUnofficial;
+        DatabasePackMetadata metaUnofficial2 = new DatabasePackMetadata();
+        metaUnofficial2.setUuid(metaUnofficial.getUuid());
+        metaUnofficial2.setTitle(metaUnofficial.getTitle());
+        metaUnofficial2.setDescription(metaUnofficial.getDescription());
+        metaUnofficial2.setThumbnail(metaUnofficial.getThumbnail());
+        metaUnofficial2.setOfficial(metaUnofficial.isOfficial());
+        // WHEN : add unofficial pack
+        ms.updateLibrary(metaUnofficial);
+        // ms.persistLibrary();
+        DatabasePackMetadata mpAct1 = ms.getMetadata(metaUnofficial.getUuid()).get();
+        DatabasePackMetadata mpAct2 = ms.getMetadataLibrary(metaUnofficial.getUuid()).get();
+        // THEN
+        assertAll("DatabasePackMetadata", //
+                () -> assertNotEquals(metaUnofficial, metaFake, "should differ by uuid"), //
+                () -> assertFalse(metaUnofficial.isOfficial(), "should not be official"), //
+                () -> assertEquals(mpActClone, metaUnofficial, "should be equal"), //
+                () -> assertEquals(metaUnofficial, metaUnofficial2, "should be equal"), //
+                () -> assertEquals(metaUnofficial, mpAct1, "should be equal"), //
+                () -> assertEquals(metaUnofficial, mpAct2, "should be equal"), //
+                () -> assertEquals(mpAct1, mpAct2, "should be equal"), //
+                () -> assertEquals(metaUnofficial.toString(), metaUnofficial.toString(), "different toString()"), //
+                () -> assertEquals(metaUnofficial.hashCode(), metaUnofficial.hashCode(), "different hashCode()") //
+        );
+    }
+
+    @Test
+    @Order(2)
+    void testReload() throws Exception {
+        // GIVEN : add 2 packs : unofficial and official
+        ms.updateLibrary(metaUnofficial);
+        ms.updateLibrary(metaOfficial);
+        // THEN : official in library
+        assertAll("metadata databases", //
+                () -> assertPackMetadata(metaOfficial.getUuid(), true, false), // 1 official
+                () -> assertPackMetadata(metaUnofficial.getUuid(), false, true) // 1 unofficial
+        );
+        // WHEN reload db (without reset)
+        ms.setDbReset(false);
+        ms.init(null);
+        // THEN : no official in library
+        assertAll("metadata databases", //
+                () -> assertPackMetadata(metaOfficial.getUuid(), true, false), // 1 official
+                () -> assertPackMetadata(metaUnofficial.getUuid(), false, false) // empty
+        );
+    }
 }

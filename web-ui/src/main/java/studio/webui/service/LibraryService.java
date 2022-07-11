@@ -115,7 +115,7 @@ public class LibraryService {
                                             meta.getTitle());
                                     String thumbBase64 = Optional.ofNullable(meta.getThumbnail()).map(this::base64)
                                             .orElse(null);
-                                    databaseMetadataService.updateDatabaseLibrary(new DatabasePackMetadata( //
+                                    databaseMetadataService.updateLibrary(new DatabasePackMetadata( //
                                             meta.getUuid(), meta.getTitle(), meta.getDescription(), thumbBase64,
                                             false));
                                 });
@@ -128,7 +128,7 @@ public class LibraryService {
                     }) //
                     .collect(Collectors.toList());
             // persist unofficial database cache (if needed)
-            databaseMetadataService.persistDatabaseLibrary();
+            databaseMetadataService.persistLibrary();
             return jsonMetasByUuid;
         } catch (IOException e) {
             LOGGER.error("Failed to read packs from local library", e);
@@ -264,7 +264,7 @@ public class LibraryService {
         mp.setDescription(spMeta.getDescription());
         Optional.ofNullable(spMeta.getThumbnail()).ifPresent(this::base64);
 
-        return databaseMetadataService.getPackMetadata(spMeta.getUuid()).map(metadata -> {
+        return databaseMetadataService.getMetadata(spMeta.getUuid()).map(metadata -> {
             mp.setTitle(metadata.getTitle());
             mp.setDescription(metadata.getDescription());
             mp.setImage(metadata.getThumbnail());

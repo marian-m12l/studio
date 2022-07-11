@@ -18,8 +18,8 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
+import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
 import org.apache.logging.log4j.LogManager;
@@ -30,11 +30,13 @@ import org.eclipse.microprofile.rest.client.inject.RestClient;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
-import studio.core.v1.utils.stream.ThrowingConsumer;
+import io.vertx.ext.web.Router;
+import studio.core.v1.utils.exception.StoryTellerException;
 import studio.metadata.DatabaseMetadataDTOs.DatabasePackMetadata;
 import studio.metadata.DatabaseMetadataDTOs.LuniiGuestClient;
 import studio.metadata.DatabaseMetadataDTOs.LuniiPacksClient;
 import studio.metadata.DatabaseMetadataDTOs.PacksResponse.OfficialPack.Infos;
+import studio.metadata.DatabaseMetadataDTOs.TokenResponse;
 
 @ApplicationScoped
 public class DatabaseMetadataService {
@@ -43,7 +45,6 @@ public class DatabaseMetadataService {
 
     @RestClient
     LuniiGuestClient luniiGuestClient;
-
     @RestClient
     LuniiPacksClient luniiPacksClient;
 
@@ -52,68 +53,35 @@ public class DatabaseMetadataService {
 
     @ConfigProperty(name = "studio.db.official")
     Path dbOfficialPath;
-
     @ConfigProperty(name = "studio.db.unofficial")
     Path dbLibraryPath;
+
+    /** Delete databases on init. */
+    @ConfigProperty(name = "studio.db.reset", defaultValue = "false")
+    boolean dbReset;
 
     // databases caches
     private Map<String, DatabasePackMetadata> dbLibraryCache;
     private Map<String, DatabasePackMetadata> dbOfficialCache;
     private long lastModifiedCache = 0;
 
-    @PostConstruct
-    public void init() {
+    public void init(@Observes Router router) {
         try {
-            // Read official metadata database file
-            LOGGER.info("Reading official metadata in {}", dbOfficialPath);
-            if (Files.notExists(dbOfficialPath) || olderThanDays(Files.getLastModifiedTime(dbOfficialPath), 15)) {
-                // (re-)create json
-                fetchOfficialDatabase();
-            } else {
-                // Read json from disk
-                dbOfficialCache = readDatabaseFile(dbOfficialPath);
-            }
+            dbLibraryCache = initDbLibrary();
+            dbOfficialCache = initDbOfficial();
+            writeDbs();
         } catch (IOException e) {
-            // Graceful failure on invalid file content
-            LOGGER.warn("Official metadata database file is invalid", e);
-            fetchOfficialDatabase();
-        }
-
-        try {
-            LOGGER.info("Reading library database in {}", dbLibraryPath);
-            if (Files.notExists(dbLibraryPath)) {
-                // Initialize empty database
-                dbLibraryCache = new HashMap<>();
-                lastModifiedCache = System.currentTimeMillis();
-            } else {
-                // Read json from disk
-                dbLibraryCache = readDatabaseFile(dbLibraryPath);
-            }
-            // Remove official packs from library database
-            LOGGER.debug("Cleaning library database.");
-            if (dbLibraryCache.keySet().removeAll(dbOfficialCache.keySet())) {
-                LOGGER.warn("Removing official packs found in library database!");
-                lastModifiedCache = System.currentTimeMillis();
-            }
-            // write to disk
-            persistDatabaseLibrary();
-        } catch (IOException e) {
-            throw new IllegalStateException("Failed to initialize library database", e);
+            throw new StoryTellerException("Failed to init databases", e);
         }
     }
 
-    private static boolean olderThanDays(FileTime ft, long days) {
-        return ChronoUnit.DAYS.between(ft.toInstant(), Instant.now()) > days;
+    public void setDbReset(boolean dbReset) {
+        this.dbReset = dbReset;
     }
 
-    public Optional<DatabasePackMetadata> getPackMetadata(String uuid) {
+    public Optional<DatabasePackMetadata> getMetadata(String uuid) {
         LOGGER.debug("Fetching metadata for pack: {}", uuid);
         return getMetadataOfficial(uuid).or(() -> getMetadataLibrary(uuid));
-    }
-
-    private boolean isOfficialPack(String uuid) {
-        LOGGER.debug("Looking in official database for pack: {}", uuid);
-        return dbOfficialCache.containsKey(uuid);
     }
 
     public Optional<DatabasePackMetadata> getMetadataOfficial(String uuid) {
@@ -126,41 +94,10 @@ public class DatabaseMetadataService {
         return Optional.ofNullable(dbLibraryCache.get(uuid));
     }
 
-    private void fetchOfficialDatabase() {
-        // default value
-        dbOfficialCache = new HashMap<>();
-        LOGGER.info("Fetching official database.");
-        luniiGuestClient.auth() // get token
-                .thenCompose(res -> luniiPacksClient.packs(res.getToken())) // get packs
-                .thenApply(res -> res.getResponse().values()) // get OfficialPack list
-                // convert OfficialPack to DatabasePackMetadata
-                .thenAccept(ThrowingConsumer.unchecked(packs -> {
-                    dbOfficialCache = packs.stream().map(op -> {
-                        var locales = op.getLocalesAvailable().keySet();
-                        Locale l = locales.contains(Locale.FRANCE) ? Locale.FRANCE : locales.iterator().next();
-                        Infos i = op.getLocalizedInfos().get(l);
-                        return new DatabasePackMetadata(op.getUuid(), i.getTitle(), i.getDescription(),
-                                i.getThumbnail(), true);
-                    }).filter(pm -> {
-                        LOGGER.debug("Official pack: {} {}", pm.getUuid(), pm.getTitle());
-                        return true;
-                    }).collect(Collectors.toMap(DatabasePackMetadata::getUuid, pm -> pm, (o1, o2) -> o1));
-                    // cache to disk
-                    writeDatabaseFile(dbOfficialPath, dbOfficialCache);
-                })) //
-                .whenComplete((result, e) -> {
-                    if (e != null) {
-                        throw new IllegalStateException("Failed to initialize official database", e);
-                    } else {
-                        LOGGER.info("Fetched metadata, local database updated");
-                    }
-                });
-    }
-
-    public void updateDatabaseLibrary(DatabasePackMetadata meta) {
+    public void updateLibrary(DatabasePackMetadata meta) {
         String uuid = meta.getUuid();
         // Refresh library database only if the pack isn't an official one
-        if (isOfficialPack(uuid)) {
+        if (dbOfficialCache.containsKey(uuid)) {
             return;
         }
         LOGGER.debug("Updating library metadata cache for {}", uuid);
@@ -174,7 +111,7 @@ public class DatabaseMetadataService {
         }
     }
 
-    public void persistDatabaseLibrary() throws IOException {
+    public void persistLibrary() throws IOException {
         // file last modified time
         long lastModifiedFile = -1l;
         if (Files.isRegularFile(dbLibraryPath)) {
@@ -187,12 +124,77 @@ public class DatabaseMetadataService {
         }
     }
 
+    private static boolean olderThanDays(FileTime ft, long days) {
+        return ChronoUnit.DAYS.between(ft.toInstant(), Instant.now()) > days;
+    }
+
+    private Map<String, DatabasePackMetadata> initDbLibrary() throws IOException {
+        if (dbReset) {
+            LOGGER.info("Remove database {}", dbLibraryPath);
+            Files.deleteIfExists(dbLibraryPath);
+        }
+        if (Files.exists(dbLibraryPath)) {
+            return readDatabaseFile(dbLibraryPath);
+        }
+        LOGGER.info("Initialize empty library database");
+        lastModifiedCache = System.currentTimeMillis();
+        return new HashMap<>();
+    }
+
+    private Map<String, DatabasePackMetadata> initDbOfficial() throws IOException {
+        if (dbReset) {
+            LOGGER.info("Remove database {}", dbOfficialPath);
+            Files.deleteIfExists(dbOfficialPath);
+        }
+        try {
+            // load file younger than 15 days
+            if (Files.exists(dbOfficialPath) && !olderThanDays(Files.getLastModifiedTime(dbOfficialPath), 15)) {
+                return readDatabaseFile(dbOfficialPath);
+            }
+        } catch (IOException e) {
+            // Graceful failure on invalid file content
+            LOGGER.warn("Official metadata database file is invalid", e);
+        }
+        // (re-)create json
+        LOGGER.info("Fetching official database.");
+        // get token
+        TokenResponse tr = luniiGuestClient.auth();
+        // get OfficialPack list
+        var packs = luniiPacksClient.packs(tr.getToken()).getResponse().values(); // get packs
+        // convert OfficialPack to DatabasePackMetadata
+        LOGGER.info("Parsing {} official packs.", packs.size());
+        return packs.stream().map(op -> {
+            var locales = op.getLocalesAvailable().keySet();
+            Locale l = locales.contains(Locale.FRANCE) ? Locale.FRANCE : locales.iterator().next();
+            Infos i = op.getLocalizedInfos().get(l);
+            return new DatabasePackMetadata(op.getUuid(), i.getTitle(), i.getDescription(), i.getThumbnail(), true);
+        }).filter(pm -> {
+            LOGGER.debug("Official pack: {} {}", pm.getUuid(), pm.getTitle());
+            return true;
+        }).collect(Collectors.toMap(DatabasePackMetadata::getUuid, pm -> pm, (o1, o2) -> o1));
+    }
+
+    private void writeDbs() throws IOException {
+        // write official db
+        writeDatabaseFile(dbOfficialPath, dbOfficialCache);
+        // Remove official packs from library database
+        LOGGER.info("Clean official packs in library database");
+        if (dbLibraryCache.keySet().removeAll(dbOfficialCache.keySet())) {
+            LOGGER.warn("Removed official packs found in library database!");
+            lastModifiedCache = System.currentTimeMillis();
+        }
+        // write library db
+        persistLibrary();
+    }
+
     private Map<String, DatabasePackMetadata> readDatabaseFile(Path dbPath) throws IOException {
+        LOGGER.info("Read database {}", dbPath);
         return objectMapper.readValue(dbPath.toFile(), new TypeReference<Map<String, DatabasePackMetadata>>() {
         });
     }
 
     private void writeDatabaseFile(Path dbPath, Map<String, DatabasePackMetadata> dbCache) throws IOException {
+        LOGGER.info("Write database {}", dbPath);
         Files.createDirectories(dbPath.getParent());
         objectMapper.writeValue(dbPath.toFile(), dbCache);
     }
