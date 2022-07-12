@@ -32,7 +32,7 @@ import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.utils.PackAssetsCompression;
 import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.exception.StoryTellerException;
-import studio.driver.fs.FileUtils;
+import studio.core.v1.utils.fs.FileUtils;
 import studio.metadata.DatabaseMetadataDTOs.DatabasePackMetadata;
 import studio.metadata.DatabaseMetadataService;
 import studio.webui.model.LibraryDTOs.LibraryPackDTO;
@@ -57,22 +57,9 @@ public class LibraryService {
     public void init(@Observes StartupEvent ev) {
         LOGGER.info("library path : {} (tmpdir path : {})", libraryPath, tmpDirPath);
         // Create the local library folder if needed
-        if (!Files.isDirectory(libraryPath)) {
-            try {
-                Files.createDirectories(libraryPath);
-            } catch (IOException e) {
-                throw new StoryTellerException("Failed to initialize local library", e);
-            }
-        }
-
+        FileUtils.createDirectories("Failed to initialize local library", libraryPath);
         // Create the temp folder if needed
-        if (!Files.isDirectory(tmpDirPath)) {
-            try {
-                Files.createDirectories(tmpDirPath);
-            } catch (IOException e) {
-                throw new StoryTellerException("Failed to initialize temp folder", e);
-            }
-        }
+        FileUtils.createDirectories("Failed to initialize temp folder", tmpDirPath);
     }
 
     public PathDTO infos() {

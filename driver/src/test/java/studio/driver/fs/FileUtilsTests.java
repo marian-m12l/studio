@@ -9,6 +9,8 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import studio.core.v1.utils.fs.FileUtils;
+
 class FileUtilsTests {
 
     @TempDir

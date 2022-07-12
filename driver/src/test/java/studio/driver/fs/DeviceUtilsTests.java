@@ -13,6 +13,8 @@ import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
 
+import studio.core.v1.utils.fs.DeviceUtils;
+
 class DeviceUtilsTests {
 
     private static final String OS = System.getProperty("os.name").toLowerCase();

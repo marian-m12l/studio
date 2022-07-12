@@ -33,13 +33,13 @@ import org.usb4java.Device;
 import org.usb4java.DeviceHandle;
 
 import studio.core.v1.utils.exception.StoryTellerException;
+import studio.core.v1.utils.fs.FileUtils;
 import studio.driver.DeviceVersion;
 import studio.driver.LibUsbDetectionHelper;
 import studio.driver.StoryTellerAsyncDriver;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
 import studio.driver.event.TransferProgressListener;
-import studio.driver.fs.FileUtils;
 import studio.driver.model.TransferStatus;
 import studio.driver.model.raw.RawDeviceInfos;
 import studio.driver.model.raw.RawStoryPackInfos;

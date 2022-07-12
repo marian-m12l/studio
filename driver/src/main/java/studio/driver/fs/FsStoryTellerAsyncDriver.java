@@ -32,6 +32,8 @@ import org.usb4java.Device;
 
 import studio.core.v1.utils.SecurityUtils;
 import studio.core.v1.utils.exception.StoryTellerException;
+import studio.core.v1.utils.fs.DeviceUtils;
+import studio.core.v1.utils.fs.FileUtils;
 import studio.core.v1.utils.stream.ThrowingConsumer;
 import studio.core.v1.writer.fs.FsStoryPackWriter;
 import studio.driver.DeviceVersion;

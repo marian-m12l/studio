@@ -32,6 +32,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.runtime.StartupEvent;
 import studio.core.v1.utils.exception.StoryTellerException;
+import studio.core.v1.utils.fs.FileUtils;
 import studio.metadata.DatabaseMetadataDTOs.DatabasePackMetadata;
 import studio.metadata.DatabaseMetadataDTOs.LuniiGuestClient;
 import studio.metadata.DatabaseMetadataDTOs.LuniiPacksClient;
@@ -137,6 +138,7 @@ public class DatabaseMetadataService {
             return readDatabaseFile(dbLibraryPath);
         }
         LOGGER.info("Initialize empty library database");
+        FileUtils.createDirectories("Failed to initialize library dir", dbLibraryPath.getParent());
         lastModifiedCache = System.currentTimeMillis();
         return new HashMap<>();
     }
@@ -155,6 +157,7 @@ public class DatabaseMetadataService {
             // Graceful failure on invalid file content
             LOGGER.warn("Official metadata database file is invalid", e);
         }
+        FileUtils.createDirectories("Failed to initialize database dir", dbOfficialPath.getParent());
         // (re-)create json
         LOGGER.info("Fetching official database.");
         // get token
@@ -195,7 +198,6 @@ public class DatabaseMetadataService {
 
     private void writeDatabaseFile(Path dbPath, Map<String, DatabasePackMetadata> dbCache) throws IOException {
         LOGGER.info("Write database {}", dbPath);
-        Files.createDirectories(dbPath.getParent());
         objectMapper.writeValue(dbPath.toFile(), dbCache);
     }
 }

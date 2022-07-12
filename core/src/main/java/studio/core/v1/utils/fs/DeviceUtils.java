@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package studio.driver.fs;
+package studio.core.v1.utils.fs;
 
 import java.io.File;
 import java.io.IOException;

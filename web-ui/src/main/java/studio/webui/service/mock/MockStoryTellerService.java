@@ -25,7 +25,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.annotation.PostConstruct;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
@@ -35,13 +34,14 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.arc.profile.UnlessBuildProfile;
+import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.reader.binary.BinaryStoryPackReader;
 import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.exception.StoryTellerException;
-import studio.driver.fs.FileUtils;
+import studio.core.v1.utils.fs.FileUtils;
 import studio.metadata.DatabaseMetadataService;
 import studio.webui.model.DeviceDTOs.DeviceInfosDTO;
 import studio.webui.model.DeviceDTOs.DeviceInfosDTO.StorageDTO;
@@ -65,16 +65,17 @@ public class MockStoryTellerService implements IStoryTellerService {
     @ConfigProperty(name = "studio.mock.device")
     Path devicePath;
 
-    public void init(@Observes StartupEvent ev) {
+    public void onStart(@Observes StartupEvent ev) {
         LOGGER.info("Setting up mocked story teller service in {}", devicePath);
-        try {
-            // Create the mocked device folder if needed
-            Files.createDirectories(devicePath);
-        } catch (IOException e) {
-            throw new StoryTellerException("Failed to initialize mocked device");
-        }
+        // Create the mocked device folder if needed
+        FileUtils.createDirectories("Failed to initialize mocked device", devicePath);
         // plug event
         sendDevicePlugged(eventBus, getDeviceInfo());
+    }
+
+    public void onStop(@Observes ShutdownEvent ev) {
+        // unplug event
+        sendDeviceUnplugged(eventBus);
     }
 
     public CompletionStage<DeviceInfosDTO> deviceInfos() {

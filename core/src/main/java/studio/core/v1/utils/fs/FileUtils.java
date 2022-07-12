@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package studio.driver.fs;
+package studio.core.v1.utils.fs;
 
 import java.io.File;
 import java.io.IOException;
@@ -12,6 +12,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.stream.Stream;
+
+import studio.core.v1.utils.exception.StoryTellerException;
 
 public class FileUtils {
 
@@ -59,4 +61,19 @@ public class FileUtils {
         return "" + trunc + " " + unit + "B";
     }
 
+    /**
+     * Create directories. Throw custom unchecked StoryTellerException.
+     * 
+     * @param errorMessage
+     * @param dirPath
+     */
+    public static void createDirectories(String errorMessage, Path dirPath) {
+        try {
+            if (Files.isDirectory(dirPath)) {
+                Files.createDirectories(dirPath);
+            }
+        } catch (IOException e) {
+            throw new StoryTellerException(errorMessage);
+        }
+    }
 }
