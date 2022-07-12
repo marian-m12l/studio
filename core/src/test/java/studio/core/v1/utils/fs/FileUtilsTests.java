@@ -1,6 +1,7 @@
-package studio.driver.fs;
+package studio.core.v1.utils.fs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -9,7 +10,7 @@ import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
-import studio.core.v1.utils.fs.FileUtils;
+import studio.core.v1.utils.exception.StoryTellerException;
 
 class FileUtilsTests {
 
@@ -51,6 +52,23 @@ class FileUtilsTests {
         addFile(subdir1, "f2.txt");
         addFile(dir2, "f2.txt");
         assertFolderSize(tmp, CONTENT.length() * 3);
+    }
+
+    @Test
+    void createDirectories() throws IOException {
+        // Missing Directory -> OK
+        Path helloDir = tmp.resolve("hello");
+        FileUtils.createDirectories("Failed to init hello dir", helloDir);
+        // Existing Directory -> OK
+        FileUtils.createDirectories("Failed to init hello dir", helloDir);
+
+        // Existing File -> KO
+        Path helloFile = Files.createFile(helloDir.resolve("hello.txt"));
+        String errorMessage = "Failed to init hello dir";
+        StoryTellerException e = assertThrows(StoryTellerException.class, () -> {
+            FileUtils.createDirectories(errorMessage, helloFile);
+        });
+        assertEquals(errorMessage, e.getMessage(), "Invalid errorMessage");
     }
 
     Path addFile(Path dir, String name) throws IOException {

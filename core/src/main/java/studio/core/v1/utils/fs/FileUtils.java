@@ -69,7 +69,7 @@ public class FileUtils {
      */
     public static void createDirectories(String errorMessage, Path dirPath) {
         try {
-            if (Files.isDirectory(dirPath)) {
+            if (!Files.isDirectory(dirPath)) {
                 Files.createDirectories(dirPath);
             }
         } catch (IOException e) {

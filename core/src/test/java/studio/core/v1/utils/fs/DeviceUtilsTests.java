@@ -1,4 +1,4 @@
-package studio.driver.fs;
+package studio.core.v1.utils.fs;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -12,8 +12,6 @@ import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import org.junit.jupiter.api.Test;
-
-import studio.core.v1.utils.fs.DeviceUtils;
 
 class DeviceUtilsTests {
 
