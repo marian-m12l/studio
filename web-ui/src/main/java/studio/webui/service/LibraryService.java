@@ -33,10 +33,10 @@ import studio.core.v1.utils.PackAssetsCompression;
 import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.exception.StoryTellerException;
 import studio.core.v1.utils.fs.FileUtils;
+import studio.driver.model.MetaPackDTO;
 import studio.metadata.DatabaseMetadataDTOs.DatabasePackMetadata;
 import studio.metadata.DatabaseMetadataService;
 import studio.webui.model.LibraryDTOs.LibraryPackDTO;
-import studio.webui.model.LibraryDTOs.MetaPackDTO;
 import studio.webui.model.LibraryDTOs.PathDTO;
 import studio.webui.model.LibraryDTOs.UuidPacksDTO;
 

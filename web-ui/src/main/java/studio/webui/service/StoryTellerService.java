@@ -10,14 +10,14 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.BiConsumer;
-import java.util.stream.Collectors;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -25,28 +25,19 @@ import org.usb4java.Device;
 
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.vertx.mutiny.core.eventbus.EventBus;
-import studio.core.v1.utils.PackFormat;
-import studio.core.v1.utils.SecurityUtils;
-import studio.driver.StoryTellerAsyncDriver;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
 import studio.driver.event.TransferProgressListener;
-import studio.driver.fs.FsStoryTellerAsyncDriver;
-import studio.driver.model.StoryPackInfos;
+import studio.driver.model.DeviceInfosDTO;
+import studio.driver.model.MetaPackDTO;
 import studio.driver.model.TransferStatus;
-import studio.driver.model.fs.FsDeviceInfos;
-import studio.driver.model.fs.FsStoryPackInfos;
-import studio.driver.model.raw.RawDeviceInfos;
-import studio.driver.model.raw.RawStoryPackInfos;
-import studio.driver.raw.LibUsbMassStorageHelper;
-import studio.driver.raw.RawStoryTellerAsyncDriver;
+import studio.driver.service.StoryTellerAsyncDriver;
+import studio.driver.service.fs.FsStoryTellerAsyncDriver;
+import studio.driver.service.raw.RawStoryTellerAsyncDriver;
 import studio.metadata.DatabaseMetadataService;
-import studio.webui.model.DeviceDTOs.DeviceInfosDTO;
-import studio.webui.model.DeviceDTOs.DeviceInfosDTO.StorageDTO;
-import studio.webui.model.LibraryDTOs.MetaPackDTO;
 
 @IfBuildProfile("prod")
-@ApplicationScoped
+@Singleton
 public class StoryTellerService implements IStoryTellerService, DevicePluggedListener, DeviceUnpluggedListener {
 
     private static final Logger LOGGER = LogManager.getLogger(StoryTellerService.class);
@@ -96,74 +87,55 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
         sendDeviceUnplugged(eventBus);
     }
 
-    public CompletionStage<DeviceInfosDTO> deviceInfos() {
+    /**
+     * Select driver from connected device.
+     * 
+     * @return Optional StoryTellerAsyncDriver
+     */
+    private Optional<StoryTellerAsyncDriver> currentDriver() {
         if (rawDriver.hasDevice()) {
-            return rawDriver.getDeviceInfos().thenApply(this::toDto);
+            return Optional.of(rawDriver);
         }
         if (fsDriver.hasDevice()) {
-            return fsDriver.getDeviceInfos().thenApply(this::toDto);
+            return Optional.of(fsDriver);
         }
-        DeviceInfosDTO failed = new DeviceInfosDTO();
-        failed.setPlugged(false);
-        return CompletableFuture.completedStage(failed);
+        return Optional.empty();
+    }
+
+    public CompletionStage<DeviceInfosDTO> deviceInfos() {
+        return currentDriver().map(StoryTellerAsyncDriver::getDeviceInfos) //
+                .orElseGet(() -> CompletableFuture.completedStage(new DeviceInfosDTO()));
     }
 
     public CompletionStage<List<MetaPackDTO>> packs() {
-        if (rawDriver.hasDevice()) {
-            return rawDriver.getPacksList().thenApply(p -> p.stream().map(this::toDto).collect(Collectors.toList()));
-        }
-        if (fsDriver.hasDevice()) {
-            return fsDriver.getPacksList().thenApply(p -> p.stream().map(this::toDto).collect(Collectors.toList()));
-        }
-        return CompletableFuture.completedStage(Arrays.asList());
+        return currentDriver().map(StoryTellerAsyncDriver::getPacksList) //
+                .orElseGet(() -> CompletableFuture.completedStage(Arrays.asList())) //
+                .thenApply(this::enhancePacks);
     }
 
     public CompletionStage<String> addPack(String uuid, Path packFile) {
-        if (rawDriver.hasDevice()) {
-            return rawDriver.getPacksList().thenApply(packs -> upload(packs, rawDriver, uuid, packFile));
-        }
-        if (fsDriver.hasDevice()) {
-            return fsDriver.getPacksList().thenApply(packs -> upload(packs, fsDriver, uuid, packFile));
-        }
-        return CompletableFuture.completedStage(uuid);
+        return currentDriver().map(d -> d.getPacksList().thenApply(packs -> upload(packs, d, uuid, packFile))) //
+                .orElseGet(() -> CompletableFuture.completedStage(uuid));
     }
 
     public CompletionStage<Boolean> deletePack(String uuid) {
-        if (rawDriver.hasDevice()) {
-            return rawDriver.deletePack(uuid);
-        }
-        if (fsDriver.hasDevice()) {
-            return fsDriver.deletePack(uuid);
-        }
-        return CompletableFuture.completedStage(false);
+        return currentDriver().map(d -> d.deletePack(uuid)) //
+                .orElseGet(() -> CompletableFuture.completedStage(false));
     }
 
     public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
-        if (rawDriver.hasDevice()) {
-            return rawDriver.reorderPacks(uuids);
-        }
-        if (fsDriver.hasDevice()) {
-            return fsDriver.reorderPacks(uuids);
-        }
-        return CompletableFuture.completedStage(false);
+        return currentDriver().map(d -> d.reorderPacks(uuids)) //
+                .orElseGet(() -> CompletableFuture.completedStage(false));
     }
 
     public CompletionStage<String> extractPack(String uuid, Path packFile) {
-        if (rawDriver.hasDevice()) {
-            return CompletableFuture.completedStage(download(rawDriver, uuid, packFile));
-        }
-        if (fsDriver.hasDevice()) {
-            return CompletableFuture.completedStage(download(fsDriver, uuid, packFile));
-        }
-        return CompletableFuture.completedStage(uuid);
+        return currentDriver().map(d -> CompletableFuture.completedStage(download(d, uuid, packFile))) //
+                .orElseGet(() -> CompletableFuture.completedStage(uuid));
     }
 
     public CompletionStage<Void> dump(Path outputPath) {
-        if (rawDriver.hasDevice()) {
-            return rawDriver.dump(outputPath);
-        }
-        // unavailable for fsDevice
-        return CompletableFuture.completedStage(null);
+        return currentDriver().map(d -> d.dump(outputPath)) //
+                .orElseGet(() -> CompletableFuture.completedStage(null));
     }
 
     // Send event on eventbus to monitor progress
@@ -175,6 +147,7 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
         };
     }
 
+    // Send event on eventbus when done
     private BiConsumer<TransferStatus, Throwable> onTransferEnd(String transferId) {
         return (status, t) -> {
             boolean state = true;
@@ -186,10 +159,9 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
         };
     }
 
-    private <T, U, V extends StoryPackInfos> String upload(List<V> packs, StoryTellerAsyncDriver<T, U> driver,
-            String uuid, Path packFile) {
+    private String upload(List<MetaPackDTO> packs, StoryTellerAsyncDriver driver, String uuid, Path packFile) {
         // Check that the pack on device : Look for UUID in packs index
-        boolean matched = packs.stream().anyMatch(p -> p.getUuid().equals(UUID.fromString(uuid)));
+        boolean matched = packs.stream().anyMatch(p -> p.getUuid().equals(uuid));
         if (matched) {
             LOGGER.warn("Pack already exists on device");
             sendDone(eventBus, uuid, true);
@@ -200,7 +172,7 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
         return transferId;
     }
 
-    private <T, U> String download(StoryTellerAsyncDriver<T, U> driver, String uuid, Path destFile) {
+    private String download(StoryTellerAsyncDriver driver, String uuid, Path destFile) {
         // Check that the destination is available
         if (Files.exists(destFile.resolve(uuid))) {
             LOGGER.warn("Cannot extract pack from device because the destination file already exists");
@@ -212,73 +184,21 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
         return transferId;
     }
 
-    private MetaPackDTO toDto(RawStoryPackInfos pack) {
-        MetaPackDTO mp = new MetaPackDTO();
-        mp.setUuid(pack.getUuid().toString());
-        mp.setFormat(PackFormat.RAW.getLabel());
-        mp.setVersion(pack.getVersion());
-        // raw data
-        mp.setSectorSize(pack.getSizeInSectors());
-        // add meta
-        databaseMetadataService.getMetadata(pack.getUuid().toString()).ifPresent(meta -> { //
-            mp.setTitle(meta.getTitle());
-            mp.setDescription(meta.getDescription());
-            mp.setImage(meta.getThumbnail());
-            mp.setOfficial(meta.isOfficial());
-        });
-        LOGGER.trace("toDto : {}", mp);
-        return mp;
+    /**
+     * Enhance packs with metadata.
+     * 
+     * @param metaPacks List<MetaPackDTO>
+     * @return metaPacks enhanced
+     */
+    private List<MetaPackDTO> enhancePacks(List<MetaPackDTO> metaPacks) {
+        for (MetaPackDTO mp : metaPacks) {
+            databaseMetadataService.getMetadata(mp.getUuid()).ifPresent(meta -> { //
+                mp.setTitle(meta.getTitle());
+                mp.setDescription(meta.getDescription());
+                mp.setImage(meta.getThumbnail());
+                mp.setOfficial(meta.isOfficial());
+            });
+        }
+        return metaPacks;
     }
-
-    private MetaPackDTO toDto(FsStoryPackInfos pack) {
-        MetaPackDTO mp = new MetaPackDTO();
-        mp.setUuid(pack.getUuid().toString());
-        mp.setFormat(PackFormat.FS.getLabel());
-        mp.setVersion(pack.getVersion());
-        // fs data
-        mp.setFolderName(pack.getFolderName());
-        mp.setSizeInBytes(pack.getSizeInBytes());
-        mp.setNightModeAvailable(pack.isNightModeAvailable());
-        // add meta
-        databaseMetadataService.getMetadata(pack.getUuid().toString()).ifPresent(meta -> { //
-            mp.setTitle(meta.getTitle());
-            mp.setDescription(meta.getDescription());
-            mp.setImage(meta.getThumbnail());
-            mp.setOfficial(meta.isOfficial());
-        });
-        LOGGER.trace("toDto : {}", mp);
-        return mp;
-    }
-
-    private DeviceInfosDTO toDto(RawDeviceInfos infos) {
-        long total = (long) infos.getSdCardSizeInSectors() * LibUsbMassStorageHelper.SECTOR_SIZE;
-        long used = (long) infos.getUsedSpaceInSectors() * LibUsbMassStorageHelper.SECTOR_SIZE;
-        String fw = infos.getFirmwareMajor() == -1 ? null : infos.getFirmwareMajor() + "." + infos.getFirmwareMinor();
-
-        DeviceInfosDTO di = new DeviceInfosDTO();
-        di.setUuid(infos.getUuid().toString());
-        di.setSerial(infos.getSerialNumber());
-        di.setFirmware(fw);
-        di.setError(infos.isInError());
-        di.setPlugged(true);
-        di.setDriver(PackFormat.RAW.getLabel());
-        di.setStorage(new StorageDTO(total, total - used, used));
-        return di;
-    }
-
-    private DeviceInfosDTO toDto(FsDeviceInfos infos) {
-        long total = infos.getSdCardSizeInBytes();
-        long used = infos.getUsedSpaceInBytes();
-
-        DeviceInfosDTO di = new DeviceInfosDTO();
-        di.setUuid(SecurityUtils.encodeHex(infos.getDeviceId()));
-        di.setSerial(infos.getSerialNumber());
-        di.setFirmware(infos.getFirmwareMajor() + "." + infos.getFirmwareMinor());
-        di.setError(false);
-        di.setPlugged(true);
-        di.setDriver(PackFormat.FS.getLabel());
-        di.setStorage(new StorageDTO(total, total - used, used));
-        return di;
-    }
-
 }

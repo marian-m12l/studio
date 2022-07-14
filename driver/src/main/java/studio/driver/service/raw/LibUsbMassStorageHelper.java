@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package studio.driver.raw;
+package studio.driver.service.raw;
 
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;

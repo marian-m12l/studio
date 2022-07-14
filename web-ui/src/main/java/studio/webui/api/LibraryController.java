@@ -67,7 +67,6 @@ public class LibraryController {
     /** List library packs. */
     @GET
     @Path("packs")
-    @NonBlocking
     public List<UuidPacksDTO> packs() {
         long t1 = System.currentTimeMillis();
         List<UuidPacksDTO> libraryPacks = libraryService.packs();
@@ -116,7 +115,7 @@ public class LibraryController {
     @Path("remove")
     @NonBlocking
     public SuccessDTO remove(PathDTO pathData) {
-        LOGGER.info("Remove lib pack '{}'", pathData.getPath());
+        LOGGER.info("Remove pack '{}'", pathData.getPath());
         boolean removed = libraryService.deletePack(pathData.getPath());
         return new SuccessDTO(removed);
     }

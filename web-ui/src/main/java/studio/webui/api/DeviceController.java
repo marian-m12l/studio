@@ -19,11 +19,11 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import studio.core.v1.utils.PackFormat;
-import studio.webui.model.DeviceDTOs.DeviceInfosDTO;
+import studio.driver.model.DeviceInfosDTO;
+import studio.driver.model.MetaPackDTO;
 import studio.webui.model.DeviceDTOs.OutputDTO;
 import studio.webui.model.DeviceDTOs.UuidDTO;
 import studio.webui.model.DeviceDTOs.UuidsDTO;
-import studio.webui.model.LibraryDTOs.MetaPackDTO;
 import studio.webui.model.LibraryDTOs.SuccessDTO;
 import studio.webui.model.LibraryDTOs.TransferDTO;
 import studio.webui.service.IStoryTellerService;

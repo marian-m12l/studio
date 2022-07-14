@@ -83,10 +83,12 @@ public class LibUsbDetectionHelper {
             }
         } else {
             LOGGER.info("Hotplug is NOT supported. Scheduling task to actively poll USB device...");
-            scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
-            activePollingTask = scheduledExecutor.scheduleAtFixedRate(
-                    new LibUsbActivePollingWorker(context, deviceVersion, pluggedlistener, unpluggedlistener), 0, POLL_DELAY,
-                    TimeUnit.MILLISECONDS);
+            if(scheduledExecutor == null) {
+                scheduledExecutor = Executors.newSingleThreadScheduledExecutor();
+                activePollingTask = scheduledExecutor.scheduleAtFixedRate(
+                        new LibUsbActivePollingWorker(context, deviceVersion, pluggedlistener, unpluggedlistener), 0, POLL_DELAY,
+                        TimeUnit.MILLISECONDS);
+            }
         }
         // Add shutdown hook
         registerHook(context, asyncEventHandlerWorker);

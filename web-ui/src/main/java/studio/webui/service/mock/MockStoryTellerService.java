@@ -25,9 +25,9 @@ import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
+import javax.inject.Singleton;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -42,14 +42,14 @@ import studio.core.v1.reader.binary.BinaryStoryPackReader;
 import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.exception.StoryTellerException;
 import studio.core.v1.utils.fs.FileUtils;
+import studio.driver.model.DeviceInfosDTO;
+import studio.driver.model.DeviceInfosDTO.StorageDTO;
+import studio.driver.model.MetaPackDTO;
 import studio.metadata.DatabaseMetadataService;
-import studio.webui.model.DeviceDTOs.DeviceInfosDTO;
-import studio.webui.model.DeviceDTOs.DeviceInfosDTO.StorageDTO;
-import studio.webui.model.LibraryDTOs.MetaPackDTO;
 import studio.webui.service.IStoryTellerService;
 
 @UnlessBuildProfile("prod")
-@ApplicationScoped
+@Singleton
 public class MockStoryTellerService implements IStoryTellerService {
 
     private static final Logger LOGGER = LogManager.getLogger(MockStoryTellerService.class);

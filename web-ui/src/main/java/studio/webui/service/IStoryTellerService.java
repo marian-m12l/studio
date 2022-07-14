@@ -12,8 +12,8 @@ import java.util.concurrent.CompletionStage;
 
 import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.eventbus.EventBus;
-import studio.webui.model.DeviceDTOs.DeviceInfosDTO;
-import studio.webui.model.LibraryDTOs.MetaPackDTO;
+import studio.driver.model.DeviceInfosDTO;
+import studio.driver.model.MetaPackDTO;
 
 public interface IStoryTellerService {
 

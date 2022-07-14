@@ -1,4 +1,4 @@
-package studio.driver;
+package studio.driver.service;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -7,15 +7,19 @@ import java.util.concurrent.CompletionStage;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
 import studio.driver.event.TransferProgressListener;
+import studio.driver.model.DeviceInfosDTO;
+import studio.driver.model.MetaPackDTO;
 import studio.driver.model.TransferStatus;
 
-public interface StoryTellerAsyncDriver<T, U> {
+public interface StoryTellerAsyncDriver {
+
+    boolean hasDevice();
 
     void registerDeviceListener(DevicePluggedListener pluggedlistener, DeviceUnpluggedListener unpluggedlistener);
 
-    CompletionStage<T> getDeviceInfos();
+    CompletionStage<DeviceInfosDTO> getDeviceInfos();
 
-    CompletionStage<List<U>> getPacksList();
+    CompletionStage<List<MetaPackDTO>> getPacksList();
 
     CompletionStage<Boolean> reorderPacks(List<String> uuids);
 

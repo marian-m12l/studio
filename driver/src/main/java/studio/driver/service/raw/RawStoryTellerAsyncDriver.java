@@ -4,7 +4,7 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package studio.driver.raw;
+package studio.driver.service.raw;
 
 import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
@@ -26,25 +26,32 @@ import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
+import java.util.stream.Collectors;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.usb4java.Device;
 import org.usb4java.DeviceHandle;
 
+import lombok.Getter;
+import lombok.Setter;
+import studio.core.v1.utils.PackFormat;
 import studio.core.v1.utils.exception.StoryTellerException;
 import studio.core.v1.utils.fs.FileUtils;
 import studio.driver.DeviceVersion;
 import studio.driver.LibUsbDetectionHelper;
-import studio.driver.StoryTellerAsyncDriver;
+import studio.driver.service.StoryTellerAsyncDriver;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
 import studio.driver.event.TransferProgressListener;
+import studio.driver.model.DeviceInfos;
+import studio.driver.model.DeviceInfosDTO;
+import studio.driver.model.DeviceInfosDTO.StorageDTO;
+import studio.driver.model.MetaPackDTO;
+import studio.driver.model.StoryPackInfos;
 import studio.driver.model.TransferStatus;
-import studio.driver.model.raw.RawDeviceInfos;
-import studio.driver.model.raw.RawStoryPackInfos;
 
-public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDeviceInfos, RawStoryPackInfos> {
+public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
     private static final Logger LOGGER = LogManager.getLogger(RawStoryTellerAsyncDriver.class);
 
@@ -59,6 +66,24 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
     private Device device = null;
     private List<DevicePluggedListener> pluggedlisteners = new ArrayList<>();
     private List<DeviceUnpluggedListener> unpluggedlisteners = new ArrayList<>();
+
+    @Getter
+    @Setter
+    private static class RawDeviceInfos extends DeviceInfos {
+        private UUID uuid;
+        private int sdCardSizeInSectors;
+        private int usedSpaceInSectors;
+        private boolean inError;
+    }
+
+    @Getter
+    @Setter
+    private static class RawStoryPackInfos extends StoryPackInfos {
+        private int startSector;
+        private int sizeInSectors;
+        private short statsOffset;
+        private short samplingRate;
+    }
 
     public RawStoryTellerAsyncDriver() {
         // Initialize libusb, handle and propagate hotplug events
@@ -85,11 +110,26 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
         this.unpluggedlisteners.add(unpluggedlistener);
     }
 
-    public CompletionStage<RawDeviceInfos> getDeviceInfos() {
+    public CompletionStage<DeviceInfosDTO> getDeviceInfos() {
         if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
-        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, this::readDeviceInfos);
+        return LibUsbMassStorageHelper.executeOnDeviceHandle(device, this::readDeviceInfos)//
+                .thenApply(infos -> {
+                    long total = (long) infos.getSdCardSizeInSectors() * LibUsbMassStorageHelper.SECTOR_SIZE;
+                    long used = (long) infos.getUsedSpaceInSectors() * LibUsbMassStorageHelper.SECTOR_SIZE;
+                    String fw = infos.getFirmwareMajor() == -1 ? null : infos.getFirmwareMajor() + "." + infos.getFirmwareMinor();
+
+                    DeviceInfosDTO di = new DeviceInfosDTO();
+                    di.setUuid(infos.getUuid().toString());
+                    di.setSerial(infos.getSerialNumber());
+                    di.setFirmware(fw);
+                    di.setError(infos.isInError());
+                    di.setPlugged(true);
+                    di.setDriver(PackFormat.RAW.getLabel());
+                    di.setStorage(new StorageDTO(total, total - used, used));
+                    return di;
+                });
     }
 
     private CompletionStage<RawDeviceInfos> readDeviceInfos(DeviceHandle handle) {
@@ -203,12 +243,20 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
     }
 
 
-    public CompletionStage<List<RawStoryPackInfos>> getPacksList() {
+    public CompletionStage<List<MetaPackDTO>> getPacksList() {
         if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         // Read pack index
-        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, this::readPackIndex);
+        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, this::readPackIndex)
+                .thenApply(rawlist -> rawlist.stream().map(pack -> {
+                    MetaPackDTO mp = new MetaPackDTO();
+                    mp.setUuid(pack.getUuid().toString());
+                    mp.setFormat(PackFormat.RAW.getLabel());
+                    mp.setVersion(pack.getVersion());
+                    mp.setSectorSize(pack.getSizeInSectors());
+                    return mp;
+                }).collect(Collectors.toList()));
     }
 
     private CompletionStage<List<RawStoryPackInfos>> readPackIndex(DeviceHandle handle) {
@@ -308,7 +356,6 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
             bb.putShort(pack.getStatsOffset());
             bb.putShort(pack.getSamplingRate());
         }
-
         return LibUsbMassStorageHelper.asyncWriteSDSectors(handle, PACK_INDEX_SD_SECTOR, (short) 1, bb);
     }
 
@@ -326,7 +373,6 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver<RawDevi
         if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
-
         return LibUsbMassStorageHelper.executeOnDeviceHandle(device, handle ->
             readPackIndex(handle)
                     .thenCompose(packs -> {
