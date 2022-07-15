@@ -26,7 +26,7 @@ import org.jboss.resteasy.reactive.PartType;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
 
 import io.smallrye.common.annotation.NonBlocking;
-import studio.core.v1.utils.PackFormat;
+import studio.core.v1.service.PackFormat;
 import studio.webui.model.LibraryDTOs.PackDTO;
 import studio.webui.model.LibraryDTOs.PathDTO;
 import studio.webui.model.LibraryDTOs.SuccessDTO;

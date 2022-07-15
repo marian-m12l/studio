@@ -8,7 +8,7 @@ package studio.core.v1.model.metadata;
 
 import lombok.Data;
 import lombok.EqualsAndHashCode;
-import studio.core.v1.utils.PackFormat;
+import studio.core.v1.service.PackFormat;
 
 @Data
 @EqualsAndHashCode(exclude = "thumbnail")

@@ -24,6 +24,10 @@ import studio.core.v1.model.asset.AudioAsset;
 import studio.core.v1.model.asset.AudioType;
 import studio.core.v1.model.asset.ImageAsset;
 import studio.core.v1.model.asset.ImageType;
+import studio.core.v1.utils.audio.AudioConversion;
+import studio.core.v1.utils.audio.ID3Tags;
+import studio.core.v1.utils.image.ImageConversion;
+import studio.core.v1.utils.security.SecurityUtils;
 import studio.core.v1.utils.stream.StoppingConsumer;
 import studio.core.v1.utils.stream.ThrowingFunction;
 

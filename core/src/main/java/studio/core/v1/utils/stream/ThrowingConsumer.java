@@ -4,7 +4,7 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 
-import studio.core.v1.utils.exception.StoryTellerException;
+import studio.core.v1.exception.StoryTellerException;
 
 /**
  * Handle checked exception in lambda consumer.

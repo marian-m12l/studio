@@ -31,8 +31,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.runtime.StartupEvent;
-import studio.core.v1.utils.exception.StoryTellerException;
-import studio.core.v1.utils.fs.FileUtils;
+import studio.core.v1.exception.StoryTellerException;
+import studio.core.v1.utils.io.FileUtils;
 import studio.metadata.DatabaseMetadataDTOs.DatabasePackMetadata;
 import studio.metadata.DatabaseMetadataDTOs.LuniiGuestClient;
 import studio.metadata.DatabaseMetadataDTOs.LuniiPacksClient;

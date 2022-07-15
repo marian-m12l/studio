@@ -22,8 +22,8 @@ import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 import org.usb4java.Transfer;
 
-import studio.core.v1.utils.SecurityUtils;
-import studio.core.v1.utils.exception.StoryTellerException;
+import studio.core.v1.exception.StoryTellerException;
+import studio.core.v1.utils.security.SecurityUtils;
 
 /**
  * Helper methods to manipulate the Story Teller device via USB Mass Storage Bulk-Only protocol with vendor-specific

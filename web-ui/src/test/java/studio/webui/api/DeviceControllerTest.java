@@ -30,7 +30,7 @@ import io.restassured.http.ContentType;
 import io.restassured.specification.RequestSpecification;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
-import studio.core.v1.utils.PackFormat;
+import studio.core.v1.service.PackFormat;
 import studio.junit.TestNameExtension;
 import studio.webui.model.DeviceDTOs.OutputDTO;
 import studio.webui.model.DeviceDTOs.UuidDTO;

@@ -18,7 +18,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
-import studio.core.v1.utils.PackFormat;
+import studio.core.v1.service.PackFormat;
 import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.MetaPackDTO;
 import studio.webui.model.DeviceDTOs.OutputDTO;

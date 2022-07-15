@@ -24,7 +24,7 @@ import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
-import studio.core.v1.utils.PackFormat;
+import studio.core.v1.service.PackFormat;
 import studio.junit.TestNameExtension;
 import studio.webui.model.LibraryDTOs.PackDTO;
 import studio.webui.model.LibraryDTOs.PathDTO;

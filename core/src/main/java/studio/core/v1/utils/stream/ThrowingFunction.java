@@ -2,7 +2,7 @@ package studio.core.v1.utils.stream;
 
 import java.util.function.Function;
 
-import studio.core.v1.utils.exception.StoryTellerException;
+import studio.core.v1.exception.StoryTellerException;
 
 /**
  * Handle checked exception in lambda function.

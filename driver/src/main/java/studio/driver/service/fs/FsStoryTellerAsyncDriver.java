@@ -32,24 +32,24 @@ import org.usb4java.Device;
 
 import lombok.Getter;
 import lombok.Setter;
-import studio.core.v1.utils.PackFormat;
-import studio.core.v1.utils.SecurityUtils;
-import studio.core.v1.utils.exception.StoryTellerException;
-import studio.core.v1.utils.fs.DeviceUtils;
-import studio.core.v1.utils.fs.FileUtils;
+import studio.core.v1.exception.StoryTellerException;
+import studio.core.v1.service.PackFormat;
+import studio.core.v1.service.fs.FsStoryPackWriter;
+import studio.core.v1.utils.io.DeviceUtils;
+import studio.core.v1.utils.io.FileUtils;
+import studio.core.v1.utils.security.SecurityUtils;
 import studio.core.v1.utils.stream.ThrowingConsumer;
-import studio.core.v1.writer.fs.FsStoryPackWriter;
-import studio.driver.DeviceVersion;
-import studio.driver.LibUsbDetectionHelper;
-import studio.driver.service.StoryTellerAsyncDriver;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
 import studio.driver.event.TransferProgressListener;
 import studio.driver.model.DeviceInfos;
 import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.DeviceInfosDTO.StorageDTO;
+import studio.driver.model.DeviceVersion;
 import studio.driver.model.MetaPackDTO;
 import studio.driver.model.TransferStatus;
+import studio.driver.service.StoryTellerAsyncDriver;
+import studio.driver.usb.LibUsbDetectionHelper;
 
 public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 

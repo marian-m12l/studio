@@ -37,11 +37,11 @@ import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.vertx.mutiny.core.eventbus.EventBus;
+import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.model.metadata.StoryPackMetadata;
-import studio.core.v1.reader.binary.BinaryStoryPackReader;
-import studio.core.v1.utils.PackFormat;
-import studio.core.v1.utils.exception.StoryTellerException;
-import studio.core.v1.utils.fs.FileUtils;
+import studio.core.v1.service.PackFormat;
+import studio.core.v1.service.raw.RawStoryPackReader;
+import studio.core.v1.utils.io.FileUtils;
 import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.DeviceInfosDTO.StorageDTO;
 import studio.driver.model.MetaPackDTO;
@@ -139,7 +139,7 @@ public class MockStoryTellerService implements IStoryTellerService {
         if (PackFormat.fromPath(path) == PackFormat.RAW) {
             try {
                 LOGGER.debug("Reading binary pack metadata.");
-                StoryPackMetadata meta = new BinaryStoryPackReader().readMetadata(path);
+                StoryPackMetadata meta = new RawStoryPackReader().readMetadata(path);
                 if (meta != null) {
                     meta.setSectorSize((int) Math.ceil(Files.size(path) / 512d));
                     return Optional.of(meta);
