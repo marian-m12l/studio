@@ -38,7 +38,7 @@ class AudioConversionTest {
             assertEquals(16330, insideOggBytes.length, "old.ogg");
 
             System.out.println("Write wav");
-            byte[] outsideWavBytes = AudioConversion.anyToWave(insideOggBytes);
+            byte[] outsideWavBytes = AudioConversion.oggToWave(insideOggBytes);
             Path outsideWav = Files.write(zipPath.resolveSibling("new.wav"), outsideWavBytes);
             long outsideWavSize = Files.size(outsideWav);
             assertEquals(90938, outsideWavSize, "new.wav");

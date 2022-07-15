@@ -22,7 +22,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
@@ -31,6 +30,7 @@ import io.restassured.specification.RequestSpecification;
 import io.vertx.core.eventbus.EventBus;
 import io.vertx.core.json.JsonObject;
 import studio.core.v1.service.PackFormat;
+import studio.core.v1.utils.io.FileUtils;
 import studio.junit.TestNameExtension;
 import studio.webui.model.DeviceDTOs.OutputDTO;
 import studio.webui.model.DeviceDTOs.UuidDTO;
@@ -66,11 +66,9 @@ class DeviceControllerTest {
     @BeforeEach
     void init() throws IOException, URISyntaxException {
         // empty library
-        FileUtil.deleteIfExists(libraryPath);
-        Files.createDirectory(libraryPath);
+        FileUtils.emptyDirectory(libraryPath);
         // empty device
-        FileUtil.deleteIfExists(devicePath);
-        Files.createDirectory(devicePath);
+        FileUtils.emptyDirectory(devicePath);
         // by default, add 1 test pack
         testPackSource = classpathResource(TEST_RAW_PACK_NAME);
         testPackDevice = devicePath.resolve(TEST_RAW_PACK_UUID + PackFormat.RAW.getExtension());

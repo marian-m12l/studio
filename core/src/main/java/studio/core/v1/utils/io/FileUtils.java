@@ -22,11 +22,20 @@ public class FileUtils {
     }
 
     public static void deleteDirectory(Path path) throws IOException {
+        // already deleted
+        if (Files.notExists(path)) {
+            return;
+        }
         try (Stream<Path> paths = Files.walk(path)) {
             paths.sorted(Comparator.reverseOrder()) //
                     .map(Path::toFile) //
                     .forEach(File::delete);
         }
+    }
+
+    public static void emptyDirectory(Path path) throws IOException {
+        deleteDirectory(path);
+        Files.createDirectories(path);
     }
 
     public static long getFolderSize(Path path) throws IOException {

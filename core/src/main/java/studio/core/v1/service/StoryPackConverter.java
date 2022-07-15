@@ -4,9 +4,12 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-package studio.core.v1.utils;
+package studio.core.v1.service;
 
 import java.io.ByteArrayInputStream;
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -18,6 +21,7 @@ import javax.sound.sampled.AudioSystem;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.asset.AudioAsset;
@@ -31,12 +35,72 @@ import studio.core.v1.utils.security.SecurityUtils;
 import studio.core.v1.utils.stream.StoppingConsumer;
 import studio.core.v1.utils.stream.ThrowingFunction;
 
-public class PackAssetsCompression {
+public class StoryPackConverter {
 
-    private static final Logger LOGGER = LogManager.getLogger(PackAssetsCompression.class);
+    private static final Logger LOGGER = LogManager.getLogger(StoryPackConverter.class);
 
-    private PackAssetsCompression() {
-        throw new IllegalStateException("Utility class");
+    private Path libraryPath;
+    private Path tmpDirPath;
+
+    public StoryPackConverter(Path libraryPath, Path tmpDirPath) {
+        this.libraryPath = libraryPath;
+        this.tmpDirPath = tmpDirPath;
+    }
+
+    public Path convert(String packName, PackFormat outFormat, boolean allowEnriched) {
+        Path packPath = libraryPath.resolve(packName);
+        PackFormat inFormat = PackFormat.fromPath(packPath);
+        LOGGER.info("Pack is in {} format. Converting to {} format", inFormat, outFormat);
+        // check formats
+        if (inFormat == outFormat) {
+            throw new StoryTellerException("Pack is already in " + outFormat + " format : " + packPath.getFileName());
+        }
+        try {
+            // Read pack
+            LOGGER.info("Reading {} format pack", inFormat);
+            StoryPack storyPack = inFormat.getReader().read(packPath);
+
+            // Convert
+            switch (outFormat) {
+            case ARCHIVE:
+                // Compress pack assets
+                if (inFormat == PackFormat.RAW) {
+                    LOGGER.info("Compressing pack assets");
+                    processCompressed(storyPack);
+                }
+                // force enriched pack
+                allowEnriched = true;
+                break;
+            case FS:
+                // Prepare assets (RLE-encoded BMP, audio must already be MP3)
+                LOGGER.info("Converting assets if necessary");
+                processFirmware2dot4(storyPack);
+                // force enriched pack
+                allowEnriched = true;
+                break;
+            case RAW:
+                // Uncompress pack assets
+                if (hasCompressedAssets(storyPack)) {
+                    LOGGER.info("Uncompressing pack assets");
+                    processUncompressed(storyPack);
+                }
+                break;
+            }
+
+            // Write to temporary dir
+            String destName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis()
+                    + outFormat.getExtension();
+            Path tmpPath = tmpDirPath.resolve(destName);
+            LOGGER.info("Writing {} format pack, using temporary : {}", outFormat, tmpPath);
+            outFormat.getWriter().write(storyPack, tmpPath, allowEnriched);
+
+            // Move to library
+            Path destPath = libraryPath.resolve(destName);
+            LOGGER.info("Moving {} format pack into local library: {}", outFormat, destPath);
+            return Files.move(tmpPath, destPath);
+        } catch (IOException e) {
+            throw new StoryTellerException("Failed to convert " + inFormat + " pack to " + outFormat, e);
+        }
     }
 
     public static boolean hasCompressedAssets(StoryPack pack) {
@@ -51,7 +115,7 @@ public class PackAssetsCompression {
         return false;
     }
 
-    public static void processCompressed(StoryPack pack) {
+    private static void processCompressed(StoryPack pack) {
         // Image
         processImageAssets(pack, ImageType.PNG, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
@@ -72,7 +136,7 @@ public class PackAssetsCompression {
         }));
     }
 
-    public static void processUncompressed(StoryPack pack) {
+    private static void processUncompressed(StoryPack pack) {
         // Image
         processImageAssets(pack, ImageType.BMP, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
@@ -102,7 +166,7 @@ public class PackAssetsCompression {
         }));
     }
 
-    public static void processFirmware2dot4(StoryPack pack) {
+    private static void processFirmware2dot4(StoryPack pack) {
         // Image
         processImageAssets(pack, ImageType.BMP, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
@@ -145,7 +209,7 @@ public class PackAssetsCompression {
         AtomicInteger i = new AtomicInteger(0);
 
         // Multi-threaded processing : images
-      pack.getStageNodes().parallelStream().forEach(StoppingConsumer.stopped( node -> {
+        pack.getStageNodes().parallelStream().forEach(StoppingConsumer.stopped(node -> {
             if (LOGGER.isDebugEnabled()) {
                 LOGGER.debug("Image from node {}/{} [{}]", i.incrementAndGet(), nbNodes,
                         Thread.currentThread().getName());

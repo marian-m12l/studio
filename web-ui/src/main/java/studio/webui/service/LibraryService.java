@@ -28,10 +28,9 @@ import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.runtime.StartupEvent;
 import studio.core.v1.exception.StoryTellerException;
-import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.service.PackFormat;
-import studio.core.v1.utils.PackAssetsCompression;
+import studio.core.v1.service.StoryPackConverter;
 import studio.core.v1.utils.io.FileUtils;
 import studio.driver.model.MetaPackDTO;
 import studio.metadata.DatabaseMetadataDTOs.DatabasePackMetadata;
@@ -45,17 +44,20 @@ public class LibraryService {
 
     private static final Logger LOGGER = LogManager.getLogger(LibraryService.class);
 
-    @Inject
-    DatabaseMetadataService databaseMetadataService;
-
     @ConfigProperty(name = "studio.library")
     Path libraryPath;
 
     @ConfigProperty(name = "studio.tmpdir")
     Path tmpDirPath;
 
+    @Inject
+    DatabaseMetadataService databaseMetadataService;
+
+    private StoryPackConverter storyPackConverter;
+
     public void init(@Observes StartupEvent ev) {
         LOGGER.info("library path : {} (tmpdir path : {})", libraryPath, tmpDirPath);
+        storyPackConverter = new StoryPackConverter(libraryPath, tmpDirPath);
         // Create the local library folder if needed
         FileUtils.createDirectories("Failed to initialize local library", libraryPath);
         // Create the temp folder if needed
@@ -128,59 +130,8 @@ public class LibraryService {
     }
 
     public Path convertPack(String packName, PackFormat outFormat, boolean allowEnriched) {
-        Path packPath = libraryPath.resolve(packName);
-        PackFormat inFormat = PackFormat.fromPath(packPath);
-        LOGGER.info("Pack is in {} format. Converting to {} format", inFormat, outFormat);
-        // check formats
-        if (inFormat == outFormat) {
-            throw new StoryTellerException("Pack is already in " + outFormat + " format : " + packName);
-        }
-        try {
-            // Read pack
-            LOGGER.info("Reading {} format pack", inFormat);
-            StoryPack storyPack = inFormat.getReader().read(packPath);
-
-            // Convert
-            switch (outFormat) {
-            case ARCHIVE:
-                // Compress pack assets
-                if (inFormat == PackFormat.RAW) {
-                    LOGGER.info("Compressing pack assets");
-                    PackAssetsCompression.processCompressed(storyPack);
-                }
-                // force enriched pack
-                allowEnriched = true;
-                break;
-            case FS:
-                // Prepare assets (RLE-encoded BMP, audio must already be MP3)
-                LOGGER.info("Converting assets if necessary");
-                PackAssetsCompression.processFirmware2dot4(storyPack);
-                // force enriched pack
-                allowEnriched = true;
-                break;
-            case RAW:
-                // Uncompress pack assets
-                if (PackAssetsCompression.hasCompressedAssets(storyPack)) {
-                    LOGGER.info("Uncompressing pack assets");
-                    PackAssetsCompression.processUncompressed(storyPack);
-                }
-                break;
-            }
-
-            // Write to temporary dir
-            String destName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis()
-                    + outFormat.getExtension();
-            Path tmpPath = tmpDirPath.resolve(destName);
-            LOGGER.info("Writing {} format pack, using temporary : {}", outFormat, tmpPath);
-            outFormat.getWriter().write(storyPack, tmpPath, allowEnriched);
-
-            // Move to library
-            Path destPath = libraryPath.resolve(destName);
-            LOGGER.info("Moving {} format pack into local library: {}", outFormat, destPath);
-            return Files.move(tmpPath, destPath);
-        } catch (IOException e) {
-            throw new StoryTellerException("Failed to convert " + inFormat + " pack to " + outFormat, e);
-        }
+        LOGGER.info("Convert pack {} to {}", packName, outFormat);
+        return storyPackConverter.convert(packName, outFormat, allowEnriched);
     }
 
     public boolean addPackFile(String destPath, String uploadedFilePath) {

@@ -19,12 +19,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
-import io.quarkus.deployment.util.FileUtil;
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
 import studio.core.v1.service.PackFormat;
+import studio.core.v1.utils.io.FileUtils;
 import studio.junit.TestNameExtension;
 import studio.webui.model.LibraryDTOs.PackDTO;
 import studio.webui.model.LibraryDTOs.PathDTO;
@@ -48,8 +48,7 @@ class LibraryControllerTest {
     @BeforeEach
     void init() throws IOException, URISyntaxException {
         // empty library
-        FileUtil.deleteIfExists(libraryPath);
-        Files.createDirectory(libraryPath);
+        FileUtils.emptyDirectory(libraryPath);
         // by default, add 1 test pack
         testPackSource = classpathResource(TEST_PACK_NAME);
         testPackLibrary = libraryPath.resolve(TEST_PACK_NAME);

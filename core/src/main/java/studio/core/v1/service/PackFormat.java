@@ -24,7 +24,7 @@ public enum PackFormat {
             return ARCHIVE;
         } else if (path.toString().endsWith(RAW.extension)) {
             return RAW;
-        } else if (Files.isDirectory(path)) {
+        } else if (Files.isRegularFile(path.resolve("ni"))) {
             return FS;
         }
         return null;
