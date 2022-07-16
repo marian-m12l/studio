@@ -35,6 +35,7 @@ import studio.core.v1.model.asset.ImageType;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.service.PackFormat;
 import studio.core.v1.service.StoryPackReader;
+import studio.core.v1.service.fs.FsStoryPackDTO.FsStoryPack;
 import studio.core.v1.utils.security.XXTEACipher;
 import studio.core.v1.utils.security.XXTEACipher.CipherMode;
 
@@ -42,21 +43,13 @@ public class FsStoryPackReader implements StoryPackReader {
 
     private static final Logger LOGGER = LogManager.getLogger(FsStoryPackReader.class);
 
-    private static final String NODE_INDEX_FILENAME = "ni";
-    private static final String LIST_INDEX_FILENAME = "li";
-    private static final String IMAGE_INDEX_FILENAME = "ri";
-    private static final String IMAGE_FOLDER = "rf";
-    private static final String SOUND_INDEX_FILENAME = "si";
-    private static final String SOUND_FOLDER = "sf";
-    private static final String NIGHT_MODE_FILENAME = "nm";
-
     public StoryPackMetadata readMetadata(Path inputFolder) throws IOException {
         // Pack metadata model
         StoryPackMetadata metadata = new StoryPackMetadata(PackFormat.FS);
+        FsStoryPack fsp = new FsStoryPack(inputFolder);
 
         // Open 'ni' file
-        Path niPath = inputFolder.resolve(NODE_INDEX_FILENAME);
-        try(InputStream niDis = new BufferedInputStream(Files.newInputStream(niPath))) {
+        try(InputStream niDis = new BufferedInputStream(Files.newInputStream(fsp.getNodeIndex()))) {
             ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
             metadata.setVersion(bb.getShort(2));
         }
@@ -66,13 +59,12 @@ public class FsStoryPackReader implements StoryPackReader {
         metadata.setUuid(uuid);
 
         // Night mode is available if file 'nm' exists
-        Path nmPath = inputFolder.resolve(NIGHT_MODE_FILENAME);
-        metadata.setNightModeAvailable(Files.exists(nmPath));
-
+        metadata.setNightModeAvailable(fsp.isNightModeAvailable());
         return metadata;
     }
 
     public StoryPack read(Path inputFolder) throws IOException {
+        FsStoryPack fsp = new FsStoryPack(inputFolder);
         TreeMap<Integer, StageNode> stageNodes = new TreeMap<>();                   // Keep stage nodes
         TreeMap<Integer, Integer> actionNodesOptionsCount = new TreeMap<>();        // Keep action nodes' options count
         TreeMap<Integer, List<Transition>> transitionsWithAction = new TreeMap<>(); // Transitions must be updated with the actual ActionNode
@@ -81,13 +73,12 @@ public class FsStoryPackReader implements StoryPackReader {
         String uuid = inputFolder.getFileName().toString().split("\\.", 2)[0];
 
         // Night mode is available if file 'nm' exists
-        Path nmPath = inputFolder.resolve(NIGHT_MODE_FILENAME);
-        boolean nightModeAvailable = Files.exists(nmPath);
+        boolean nightModeAvailable = fsp.isNightModeAvailable();
 
         // Load ri, si and li files
-        byte[] riContent = readCipheredFile(inputFolder.resolve(IMAGE_INDEX_FILENAME));
-        byte[] siContent = readCipheredFile(inputFolder.resolve(SOUND_INDEX_FILENAME));
-        byte[] liContent = readCipheredFile(inputFolder.resolve(LIST_INDEX_FILENAME));
+        byte[] riContent = readCipheredFile(fsp.getImageIndex());
+        byte[] siContent = readCipheredFile(fsp.getSoundIndex() );
+        byte[] liContent = readCipheredFile(fsp.getListIndex());
 
         // Story pack version
         short version;
@@ -95,8 +86,7 @@ public class FsStoryPackReader implements StoryPackReader {
         boolean factoryDisabled;
 
         // Open 'ni' file
-        Path niPath = inputFolder.resolve(NODE_INDEX_FILENAME);
-        try(InputStream niDis = new BufferedInputStream(Files.newInputStream(niPath))) {
+        try(InputStream niDis = new BufferedInputStream(Files.newInputStream(fsp.getNodeIndex()))) {
             ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
             // Nodes index file format version (1)
             bb.getShort();
@@ -116,9 +106,6 @@ public class FsStoryPackReader implements StoryPackReader {
                     soundAssetsCount);
             // Is factory pack (boolean) set to true to avoid pack inspection by official Luniistore application
             factoryDisabled = bb.get() != 0x00;
-
-            Path imageFolder = inputFolder.resolve(IMAGE_FOLDER);
-            Path soundFolder = inputFolder.resolve(SOUND_FOLDER);
 
             // Read stage nodes
             for (int i=0; i<stageNodesCount; i++) {
@@ -162,12 +149,12 @@ public class FsStoryPackReader implements StoryPackReader {
                 // Read image and audio assets
                 ImageAsset image = null;
                 if (imageAssetIndexInRI != -1) {
-                    byte[] rfContent = readAsset(imageFolder, riContent, imageAssetIndexInRI);
+                    byte[] rfContent = readAsset(fsp.getImageFolder(), riContent, imageAssetIndexInRI);
                     image = new ImageAsset(ImageType.BMP, rfContent);
                 }
                 AudioAsset audio = null;
                 if (soundAssetIndexInSI != -1) {
-                    byte[] sfContent = readAsset(soundFolder, siContent, soundAssetIndexInSI);
+                    byte[] sfContent = readAsset(fsp.getSoundFolder(), siContent, soundAssetIndexInSI);
                     audio = new AudioAsset(AudioType.MPEG, sfContent);
                 }
 

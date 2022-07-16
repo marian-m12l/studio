@@ -6,14 +6,14 @@
 
 package studio.core.v1.service.raw;
 
-import static studio.core.v1.service.raw.RawDto.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT;
-import static studio.core.v1.service.raw.RawDto.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT_PADDING;
-import static studio.core.v1.service.raw.RawDto.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE;
-import static studio.core.v1.service.raw.RawDto.BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE;
-import static studio.core.v1.service.raw.RawDto.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING;
-import static studio.core.v1.service.raw.RawDto.BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING;
-import static studio.core.v1.service.raw.RawDto.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE;
-import static studio.core.v1.service.raw.RawDto.SECTOR_SIZE;
+import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT;
+import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT_PADDING;
+import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE;
+import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE;
+import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING;
+import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING;
+import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE;
+import static studio.core.v1.service.raw.RawStoryPackDTO.SECTOR_SIZE;
 
 import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
@@ -40,9 +40,9 @@ import studio.core.v1.model.asset.ImageType;
 import studio.core.v1.model.enriched.EnrichedNodePosition;
 import studio.core.v1.model.enriched.EnrichedNodeType;
 import studio.core.v1.service.StoryPackWriter;
-import studio.core.v1.service.raw.RawDto.AssetAddr;
-import studio.core.v1.service.raw.RawDto.AssetType;
-import studio.core.v1.service.raw.RawDto.SectorAddr;
+import studio.core.v1.service.raw.RawStoryPackDTO.AssetAddr;
+import studio.core.v1.service.raw.RawStoryPackDTO.AssetType;
+import studio.core.v1.service.raw.RawStoryPackDTO.SectorAddr;
 import studio.core.v1.utils.security.SecurityUtils;
 
 public class RawStoryPackWriter implements StoryPackWriter {

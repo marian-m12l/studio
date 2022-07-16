@@ -42,6 +42,7 @@ import studio.core.v1.model.asset.AudioType;
 import studio.core.v1.model.asset.ImageAsset;
 import studio.core.v1.model.asset.ImageType;
 import studio.core.v1.service.StoryPackWriter;
+import studio.core.v1.service.fs.FsStoryPackDTO.FsStoryPack;
 import studio.core.v1.utils.audio.AudioConversion;
 import studio.core.v1.utils.audio.ID3Tags;
 import studio.core.v1.utils.security.SecurityUtils;
@@ -60,15 +61,6 @@ public class FsStoryPackWriter implements StoryPackWriter {
 
     private static final Logger LOGGER = LogManager.getLogger(FsStoryPackWriter.class);
 
-    private static final String NODE_INDEX_FILENAME = "ni";
-    private static final String LIST_INDEX_FILENAME = "li";
-    private static final String IMAGE_INDEX_FILENAME = "ri";
-    private static final String IMAGE_FOLDER = "rf";
-    private static final String SOUND_INDEX_FILENAME = "si";
-    private static final String SOUND_FOLDER = "sf";
-    private static final String BOOT_FILENAME = "bt";
-    private static final String NIGHT_MODE_FILENAME = "nm";
-
     /** Blank MP3 file. */
     private static final byte[] BLANK_MP3 = readRelative("blank.mp3");
 
@@ -78,9 +70,10 @@ public class FsStoryPackWriter implements StoryPackWriter {
     public void write(StoryPack pack, Path packFolder, boolean enriched) throws IOException {
         // Create output dir
         Files.createDirectories(packFolder);
+        FsStoryPack fsp = new FsStoryPack(packFolder);
         // Write night mode
         if (pack.isNightModeAvailable()) {
-            Files.createFile(packFolder.resolve(NIGHT_MODE_FILENAME));
+            Files.createFile(fsp.getNightMode());
         }
 
         // Store assets bytes
@@ -92,7 +85,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
         List<String> audioHashOrdered = new ArrayList<>();
 
         // Add nodes index file: ni
-        Path niPath = packFolder.resolve(NODE_INDEX_FILENAME);
+        Path niPath = fsp.getNodeIndex();
         try (DataOutputStream niDos = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(niPath)))) {
             ByteBuffer bb = ByteBuffer.allocate(512).order(ByteOrder.LITTLE_ENDIAN);
 
@@ -251,7 +244,6 @@ public class FsStoryPackWriter implements StoryPackWriter {
         actionNodesIndexes.clear();
 
         // Add lists index file: li
-        Path liPath = packFolder.resolve(LIST_INDEX_FILENAME);
         try (ByteArrayOutputStream liBaos = new ByteArrayOutputStream();
                 DataOutputStream liDos = new DataOutputStream(liBaos)) {
             // Add action nodes
@@ -261,11 +253,10 @@ public class FsStoryPackWriter implements StoryPackWriter {
                         .mapToInt(stage -> pack.getStageNodes().indexOf(stage)).toArray());
             }
             // write File
-            writeCypheredFile(liPath, liBaos.toByteArray());
+            writeCypheredFile(fsp.getListIndex(), liBaos.toByteArray());
         }
 
         // Add images index file: ri
-        Path riPath = packFolder.resolve(IMAGE_INDEX_FILENAME);
         try (ByteArrayOutputStream riBaos = new ByteArrayOutputStream();
                 DataOutputStream riDos = new DataOutputStream(riBaos)) {
             // For each image asset: 12-bytes relative path (e.g. 000\11111111)
@@ -275,15 +266,14 @@ public class FsStoryPackWriter implements StoryPackWriter {
                 String rfSubPath = assetPathFromIndex(i);
                 riDos.write(rfSubPath.getBytes(StandardCharsets.UTF_8));
                 // Write image data into file
-                Path rfPath = packFolder.resolve(IMAGE_FOLDER).resolve(rfSubPath.replace('\\', '/'));
+                Path rfPath = fsp.getImageFolder().resolve(rfSubPath.replace('\\', '/'));
                 Files.createDirectories(rfPath.getParent());
                 writeCypheredFile(rfPath, assets.get(imageHash));
             }
-            writeCypheredFile(riPath, riBaos.toByteArray());
+            writeCypheredFile(fsp.getImageIndex(), riBaos.toByteArray());
         }
 
         // Add sound index file: si
-        Path siPath = packFolder.resolve(SOUND_INDEX_FILENAME);
         try (ByteArrayOutputStream siBaos = new ByteArrayOutputStream();
                 DataOutputStream siDos = new DataOutputStream(siBaos)) {
             // For each image asset: 12-bytes relative path (e.g. 000\11111111)
@@ -293,11 +283,11 @@ public class FsStoryPackWriter implements StoryPackWriter {
                 String sfSubPath = assetPathFromIndex(i);
                 siDos.write(sfSubPath.getBytes(StandardCharsets.UTF_8));
                 // Write sound data into file
-                Path sfPath = packFolder.resolve(SOUND_FOLDER).resolve(sfSubPath.replace('\\', '/'));
+                Path sfPath = fsp.getSoundFolder().resolve(sfSubPath.replace('\\', '/'));
                 Files.createDirectories(sfPath.getParent());
                 writeCypheredFile(sfPath, assets.get(audioHash));
             }
-            writeCypheredFile(siPath, siBaos.toByteArray());
+            writeCypheredFile(fsp.getSoundIndex(), siBaos.toByteArray());
         }
     }
 
@@ -308,11 +298,10 @@ public class FsStoryPackWriter implements StoryPackWriter {
     }
 
     public static void addBootFile(Path packFolder, byte[] deviceUuid) throws IOException {
+        FsStoryPack fsp = new FsStoryPack(packFolder);
         // Compute specific key
         byte[] specificKey = computeSpecificKeyFromUUID(deviceUuid);
-        Path riPath = packFolder.resolve(IMAGE_INDEX_FILENAME);
-        Path btPath = packFolder.resolve(BOOT_FILENAME);
-        try (InputStream is = new BufferedInputStream(Files.newInputStream(riPath))) {
+        try (InputStream is = new BufferedInputStream(Files.newInputStream(fsp.getImageIndex()))) {
             int cypherBlockSize = 64;
             // Read ciphered block of ri file
             byte[] riCipheredBlock = is.readNBytes(cypherBlockSize);
@@ -320,7 +309,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
             // device-specific key into 'bt' file
             byte[] btCiphered = XXTEACipher.cipher(CipherMode.CIPHER, riCipheredBlock, cypherBlockSize, specificKey);
             // Add boot file: bt
-            Files.write(btPath, btCiphered);
+            Files.write(fsp.getBoot(), btCiphered);
         }
     }
 

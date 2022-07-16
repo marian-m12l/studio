@@ -2,7 +2,7 @@ package studio.core.v1.service.raw;
 
 import lombok.Value;
 
-public interface RawDto {
+public interface RawStoryPackDTO {
 
     int SECTOR_SIZE = 512;
     int PACKS_LIST_SECTOR2 = 100000;

@@ -34,6 +34,8 @@ import lombok.Getter;
 import lombok.Setter;
 import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.service.PackFormat;
+import studio.core.v1.service.fs.FsStoryPackDTO.FsStoryPack;
+import studio.core.v1.service.fs.FsStoryPackDTO.SdPartition;
 import studio.core.v1.service.fs.FsStoryPackWriter;
 import studio.core.v1.utils.io.DeviceUtils;
 import studio.core.v1.utils.io.FileUtils;
@@ -55,17 +57,11 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
     private static final Logger LOGGER = LogManager.getLogger(FsStoryTellerAsyncDriver.class);
 
-    private static final String DEVICE_METADATA_FILENAME = ".md";
-    private static final String PACK_INDEX_FILENAME = ".pi";
-    private static final String CONTENT_FOLDER = ".content";
-    private static final String NODE_INDEX_FILENAME = "ni";
-    private static final String NIGHT_MODE_FILENAME = "nm";
-
     private static final long FS_MOUNTPOINT_POLL_DELAY = 1000L;
     private static final long FS_MOUNTPOINT_RETRY = 10;
 
     private Device device = null;
-    private Path partitionMountPoint = null;
+    private SdPartition sdPartition = null;
     private List<DevicePluggedListener> pluggedlisteners = new ArrayList<>();
     private List<DeviceUnpluggedListener> unpluggedlisteners = new ArrayList<>();
 
@@ -84,14 +80,15 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                 device2 -> {
                     // Wait for a partition to be mounted which contains the .md file
                     LOGGER.debug("Waiting for device partition...");
-                    for (int i = 0; i < FS_MOUNTPOINT_RETRY && partitionMountPoint == null; i++) {
+                    for (int i = 0; i < FS_MOUNTPOINT_RETRY && sdPartition == null; i++) {
                         try {
                             Thread.sleep(FS_MOUNTPOINT_POLL_DELAY);
                             DeviceUtils.listMountPoints().forEach(path -> {
                                 LOGGER.trace("Looking for .md in {}", path);
-                                if (Files.exists(path.resolve(DEVICE_METADATA_FILENAME))) {
-                                    partitionMountPoint = path;
-                                    LOGGER.info("FS device partition located: {}", partitionMountPoint);
+                                if (SdPartition.isValid(path)) {
+                                    sdPartition = new SdPartition(path);
+                                    LOGGER.info("FS device partition located: {}", path);
+                                    return;
                                 }
                             });
                         } catch (InterruptedException e) {
@@ -99,7 +96,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                             Thread.currentThread().interrupt();
                         }
                     }
-                    if (partitionMountPoint == null) {
+                    if (!hasPartition()) {
                         throw new StoryTellerException("Could not locate device partition");
                     }
                     // Update device reference
@@ -110,7 +107,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                 device2 -> {
                     // Update device reference
                     device = null;
-                    partitionMountPoint = null;
+                    sdPartition = null;
                     // Notify listeners
                     unpluggedlisteners.forEach(l -> l.onDeviceUnplugged(device2));
                 });
@@ -118,6 +115,10 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
     public boolean hasDevice() {
         return device != null;
+    }
+
+    public boolean hasPartition() {
+        return sdPartition != null;
     }
 
     public void registerDeviceListener(DevicePluggedListener pluggedlistener,
@@ -143,11 +144,11 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     private CompletionStage<FsDeviceInfos> getFsDeviceInfos() {
-        if (!hasDevice() || this.partitionMountPoint == null) {
+        if (!hasDevice() || !hasPartition()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         FsDeviceInfos infos = new FsDeviceInfos();
-        Path mdFile = this.partitionMountPoint.resolve(DEVICE_METADATA_FILENAME);
+        Path mdFile = sdPartition.getDeviceMetada();
         LOGGER.trace("Reading device infos from file: {}", mdFile);
 
         try (DataInputStream is = new DataInputStream(new BufferedInputStream(Files.newInputStream(mdFile)))) {
@@ -204,7 +205,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     public CompletionStage<List<MetaPackDTO>> getPacksList() {
-        if (!hasDevice() || this.partitionMountPoint == null) {
+        if (!hasDevice() || !hasPartition()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
 
@@ -221,19 +222,19 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
                     // Compute .content folder (last 4 bytes of UUID)
                     String folderName = transformUuid(uuid);
-                    Path packPath = this.partitionMountPoint.resolve(CONTENT_FOLDER).resolve(folderName);
                     packInfos.setFolderName(folderName);
+                    Path packPath = sdPartition.getContentFolder().resolve(folderName);
+                    FsStoryPack fsp = new FsStoryPack(packPath);
 
                     // Open 'ni' file
-                    Path niPath = packPath.resolve(NODE_INDEX_FILENAME);
-                    try (InputStream niDis = new BufferedInputStream(Files.newInputStream(niPath))) {
+                    try (InputStream niDis = new BufferedInputStream(Files.newInputStream(fsp.getNodeIndex()))) {
                         ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
                         short version = bb.getShort(2);
                         packInfos.setVersion(version);
                         LOGGER.debug("Pack version: {}", version);
                     }
                     // Night mode is available if file 'nm' exists
-                    packInfos.setNightModeAvailable(Files.exists(packPath.resolve(NIGHT_MODE_FILENAME)));
+                    packInfos.setNightModeAvailable(fsp.isNightModeAvailable());
                     // Compute folder size
                     packInfos.setSizeInBytes(FileUtils.getFolderSize(packPath));
 
@@ -249,7 +250,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     private CompletionStage<List<UUID>> readPackIndex() {
         return CompletableFuture.supplyAsync(() -> {
             List<UUID> packUUIDs = new ArrayList<>();
-            Path piFile = this.partitionMountPoint.resolve(PACK_INDEX_FILENAME);
+            Path piFile = sdPartition.getPackIndex();
             LOGGER.trace("Reading packs index from file: {}", piFile);
             try {
                 ByteBuffer bb = ByteBuffer.wrap(Files.readAllBytes(piFile));
@@ -266,10 +267,9 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
-        if (!hasDevice() || this.partitionMountPoint == null) {
+        if (!hasDevice() || !hasPartition()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
-
         return readPackIndex().thenCompose(packUUIDs -> {
             try {
                 boolean allUUIDsAreOnDevice = uuids.stream()
@@ -289,35 +289,33 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     public CompletionStage<Boolean> deletePack(String uuid) {
-        if (!hasDevice() || this.partitionMountPoint == null) {
+        if (!hasDevice() || !hasPartition()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
-
         return readPackIndex().thenCompose(packUUIDs -> {
             try {
                 // Look for UUID in packs index
                 Optional<UUID> matched = packUUIDs.stream().filter(p -> p.equals(UUID.fromString(uuid))).findFirst();
-                if (matched.isPresent()) {
-                    LOGGER.debug("Found pack with uuid: {}", uuid);
-                    // Remove from index
-                    packUUIDs.remove(matched.get());
-                    // Write pack index
-                    return writePackIndex(packUUIDs).thenCompose(ok -> {
-                        // Generate folder name
-                        String folderName = transformUuid(uuid);
-                        Path folderPath = this.partitionMountPoint.resolve(CONTENT_FOLDER).resolve(folderName);
-                        LOGGER.debug("Removing pack folder: {}", folderPath);
-                        try {
-                            FileUtils.deleteDirectory(folderPath);
-                            return CompletableFuture.completedStage(ok);
-                        } catch (IOException e) {
-                            return CompletableFuture.failedStage(
-                                    new StoryTellerException("Failed to delete pack folder on device partition", e));
-                        }
-                    });
-                } else {
+                if (matched.isEmpty()) {
                     throw new StoryTellerException("Pack not found");
                 }
+                LOGGER.debug("Found pack with uuid: {}", uuid);
+                // Remove from index
+                packUUIDs.remove(matched.get());
+                // Write pack index
+                return writePackIndex(packUUIDs).thenCompose(ok -> {
+                    // Generate folder name
+                    String folderName = transformUuid(uuid);
+                    Path folderPath = sdPartition.getContentFolder().resolve(folderName);
+                    LOGGER.debug("Removing pack folder: {}", folderPath);
+                    try {
+                        FileUtils.deleteDirectory(folderPath);
+                        return CompletableFuture.completedStage(ok);
+                    } catch (IOException e) {
+                        return CompletableFuture.failedStage(
+                                new StoryTellerException("Failed to delete pack folder on device partition", e));
+                    }
+                });
             } catch (Exception e) {
                 throw new StoryTellerException("Failed to read pack metadata on device partition", e);
             }
@@ -326,8 +324,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
     private CompletionStage<Boolean> writePackIndex(List<UUID> packUUIDs) {
         try {
-            Path piFile = this.partitionMountPoint.resolve(PACK_INDEX_FILENAME);
-
+            Path piFile = sdPartition.getPackIndex();
             LOGGER.trace("Replacing pack index file: {}", piFile);
             ByteBuffer bb = ByteBuffer.allocate(16 * packUUIDs.size());
             for (UUID packUUID : packUUIDs) {
@@ -344,7 +341,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     public CompletionStage<TransferStatus> downloadPack(String uuid, Path destPath, TransferProgressListener listener) {
-        if (!hasDevice() || this.partitionMountPoint == null) {
+        if (!hasDevice() || !hasPartition()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         return readPackIndex().thenCompose(packUUIDs -> CompletableFuture.supplyAsync(() -> {
@@ -357,12 +354,11 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
             // Generate folder name
             String folderName = transformUuid(uuid);
-            Path sourceFolder = this.partitionMountPoint.resolve(CONTENT_FOLDER).resolve(folderName);
+            Path sourceFolder = sdPartition.getContentFolder().resolve(folderName);
             LOGGER.trace("Downloading pack folder: {}", sourceFolder);
             if (Files.notExists(sourceFolder)) {
                 throw new StoryTellerException("Pack folder not found");
             }
-
             try {
                 // Destination folder
                 Path destFolder = destPath.resolve(uuid);
@@ -375,7 +371,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     public CompletionStage<TransferStatus> uploadPack(String uuid, Path inputPath, TransferProgressListener listener) {
-        if (!hasDevice() || this.partitionMountPoint == null) {
+        if (!hasDevice() || !hasPartition()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         try {
@@ -384,7 +380,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("Pack folder size: {}", FileUtils.readableByteSize(folderSize));
             }
-            Path mdFile = this.partitionMountPoint.resolve(DEVICE_METADATA_FILENAME);
+            Path mdFile = sdPartition.getDeviceMetada();
             long freeSpace = Files.getFileStore(mdFile).getUsableSpace();
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("SD free space: {}", FileUtils.readableByteSize(freeSpace));
@@ -395,7 +391,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
             // Generate folder name
             String folderName = transformUuid(uuid);
-            Path folderPath = this.partitionMountPoint.resolve(CONTENT_FOLDER).resolve(folderName);
+            Path folderPath = sdPartition.getContentFolder().resolve(folderName);
             LOGGER.debug("Uploading pack to folder: {}", folderName);
 
             // Copy folder with progress tracking

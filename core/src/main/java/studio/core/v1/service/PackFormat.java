@@ -1,10 +1,10 @@
 package studio.core.v1.service;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
 
 import studio.core.v1.service.archive.ArchiveStoryPackReader;
 import studio.core.v1.service.archive.ArchiveStoryPackWriter;
+import studio.core.v1.service.fs.FsStoryPackDTO.FsStoryPack;
 import studio.core.v1.service.fs.FsStoryPackReader;
 import studio.core.v1.service.fs.FsStoryPackWriter;
 import studio.core.v1.service.raw.RawStoryPackReader;
@@ -24,7 +24,7 @@ public enum PackFormat {
             return ARCHIVE;
         } else if (path.toString().endsWith(RAW.extension)) {
             return RAW;
-        } else if (Files.isRegularFile(path.resolve("ni"))) {
+        } else if (FsStoryPack.isValid(path)) {
             return FS;
         }
         return null;
