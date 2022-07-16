@@ -137,29 +137,24 @@ public class QuantizeFilter extends WholeImageFilter {
 
                 for (int i = -1; i <= 1; i++) {
                     int iy = i + y;
-                    if (0 <= iy && iy < height) {
-                        for (int j = -1; j <= 1; j++) {
-                            int jx = j + x;
-                            if (0 <= jx && jx < width) {
-                                int w;
-                                if (reverse)
-                                    w = matrix[(i + 1) * 3 - j + 1];
-                                else
-                                    w = matrix[(i + 1) * 3 + j + 1];
-                                if (w != 0) {
-                                    int k = reverse ? index - j : index + j;
-                                    rgb1 = inPixels[k];
-                                    r1 = (rgb1 >> 16) & 0xff;
-                                    g1 = (rgb1 >> 8) & 0xff;
-                                    b1 = rgb1 & 0xff;
-                                    r1 += er * w / sum;
-                                    g1 += eg * w / sum;
-                                    b1 += eb * w / sum;
-                                    inPixels[k] = (PixelUtils.clamp(r1) << 16) | (PixelUtils.clamp(g1) << 8)
-                                            | PixelUtils.clamp(b1);
-                                }
-                            }
+                    if (iy < 0 || iy >= height) {
+                        continue;
+                    }
+                    for (int j = -1; j <= 1; j++) {
+                        int jx = j + x;
+                        int w = matrix[(i + 1) * 3 + (reverse ? -j : j) + 1];
+                        if (w == 0 || jx < 0 || jx >= width ) {
+                            continue;
                         }
+                        int k = reverse ? index - j : index + j;
+                        rgb1 = inPixels[k];
+                        r1 = (rgb1 >> 16) & 0xff;
+                        g1 = (rgb1 >> 8) & 0xff;
+                        b1 = rgb1 & 0xff;
+                        r1 += er * w / sum;
+                        g1 += eg * w / sum;
+                        b1 += eb * w / sum;
+                        inPixels[k] = (PixelUtils.clamp(r1) << 16) | (PixelUtils.clamp(g1) << 8) | PixelUtils.clamp(b1);
                     }
                 }
                 index += direction;

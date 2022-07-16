@@ -65,9 +65,6 @@ public class PixelUtils {
         return Math.abs(r1-r2) <= tolerance && Math.abs(g1-g2) <= tolerance && Math.abs(b1-b2) <= tolerance;
     }
 
-    private static final float[] hsb1 = new float[3];
-    private static final float[] hsb2 = new float[3];
-
     // Return rgb1 painted onto rgb2
     public static int combinePixels(int rgb1, int rgb2, int op) {
         return combinePixels(rgb1, rgb2, op, 0xff);
@@ -139,6 +136,8 @@ public class PixelUtils {
             case SATURATION:
             case VALUE:
             case COLOR:
+                float[] hsb1 = new float[3];
+                float[] hsb2 = new float[3];
                 Color.RGBtoHSB(r1, g1, b1, hsb1);
                 Color.RGBtoHSB(r2, g2, b2, hsb2);
                 switch (op) {

@@ -18,6 +18,7 @@ package com.jhlabs.image;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -179,22 +180,22 @@ public class OctTreeQuantizer implements Quantizer {
 
     private void reduceTree(int numColors) {
         for (int level = MAX_LEVEL - 1; level >= 0; level--) {
+            final int subLevel = level + 1;
             for (OctTreeNode node : colorList[level]) {
                 if (node.children <= 0) {
                     continue;
                 }
                 for (int i = 0; i < 8; i++) {
-                    OctTreeNode child = node.leaf[i];
-                    if (child != null) {
+                    Optional.ofNullable(node.leaf[i]).ifPresent(child -> {
                         node.count += child.count;
                         node.totalRed += child.totalRed;
                         node.totalGreen += child.totalGreen;
                         node.totalBlue += child.totalBlue;
-                        node.leaf[i] = null;
                         node.children--;
                         colors--;
-                        colorList[level + 1].remove(child);
-                    }
+                        colorList[subLevel].remove(child);
+                    });
+                    node.leaf[i] = null;
                 }
                 node.isLeaf = true;
                 colors++;
@@ -243,10 +244,8 @@ public class OctTreeQuantizer implements Quantizer {
 
         if (node.isLeaf) {
             int count = node.count;
-            table[index] = 0xff000000 |
-                    ((node.totalRed/count) << 16) |
-                    ((node.totalGreen/count) << 8) |
-                    node.totalBlue/count;
+            table[index] = 0xff000000 | ((node.totalRed / count) << 16) | ((node.totalGreen / count) << 8)
+                    | node.totalBlue / count;
             node.index = index++;
         } else {
             for (int i = 0; i < 8; i++) {
