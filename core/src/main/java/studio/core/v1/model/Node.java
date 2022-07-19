@@ -6,17 +6,30 @@
 
 package studio.core.v1.model;
 
+import com.fasterxml.jackson.annotation.JsonAlias;
+import com.fasterxml.jackson.annotation.JsonIdentityInfo;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+import com.fasterxml.jackson.annotation.ObjectIdGenerators;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 
+@JsonIdentityInfo(generator = ObjectIdGenerators.PropertyGenerator.class, property = "uuid")
+@Getter
+@Setter
+@NoArgsConstructor
 public abstract class Node {
 
-    private final EnrichedNodeMetadata enriched;
+    @JsonAlias("id")
+    private String uuid;
 
-    protected Node(EnrichedNodeMetadata enriched) {
+    @JsonUnwrapped
+    private EnrichedNodeMetadata enriched;
+
+    protected Node(String uuid, EnrichedNodeMetadata enriched) {
+        this.uuid = uuid;
         this.enriched = enriched;
-    }
-
-    public EnrichedNodeMetadata getEnriched() {
-        return enriched;
     }
 }

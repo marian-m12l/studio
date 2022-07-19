@@ -8,18 +8,28 @@ package studio.core.v1.model;
 
 import java.util.List;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import studio.core.v1.model.enriched.EnrichedPackMetadata;
 
-@Data
-@EqualsAndHashCode(exclude = "stageNodes")
+@Getter
+@Setter
+@NoArgsConstructor
 public class StoryPack {
 
+    private String format = "v1";
     private String uuid;
+
+    @JsonUnwrapped
+    private EnrichedPackMetadata enriched;
+
     private boolean factoryDisabled;
     private short version;
+    private boolean nightModeAvailable;
+
     private List<StageNode> stageNodes;
-    private EnrichedPackMetadata enriched;
-    private boolean nightModeAvailable = false;
+    private List<ActionNode> actionNodes;
 }

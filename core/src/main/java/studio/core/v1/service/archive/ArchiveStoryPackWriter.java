@@ -7,6 +7,7 @@
 package studio.core.v1.service.archive;
 
 import java.io.IOException;
+import java.io.Writer;
 import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -14,9 +15,13 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 import java.util.UUID;
 
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.google.gson.stream.JsonWriter;
 
 import studio.core.v1.model.ActionNode;
@@ -32,7 +37,56 @@ public class ArchiveStoryPackWriter implements StoryPackWriter {
 
     private static final Map<String, String> ZIPFS_OPTIONS = Map.of("create", "true");
 
+    /** Jackson writer. */
+    private ObjectWriter objectWriter = new ObjectMapper().setSerializationInclusion(Include.NON_NULL)
+            .writerWithDefaultPrettyPrinter();
+
+    // -- Jackson
+
     public void write(StoryPack pack, Path zipPath, boolean enriched) throws IOException {
+        // Store assets bytes
+        TreeMap<String, byte[]> assets = new TreeMap<>();
+        // Fix missing title
+        if (pack.getEnriched().getTitle() == null) {
+            pack.getEnriched().setTitle("MISSING_PACK_TITLE");
+        }
+        // Tag first node
+        StageNode snFirst = pack.getStageNodes().get(0);
+        if (!Boolean.TRUE.equals(snFirst.getSquareOne())) {
+            snFirst.setSquareOne(Boolean.TRUE);
+        }
+        // Add media
+        for (StageNode sn : pack.getStageNodes()) {
+            // Fix missing node name
+            if (sn.getEnriched().getName() == null) {
+                sn.getEnriched().setName("MISSING_NAME");
+            }
+            Optional.ofNullable(sn.getAudio()).ifPresent(a -> {
+                assets.putIfAbsent(a.getName(), a.getRawData());
+            });
+            Optional.ofNullable(sn.getImage()).ifPresent(a -> {
+                assets.putIfAbsent(a.getName(), a.getRawData());
+            });
+        }
+
+        // Zip archive contains a json file and separate assets
+        URI uri = URI.create("jar:" + zipPath.toUri());
+        try (FileSystem zipFs = FileSystems.newFileSystem(uri, ZIPFS_OPTIONS);
+                Writer jsonWriter = Files.newBufferedWriter(zipFs.getPath("story.json"))) {
+            // Add story descriptor file: story.json
+            objectWriter.writeValue(jsonWriter, pack);
+            // Add assets in separate directory
+            Path assetPath = Files.createDirectories(zipFs.getPath("assets/"));
+            for (Map.Entry<String, byte[]> a : assets.entrySet()) {
+                Files.write(assetPath.resolve(a.getKey()), a.getValue());
+            }
+        }
+    }
+
+    // -- GSON
+
+    @Deprecated
+    public void write1(StoryPack pack, Path zipPath, boolean enriched) throws IOException {
         // Zip archive contains a json file and separate assets
         URI uri = URI.create("jar:" + zipPath.toUri());
         try (FileSystem zipFs = FileSystems.newFileSystem(uri, ZIPFS_OPTIONS)) {

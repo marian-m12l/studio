@@ -6,15 +6,45 @@
 
 package studio.core.v1.model.asset;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
-@Data
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import studio.core.v1.utils.security.SecurityUtils;
+
+@Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(exclude = "rawData")
 public class ImageAsset {
 
     private ImageType type;
     private byte[] rawData;
+    private String name;
+
+    public ImageAsset(ImageType type, byte[] rawData) {
+        this.type = type;
+        this.rawData = rawData;
+        updateName();
+    }
+
+    @JsonCreator
+    public ImageAsset(String name) {
+        this.name = name;
+    }
+
+    @JsonValue
+    public String getName() {
+        return name;
+    }
+
+    public void updateName() {
+        this.name = SecurityUtils.sha1Hex(rawData) + type.getFirstExtension();
+    }
+
 }

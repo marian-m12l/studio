@@ -6,15 +6,22 @@
 
 package studio.core.v1.model;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import com.fasterxml.jackson.annotation.JsonIdentityReference;
 
-@Data
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(exclude = "actionNode")
 public class Transition {
 
+    @JsonIdentityReference(alwaysAsId = true)
     private ActionNode actionNode;
     private short optionIndex;
 }

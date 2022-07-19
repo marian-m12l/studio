@@ -256,7 +256,8 @@ public class RawStoryPackReader implements StoryPackReader {
                 EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(dis);
 
                 // Update action on transitions referencing this sector
-                ActionNode actionNode = new ActionNode(enrichedNodeMetadata, options);
+                String id = UUID.randomUUID().toString();
+                ActionNode actionNode = new ActionNode(id, enrichedNodeMetadata, options);
                 transitionsWithAction.get(actionNodeAddr).forEach(transition -> transition.setActionNode(actionNode));
 
                 // Skip to end of sector

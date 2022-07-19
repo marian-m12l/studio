@@ -6,14 +6,31 @@
 
 package studio.core.v1.model;
 
-import lombok.Value;
+import com.fasterxml.jackson.annotation.JsonProperty;
 
-@Value
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class ControlSettings {
 
+    @JsonProperty("wheel")
     private boolean wheelEnabled;
+
+    @JsonProperty("ok")
     private boolean okEnabled;
+
+    @JsonProperty("home")
     private boolean homeEnabled;
+
+    @JsonProperty("pause")
     private boolean pauseEnabled;
+
+    @JsonProperty("autoplay")
     private boolean autoJumpEnabled;
 }

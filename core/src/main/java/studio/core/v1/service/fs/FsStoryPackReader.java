@@ -161,8 +161,8 @@ public class FsStoryPackReader implements StoryPackReader {
                 ControlSettings ctrl = new ControlSettings(wheel, ok, home, pause, autoplay);
                 // First node should have the same UUID as the story pack
                 // TODO node uuids from metadata file
-                String uu = (i == 0) ? uuid : UUID.randomUUID().toString(); 
-                StageNode stageNode = new StageNode(uu, image, audio, okTransition, homeTransition, ctrl, null);
+                String id = (i == 0) ? uuid : UUID.randomUUID().toString(); 
+                StageNode stageNode = new StageNode(id, image, audio, okTransition, homeTransition, ctrl, null);
                 stageNodes.put(i, stageNode);
             }
         }
@@ -179,7 +179,8 @@ public class FsStoryPackReader implements StoryPackReader {
                 options.add(stageNodes.get(stageNodeIndex));
             }
             // Update action on transitions referencing this sector
-            ActionNode actionNode = new ActionNode(null, options);
+            String id = UUID.randomUUID().toString();
+            ActionNode actionNode = new ActionNode(id, null, options);
             transitionsWithAction.get(offset).forEach(transition -> transition.setActionNode(actionNode));
         }
 

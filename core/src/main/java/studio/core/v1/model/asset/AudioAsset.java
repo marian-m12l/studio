@@ -6,15 +6,42 @@
 
 package studio.core.v1.model.asset;
 
-import lombok.AllArgsConstructor;
-import lombok.Data;
-import lombok.EqualsAndHashCode;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 
-@Data
-@AllArgsConstructor
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import studio.core.v1.utils.security.SecurityUtils;
+
+@Getter
+@Setter
+@NoArgsConstructor
 @EqualsAndHashCode(exclude = "rawData")
 public class AudioAsset {
 
     private AudioType type;
     private byte[] rawData;
+    private String name;
+
+    public AudioAsset(AudioType type, byte[] rawData) {
+        this.type = type;
+        this.rawData = rawData;
+        updateName();
+    }
+
+    @JsonCreator
+    public AudioAsset(String name) {
+        this.name = name;
+    }
+
+    @JsonValue
+    public String getName() {
+        return name;
+    }
+
+    public void updateName() {
+        this.name = SecurityUtils.sha1Hex(rawData) + type.getFirstExtension();
+    }
 }

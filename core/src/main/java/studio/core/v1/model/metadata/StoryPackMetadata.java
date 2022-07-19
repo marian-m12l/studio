@@ -14,7 +14,7 @@ import studio.core.v1.service.PackFormat;
 @EqualsAndHashCode(exclude = "thumbnail")
 public class StoryPackMetadata {
 
-    private final PackFormat format;
+    private PackFormat format;
     private String uuid;
     private short version;
     private String title;

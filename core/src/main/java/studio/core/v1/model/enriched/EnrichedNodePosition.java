@@ -6,9 +6,15 @@
 
 package studio.core.v1.model.enriched;
 
-import lombok.Value;
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Value
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class EnrichedNodePosition {
 
     private short x;

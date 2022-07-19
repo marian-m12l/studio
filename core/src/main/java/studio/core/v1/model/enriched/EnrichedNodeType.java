@@ -6,6 +6,8 @@
 
 package studio.core.v1.model.enriched;
 
+import com.fasterxml.jackson.annotation.JsonValue;
+
 public enum EnrichedNodeType {
     STAGE((byte) 0x01, "stage"),
     ACTION((byte) 0x02, "action"),
@@ -41,5 +43,10 @@ public enum EnrichedNodeType {
             }
         }
         return null;
+    }
+
+    @JsonValue
+    public String getLabel() {
+        return label;
     }
 }

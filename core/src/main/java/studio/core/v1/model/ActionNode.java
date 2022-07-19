@@ -8,18 +8,25 @@ package studio.core.v1.model;
 
 import java.util.List;
 
-import lombok.Data;
+import com.fasterxml.jackson.annotation.JsonIdentityReference;
+
 import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
 @EqualsAndHashCode(callSuper = true, exclude = "options")
 public class ActionNode extends Node {
 
+    @JsonIdentityReference(alwaysAsId = true)
     private List<StageNode> options;
 
-    public ActionNode(EnrichedNodeMetadata enriched, List<StageNode> options) {
-        super(enriched);
+    public ActionNode(String uuid, EnrichedNodeMetadata enriched, List<StageNode> options) {
+        super(uuid, enriched);
         this.options = options;
     }
 }

@@ -62,10 +62,10 @@ class StoryPackConverterTest {
         // No asset
         assertEquals(expected, StoryPackConverter.hasCompressedAssets(sp));
         // WAV
-        sn.setAudio(new AudioAsset(AudioType.WAV, null));
+        sn.setAudio(new AudioAsset(AudioType.WAV, new byte[0]));
         assertEquals(expected, StoryPackConverter.hasCompressedAssets(sp));
         // WAV + BMP
-        sn.setImage(new ImageAsset(ImageType.BMP, null));
+        sn.setImage(new ImageAsset(ImageType.BMP, new byte[0]));
         assertEquals(expected, StoryPackConverter.hasCompressedAssets(sp));
         // BMP
         sn.setAudio(null);
@@ -73,10 +73,10 @@ class StoryPackConverterTest {
         // 2) OK
         expected = true;
         // JPG
-        sn.setImage(new ImageAsset(ImageType.JPEG, null));
+        sn.setImage(new ImageAsset(ImageType.JPEG, new byte[0]));
         assertEquals(expected, StoryPackConverter.hasCompressedAssets(sp));
         // JPG + MP3
-        sn.setAudio(new AudioAsset(AudioType.MP3, null));
+        sn.setAudio(new AudioAsset(AudioType.MP3, new byte[0]));
         assertEquals(expected, StoryPackConverter.hasCompressedAssets(sp));
         // MP3
         sn.setImage(null);
