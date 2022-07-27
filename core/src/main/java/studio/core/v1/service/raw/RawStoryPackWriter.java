@@ -152,9 +152,6 @@ public class RawStoryPackWriter implements StoryPackWriter {
                 currentOffset += assetAddr.getSize();
             }
 
-            // The Luniistore's error-checker bug is no more! No need to pad the story pack
-            // to 100000 sectors after the last action node
-
             // Write check bytes
             dos.write(CHECK_BYTES, 0, CHECK_BYTES.length);
         }

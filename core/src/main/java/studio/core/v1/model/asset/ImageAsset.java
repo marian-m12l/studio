@@ -47,4 +47,9 @@ public class ImageAsset {
         this.name = SecurityUtils.sha1Hex(rawData) + type.getFirstExtension();
     }
 
+    public void guessType() {
+        int dotIndex = name.lastIndexOf(".");
+        String extension = name.substring(dotIndex).toLowerCase();
+        setType(ImageType.fromExtension(extension));
+    }
 }

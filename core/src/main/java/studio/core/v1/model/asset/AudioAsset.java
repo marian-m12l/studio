@@ -44,4 +44,10 @@ public class AudioAsset {
     public void updateName() {
         this.name = SecurityUtils.sha1Hex(rawData) + type.getFirstExtension();
     }
+
+    public void guessType() {
+        int dotIndex = name.lastIndexOf(".");
+        String extension = name.substring(dotIndex).toLowerCase();
+        setType(AudioType.fromExtension(extension));
+    }
 }

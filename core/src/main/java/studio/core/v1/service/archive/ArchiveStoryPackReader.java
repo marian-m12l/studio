@@ -17,6 +17,7 @@ import java.util.Iterator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.TreeMap;
 import java.util.stream.Stream;
@@ -46,6 +47,7 @@ import studio.core.v1.model.enriched.EnrichedPackMetadata;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.service.PackFormat;
 import studio.core.v1.service.StoryPackReader;
+import studio.core.v1.utils.stream.ThrowingConsumer;
 
 public class ArchiveStoryPackReader implements StoryPackReader {
 
@@ -54,8 +56,8 @@ public class ArchiveStoryPackReader implements StoryPackReader {
     private ObjectMapper objectMapper = new ObjectMapper().setSerializationInclusion(Include.NON_NULL);
 
     // -- Jackson
-    public StoryPackMetadata readMetadata2(Path zipPath) throws IOException {
-        StoryPackMetadata spMeta = null;
+
+    public StoryPackMetadata readMetadata(Path zipPath) throws IOException {
         // Zip archive contains a json file and separate assets
         try (FileSystem zipFs = FileSystems.newFileSystem(zipPath, ClassLoader.getSystemClassLoader())) {
             // Story descriptor file: story.json
@@ -63,8 +65,12 @@ public class ArchiveStoryPackReader implements StoryPackReader {
             if (Files.notExists(story)) {
                 return null;
             }
-            spMeta = objectMapper.readValue(story.toFile(), StoryPackMetadata.class);
-            spMeta.setFormat(PackFormat.ARCHIVE);
+            StoryPackMetadata spMeta = objectMapper.readValue(Files.readAllBytes(story), StoryPackMetadata.class);
+            spMeta.setPackFormat(PackFormat.ARCHIVE);
+            // set storypack uuid (if missing) from 1st node
+            if (spMeta.getUuid() == null) {
+                spMeta.setUuid(spMeta.getUuidFirst());
+            }
             // Pack thumbnail
             Path thumb = zipFs.getPath("thumbnail.png");
             if (Files.exists(thumb)) {
@@ -74,8 +80,7 @@ public class ArchiveStoryPackReader implements StoryPackReader {
         }
     }
 
-    public StoryPack read2(Path zipPath) throws IOException {
-        StoryPack sp = null;
+    public StoryPack read(Path zipPath) throws IOException {
         // Zip archive contains a json file and separate assets
         try (FileSystem zipFs = FileSystems.newFileSystem(zipPath, ClassLoader.getSystemClassLoader())) {
             // Story descriptor file: story.json
@@ -83,15 +88,48 @@ public class ArchiveStoryPackReader implements StoryPackReader {
             if (Files.notExists(story)) {
                 return null;
             }
-            sp = objectMapper.readValue(story.toFile(), StoryPack.class);
-            // TODO read assets
+            StoryPack sp = objectMapper.readValue(Files.readAllBytes(story), StoryPack.class);
+            // Make sure the first node is actually 'square one'
+            List<StageNode> stageNodes = sp.getStageNodes();
+            int i = indexOfFirst(stageNodes);
+            if (i > 0) { // move tagged node to 1st position
+                stageNodes.add(0, stageNodes.remove(i));
+            } else if (i < 0) { // tag 1st node
+                stageNodes.get(0).setSquareOne(Boolean.TRUE);
+            }
+            // set storypack uuid (if missing) from 1st node
+            if (sp.getUuid() == null) {
+                sp.setUuid(stageNodes.get(0).getUuid());
+            }
+            // Read assets
+            Path assetsDir = zipFs.getPath("assets/");
+            stageNodes.parallelStream().map(StageNode::getImage).filter(Objects::nonNull)
+                    .forEach(ThrowingConsumer.unchecked(a -> {
+                        a.guessType();
+                        a.setRawData(Files.readAllBytes(assetsDir.resolve(a.getName())));
+                    }));
+            stageNodes.parallelStream().map(StageNode::getAudio).filter(Objects::nonNull)
+                    .forEach(ThrowingConsumer.unchecked(a -> {
+                        a.guessType();
+                        a.setRawData(Files.readAllBytes(assetsDir.resolve(a.getName())));
+                    }));
+            return sp;
         }
-        return sp;
+    }
+
+    /** Find index of node tagged 'square one'. */
+    private static int indexOfFirst(List<StageNode> stageNodes) {
+        for (int i = 0; i < stageNodes.size(); i++) {
+            if (Boolean.TRUE.equals(stageNodes.get(i).getSquareOne())) {
+                return i;
+            }
+        }
+        return -1;
     }
 
     // -- GSON
 
-    public StoryPackMetadata readMetadata(Path zipPath) throws IOException {
+    public StoryPackMetadata readMetadata0(Path zipPath) throws IOException {
         // Zip archive contains a json file and separate assets
         try (FileSystem zipFs = FileSystems.newFileSystem(zipPath, ClassLoader.getSystemClassLoader())) {
             // Pack metadata model
@@ -127,7 +165,7 @@ public class ArchiveStoryPackReader implements StoryPackReader {
         }
     }
 
-    public StoryPack read(Path zipPath) throws IOException {
+    public StoryPack read0(Path zipPath) throws IOException {
         // Zip archive contains a json file and separate assets
         try (FileSystem zipFs = FileSystems.newFileSystem(zipPath, ClassLoader.getSystemClassLoader())) {
             // Store assets bytes

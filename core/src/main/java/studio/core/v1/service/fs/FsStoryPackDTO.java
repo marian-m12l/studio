@@ -9,22 +9,22 @@ public interface FsStoryPackDTO {
 
     @AllArgsConstructor
     final class SdPartition {
-        private final Path partitionPath;
+        private final Path sdPath;
 
         public static boolean isValid(Path path) {
             return Files.isRegularFile(path.resolve(".md"));
         }
 
         public Path getDeviceMetada() {
-            return partitionPath.resolve(".md");
+            return sdPath.resolve(".md");
         }
 
         public Path getPackIndex() {
-            return partitionPath.resolve(".pi");
+            return sdPath.resolve(".pi");
         }
 
         public Path getContentFolder() {
-            return partitionPath.resolve(".content");
+            return sdPath.resolve(".content");
         }
     }
 

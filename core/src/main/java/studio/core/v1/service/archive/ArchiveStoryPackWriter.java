@@ -30,6 +30,7 @@ import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.enriched.EnrichedNodePosition;
 import studio.core.v1.model.enriched.EnrichedNodeType;
+import studio.core.v1.model.enriched.EnrichedPackMetadata;
 import studio.core.v1.service.StoryPackWriter;
 import studio.core.v1.utils.security.SecurityUtils;
 
@@ -47,7 +48,7 @@ public class ArchiveStoryPackWriter implements StoryPackWriter {
         // Store assets bytes
         TreeMap<String, byte[]> assets = new TreeMap<>();
         // Fix missing title
-        if (pack.getEnriched().getTitle() == null) {
+        if (pack.getEnriched() != null && pack.getEnriched().getTitle() == null) {
             pack.getEnriched().setTitle("MISSING_PACK_TITLE");
         }
         // Tag first node
@@ -58,7 +59,7 @@ public class ArchiveStoryPackWriter implements StoryPackWriter {
         // Add media
         for (StageNode sn : pack.getStageNodes()) {
             // Fix missing node name
-            if (sn.getEnriched().getName() == null) {
+            if (sn.getEnriched() != null && sn.getEnriched().getName() == null) {
                 sn.getEnriched().setName("MISSING_NAME");
             }
             Optional.ofNullable(sn.getAudio()).ifPresent(a -> {

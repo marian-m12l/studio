@@ -107,10 +107,10 @@ class ArchiveStoryPackReaderTest {
         spExpected.setStageNodes(stages);
 
         assertAll("StoryPack", //
-                () -> assertEquals(spExpected.getUuid(), spActual.getUuid()),
-                () -> assertEquals(spExpected.getVersion(), spActual.getVersion()),
-                () -> assertEquals(spExpected.getEnriched().getTitle(), spActual.getEnriched().getTitle()),
-                () -> assertEquals(spExpected.getEnriched().getDescription(), spActual.getEnriched().getDescription())
+                () -> assertEquals(spExpected.getUuid(), spActual.getUuid(), "uuid"),
+                () -> assertEquals(spExpected.getVersion(), spActual.getVersion(), "version"),
+                () -> assertEquals(spExpected.getEnriched().getTitle(), spActual.getEnriched().getTitle(), "title"),
+                () -> assertEquals(spExpected.getEnriched().getDescription(), spActual.getEnriched().getDescription(), "description")
         // () -> assertEquals(spExpected.getStageNodes().size(),
         // spActual.getStageNodes().size()) //
         );

@@ -97,7 +97,7 @@ public class LibraryService {
                                 // get Metadata
                                 .map(LibraryPackDTO::getMetadata)
                                 // only zip
-                                .filter(meta -> meta.getFormat() == PackFormat.ARCHIVE) //
+                                .filter(meta -> meta.getPackFormat() == PackFormat.ARCHIVE) //
                                 // update database with newest zip
                                 .findFirst().ifPresent(meta -> {
                                     LOGGER.debug("Refresh metadata from zip for {} ({})", meta.getUuid(),
@@ -191,7 +191,7 @@ public class LibraryService {
     private MetaPackDTO toDto(LibraryPackDTO pack) {
         StoryPackMetadata spMeta = pack.getMetadata();
         MetaPackDTO mp = new MetaPackDTO();
-        mp.setFormat(spMeta.getFormat().getLabel());
+        mp.setFormat(spMeta.getPackFormat().getLabel());
         mp.setUuid(spMeta.getUuid());
         mp.setVersion(spMeta.getVersion());
         mp.setPath(pack.getPath().getFileName().toString());

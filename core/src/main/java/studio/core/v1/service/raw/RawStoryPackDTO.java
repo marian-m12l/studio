@@ -5,7 +5,6 @@ import lombok.Value;
 public interface RawStoryPackDTO {
 
     int SECTOR_SIZE = 512;
-    int PACKS_LIST_SECTOR2 = 100000;
 
     int BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING = 11 + 48;
     int BINARY_ENRICHED_METADATA_TITLE_TRUNCATE = 64; // 64 characters == 128 bytes
