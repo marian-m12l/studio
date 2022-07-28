@@ -310,7 +310,7 @@ public class RawStoryPackWriter implements StoryPackWriter {
         }
         EnrichedNodeType nodeType = node.getEnriched().getType();
         if (nodeType != null) {
-            dos.writeByte(nodeType.code);
+            dos.writeByte(nodeType.getCode());
         } else {
             dos.writeByte(0x00);
         }

@@ -156,7 +156,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
                 byte[] audioData = audio.getRawData();
                 String audioHash = SecurityUtils.sha1Hex(audioData);
                 if (!audioHashOrdered.contains(audioHash)) {
-                    if (AudioType.MP3 != audio.getType() && AudioType.MPEG != audio.getType()) {
+                    if (AudioType.MP3 != audio.getType()) {
                         throw new IllegalArgumentException("FS pack file requires audio assets to be MP3.");
                     } else {
                         // Check ID3 tags

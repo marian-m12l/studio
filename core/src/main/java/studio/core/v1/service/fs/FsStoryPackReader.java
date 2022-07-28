@@ -155,7 +155,7 @@ public class FsStoryPackReader implements StoryPackReader {
                 AudioAsset audio = null;
                 if (soundAssetIndexInSI != -1) {
                     byte[] sfContent = readAsset(fsp.getSoundFolder(), siContent, soundAssetIndexInSI);
-                    audio = new AudioAsset(AudioType.MPEG, sfContent);
+                    audio = new AudioAsset(AudioType.MP3, sfContent);
                 }
 
                 ControlSettings ctrl = new ControlSettings(wheel, ok, home, pause, autoplay);

@@ -158,7 +158,7 @@ public class StoryPackConverter {
                 LOGGER.debug("Uncompressing OGG audio asset into WAV");
                 audioData = AudioConversion.oggToWave(audioData);
             }
-            if (AudioType.MPEG == aa.getType()) {
+            if (AudioType.MP3 == aa.getType()) {
                 LOGGER.debug("Uncompressing MP3 audio asset into WAV");
                 audioData = AudioConversion.mp3ToWave(audioData);
             }
@@ -178,9 +178,9 @@ public class StoryPackConverter {
             return imageData;
         }));
         // Audio
-        processAudioAssets(pack, AudioType.MPEG, ThrowingFunction.unchecked(aa -> {
+        processAudioAssets(pack, AudioType.MP3, ThrowingFunction.unchecked(aa -> {
             byte[] audioData = aa.getRawData();
-            if (AudioType.MPEG != aa.getType() && AudioType.MP3 != aa.getType()) {
+            if (AudioType.MP3 != aa.getType()) {
                 LOGGER.debug("Converting audio asset into MP3");
                 audioData = AudioConversion.anyToMp3(audioData);
             } else {

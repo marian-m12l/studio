@@ -37,5 +37,4 @@ class StoryPackJsonTest {
 
         assertEquals(Files.readString(sp2), Files.readString(sp3), "Files differ");
     }
-
 }
