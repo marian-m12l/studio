@@ -14,7 +14,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Map;
-import java.util.Optional;
 import java.util.TreeMap;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
@@ -35,7 +34,7 @@ public class ArchiveStoryPackWriter implements StoryPackWriter {
 
     public void write(StoryPack pack, Path zipPath, boolean enriched) throws IOException {
         // Store assets bytes
-        TreeMap<String, byte[]> assets = new TreeMap<>();
+        Map<String, byte[]> assetMap = new TreeMap<>();
         // Fix missing title
         if (pack.getEnriched() != null && pack.getEnriched().getTitle() == null) {
             pack.getEnriched().setTitle("MISSING_PACK_TITLE");
@@ -51,10 +50,9 @@ public class ArchiveStoryPackWriter implements StoryPackWriter {
             if (sn.getEnriched() != null && sn.getEnriched().getName() == null) {
                 sn.getEnriched().setName("MISSING_NAME");
             }
-            Optional.ofNullable(sn.getAudio()).ifPresent(a -> assets.putIfAbsent(a.getName(), a.getRawData()));
-            Optional.ofNullable(sn.getImage()).ifPresent(a -> assets.putIfAbsent(a.getName(), a.getRawData()));
+            // cache assets
+            sn.assets().forEach(a -> assetMap.putIfAbsent(a.getName(), a.getRawData()));
         }
-
         // Zip archive contains a json file and separate assets
         URI uri = URI.create("jar:" + zipPath.toUri());
         try (FileSystem zipFs = FileSystems.newFileSystem(uri, ZIPFS_OPTIONS);
@@ -63,7 +61,7 @@ public class ArchiveStoryPackWriter implements StoryPackWriter {
             objectWriter.writeValue(jsonWriter, pack);
             // Add assets in separate directory
             Path assetPath = Files.createDirectories(zipFs.getPath("assets/"));
-            for (Map.Entry<String, byte[]> a : assets.entrySet()) {
+            for (Map.Entry<String, byte[]> a : assetMap.entrySet()) {
                 Files.write(assetPath.resolve(a.getKey()), a.getValue());
             }
         }

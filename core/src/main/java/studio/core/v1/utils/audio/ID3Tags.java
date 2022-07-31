@@ -25,13 +25,12 @@ public class ID3Tags {
     }
 
     public static boolean hasID3v1Tag(byte[] mp3Data) {
-        // Look for ID3v1 tag at end of file
-        ByteBuffer mp3Buffer = ByteBuffer.wrap(mp3Data);
-        mp3Buffer.position(mp3Data.length - ID3V1_SIZE);
+        // Look for ID3v1 tag at end of file (=first 3 bytes of last 128 bytes)
+        ByteBuffer mp3Buffer = ByteBuffer.wrap(mp3Data, mp3Data.length - ID3V1_SIZE, 3);
         byte char1 = mp3Buffer.get();
         byte char2 = mp3Buffer.get();
         byte char3 = mp3Buffer.get();
-        return (char1 == 0x54 && char2 == 0x41 && char3 == 0x47);   // "TAG"
+        return char1 == 0x54 && char2 == 0x41 && char3 == 0x47; // "TAG"
     }
 
     public static byte[] removeID3v1Tag(byte[] mp3Data) {
@@ -44,12 +43,12 @@ public class ID3Tags {
     }
 
     public static boolean hasID3v2Tag(byte[] mp3Data) {
-        // Look for ID3v2 tag at beginning of file
-        ByteBuffer mp3Buffer = ByteBuffer.wrap(mp3Data);
+        // Look for ID3v2 tag at beginning of file (=first 3 bytes)
+        ByteBuffer mp3Buffer = ByteBuffer.wrap(mp3Data, 0, 3);
         byte char1 = mp3Buffer.get();
         byte char2 = mp3Buffer.get();
         byte char3 = mp3Buffer.get();
-        return (char1 == 0x49 && char2 == 0x44 && char3 == 0x33);   // "ID3"
+        return char1 == 0x49 && char2 == 0x44 && char3 == 0x33; // "ID3"
     }
 
     public static byte[] removeID3v2Tag(byte[] mp3Data) {

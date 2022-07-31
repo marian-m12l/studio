@@ -13,6 +13,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -37,15 +38,12 @@ import studio.core.v1.model.ControlSettings;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.Transition;
-import studio.core.v1.model.asset.AudioAsset;
-import studio.core.v1.model.asset.AudioType;
-import studio.core.v1.model.asset.ImageAsset;
-import studio.core.v1.model.asset.ImageType;
+import studio.core.v1.model.asset.MediaAsset;
+import studio.core.v1.model.asset.MediaAssetType;
 import studio.core.v1.service.StoryPackWriter;
 import studio.core.v1.service.fs.FsStoryPackDTO.FsStoryPack;
 import studio.core.v1.utils.audio.AudioConversion;
 import studio.core.v1.utils.audio.ID3Tags;
-import studio.core.v1.utils.security.SecurityUtils;
 import studio.core.v1.utils.security.XXTEACipher;
 import studio.core.v1.utils.security.XXTEACipher.CipherMode;
 
@@ -77,7 +75,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
         }
 
         // Store assets bytes
-        TreeMap<String, byte[]> assets = new TreeMap<>();
+        Map<String, byte[]> assets = new TreeMap<>();
         // Keep track of action nodes and assets
         List<ActionNode> actionNodesOrdered = new ArrayList<>();
         Map<ActionNode, Integer> actionNodesIndexes = new HashMap<>();
@@ -85,8 +83,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
         List<String> audioHashOrdered = new ArrayList<>();
 
         // Add nodes index file: ni
-        Path niPath = fsp.getNodeIndex();
-        try (DataOutputStream niDos = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(niPath)))) {
+        try (OutputStream niDos = new BufferedOutputStream(Files.newOutputStream(fsp.getNodeIndex()))) {
             ByteBuffer bb = ByteBuffer.allocate(512).order(ByteOrder.LITTLE_ENDIAN);
 
             // Nodes index file format version (1)
@@ -101,10 +98,10 @@ public class FsStoryPackWriter implements StoryPackWriter {
             bb.putInt(pack.getStageNodes().size());
             // Number of images (in RI file and rf/ folder)
             bb.putInt((int) pack.getStageNodes().stream().map(StageNode::getImage).filter(Objects::nonNull)
-                    .map(ImageAsset::getRawData).map(SecurityUtils::sha1Hex).distinct().count());
+                    .map(MediaAsset::getName).distinct().count());
             // Number of sounds (in SI file and sf/ folder)
             bb.putInt((int) pack.getStageNodes().stream().map(StageNode::getAudio).filter(Objects::nonNull)
-                    .map(AudioAsset::getRawData).map(SecurityUtils::sha1Hex).distinct().count());
+                    .map(MediaAsset::getName).distinct().count());
             // Is factory pack (boolean) set to true to avoid pack inspection by official
             // Luniistore application
             bb.put((byte) 1);
@@ -120,16 +117,15 @@ public class FsStoryPackWriter implements StoryPackWriter {
                 StageNode node = pack.getStageNodes().get(i);
 
                 int imageIndex = -1;
-                ImageAsset image = node.getImage();
+                MediaAsset image = node.getImage();
                 if (image != null) {
-                    byte[] imageData = image.getRawData();
-                    String imageHash = SecurityUtils.sha1Hex(imageData);
+                    String imageHash = image.findHash();
                     if (!imageHashOrdered.contains(imageHash)) {
-                        if (ImageType.BMP != image.getType()) {
+                        if (MediaAssetType.BMP != image.getType()) {
                             throw new IllegalArgumentException("FS pack file requires image assets to be BMP.");
                         }
-                        ByteBuffer bmpBuffer = ByteBuffer.wrap(imageData);
-                        bmpBuffer.order(ByteOrder.LITTLE_ENDIAN);
+                        byte[] imageData = image.getRawData();
+                        ByteBuffer bmpBuffer = ByteBuffer.wrap(imageData).order(ByteOrder.LITTLE_ENDIAN);
                         // Make sure the BMP file is RLE-compressed / 4-bits depth
                         if (bmpBuffer.getShort(28) != 0x0004 || bmpBuffer.getInt(30) != 0x00000002) {
                             throw new IllegalArgumentException(
@@ -148,32 +144,31 @@ public class FsStoryPackWriter implements StoryPackWriter {
                     }
                 }
                 int audioIndex = -1;
-                AudioAsset audio = node.getAudio();
+                MediaAsset audio = node.getAudio();
                 // If audio is missing, add a blank audio to satisfy the device
                 if (audio == null) {
-                    audio = new AudioAsset(AudioType.MP3, BLANK_MP3);
+                    audio = new MediaAsset(MediaAssetType.MP3, BLANK_MP3);
                 }
-                byte[] audioData = audio.getRawData();
-                String audioHash = SecurityUtils.sha1Hex(audioData);
+                String audioHash = audio.findHash();
                 if (!audioHashOrdered.contains(audioHash)) {
-                    if (AudioType.MP3 != audio.getType()) {
+                    if (MediaAssetType.MP3 != audio.getType()) {
                         throw new IllegalArgumentException("FS pack file requires audio assets to be MP3.");
-                    } else {
-                        // Check ID3 tags
-                        if (ID3Tags.hasID3v1Tag(audioData) || ID3Tags.hasID3v2Tag(audioData)) {
-                            throw new IllegalArgumentException("FS pack file does not support ID3 tags in MP3 files.");
+                    } 
+                    byte[] audioData = audio.getRawData();
+                    // Check ID3 tags
+                    if (ID3Tags.hasID3v1Tag(audioData) || ID3Tags.hasID3v2Tag(audioData)) {
+                        throw new IllegalArgumentException("FS pack file does not support ID3 tags in MP3 files.");
+                    }
+                    // Check that the file is MONO / 44100Hz
+                    try (ByteArrayInputStream bais = new ByteArrayInputStream(audioData)) {
+                        AudioFormat audioFormat = AudioSystem.getAudioFileFormat(bais).getFormat();
+                        if (audioFormat.getChannels() != AudioConversion.CHANNELS
+                                || audioFormat.getSampleRate() != AudioConversion.MP3_SAMPLE_RATE) {
+                            throw new IllegalArgumentException(
+                                    "FS pack file requires MP3 audio assets to be MONO / 44100Hz.");
                         }
-                        // Check that the file is MONO / 44100Hz
-                        try (ByteArrayInputStream bais = new ByteArrayInputStream(audioData)) {
-                            AudioFormat audioFormat = AudioSystem.getAudioFileFormat(bais).getFormat();
-                            if (audioFormat.getChannels() != AudioConversion.CHANNELS
-                                    || audioFormat.getSampleRate() != AudioConversion.MP3_SAMPLE_RATE) {
-                                throw new IllegalArgumentException(
-                                        "FS pack file requires MP3 audio assets to be MONO / 44100Hz.");
-                            }
-                        } catch (UnsupportedAudioFileException e) {
-                            throw new IllegalArgumentException("Unsupported Audio File", e);
-                        }
+                    } catch (UnsupportedAudioFileException e) {
+                        throw new IllegalArgumentException("Unsupported Audio File", e);
                     }
                     audioIndex = audioHashOrdered.size();
                     audioHashOrdered.add(audioHash);
@@ -293,8 +288,8 @@ public class FsStoryPackWriter implements StoryPackWriter {
 
     private static void writeCypheredFile(Path path, byte[] byteArray) throws IOException {
         // The first block of bytes must be ciphered with the common key
-        byte[] liCiphered = XXTEACipher.cipherCommonKey(CipherMode.CIPHER, byteArray);
-        Files.write(path, liCiphered);
+        byte[] ciphered = XXTEACipher.cipherCommonKey(CipherMode.CIPHER, byteArray);
+        Files.write(path, ciphered);
     }
 
     public static void addBootFile(Path packFolder, byte[] deviceUuid) throws IOException {

@@ -28,10 +28,8 @@ import studio.core.v1.model.ControlSettings;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.Transition;
-import studio.core.v1.model.asset.AudioAsset;
-import studio.core.v1.model.asset.AudioType;
-import studio.core.v1.model.asset.ImageAsset;
-import studio.core.v1.model.asset.ImageType;
+import studio.core.v1.model.asset.MediaAsset;
+import studio.core.v1.model.asset.MediaAssetType;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.service.PackFormat;
 import studio.core.v1.service.StoryPackReader;
@@ -47,51 +45,47 @@ public class FsStoryPackReader implements StoryPackReader {
         // Pack metadata model
         StoryPackMetadata metadata = new StoryPackMetadata(PackFormat.FS);
         FsStoryPack fsp = new FsStoryPack(inputFolder);
-
         // Open 'ni' file
-        try(InputStream niDis = new BufferedInputStream(Files.newInputStream(fsp.getNodeIndex()))) {
+        try (InputStream niDis = new BufferedInputStream(Files.newInputStream(fsp.getNodeIndex()))) {
             ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
             metadata.setVersion(bb.getShort(2));
         }
-
-        // Folder name is the uuid (minus the eventual timestamp, so we just trim everything starting at the dot)
-        String uuid = inputFolder.getFileName().toString().split("\\.", 2)[0];
-        metadata.setUuid(uuid);
-
+        // Get uuid from folder name
+        metadata.setUuid(fsp.getUuid());
         // Night mode is available if file 'nm' exists
         metadata.setNightModeAvailable(fsp.isNightModeAvailable());
         return metadata;
     }
 
     public StoryPack read(Path inputFolder) throws IOException {
+        // Create storypack
+        StoryPack sp = new StoryPack();
+        sp.setEnriched(null);
+        sp.setStageNodes(new ArrayList<>());
+
         FsStoryPack fsp = new FsStoryPack(inputFolder);
-        TreeMap<Integer, StageNode> stageNodes = new TreeMap<>();                   // Keep stage nodes
-        TreeMap<Integer, Integer> actionNodesOptionsCount = new TreeMap<>();        // Keep action nodes' options count
-        TreeMap<Integer, List<Transition>> transitionsWithAction = new TreeMap<>(); // Transitions must be updated with the actual ActionNode
+        // Keep action nodes' options count
+        Map<Integer, Integer> actionNodesOptionsCount = new TreeMap<>();
+        // Transitions must be updated with the actual ActionNode
+        Map<Integer, List<Transition>> transitionsWithAction = new TreeMap<>();
 
-        // Folder name is the uuid (minus the eventual timestamp, so we just trim everything starting at the dot)
-        String uuid = inputFolder.getFileName().toString().split("\\.", 2)[0];
-
+        // Get uuid from folder name
+        sp.setUuid(fsp.getUuid());
         // Night mode is available if file 'nm' exists
-        boolean nightModeAvailable = fsp.isNightModeAvailable();
+        sp.setNightModeAvailable(fsp.isNightModeAvailable());
 
         // Load ri, si and li files
         byte[] riContent = readCipheredFile(fsp.getImageIndex());
-        byte[] siContent = readCipheredFile(fsp.getSoundIndex() );
+        byte[] siContent = readCipheredFile(fsp.getSoundIndex());
         byte[] liContent = readCipheredFile(fsp.getListIndex());
 
-        // Story pack version
-        short version;
-        // Is factory pack (boolean) set to true to avoid pack inspection by official Luniistore application
-        boolean factoryDisabled;
-
         // Open 'ni' file
-        try(InputStream niDis = new BufferedInputStream(Files.newInputStream(fsp.getNodeIndex()))) {
+        try (InputStream niDis = new BufferedInputStream(Files.newInputStream(fsp.getNodeIndex()))) {
             ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
             // Nodes index file format version (1)
             bb.getShort();
             // Story pack version
-            version = bb.getShort();
+            sp.setVersion(bb.getShort());
             // Start of actual nodes list in this file (0x200 / 512)
             int nodesList = bb.getInt();
             // Size of a stage node in this file (0x2C / 44)
@@ -104,94 +98,82 @@ public class FsStoryPackReader implements StoryPackReader {
             int soundAssetsCount = bb.getInt();
             LOGGER.trace("NodeList start : {}, containing {} images and {} audio.", nodesList, imageAssetsCount,
                     soundAssetsCount);
-            // Is factory pack (boolean) set to true to avoid pack inspection by official Luniistore application
-            factoryDisabled = bb.get() != 0x00;
+            // if true, avoid pack inspection by official Luniistore application
+            sp.setFactoryDisabled(bb.get() != 0x00);
 
             // Read stage nodes
-            for (int i=0; i<stageNodesCount; i++) {
+            for (int i = 0; i < stageNodesCount; i++) {
                 bb = ByteBuffer.wrap(niDis.readNBytes(nodeSize)).order(ByteOrder.LITTLE_ENDIAN);
+
+                // Read image and audio assets
+                MediaAsset image = null;
                 int imageAssetIndexInRI = bb.getInt();
+                if (imageAssetIndexInRI != -1) {
+                    byte[] rfContent = readAsset(fsp.getImageFolder(), riContent, imageAssetIndexInRI);
+                    image = new MediaAsset(MediaAssetType.BMP, rfContent);
+                }
+                MediaAsset audio = null;
                 int soundAssetIndexInSI = bb.getInt();
-                int okTransitionActionNodeIndexInLI = bb.getInt();
-                int okTransitionNumberOfOptions = bb.getInt();
-                int okTransitionSelectedOptionIndex = bb.getInt();
-                int homeTransitionActionNodeIndexInLI = bb.getInt();
-                int homeTransitionNumberOfOptions = bb.getInt();
-                int homeTransitionSelectedOptionIndex = bb.getInt();
-                boolean wheel = bb.getShort() != 0;
-                boolean ok = bb.getShort() != 0;
-                boolean home = bb.getShort() != 0;
-                boolean pause = bb.getShort() != 0;
-                boolean autoplay = bb.getShort() != 0;
+                if (soundAssetIndexInSI != -1) {
+                    byte[] sfContent = readAsset(fsp.getSoundFolder(), siContent, soundAssetIndexInSI);
+                    audio = new MediaAsset(MediaAssetType.MP3, sfContent);
+                }
 
                 // Transition will be updated later with the actual action nodes
                 Transition okTransition = null;
-                if (okTransitionActionNodeIndexInLI != -1 && okTransitionNumberOfOptions != -1 && okTransitionSelectedOptionIndex != -1) {
-                    if (!actionNodesOptionsCount.containsKey(okTransitionActionNodeIndexInLI)) {
-                        actionNodesOptionsCount.put(okTransitionActionNodeIndexInLI, okTransitionNumberOfOptions);
-                    }
-                    okTransition = new Transition(null, (short) okTransitionSelectedOptionIndex);
-                    List<Transition> twa = transitionsWithAction.getOrDefault(okTransitionActionNodeIndexInLI, new ArrayList<>());
+                int actionNodeIndexInLI = bb.getInt();
+                int numberOfOptions = bb.getInt();
+                int selectedOptionIndex = bb.getInt();
+                if (actionNodeIndexInLI != -1 && numberOfOptions != -1 && selectedOptionIndex != -1) {
+                    actionNodesOptionsCount.putIfAbsent(actionNodeIndexInLI, numberOfOptions);
+                    okTransition = new Transition(null, (short) selectedOptionIndex);
+                    List<Transition> twa = transitionsWithAction.getOrDefault(actionNodeIndexInLI, new ArrayList<>());
                     twa.add(okTransition);
-                    transitionsWithAction.put(okTransitionActionNodeIndexInLI, twa);
+                    transitionsWithAction.put(actionNodeIndexInLI, twa);
                 }
                 Transition homeTransition = null;
-                if (homeTransitionActionNodeIndexInLI != -1 && homeTransitionNumberOfOptions != -1 && homeTransitionSelectedOptionIndex != -1) {
-                    if (!actionNodesOptionsCount.containsKey(homeTransitionActionNodeIndexInLI)) {
-                        actionNodesOptionsCount.put(homeTransitionActionNodeIndexInLI, homeTransitionNumberOfOptions);
-                    }
-                    homeTransition = new Transition(null, (short) homeTransitionSelectedOptionIndex);
-                    List<Transition> twa = transitionsWithAction.getOrDefault(homeTransitionActionNodeIndexInLI, new ArrayList<>());
+                actionNodeIndexInLI = bb.getInt();
+                numberOfOptions = bb.getInt();
+                selectedOptionIndex = bb.getInt();
+                if (actionNodeIndexInLI != -1 && numberOfOptions != -1 && selectedOptionIndex != -1) {
+                    actionNodesOptionsCount.putIfAbsent(actionNodeIndexInLI, numberOfOptions);
+                    homeTransition = new Transition(null, (short) selectedOptionIndex);
+                    List<Transition> twa = transitionsWithAction.getOrDefault(actionNodeIndexInLI, new ArrayList<>());
                     twa.add(homeTransition);
-                    transitionsWithAction.put(homeTransitionActionNodeIndexInLI, twa);
+                    transitionsWithAction.put(actionNodeIndexInLI, twa);
                 }
 
-                // Read image and audio assets
-                ImageAsset image = null;
-                if (imageAssetIndexInRI != -1) {
-                    byte[] rfContent = readAsset(fsp.getImageFolder(), riContent, imageAssetIndexInRI);
-                    image = new ImageAsset(ImageType.BMP, rfContent);
-                }
-                AudioAsset audio = null;
-                if (soundAssetIndexInSI != -1) {
-                    byte[] sfContent = readAsset(fsp.getSoundFolder(), siContent, soundAssetIndexInSI);
-                    audio = new AudioAsset(AudioType.MP3, sfContent);
-                }
+                ControlSettings ctrl = new ControlSettings();
+                ctrl.setWheelEnabled(bb.getShort() != 0);
+                ctrl.setOkEnabled(bb.getShort() != 0);
+                ctrl.setHomeEnabled(bb.getShort() != 0);
+                ctrl.setPauseEnabled(bb.getShort() != 0);
+                ctrl.setAutoJumpEnabled(bb.getShort() != 0);
 
-                ControlSettings ctrl = new ControlSettings(wheel, ok, home, pause, autoplay);
                 // First node should have the same UUID as the story pack
                 // TODO node uuids from metadata file
-                String id = (i == 0) ? uuid : UUID.randomUUID().toString(); 
+                String id = (i == 0) ? sp.getUuid() : UUID.randomUUID().toString();
                 StageNode stageNode = new StageNode(id, image, audio, okTransition, homeTransition, ctrl, null);
-                stageNodes.put(i, stageNode);
+                sp.getStageNodes().add(stageNode);
             }
         }
 
         // Read action nodes from 'li' file
         ByteBuffer liBb = ByteBuffer.wrap(liContent).order(ByteOrder.LITTLE_ENDIAN);
-        for (Map.Entry<Integer, Integer> actionCount: actionNodesOptionsCount.entrySet()) {
+        for (Map.Entry<Integer, Integer> actionCount : actionNodesOptionsCount.entrySet()) {
             Integer offset = actionCount.getKey();
             Integer count = actionCount.getValue();
             List<StageNode> options = new ArrayList<>(count);
-            liBb.position(offset*4); // Each entry takes 4 bytes
-            for (int i=0; i<count; i++) {
+            liBb.position(offset * 4); // Each entry takes 4 bytes
+            for (int i = 0; i < count; i++) {
                 int stageNodeIndex = liBb.getInt();
-                options.add(stageNodes.get(stageNodeIndex));
+                options.add(sp.getStageNodes().get(stageNodeIndex));
             }
             // Update action on transitions referencing this sector
             String id = UUID.randomUUID().toString();
             ActionNode actionNode = new ActionNode(id, null, options);
             transitionsWithAction.get(offset).forEach(transition -> transition.setActionNode(actionNode));
         }
-
-        // Create storypack
-        StoryPack sp = new StoryPack();
-        sp.setUuid(uuid);
-        sp.setFactoryDisabled(factoryDisabled);
-        sp.setVersion(version);
-        sp.setStageNodes(List.copyOf(stageNodes.values()));
-        sp.setEnriched(null);
-        sp.setNightModeAvailable(nightModeAvailable);
         return sp;
     }
 
@@ -206,5 +188,4 @@ public class FsStoryPackReader implements StoryPackReader {
         // Read asset file
         return readCipheredFile(assetFolder.resolve(assetName));
     }
-
 }

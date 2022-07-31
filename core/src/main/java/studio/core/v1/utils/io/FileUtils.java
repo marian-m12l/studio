@@ -82,7 +82,7 @@ public class FileUtils {
                 Files.createDirectories(dirPath);
             }
         } catch (IOException e) {
-            throw new StoryTellerException(errorMessage);
+            throw new StoryTellerException(errorMessage, e);
         }
     }
 }

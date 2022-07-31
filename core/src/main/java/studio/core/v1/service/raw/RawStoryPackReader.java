@@ -25,6 +25,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeMap;
@@ -39,10 +40,8 @@ import studio.core.v1.model.ControlSettings;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.Transition;
-import studio.core.v1.model.asset.AudioAsset;
-import studio.core.v1.model.asset.AudioType;
-import studio.core.v1.model.asset.ImageAsset;
-import studio.core.v1.model.asset.ImageType;
+import studio.core.v1.model.asset.MediaAsset;
+import studio.core.v1.model.asset.MediaAssetType;
 import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 import studio.core.v1.model.enriched.EnrichedNodePosition;
 import studio.core.v1.model.enriched.EnrichedNodeType;
@@ -115,13 +114,13 @@ public class RawStoryPackReader implements StoryPackReader {
                     - BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE * 2); 
 
             // Read stage nodes (`stages` sectors, starting from sector 2)
-            TreeMap<SectorAddr, StageNode> stageNodes = new TreeMap<>();
+            Map<SectorAddr, StageNode> stageNodes = new TreeMap<>();
             // StageNodes must be updated with the actual ImageAsset
-            TreeMap<AssetAddr, List<StageNode>> stagesWithImage = new TreeMap<>();
+            Map<AssetAddr, List<StageNode>> stagesWithImage = new TreeMap<>();
             // StageNodes must be updated with the actual AudioAsset
-            TreeMap<AssetAddr, List<StageNode>> stagesWithAudio = new TreeMap<>();
+            Map<AssetAddr, List<StageNode>> stagesWithAudio = new TreeMap<>();
             // Transitions must be updated with the actual ActionNode
-            TreeMap<SectorAddr, List<Transition>> transitionsWithAction = new TreeMap<>();
+            Map<SectorAddr, List<Transition>> transitionsWithAction = new TreeMap<>();
             // Stage nodes / transitions reference action nodes, which are read after all stage nodes
             Set<SectorAddr> actionNodesToVisit = new TreeSet<>();
             // Stage nodes reference assets, which are read after all nodes
@@ -282,11 +281,11 @@ public class RawStoryPackReader implements StoryPackReader {
 
                 // Update asset on stage nodes referencing this sector
                 if (assetAddr.getType() == AssetType.AUDIO) {
-                    AudioAsset audioAsset = new AudioAsset(AudioType.WAV, assetBytes);
+                    MediaAsset audioAsset = new MediaAsset(MediaAssetType.WAV, assetBytes);
                     stagesWithAudio.get(assetAddr).forEach(stageNode -> stageNode.setAudio(audioAsset));
                 }
                 if (assetAddr.getType() == AssetType.IMAGE) {
-                    ImageAsset imageAsset = new ImageAsset(ImageType.BMP, assetBytes);
+                    MediaAsset imageAsset = new MediaAsset(MediaAssetType.BMP, assetBytes);
                     stagesWithImage.get(assetAddr).forEach(stageNode -> stageNode.setImage(imageAsset));
                 }
                 currentOffset += assetAddr.getSize();

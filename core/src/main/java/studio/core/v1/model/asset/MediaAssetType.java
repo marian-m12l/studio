@@ -5,15 +5,17 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-public enum AudioType {
-
+public enum MediaAssetType {
+    // image
+    BMP("image/bmp", ".bmp"), PNG("image/png", ".png"), JPEG("image/jpeg", ".jpg", ".jpeg"),
+    // audio
     WAV("audio/x-wav", ".wav"), MP3("audio/mp3", ".mp3"), OGG("audio/ogg", ".ogg", ".oga");
 
-    private static final Map<String, AudioType> BY_MIME = new HashMap<>();
-    private static final Map<String, AudioType> BY_EXTENSION = new HashMap<>();
+    private static final Map<String, MediaAssetType> BY_MIME = new HashMap<>();
+    private static final Map<String, MediaAssetType> BY_EXTENSION = new HashMap<>();
 
     static {
-        for (AudioType e : values()) {
+        for (MediaAssetType e : values()) {
             BY_MIME.put(e.mime, e);
             for (String ext : e.extensions) {
                 BY_EXTENSION.putIfAbsent(ext, e);
@@ -23,18 +25,18 @@ public enum AudioType {
         BY_MIME.put("audio/mpeg", MP3);
     }
 
-    public static AudioType fromExtension(String extension) {
+    public static MediaAssetType fromExtension(String extension) {
         return BY_EXTENSION.get(extension);
     }
 
-    public static AudioType fromMime(String mime) {
+    public static MediaAssetType fromMime(String mime) {
         return BY_MIME.get(mime);
     }
 
     private final String mime;
     private final List<String> extensions;
 
-    private AudioType(String mime, String... extensions) {
+    private MediaAssetType(String mime, String... extensions) {
         this.mime = mime;
         this.extensions = Arrays.asList(extensions);
     }
@@ -47,7 +49,7 @@ public enum AudioType {
         return extensions;
     }
 
-    public String getFirstExtension() {
+    public String firstExtension() {
         return extensions.get(0);
     }
 }

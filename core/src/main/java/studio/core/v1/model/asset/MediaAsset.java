@@ -11,28 +11,26 @@ import com.fasterxml.jackson.annotation.JsonValue;
 
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
-import lombok.NoArgsConstructor;
 import lombok.Setter;
 import studio.core.v1.utils.security.SecurityUtils;
 
 @Getter
 @Setter
-@NoArgsConstructor
 @EqualsAndHashCode(exclude = "rawData")
-public class AudioAsset {
+public class MediaAsset {
 
-    private AudioType type;
+    private MediaAssetType type;
     private byte[] rawData;
     private String name;
 
-    public AudioAsset(AudioType type, byte[] rawData) {
+    public MediaAsset(MediaAssetType type, byte[] rawData) {
         this.type = type;
         this.rawData = rawData;
         updateName();
     }
 
     @JsonCreator
-    public AudioAsset(String name) {
+    public MediaAsset(String name) {
         this.name = name;
     }
 
@@ -42,12 +40,22 @@ public class AudioAsset {
     }
 
     public void updateName() {
-        this.name = SecurityUtils.sha1Hex(rawData) + type.getFirstExtension();
+        this.name = SecurityUtils.sha1Hex(rawData) + type.firstExtension();
+    }
+
+    private int dotIndex() {
+        return name.lastIndexOf(".");
+    }
+
+    public String findHash() {
+        return name.substring(0, dotIndex()).toLowerCase();
+    }
+
+    public String findExtension() {
+        return name.substring(dotIndex()).toLowerCase();
     }
 
     public void guessType() {
-        int dotIndex = name.lastIndexOf(".");
-        String extension = name.substring(dotIndex).toLowerCase();
-        setType(AudioType.fromExtension(extension));
+        setType(MediaAssetType.fromExtension(findExtension()));
     }
 }

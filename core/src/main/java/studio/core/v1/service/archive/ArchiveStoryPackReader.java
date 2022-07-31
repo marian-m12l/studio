@@ -12,7 +12,6 @@ import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Objects;
 
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -72,18 +71,12 @@ public class ArchiveStoryPackReader implements StoryPackReader {
             if (sp.getUuid() == null) {
                 sp.setUuid(stageNodes.get(0).getUuid());
             }
-            // Read assets
+            // Read assets (in parallel)
             Path assetsDir = zipFs.getPath("assets/");
-            stageNodes.parallelStream().map(StageNode::getImage).filter(Objects::nonNull)
-                    .forEach(ThrowingConsumer.unchecked(a -> {
-                        a.guessType();
-                        a.setRawData(Files.readAllBytes(assetsDir.resolve(a.getName())));
-                    }));
-            stageNodes.parallelStream().map(StageNode::getAudio).filter(Objects::nonNull)
-                    .forEach(ThrowingConsumer.unchecked(a -> {
-                        a.guessType();
-                        a.setRawData(Files.readAllBytes(assetsDir.resolve(a.getName())));
-                    }));
+            stageNodes.parallelStream().flatMap(StageNode::assets).forEach(ThrowingConsumer.unchecked(a -> {
+                a.guessType();
+                a.setRawData(Files.readAllBytes(assetsDir.resolve(a.getName())));
+            }));
             return sp;
         }
     }

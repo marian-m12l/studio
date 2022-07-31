@@ -68,6 +68,11 @@ public interface FsStoryPackDTO {
             return fsPath.resolve("bt");
         }
 
+        public String getUuid() {
+            // Folder name is the uuid (minus the eventual timestamp suffix)
+            return fsPath.getFileName().toString().split("\\.", 2)[0];
+        }
+
         public boolean isNightModeAvailable() {
             return Files.exists(getNightMode());
         }

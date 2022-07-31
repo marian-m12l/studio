@@ -33,10 +33,8 @@ import studio.core.v1.model.Node;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.Transition;
-import studio.core.v1.model.asset.AudioAsset;
-import studio.core.v1.model.asset.AudioType;
-import studio.core.v1.model.asset.ImageAsset;
-import studio.core.v1.model.asset.ImageType;
+import studio.core.v1.model.asset.MediaAsset;
+import studio.core.v1.model.asset.MediaAssetType;
 import studio.core.v1.model.enriched.EnrichedNodePosition;
 import studio.core.v1.model.enriched.EnrichedNodeType;
 import studio.core.v1.service.StoryPackWriter;
@@ -83,49 +81,16 @@ public class RawStoryPackWriter implements StoryPackWriter {
 
             // Count action nodes and assets (with sizes) and attribute a sector address
             // (offset) to each
-            TreeMap<SectorAddr, ActionNode> actionNodesMap = new TreeMap<>();
-            TreeMap<String, AssetAddr> assetsHashes = new TreeMap<>();
-            TreeMap<AssetAddr, byte[]> assetsData = new TreeMap<>();
+            Map<SectorAddr, ActionNode> actionNodesMap = new TreeMap<>();
+            Map<String, AssetAddr> assetsHashes = new TreeMap<>();
+            Map<AssetAddr, byte[]> assetsData = new TreeMap<>();
             prepareAssets(pack, actionNodesMap, assetsHashes, assetsData);
 
             // Write stage nodes (from sector 2)
             writeStageNodes(dos, pack.getStageNodes(), assetsHashes, actionNodesMap, enriched);
 
             // Write action sectors
-            int currentOffset = pack.getStageNodes().size();
-            for (Map.Entry<SectorAddr, ActionNode> actionNodeEntry : actionNodesMap.entrySet()) {
-                // Sector to write
-                SectorAddr actionNodeAddr = actionNodeEntry.getKey();
-                // Add padding to the beginning of the sector, if needed
-                while (actionNodeAddr.getOffset() > currentOffset) {
-                    writePadding(dos, SECTOR_SIZE);
-                    currentOffset++;
-                }
-
-                // Node to write
-                ActionNode actionNode = actionNodeEntry.getValue();
-                for (StageNode stageNode : actionNode.getOptions()) {
-                    int stageNodeOffset = pack.getStageNodes().indexOf(stageNode);
-                    dos.writeShort(stageNodeOffset);
-                }
-
-                // Write (optional) enriched node metadata
-                int enrichedNodeMetadataSize = 0;
-                if (enriched && actionNode.getEnriched() != null) {
-                    int alignmentOverflow = 2 * (actionNode.getOptions().size())
-                            % BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT;
-                    int alignmentPadding = BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT_PADDING
-                            + (alignmentOverflow > 0
-                                    ? BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT - alignmentOverflow
-                                    : 0);
-                    writePadding(dos, alignmentPadding);
-                    enrichedNodeMetadataSize = alignmentPadding + writeEnrichedNodeMetadata(dos, actionNode);
-                }
-
-                // Skip to end of sector
-                writePadding(dos, SECTOR_SIZE - 2 * (actionNode.getOptions().size()) - enrichedNodeMetadataSize);
-                currentOffset++;
-            }
+            int currentOffset = writeActionNode(dos, pack.getStageNodes(), actionNodesMap, enriched);
 
             // Write assets (images / audio)
             for (Map.Entry<AssetAddr, byte[]> assetEntry : assetsData.entrySet()) {
@@ -136,22 +101,18 @@ public class RawStoryPackWriter implements StoryPackWriter {
                     writePadding(dos, SECTOR_SIZE);
                     currentOffset++;
                 }
-
                 // Asset to write
                 byte[] assetBytes = assetEntry.getValue();
                 // Write all bytes
                 int overflow = 0;
                 dos.write(assetBytes, 0, assetBytes.length);
                 overflow = assetBytes.length % SECTOR_SIZE;
-
                 // Skip to end of sector
                 if (overflow > 0) {
                     writePadding(dos, SECTOR_SIZE - overflow);
                 }
-
                 currentOffset += assetAddr.getSize();
             }
-
             // Write check bytes
             dos.write(CHECK_BYTES, 0, CHECK_BYTES.length);
         }
@@ -171,48 +132,49 @@ public class RawStoryPackWriter implements StoryPackWriter {
                 actionNodesMap.put(new SectorAddr(nextFreeOffset++), stageNode.getHomeTransition().getActionNode());
             }
         }
+
         // images
         for (StageNode stageNode : pack.getStageNodes()) {
-            ImageAsset image = stageNode.getImage();
+            MediaAsset image = stageNode.getImage();
             if (image != null) {
                 byte[] imageData = image.getRawData();
                 String assetHash = SecurityUtils.sha1Hex(imageData);
                 if (!assetsHashes.containsKey(assetHash)) {
-                    if (ImageType.BMP != image.getType()) {
+                    if (MediaAssetType.BMP != image.getType()) {
                         throw new IllegalArgumentException(
                                 "Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
                     }
                     int imageSize = imageData.length;
-                    int imageSectors = (imageSize / SECTOR_SIZE);
+                    int imageSectors = imageSize / SECTOR_SIZE;
                     if (imageSize % SECTOR_SIZE > 0) {
                         imageSectors++;
                     }
                     AssetAddr addr = new AssetAddr(AssetType.IMAGE, nextFreeOffset, imageSectors);
                     assetsHashes.put(assetHash, addr);
-                    assetsData.put(addr, image.getRawData());
+                    assetsData.put(addr, imageData);
                     nextFreeOffset += imageSectors;
                 }
             }
         }
         // audio
         for (StageNode stageNode : pack.getStageNodes()) {
-            AudioAsset audio = stageNode.getAudio();
+            MediaAsset audio = stageNode.getAudio();
             if (audio != null) {
                 byte[] audioData = audio.getRawData();
                 String assetHash = SecurityUtils.sha1Hex(audioData);
                 if (!assetsHashes.containsKey(assetHash)) {
-                    if (AudioType.WAV != audio.getType()) {
+                    if (MediaAssetType.WAV != audio.getType()) {
                         throw new IllegalArgumentException(
                                 "Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
                     }
                     int audioSize = audioData.length;
-                    int audioSectors = (audioSize / SECTOR_SIZE);
+                    int audioSectors = audioSize / SECTOR_SIZE;
                     if (audioSize % SECTOR_SIZE > 0) {
                         audioSectors++;
                     }
                     AssetAddr addr = new AssetAddr(AssetType.AUDIO, nextFreeOffset, audioSectors);
                     assetsHashes.put(assetHash, addr);
-                    assetsData.put(addr, audio.getRawData());
+                    assetsData.put(addr, audioData);
                     nextFreeOffset += audioSectors;
                 }
             }
@@ -220,7 +182,7 @@ public class RawStoryPackWriter implements StoryPackWriter {
     }
 
     private static void writeStageNodes(DataOutputStream dos, List<StageNode> stageNodes,
-            TreeMap<String, AssetAddr> assetsHashes, TreeMap<SectorAddr, ActionNode> actionNodesMap, boolean enriched)
+            Map<String, AssetAddr> assetsHashes, Map<SectorAddr, ActionNode> actionNodesMap, boolean enriched)
             throws IOException {
         for (StageNode stageNode : stageNodes) {
             // UUID
@@ -228,55 +190,13 @@ public class RawStoryPackWriter implements StoryPackWriter {
             dos.writeLong(nodeUuid.getMostSignificantBits());
             dos.writeLong(nodeUuid.getLeastSignificantBits());
 
-            // Image asset
-            ImageAsset image = stageNode.getImage();
-            if (image == null) {
-                dos.writeInt(-1);
-                dos.writeInt(-1);
-            } else {
-                String assetHash = SecurityUtils.sha1Hex(image.getRawData());
-                AssetAddr assetAddr = assetsHashes.get(assetHash);
-                dos.writeInt(assetAddr.getOffset());
-                dos.writeInt(assetAddr.getSize());
-            }
-
-            // Audio asset
-            AudioAsset audio = stageNode.getAudio();
-            if (audio == null) {
-                dos.writeInt(-1);
-                dos.writeInt(-1);
-            } else {
-                String assetHash = SecurityUtils.sha1Hex(audio.getRawData());
-                AssetAddr assetAddr = assetsHashes.get(assetHash);
-                dos.writeInt(assetAddr.getOffset());
-                dos.writeInt(assetAddr.getSize());
-            }
+            // Assets
+            writeMediaAsset(dos, assetsHashes, stageNode.getImage());
+            writeMediaAsset(dos, assetsHashes, stageNode.getAudio());
 
             // Transitions
-            Transition okTransition = stageNode.getOkTransition();
-            if (okTransition == null) {
-                dos.writeShort(-1);
-                dos.writeShort(-1);
-                dos.writeShort(-1);
-            } else {
-                int nodeOffset = getKeys(actionNodesMap, okTransition.getActionNode()) //
-                        .findFirst().map(SectorAddr::getOffset).orElse(-1);
-                dos.writeShort(nodeOffset);
-                dos.writeShort(okTransition.getActionNode().getOptions().size());
-                dos.writeShort(okTransition.getOptionIndex());
-            }
-            Transition homeTransition = stageNode.getHomeTransition();
-            if (homeTransition == null) {
-                dos.writeShort(-1);
-                dos.writeShort(-1);
-                dos.writeShort(-1);
-            } else {
-                int nodeOffset = getKeys(actionNodesMap, homeTransition.getActionNode()) //
-                        .findFirst().map(SectorAddr::getOffset).orElse(-1);
-                dos.writeShort(nodeOffset);
-                dos.writeShort(homeTransition.getActionNode().getOptions().size());
-                dos.writeShort(homeTransition.getOptionIndex());
-            }
+            writeTransition(dos, actionNodesMap, stageNode.getOkTransition());
+            writeTransition(dos, actionNodesMap, stageNode.getHomeTransition());
 
             // Control settings
             ControlSettings cs = stageNode.getControlSettings();
@@ -296,6 +216,69 @@ public class RawStoryPackWriter implements StoryPackWriter {
             // Skip to end of sector
             writePadding(dos, SECTOR_SIZE - 54 - enrichedNodeMetadataSize);
         }
+    }
+
+    private static void writeMediaAsset(DataOutputStream dos, Map<String, AssetAddr> assetsHashes, MediaAsset asset)
+            throws IOException {
+        if (asset == null) {
+            dos.writeInt(-1);
+            dos.writeInt(-1);
+            return;
+        }
+        String assetHash = SecurityUtils.sha1Hex(asset.getRawData());
+        AssetAddr assetAddr = assetsHashes.get(assetHash);
+        dos.writeInt(assetAddr.getOffset());
+        dos.writeInt(assetAddr.getSize());
+    }
+
+    private static void writeTransition(DataOutputStream dos, Map<SectorAddr, ActionNode> actionNodesMap,
+            Transition transition) throws IOException {
+        if (transition == null) {
+            dos.writeShort(-1);
+            dos.writeShort(-1);
+            dos.writeShort(-1);
+            return;
+        }
+        int nodeOffset = getKeys(actionNodesMap, transition.getActionNode()) //
+                .findFirst().map(SectorAddr::getOffset).orElse(-1);
+        dos.writeShort(nodeOffset);
+        dos.writeShort(transition.getActionNode().getOptions().size());
+        dos.writeShort(transition.getOptionIndex());
+    }
+
+    private static int writeActionNode(DataOutputStream dos, List<StageNode> stageNodes,
+            Map<SectorAddr, ActionNode> actionNodesMap, boolean enriched) throws IOException {
+        int currentOffset = stageNodes.size();
+        for (Map.Entry<SectorAddr, ActionNode> actionNodeEntry : actionNodesMap.entrySet()) {
+            // Sector to write
+            SectorAddr actionNodeAddr = actionNodeEntry.getKey();
+            // Add padding to the beginning of the sector, if needed
+            while (actionNodeAddr.getOffset() > currentOffset) {
+                writePadding(dos, SECTOR_SIZE);
+                currentOffset++;
+            }
+            // Node to write
+            ActionNode actionNode = actionNodeEntry.getValue();
+            for (StageNode stageNode : actionNode.getOptions()) {
+                int stageNodeOffset = stageNodes.indexOf(stageNode);
+                dos.writeShort(stageNodeOffset);
+            }
+            // Write (optional) enriched node metadata
+            int enrichedNodeMetadataSize = 0;
+            if (enriched && actionNode.getEnriched() != null) {
+                int alignmentOverflow = 2 * (actionNode.getOptions().size())
+                        % BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT;
+                int alignmentPadding = BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT_PADDING
+                        + (alignmentOverflow > 0 ? BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT - alignmentOverflow
+                                : 0);
+                writePadding(dos, alignmentPadding);
+                enrichedNodeMetadataSize = alignmentPadding + writeEnrichedNodeMetadata(dos, actionNode);
+            }
+            // Skip to end of sector
+            writePadding(dos, SECTOR_SIZE - 2 * (actionNode.getOptions().size()) - enrichedNodeMetadataSize);
+            currentOffset++;
+        }
+        return currentOffset;
     }
 
     private static int writeEnrichedNodeMetadata(DataOutputStream dos, Node node) throws IOException {
@@ -347,5 +330,4 @@ public class RawStoryPackWriter implements StoryPackWriter {
                 .filter(entry -> value.equals(entry.getValue())) //
                 .map(Map.Entry::getKey);
     }
-
 }

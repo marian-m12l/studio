@@ -6,12 +6,14 @@
 
 package studio.core.v1.model;
 
+import java.util.Objects;
+import java.util.stream.Stream;
+
 import lombok.EqualsAndHashCode;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import studio.core.v1.model.asset.AudioAsset;
-import studio.core.v1.model.asset.ImageAsset;
+import studio.core.v1.model.asset.MediaAsset;
 import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 
 @Getter
@@ -21,13 +23,13 @@ import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 public class StageNode extends Node {
 
     private Boolean squareOne; // first node only
-    private ImageAsset image;
-    private AudioAsset audio;
+    private MediaAsset image;
+    private MediaAsset audio;
     private Transition okTransition;
     private Transition homeTransition;
     private ControlSettings controlSettings;
 
-    public StageNode(String uuid, ImageAsset image, AudioAsset audio, Transition okTransition,
+    public StageNode(String uuid, MediaAsset image, MediaAsset audio, Transition okTransition,
             Transition homeTransition, ControlSettings controlSettings, EnrichedNodeMetadata enriched) {
         super(uuid, enriched);
         this.image = image;
@@ -35,5 +37,9 @@ public class StageNode extends Node {
         this.okTransition = okTransition;
         this.homeTransition = homeTransition;
         this.controlSettings = controlSettings;
+    }
+
+    public Stream<MediaAsset> assets() {
+        return Stream.of(getImage(), getAudio()).filter(Objects::nonNull);
     }
 }

@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.List;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -16,10 +17,8 @@ import org.junit.jupiter.api.Test;
 import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
-import studio.core.v1.model.asset.AudioAsset;
-import studio.core.v1.model.asset.AudioType;
-import studio.core.v1.model.asset.ImageAsset;
-import studio.core.v1.model.asset.ImageType;
+import studio.core.v1.model.asset.MediaAsset;
+import studio.core.v1.model.asset.MediaAssetType;
 import studio.core.v1.utils.io.FileUtils;
 
 class StoryPackConverterTest {
@@ -56,31 +55,32 @@ class StoryPackConverterTest {
                 new StageNode("10f84e3d-8as7-5b4a-6e67-4968daad9bb9", null, null, null, null, null, null), //
                 new StageNode("0607ef7d-89db-4b09-9e7f-077d0c8c5690", null, null, null, null, null, null) //
         ));
-        StageNode sn = sp.getStageNodes().get(1);
+        List<StageNode> stageNodes = sp.getStageNodes();
+        StageNode sn = stageNodes.get(1);
         // 1) KO
         boolean expected = false;
         // No asset
-        assertEquals(expected, StoryPackConverter.hasCompressedAssets(sp));
+        assertEquals(expected, StoryPackConverter.hasCompressedAssets(stageNodes));
         // WAV
-        sn.setAudio(new AudioAsset(AudioType.WAV, new byte[0]));
-        assertEquals(expected, StoryPackConverter.hasCompressedAssets(sp));
+        sn.setAudio(new MediaAsset(MediaAssetType.WAV, new byte[0]));
+        assertEquals(expected, StoryPackConverter.hasCompressedAssets(stageNodes));
         // WAV + BMP
-        sn.setImage(new ImageAsset(ImageType.BMP, new byte[0]));
-        assertEquals(expected, StoryPackConverter.hasCompressedAssets(sp));
+        sn.setImage(new MediaAsset(MediaAssetType.BMP, new byte[0]));
+        assertEquals(expected, StoryPackConverter.hasCompressedAssets(stageNodes));
         // BMP
         sn.setAudio(null);
-        assertEquals(expected, StoryPackConverter.hasCompressedAssets(sp));
+        assertEquals(expected, StoryPackConverter.hasCompressedAssets(stageNodes));
         // 2) OK
         expected = true;
         // JPG
-        sn.setImage(new ImageAsset(ImageType.JPEG, new byte[0]));
-        assertEquals(expected, StoryPackConverter.hasCompressedAssets(sp));
+        sn.setImage(new MediaAsset(MediaAssetType.JPEG, new byte[0]));
+        assertEquals(expected, StoryPackConverter.hasCompressedAssets(stageNodes));
         // JPG + MP3
-        sn.setAudio(new AudioAsset(AudioType.MP3, new byte[0]));
-        assertEquals(expected, StoryPackConverter.hasCompressedAssets(sp));
+        sn.setAudio(new MediaAsset(MediaAssetType.MP3, new byte[0]));
+        assertEquals(expected, StoryPackConverter.hasCompressedAssets(stageNodes));
         // MP3
         sn.setImage(null);
-        assertEquals(expected, StoryPackConverter.hasCompressedAssets(sp));
+        assertEquals(expected, StoryPackConverter.hasCompressedAssets(stageNodes));
     }
 
     @Test
