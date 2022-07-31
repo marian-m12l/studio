@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -31,6 +30,7 @@ import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -78,40 +78,38 @@ public class RawStoryPackReader implements StoryPackReader {
             dis.skipBytes(SECTOR_SIZE - 5 //
                     - BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING //
                     - BINARY_ENRICHED_METADATA_TITLE_TRUNCATE * 2 //
-                    - BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE * 2); 
+                    - BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE * 2);
 
-            // Read main stage node
+            // Read main stage node UUID
             long uuidLowBytes = dis.readLong();
             long uuidHighBytes = dis.readLong();
-            String uuid = (new UUID(uuidLowBytes, uuidHighBytes)).toString();
-            metadata.setUuid(uuid);
+            metadata.setUuid(new UUID(uuidLowBytes, uuidHighBytes).toString());
             return metadata;
         }
     }
 
     public StoryPack read(Path path) throws IOException {
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(Files.newInputStream(path)))) {
+            StoryPack sp = new StoryPack();
 
-            // Read sector 1
+            // Read sector 1 : stageNode number
             short stages = dis.readShort();
-            boolean factoryDisabled = dis.readByte() == 1;
-            short version = dis.readShort();
+            sp.setFactoryDisabled(dis.readByte() == 1);
+            sp.setVersion(dis.readShort());
 
             // Read (optional) enriched pack metadata
-            EnrichedPackMetadata enrichedPack = null;
             dis.skipBytes(BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING);
             Optional<String> maybeTitle = readString(dis, BINARY_ENRICHED_METADATA_TITLE_TRUNCATE);
             Optional<String> maybeDescription = readString(dis, BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE);
             // TODO Thumbnail?
-            if (maybeTitle.or(() -> maybeDescription).isPresent()) {
-                enrichedPack = new EnrichedPackMetadata(maybeTitle.orElse(null), maybeDescription.orElse(null));
-            }
+            maybeTitle.or(() -> maybeDescription).ifPresent(s -> sp.setEnriched( //
+                    new EnrichedPackMetadata(maybeTitle.orElse(null), maybeDescription.orElse(null))));
 
             // Skip to end of sector
             dis.skipBytes(SECTOR_SIZE - 5 //
                     - BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING //
                     - BINARY_ENRICHED_METADATA_TITLE_TRUNCATE * 2 //
-                    - BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE * 2); 
+                    - BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE * 2);
 
             // Read stage nodes (`stages` sectors, starting from sector 2)
             Map<SectorAddr, StageNode> stageNodes = new TreeMap<>();
@@ -121,104 +119,45 @@ public class RawStoryPackReader implements StoryPackReader {
             Map<AssetAddr, List<StageNode>> stagesWithAudio = new TreeMap<>();
             // Transitions must be updated with the actual ActionNode
             Map<SectorAddr, List<Transition>> transitionsWithAction = new TreeMap<>();
-            // Stage nodes / transitions reference action nodes, which are read after all stage nodes
+            // Stage nodes / transitions reference action nodes, which are read after
             Set<SectorAddr> actionNodesToVisit = new TreeSet<>();
             // Stage nodes reference assets, which are read after all nodes
             Set<AssetAddr> assetAddrsToVisit = new TreeSet<>();
-            for (int i = 0; i < stages; i++) {
-                // Reading sector i+2
 
-                // UUID
+            for (int i = 0; i < stages; i++) {
+                // Build stage node
+                StageNode stageNode = new StageNode();
+                stageNodes.put(new SectorAddr(i), stageNode);
+
+                // Reading sector i+2 : StageNode UUID
                 long uuidLowBytes = dis.readLong();
                 long uuidHighBytes = dis.readLong();
-                String uuid = (new UUID(uuidLowBytes, uuidHighBytes)).toString();
+                stageNode.setUuid(new UUID(uuidLowBytes, uuidHighBytes).toString());
 
-                // Image asset
-                int imageOffset = dis.readInt();
-                int imageSize = dis.readInt();
-                AssetAddr imageAssetAddr = null;
-                if (imageOffset != -1) {
-                    // Asset must be visited
-                    imageAssetAddr = new AssetAddr(AssetType.IMAGE, imageOffset, imageSize);
-                    assetAddrsToVisit.add(imageAssetAddr);
-                }
-
-                // Audio asset
-                int audioOffset = dis.readInt();
-                int audioSize = dis.readInt();
-                AssetAddr audioAssetAddr = null;
-                if (audioOffset != -1) {
-                    // Asset must be visited
-                    audioAssetAddr = new AssetAddr(AssetType.AUDIO, audioOffset, audioSize);
-                    assetAddrsToVisit.add(audioAssetAddr);
-                }
+                // Keep Asset addresses
+                readAssetAddr(AssetType.IMAGE, dis.readInt(), dis.readInt(), assetAddrsToVisit, stagesWithImage,
+                        stageNode);
+                readAssetAddr(AssetType.AUDIO, dis.readInt(), dis.readInt(), assetAddrsToVisit, stagesWithAudio,
+                        stageNode);
 
                 // Transitions
-                short okTransitionOffset = dis.readShort();
-                short okTransitionCount = dis.readShort();
-                short okTransitionIndex = dis.readShort();
-                SectorAddr okActionNodeAddr = null;
-                if (okTransitionOffset != -1) {
-                    // Action node must be visited
-                    okActionNodeAddr = new SectorAddr(okTransitionOffset);
-                    actionNodesToVisit.add(okActionNodeAddr);
-                }
-                Transition okTransition = Optional.ofNullable(okActionNodeAddr)
-                        .map(h -> new Transition(null, okTransitionIndex)).orElse(null);
-
-                short homeTransitionOffset = dis.readShort();
-                short homeTransitionCount = dis.readShort();
-                short homeTransitionIndex = dis.readShort();
-                SectorAddr homeActionNodeAddr = null;
-                if (homeTransitionOffset != -1) {
-                    // Action node must be visited
-                    homeActionNodeAddr = new SectorAddr(homeTransitionOffset);
-                    actionNodesToVisit.add(homeActionNodeAddr);
-                }
-                Transition homeTransition = Optional.ofNullable(homeActionNodeAddr)
-                        .map(h -> new Transition(null, homeTransitionIndex)).orElse(null);
-
-                LOGGER.trace("Transitions : {} ok, {} home", okTransitionCount, homeTransitionCount);
+                stageNode.setOkTransition(readTransition(dis.readShort(), dis.readShort(), dis.readShort(),
+                        transitionsWithAction, actionNodesToVisit));
+                stageNode.setHomeTransition(readTransition(dis.readShort(), dis.readShort(), dis.readShort(),
+                        transitionsWithAction, actionNodesToVisit));
 
                 // Control settings
-                boolean wheelEnabled = dis.readShort() == 1;
-                boolean okEnabled = dis.readShort() == 1;
-                boolean homeEnabled = dis.readShort() == 1;
-                boolean pauseEnabled = dis.readShort() == 1;
-                boolean autoJumpEnabled = dis.readShort() == 1;
-                ControlSettings ctrl = new ControlSettings(wheelEnabled, okEnabled, homeEnabled, pauseEnabled,
-                        autoJumpEnabled);
+                ControlSettings ctrl = new ControlSettings();
+                ctrl.setWheelEnabled(dis.readShort() == 1);
+                ctrl.setOkEnabled(dis.readShort() == 1);
+                ctrl.setHomeEnabled(dis.readShort() == 1);
+                ctrl.setPauseEnabled(dis.readShort() == 1);
+                ctrl.setAutoJumpEnabled(dis.readShort() == 1);
+                stageNode.setControlSettings(ctrl);
 
                 // Read (optional) enriched node metadata
                 dis.skipBytes(BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING);
-                EnrichedNodeMetadata enrichedNode = readEnrichedNodeMetadata(dis);
-
-                // Build stage node
-                StageNode stageNode = new StageNode(uuid, null, null, okTransition, homeTransition, ctrl, enrichedNode);
-                stageNodes.put(new SectorAddr(i), stageNode);
-
-                // Assets will be updated when they are read
-                Optional.ofNullable(imageAssetAddr).ifPresent(adr -> {
-                    List<StageNode> swi = stagesWithImage.getOrDefault(adr, new ArrayList<>());
-                    swi.add(stageNode);
-                    stagesWithImage.put(adr, swi);
-                });
-                Optional.ofNullable(audioAssetAddr).ifPresent(adr -> {
-                    List<StageNode> swa = stagesWithAudio.getOrDefault(adr, new ArrayList<>());
-                    swa.add(stageNode);
-                    stagesWithAudio.put(adr, swa);
-                });
-                // Action nodes will be updated when they are read
-                Optional.ofNullable(okActionNodeAddr).ifPresent(adr -> {
-                    List<Transition> twa = transitionsWithAction.getOrDefault(adr, new ArrayList<>());
-                    twa.add(okTransition);
-                    transitionsWithAction.put(adr, twa);
-                });
-                Optional.ofNullable(homeActionNodeAddr).ifPresent(adr -> {
-                    List<Transition> twa = transitionsWithAction.getOrDefault(adr, new ArrayList<>());
-                    twa.add(homeTransition);
-                    transitionsWithAction.put(adr, twa);
-                });
+                stageNode.setEnriched(readEnrichedNodeMetadata(dis));
 
                 // Skip to end of sector
                 dis.skipBytes(SECTOR_SIZE - 54 - BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING
@@ -228,10 +167,7 @@ public class RawStoryPackReader implements StoryPackReader {
             // Read action nodes
             // We are positioned at the end of sector stages+1
             int currentOffset = stages;
-            Iterator<SectorAddr> actionNodesIter = actionNodesToVisit.iterator();
-            while (actionNodesIter.hasNext()) {
-                // Sector to read
-                SectorAddr actionNodeAddr = actionNodesIter.next();
+            for (SectorAddr actionNodeAddr : actionNodesToVisit) {
                 // Skip to the beginning of the sector, if needed
                 while (actionNodeAddr.getOffset() > currentOffset) {
                     dis.skipBytes(SECTOR_SIZE);
@@ -246,12 +182,12 @@ public class RawStoryPackReader implements StoryPackReader {
                 }
 
                 // Read (optional) enriched node metadata
-                int alignmentOverflow = 2 * (options.size()) % BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT;
+                int alignmentOverflow = 2 * options.size() % BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT;
                 int alignmentPadding = BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT_PADDING
                         + (alignmentOverflow > 0 ? BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT - alignmentOverflow
                                 : 0);
                 // No need to skip the last 2 bytes that were read in the previous loop
-                dis.skipBytes(alignmentPadding - 2); 
+                dis.skipBytes(alignmentPadding - 2);
                 EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(dis);
 
                 // Update action on transitions referencing this sector
@@ -266,10 +202,7 @@ public class RawStoryPackReader implements StoryPackReader {
             }
 
             // Read assets
-            Iterator<AssetAddr> assetAddrsIter = assetAddrsToVisit.iterator();
-            while (assetAddrsIter.hasNext()) {
-                // First sector to read
-                AssetAddr assetAddr = assetAddrsIter.next();
+            for (AssetAddr assetAddr : assetAddrsToVisit) {
                 // Skip to the beginning of the sector, if needed
                 while (assetAddr.getOffset() > currentOffset) {
                     dis.skipBytes(SECTOR_SIZE);
@@ -290,14 +223,14 @@ public class RawStoryPackReader implements StoryPackReader {
                 }
                 currentOffset += assetAddr.getSize();
             }
-            // Create storypack
-            StoryPack sp = new StoryPack();
-            sp.setUuid(stageNodes.get(new SectorAddr(0)).getUuid());
-            sp.setFactoryDisabled(factoryDisabled);
-            sp.setVersion(version);
-            sp.setStageNodes(List.copyOf(stageNodes.values()));
-            sp.setEnriched(enrichedPack);
+            // Update storypack
             sp.setNightModeAvailable(false);
+            sp.setUuid(stageNodes.get(new SectorAddr(0)).getUuid());
+            sp.setStageNodes(List.copyOf(stageNodes.values()));
+
+            // cleanup
+            Stream.of(stageNodes, stagesWithImage, stagesWithAudio, transitionsWithAction).forEach(Map::clear);
+            Stream.of(actionNodesToVisit, assetAddrsToVisit).forEach(Set::clear);
             return sp;
         }
     }
@@ -316,13 +249,42 @@ public class RawStoryPackReader implements StoryPackReader {
         return Optional.of(str.substring(0, firstNullChar));
     }
 
+    private static void readAssetAddr(AssetType type, int offset, int size, Set<AssetAddr> assetAddrsToVisit,
+            Map<AssetAddr, List<StageNode>> stagesWithMedia, StageNode stageNode) {
+        if (offset != -1) {
+            // Asset must be visited
+            AssetAddr audioAssetAddr = new AssetAddr(type, offset, size);
+            assetAddrsToVisit.add(audioAssetAddr);
+            // flag stageNode
+            List<StageNode> sw = stagesWithMedia.getOrDefault(audioAssetAddr, new ArrayList<>());
+            sw.add(stageNode);
+            stagesWithMedia.put(audioAssetAddr, sw);
+        }
+    }
+
+    private static Transition readTransition(short offset, short count, short index,
+            Map<SectorAddr, List<Transition>> transitionsWithAction, Set<SectorAddr> actionNodesToVisit) {
+        LOGGER.trace("Read {} transition", count);
+        Transition transition = null;
+        if (offset != -1) {
+            // Action node must be visited
+            SectorAddr actionNodeAddr = new SectorAddr(offset);
+            actionNodesToVisit.add(actionNodeAddr);
+            transition = new Transition(null, index);
+            List<Transition> twa = transitionsWithAction.getOrDefault(actionNodeAddr, new ArrayList<>());
+            twa.add(transition);
+            transitionsWithAction.put(actionNodeAddr, twa);
+        }
+        return transition;
+    }
+
     private static EnrichedNodeMetadata readEnrichedNodeMetadata(DataInputStream dis) throws IOException {
         Optional<String> maybeName = readString(dis, BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE);
         Optional<String> maybeGroupId = Optional.empty();
         long groupIdLowBytes = dis.readLong();
         long groupIdHighBytes = dis.readLong();
         if (groupIdLowBytes != 0 || groupIdHighBytes != 0) {
-            maybeGroupId = Optional.of((new UUID(groupIdLowBytes, groupIdHighBytes)).toString());
+            maybeGroupId = Optional.of(new UUID(groupIdLowBytes, groupIdHighBytes).toString());
         }
         Optional<EnrichedNodeType> maybeType = Optional.empty();
         byte nodeTypeByte = dis.readByte();

@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -65,7 +66,7 @@ public class FsStoryPackReader implements StoryPackReader {
 
         FsStoryPack fsp = new FsStoryPack(inputFolder);
         // Keep action nodes' options count
-        Map<Integer, Integer> actionNodesOptionsCount = new TreeMap<>();
+        Map<Integer, Integer> actionOptions = new TreeMap<>();
         // Transitions must be updated with the actual ActionNode
         Map<Integer, List<Transition>> transitionsWithAction = new TreeMap<>();
 
@@ -106,42 +107,14 @@ public class FsStoryPackReader implements StoryPackReader {
                 bb = ByteBuffer.wrap(niDis.readNBytes(nodeSize)).order(ByteOrder.LITTLE_ENDIAN);
 
                 // Read image and audio assets
-                MediaAsset image = null;
-                int imageAssetIndexInRI = bb.getInt();
-                if (imageAssetIndexInRI != -1) {
-                    byte[] rfContent = readAsset(fsp.getImageFolder(), riContent, imageAssetIndexInRI);
-                    image = new MediaAsset(MediaAssetType.BMP, rfContent);
-                }
-                MediaAsset audio = null;
-                int soundAssetIndexInSI = bb.getInt();
-                if (soundAssetIndexInSI != -1) {
-                    byte[] sfContent = readAsset(fsp.getSoundFolder(), siContent, soundAssetIndexInSI);
-                    audio = new MediaAsset(MediaAssetType.MP3, sfContent);
-                }
+                MediaAsset image = readAsset(fsp.getImageFolder(), MediaAssetType.BMP, riContent, bb.getInt());
+                MediaAsset audio = readAsset(fsp.getSoundFolder(), MediaAssetType.MP3, siContent, bb.getInt());
 
                 // Transition will be updated later with the actual action nodes
-                Transition okTransition = null;
-                int actionNodeIndexInLI = bb.getInt();
-                int numberOfOptions = bb.getInt();
-                int selectedOptionIndex = bb.getInt();
-                if (actionNodeIndexInLI != -1 && numberOfOptions != -1 && selectedOptionIndex != -1) {
-                    actionNodesOptionsCount.putIfAbsent(actionNodeIndexInLI, numberOfOptions);
-                    okTransition = new Transition(null, (short) selectedOptionIndex);
-                    List<Transition> twa = transitionsWithAction.getOrDefault(actionNodeIndexInLI, new ArrayList<>());
-                    twa.add(okTransition);
-                    transitionsWithAction.put(actionNodeIndexInLI, twa);
-                }
-                Transition homeTransition = null;
-                actionNodeIndexInLI = bb.getInt();
-                numberOfOptions = bb.getInt();
-                selectedOptionIndex = bb.getInt();
-                if (actionNodeIndexInLI != -1 && numberOfOptions != -1 && selectedOptionIndex != -1) {
-                    actionNodesOptionsCount.putIfAbsent(actionNodeIndexInLI, numberOfOptions);
-                    homeTransition = new Transition(null, (short) selectedOptionIndex);
-                    List<Transition> twa = transitionsWithAction.getOrDefault(actionNodeIndexInLI, new ArrayList<>());
-                    twa.add(homeTransition);
-                    transitionsWithAction.put(actionNodeIndexInLI, twa);
-                }
+                Transition okTransition = readTransition(bb.getInt(), bb.getInt(), bb.getInt(), actionOptions,
+                        transitionsWithAction);
+                Transition homeTransition = readTransition(bb.getInt(), bb.getInt(), bb.getInt(), actionOptions,
+                        transitionsWithAction);
 
                 ControlSettings ctrl = new ControlSettings();
                 ctrl.setWheelEnabled(bb.getShort() != 0);
@@ -160,7 +133,7 @@ public class FsStoryPackReader implements StoryPackReader {
 
         // Read action nodes from 'li' file
         ByteBuffer liBb = ByteBuffer.wrap(liContent).order(ByteOrder.LITTLE_ENDIAN);
-        for (Map.Entry<Integer, Integer> actionCount : actionNodesOptionsCount.entrySet()) {
+        for (Map.Entry<Integer, Integer> actionCount : actionOptions.entrySet()) {
             Integer offset = actionCount.getKey();
             Integer count = actionCount.getValue();
             List<StageNode> options = new ArrayList<>(count);
@@ -174,6 +147,10 @@ public class FsStoryPackReader implements StoryPackReader {
             ActionNode actionNode = new ActionNode(id, null, options);
             transitionsWithAction.get(offset).forEach(transition -> transition.setActionNode(actionNode));
         }
+
+        // cleanup
+        Stream.of(actionOptions, transitionsWithAction).forEach(Map::clear);
+
         return sp;
     }
 
@@ -182,10 +159,27 @@ public class FsStoryPackReader implements StoryPackReader {
         return XXTEACipher.cipherCommonKey(CipherMode.DECIPHER, content);
     }
 
-    private static byte[] readAsset(Path assetFolder, byte[] assetContent, int assetIndex) throws IOException {
+    private static Transition readTransition(int actionNodeIndexInLI, int numberOfOptions, int selectedOptionIndex,
+            Map<Integer, Integer> actionOptions, Map<Integer, List<Transition>> transitionsWithAction) {
+        Transition t = null;
+        if (actionNodeIndexInLI != -1 && numberOfOptions != -1 && selectedOptionIndex != -1) {
+            actionOptions.putIfAbsent(actionNodeIndexInLI, numberOfOptions);
+            t = new Transition(null, (short) selectedOptionIndex);
+            List<Transition> twa = transitionsWithAction.getOrDefault(actionNodeIndexInLI, new ArrayList<>());
+            twa.add(t);
+            transitionsWithAction.put(actionNodeIndexInLI, twa);
+        }
+        return t;
+    }
+
+    private static MediaAsset readAsset(Path assetFolder, MediaAssetType assetType, byte[] indexList, int index)
+            throws IOException {
+        if (index == -1) {
+            return null;
+        }
         // Read asset name, each entry takes 12 bytes
-        String assetName = new String(assetContent, assetIndex * 12, 12, StandardCharsets.UTF_8).replace("\\", "/");
+        String assetName = new String(indexList, index * 12, 12, StandardCharsets.UTF_8).replace("\\", "/");
         // Read asset file
-        return readCipheredFile(assetFolder.resolve(assetName));
+        return new MediaAsset(assetType, readCipheredFile(assetFolder.resolve(assetName)));
     }
 }

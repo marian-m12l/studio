@@ -21,12 +21,15 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Stream;
 
+import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.ControlSettings;
 import studio.core.v1.model.Node;
@@ -115,69 +118,59 @@ public class RawStoryPackWriter implements StoryPackWriter {
             }
             // Write check bytes
             dos.write(CHECK_BYTES, 0, CHECK_BYTES.length);
+            // cleanup
+            Stream.of(actionNodesMap, assetsHashes, assetsData).forEach(Map::clear);
         }
     }
 
     private static void prepareAssets(StoryPack pack, Map<SectorAddr, ActionNode> actionNodesMap,
             Map<String, AssetAddr> assetsHashes, Map<AssetAddr, byte[]> assetsData) {
-        // action nodes
+        // offset
         int nextFreeOffset = pack.getStageNodes().size();
-        for (StageNode stageNode : pack.getStageNodes()) {
-            if (stageNode.getOkTransition() != null
-                    && !actionNodesMap.containsValue(stageNode.getOkTransition().getActionNode())) {
-                actionNodesMap.put(new SectorAddr(nextFreeOffset++), stageNode.getOkTransition().getActionNode());
-            }
-            if (stageNode.getHomeTransition() != null
-                    && !actionNodesMap.containsValue(stageNode.getHomeTransition().getActionNode())) {
-                actionNodesMap.put(new SectorAddr(nextFreeOffset++), stageNode.getHomeTransition().getActionNode());
+        // action nodes
+        List<Transition> transitions = pack.transitions();
+        for (Transition t : transitions) {
+            if (!actionNodesMap.containsValue(t.getActionNode())) {
+                actionNodesMap.put(new SectorAddr(nextFreeOffset++), t.getActionNode());
             }
         }
-
-        // images
-        for (StageNode stageNode : pack.getStageNodes()) {
-            MediaAsset image = stageNode.getImage();
-            if (image != null) {
-                byte[] imageData = image.getRawData();
-                String assetHash = SecurityUtils.sha1Hex(imageData);
-                if (!assetsHashes.containsKey(assetHash)) {
-                    if (MediaAssetType.BMP != image.getType()) {
-                        throw new IllegalArgumentException(
-                                "Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
-                    }
-                    int imageSize = imageData.length;
-                    int imageSectors = imageSize / SECTOR_SIZE;
-                    if (imageSize % SECTOR_SIZE > 0) {
-                        imageSectors++;
-                    }
-                    AssetAddr addr = new AssetAddr(AssetType.IMAGE, nextFreeOffset, imageSectors);
-                    assetsHashes.put(assetHash, addr);
-                    assetsData.put(addr, imageData);
-                    nextFreeOffset += imageSectors;
-                }
+        // distinct images
+        Set<MediaAsset> images = new HashSet<>(pack.assets(true));
+        for (MediaAsset image : images) {
+            byte[] imageData = image.getRawData();
+            String assetHash = SecurityUtils.sha1Hex(imageData);
+            if (MediaAssetType.BMP != image.getType()) {
+                throw new StoryTellerException(
+                        "Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
             }
+            int imageSize = imageData.length;
+            int imageSectors = imageSize / SECTOR_SIZE;
+            if (imageSize % SECTOR_SIZE > 0) {
+                imageSectors++;
+            }
+            AssetAddr addr = new AssetAddr(AssetType.IMAGE, nextFreeOffset, imageSectors);
+            assetsHashes.put(assetHash, addr);
+            assetsData.put(addr, imageData);
+            nextFreeOffset += imageSectors;
         }
-        // audio
-        for (StageNode stageNode : pack.getStageNodes()) {
-            MediaAsset audio = stageNode.getAudio();
-            if (audio != null) {
-                byte[] audioData = audio.getRawData();
-                String assetHash = SecurityUtils.sha1Hex(audioData);
-                if (!assetsHashes.containsKey(assetHash)) {
-                    if (MediaAssetType.WAV != audio.getType()) {
-                        throw new IllegalArgumentException(
-                                "Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
-                    }
-                    int audioSize = audioData.length;
-                    int audioSectors = audioSize / SECTOR_SIZE;
-                    if (audioSize % SECTOR_SIZE > 0) {
-                        audioSectors++;
-                    }
-                    AssetAddr addr = new AssetAddr(AssetType.AUDIO, nextFreeOffset, audioSectors);
-                    assetsHashes.put(assetHash, addr);
-                    assetsData.put(addr, audioData);
-                    nextFreeOffset += audioSectors;
-                }
+        // distinct audio
+        Set<MediaAsset> audios = new HashSet<>(pack.assets(false));
+        for (MediaAsset audio : audios) {
+            byte[] audioData = audio.getRawData();
+            String assetHash = SecurityUtils.sha1Hex(audioData);
+            if (MediaAssetType.WAV != audio.getType()) {
+                throw new StoryTellerException(
+                        "Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
             }
+            int audioSize = audioData.length;
+            int audioSectors = audioSize / SECTOR_SIZE;
+            if (audioSize % SECTOR_SIZE > 0) {
+                audioSectors++;
+            }
+            AssetAddr addr = new AssetAddr(AssetType.AUDIO, nextFreeOffset, audioSectors);
+            assetsHashes.put(assetHash, addr);
+            assetsData.put(addr, audioData);
+            nextFreeOffset += audioSectors;
         }
     }
 

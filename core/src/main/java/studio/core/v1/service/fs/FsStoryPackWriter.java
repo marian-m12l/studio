@@ -20,11 +20,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeMap;
+import java.util.stream.Stream;
 
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
@@ -33,6 +35,7 @@ import javax.sound.sampled.UnsupportedAudioFileException;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.ControlSettings;
 import studio.core.v1.model.StageNode;
@@ -96,12 +99,10 @@ public class FsStoryPackWriter implements StoryPackWriter {
             bb.putInt(44);
             // Number of stage nodes in this file
             bb.putInt(pack.getStageNodes().size());
-            // Number of images (in RI file and rf/ folder)
-            bb.putInt((int) pack.getStageNodes().stream().map(StageNode::getImage).filter(Objects::nonNull)
-                    .map(MediaAsset::getName).distinct().count());
-            // Number of sounds (in SI file and sf/ folder)
-            bb.putInt((int) pack.getStageNodes().stream().map(StageNode::getAudio).filter(Objects::nonNull)
-                    .map(MediaAsset::getName).distinct().count());
+            // Number of distinct images (in RI file and rf/ folder)
+            bb.putInt(new HashSet<>(pack.assets(true)).size());
+            // Number of distinct sounds (in SI file and sf/ folder)
+            bb.putInt(new HashSet<>(pack.assets(false)).size());
             // Is factory pack (boolean) set to true to avoid pack inspection by official
             // Luniistore application
             bb.put((byte) 1);
@@ -113,120 +114,28 @@ public class FsStoryPackWriter implements StoryPackWriter {
 
             // Write stage nodes
             int nextActionNodeIndex = 0;
-            for (int i = 0; i < pack.getStageNodes().size(); i++) {
-                StageNode node = pack.getStageNodes().get(i);
-
-                int imageIndex = -1;
-                MediaAsset image = node.getImage();
-                if (image != null) {
-                    String imageHash = image.findHash();
-                    if (!imageHashOrdered.contains(imageHash)) {
-                        if (MediaAssetType.BMP != image.getType()) {
-                            throw new IllegalArgumentException("FS pack file requires image assets to be BMP.");
-                        }
-                        byte[] imageData = image.getRawData();
-                        ByteBuffer bmpBuffer = ByteBuffer.wrap(imageData).order(ByteOrder.LITTLE_ENDIAN);
-                        // Make sure the BMP file is RLE-compressed / 4-bits depth
-                        if (bmpBuffer.getShort(28) != 0x0004 || bmpBuffer.getInt(30) != 0x00000002) {
-                            throw new IllegalArgumentException(
-                                    "FS pack file requires image assets to use 4-bit depth and RLE encoding.");
-                        }
-                        // Check image dimensions
-                        if (bmpBuffer.getInt(18) != 320 || bmpBuffer.getInt(22) != 240) {
-                            throw new IllegalArgumentException(
-                                    "FS pack file requires image assets to be 320x240 pixels.");
-                        }
-                        imageIndex = imageHashOrdered.size();
-                        imageHashOrdered.add(imageHash);
-                        assets.putIfAbsent(imageHash, imageData);
-                    } else {
-                        imageIndex = imageHashOrdered.indexOf(imageHash);
-                    }
-                }
-                int audioIndex = -1;
-                MediaAsset audio = node.getAudio();
-                // If audio is missing, add a blank audio to satisfy the device
-                if (audio == null) {
-                    audio = new MediaAsset(MediaAssetType.MP3, BLANK_MP3);
-                }
-                String audioHash = audio.findHash();
-                if (!audioHashOrdered.contains(audioHash)) {
-                    if (MediaAssetType.MP3 != audio.getType()) {
-                        throw new IllegalArgumentException("FS pack file requires audio assets to be MP3.");
-                    } 
-                    byte[] audioData = audio.getRawData();
-                    // Check ID3 tags
-                    if (ID3Tags.hasID3v1Tag(audioData) || ID3Tags.hasID3v2Tag(audioData)) {
-                        throw new IllegalArgumentException("FS pack file does not support ID3 tags in MP3 files.");
-                    }
-                    // Check that the file is MONO / 44100Hz
-                    try (ByteArrayInputStream bais = new ByteArrayInputStream(audioData)) {
-                        AudioFormat audioFormat = AudioSystem.getAudioFileFormat(bais).getFormat();
-                        if (audioFormat.getChannels() != AudioConversion.CHANNELS
-                                || audioFormat.getSampleRate() != AudioConversion.MP3_SAMPLE_RATE) {
-                            throw new IllegalArgumentException(
-                                    "FS pack file requires MP3 audio assets to be MONO / 44100Hz.");
-                        }
-                    } catch (UnsupportedAudioFileException e) {
-                        throw new IllegalArgumentException("Unsupported Audio File", e);
-                    }
-                    audioIndex = audioHashOrdered.size();
-                    audioHashOrdered.add(audioHash);
-                    assets.putIfAbsent(audioHash, audioData);
-                } else {
-                    audioIndex = audioHashOrdered.indexOf(audioHash);
-                }
-                Transition okTransition = node.getOkTransition();
-                if (okTransition != null && !actionNodesOrdered.contains(okTransition.getActionNode())) {
-                    actionNodesOrdered.add(okTransition.getActionNode());
-                    actionNodesIndexes.put(okTransition.getActionNode(), nextActionNodeIndex);
-                    nextActionNodeIndex += okTransition.getActionNode().getOptions().size();
-                }
-                Transition homeTransition = node.getHomeTransition();
-                if (homeTransition != null && !actionNodesOrdered.contains(homeTransition.getActionNode())) {
-                    actionNodesOrdered.add(homeTransition.getActionNode());
-                    actionNodesIndexes.put(homeTransition.getActionNode(), nextActionNodeIndex);
-                    nextActionNodeIndex += homeTransition.getActionNode().getOptions().size();
-                }
-
-                // writeStageNode
-                ControlSettings ctrl = node.getControlSettings();
+            for (StageNode node : pack.getStageNodes()) {
                 bb = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN);
+
                 // Image index in RI file (index 0 == first image) --> rf/000/11111111
+                int imageIndex = prepareImage(node.getImage(), assets, imageHashOrdered);
                 bb.putInt(imageIndex);
                 // Sound index in SI file (index 0 == first sound) --> sf/000/11111111
+                int audioIndex = prepareAudio(node.getAudio(), assets, audioHashOrdered);
                 bb.putInt(audioIndex);
-                // OK transition
-                if (okTransition != null) {
-                    // Action node index in LI file (index 0 == first action node)
-                    bb.putInt(actionNodesIndexes.get(okTransition.getActionNode()));
-                    // Number of options available
-                    bb.putInt(okTransition.getActionNode().getOptions().size());
-                    // Menu option index (index 0 == first menu option)
-                    bb.putInt(okTransition.getOptionIndex());
-                } else {
-                    bb.putInt(-1).putInt(-1).putInt(-1);
-                }
-                // HOME transition
-                if (homeTransition != null) {
-                    // Action node index in LI file (-1 == no transition)
-                    bb.putInt(actionNodesIndexes.get(homeTransition.getActionNode()));
-                    // Number of options available
-                    bb.putInt(homeTransition.getActionNode().getOptions().size());
-                    // Menu option index
-                    bb.putInt(homeTransition.getOptionIndex());
-                } else {
-                    bb.putInt(-1).putInt(-1).putInt(-1);
-                }
-                // WHEEL flag
+
+                // Transitions
+                writeTransition(bb, node.getOkTransition(), nextActionNodeIndex, actionNodesOrdered,
+                        actionNodesIndexes);
+                writeTransition(bb, node.getHomeTransition(), nextActionNodeIndex, actionNodesOrdered,
+                        actionNodesIndexes);
+
+                // ControlSettings
+                ControlSettings ctrl = node.getControlSettings();
                 bb.putShort(boolToShort(ctrl.isWheelEnabled()));
-                // OK flag
                 bb.putShort(boolToShort(ctrl.isOkEnabled()));
-                // HOME flag
                 bb.putShort(boolToShort(ctrl.isHomeEnabled()));
-                // PAUSE flag
                 bb.putShort(boolToShort(ctrl.isPauseEnabled()));
-                // AUTOPLAY flag
                 bb.putShort(boolToShort(ctrl.isAutoJumpEnabled()));
                 bb.putShort((short) 0);
 
@@ -235,55 +144,16 @@ public class FsStoryPackWriter implements StoryPackWriter {
             }
         }
 
+        // Add actions to "li" index file
+        writeActionNode(fsp.getListIndex(), actionNodesOrdered, pack.getStageNodes());
+        // Add images in "rf" folder and "ri" index file
+        writeMediaIndex(fsp.getImageFolder(), fsp.getImageIndex(), assets, imageHashOrdered);
+        // Add sound in "sf" folder and "si" index file
+        writeMediaIndex(fsp.getSoundFolder(), fsp.getSoundIndex(), assets, audioHashOrdered);
+
         // cleanup
-        actionNodesIndexes.clear();
-
-        // Add lists index file: li
-        try (ByteArrayOutputStream liBaos = new ByteArrayOutputStream();
-                DataOutputStream liDos = new DataOutputStream(liBaos)) {
-            // Add action nodes
-            for (ActionNode actionNode : actionNodesOrdered) {
-                // Each option points to a stage node by index in Nodes Index file (ni)
-                writeActionNode(liDos, actionNode.getOptions().stream() //
-                        .mapToInt(stage -> pack.getStageNodes().indexOf(stage)).toArray());
-            }
-            // write File
-            writeCypheredFile(fsp.getListIndex(), liBaos.toByteArray());
-        }
-
-        // Add images index file: ri
-        try (ByteArrayOutputStream riBaos = new ByteArrayOutputStream();
-                DataOutputStream riDos = new DataOutputStream(riBaos)) {
-            // For each image asset: 12-bytes relative path (e.g. 000\11111111)
-            for (int i = 0; i < imageHashOrdered.size(); i++) {
-                // Write image path into ri file
-                String imageHash = imageHashOrdered.get(i);
-                String rfSubPath = assetPathFromIndex(i);
-                riDos.write(rfSubPath.getBytes(StandardCharsets.UTF_8));
-                // Write image data into file
-                Path rfPath = fsp.getImageFolder().resolve(rfSubPath.replace('\\', '/'));
-                Files.createDirectories(rfPath.getParent());
-                writeCypheredFile(rfPath, assets.get(imageHash));
-            }
-            writeCypheredFile(fsp.getImageIndex(), riBaos.toByteArray());
-        }
-
-        // Add sound index file: si
-        try (ByteArrayOutputStream siBaos = new ByteArrayOutputStream();
-                DataOutputStream siDos = new DataOutputStream(siBaos)) {
-            // For each image asset: 12-bytes relative path (e.g. 000\11111111)
-            for (int i = 0; i < audioHashOrdered.size(); i++) {
-                // Write sound path into si file
-                String audioHash = audioHashOrdered.get(i);
-                String sfSubPath = assetPathFromIndex(i);
-                siDos.write(sfSubPath.getBytes(StandardCharsets.UTF_8));
-                // Write sound data into file
-                Path sfPath = fsp.getSoundFolder().resolve(sfSubPath.replace('\\', '/'));
-                Files.createDirectories(sfPath.getParent());
-                writeCypheredFile(sfPath, assets.get(audioHash));
-            }
-            writeCypheredFile(fsp.getSoundIndex(), siBaos.toByteArray());
-        }
+        Stream.of(actionNodesIndexes, assets).forEach(Map::clear);
+        Stream.of(actionNodesOrdered, imageHashOrdered, audioHashOrdered).forEach(Collection::clear);
     }
 
     private static void writeCypheredFile(Path path, byte[] byteArray) throws IOException {
@@ -312,15 +182,6 @@ public class FsStoryPackWriter implements StoryPackWriter {
         return (short) (b ? 1 : 0);
     }
 
-    private static void writeActionNode(DataOutputStream liDos, int[] stageNodesIndexes) throws IOException {
-        ByteBuffer bb = ByteBuffer.allocate(stageNodesIndexes.length * 4).order(ByteOrder.LITTLE_ENDIAN);
-        for (int stageNodeIndex : stageNodesIndexes) {
-            bb.putInt(stageNodeIndex);
-        }
-        liDos.write(bb.array());
-        bb.clear();
-    }
-
     private static String assetPathFromIndex(int index) {
         return String.format("000\\%08d", index);
     }
@@ -335,6 +196,66 @@ public class FsStoryPackWriter implements StoryPackWriter {
         };
     }
 
+    private static int prepareImage(MediaAsset image, Map<String, byte[]> assets, List<String> imageHashOrdered) {
+        if (image == null) {
+            return -1;
+        }
+        String imageHash = image.findHash();
+        if (!imageHashOrdered.contains(imageHash)) {
+            if (MediaAssetType.BMP != image.getType()) {
+                throw new StoryTellerException("FS pack file requires image assets to be BMP.");
+            }
+            byte[] imageData = image.getRawData();
+            ByteBuffer bmpBuffer = ByteBuffer.wrap(imageData).order(ByteOrder.LITTLE_ENDIAN);
+            // Make sure the BMP file is RLE-compressed / 4-bits depth
+            if (bmpBuffer.getShort(28) != 0x0004 || bmpBuffer.getInt(30) != 0x00000002) {
+                throw new StoryTellerException(
+                        "FS pack file requires image assets to use 4-bit depth and RLE encoding.");
+            }
+            // Check image dimensions
+            if (bmpBuffer.getInt(18) != 320 || bmpBuffer.getInt(22) != 240) {
+                throw new StoryTellerException("FS pack file requires image assets to be 320x240 pixels.");
+            }
+            imageHashOrdered.add(imageHash);
+            assets.putIfAbsent(imageHash, imageData);
+            return imageHashOrdered.size() - 1;
+        }
+        return imageHashOrdered.indexOf(imageHash);
+    }
+
+    private static int prepareAudio(MediaAsset audio, Map<String, byte[]> assets, List<String> audioHashOrdered)
+            throws IOException {
+        // If audio is missing, add a blank audio to satisfy the device
+        if (audio == null) {
+            audio = new MediaAsset(MediaAssetType.MP3, BLANK_MP3);
+        }
+        String audioHash = audio.findHash();
+        if (!audioHashOrdered.contains(audioHash)) {
+            if (MediaAssetType.MP3 != audio.getType()) {
+                throw new StoryTellerException("FS pack file requires audio assets to be MP3.");
+            }
+            byte[] audioData = audio.getRawData();
+            // Check ID3 tags
+            if (ID3Tags.hasID3v1Tag(audioData) || ID3Tags.hasID3v2Tag(audioData)) {
+                throw new StoryTellerException("FS pack file does not support ID3 tags in MP3 files.");
+            }
+            // Check that the file is MONO / 44100Hz
+            try (ByteArrayInputStream bais = new ByteArrayInputStream(audioData)) {
+                AudioFormat audioFormat = AudioSystem.getAudioFileFormat(bais).getFormat();
+                if (audioFormat.getChannels() != AudioConversion.CHANNELS
+                        || audioFormat.getSampleRate() != AudioConversion.MP3_SAMPLE_RATE) {
+                    throw new StoryTellerException("FS pack file requires MP3 audio assets to be MONO / 44100Hz.");
+                }
+            } catch (UnsupportedAudioFileException e) {
+                throw new StoryTellerException("Unsupported Audio File", e);
+            }
+            audioHashOrdered.add(audioHash);
+            assets.putIfAbsent(audioHash, audioData);
+            return audioHashOrdered.size() - 1;
+        }
+        return audioHashOrdered.indexOf(audioHash);
+    }
+
     /** Read classpath relative file. */
     private static byte[] readRelative(String relative) {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
@@ -344,5 +265,68 @@ public class FsStoryPackWriter implements StoryPackWriter {
             LOGGER.atError().withThrowable(e).log("Cannot load relative resource {}!", relative);
             return new byte[0];
         }
+    }
+
+    private static void writeActionNode(Path indexFile, List<ActionNode> actionNodesOrdered, List<StageNode> stageNodes)
+            throws IOException {
+        try (ByteArrayOutputStream liBaos = new ByteArrayOutputStream();
+                DataOutputStream liDos = new DataOutputStream(liBaos)) {
+            // Add action nodes
+            for (ActionNode actionNode : actionNodesOrdered) {
+                // Each option points to a stage node by index in Nodes Index file (ni)
+                int[] stageNodesIndexes = actionNode.getOptions().stream() //
+                        .mapToInt(stage -> stageNodes.indexOf(stage)).toArray();
+                ByteBuffer bb = ByteBuffer.allocate(stageNodesIndexes.length * 4).order(ByteOrder.LITTLE_ENDIAN);
+                for (int stageNodeIndex : stageNodesIndexes) {
+                    bb.putInt(stageNodeIndex);
+                }
+                liDos.write(bb.array());
+                bb.clear();
+
+            }
+            // write File
+            writeCypheredFile(indexFile, liBaos.toByteArray());
+        }
+
+    }
+
+    private static void writeMediaIndex(Path folder, Path indexFile, Map<String, byte[]> assets,
+            List<String> hashOrdered) throws IOException {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
+                DataOutputStream dos = new DataOutputStream(baos)) {
+            // For each asset: 12-bytes relative path (e.g. 000\11111111)
+            for (int i = 0; i < hashOrdered.size(); i++) {
+                // Write media path into index file
+                String hash = hashOrdered.get(i);
+                String subPath = assetPathFromIndex(i);
+                dos.write(subPath.getBytes(StandardCharsets.UTF_8));
+                // Write media data into file
+                Path relativePath = folder.resolve(subPath.replace('\\', '/'));
+                Files.createDirectories(relativePath.getParent());
+                writeCypheredFile(relativePath, assets.get(hash));
+            }
+            writeCypheredFile(indexFile, baos.toByteArray());
+        }
+    }
+
+    private static int writeTransition(ByteBuffer bb, Transition transition, int nextActionNodeIndex,
+            List<ActionNode> actionNodesOrdered, Map<ActionNode, Integer> actionNodesIndexes) {
+        if (transition != null) {
+            ActionNode a = transition.getActionNode();
+            if (!actionNodesOrdered.contains(a)) {
+                actionNodesOrdered.add(a);
+                actionNodesIndexes.put(a, nextActionNodeIndex);
+                nextActionNodeIndex += a.getOptions().size();
+            }
+            // Action node index in LI file (index 0 == first action node)
+            bb.putInt(actionNodesIndexes.get(a));
+            // Number of options available
+            bb.putInt(a.getOptions().size());
+            // Menu option index (index 0 == first menu option)
+            bb.putInt(transition.getOptionIndex());
+        } else {
+            bb.putInt(-1).putInt(-1).putInt(-1);
+        }
+        return nextActionNodeIndex;
     }
 }

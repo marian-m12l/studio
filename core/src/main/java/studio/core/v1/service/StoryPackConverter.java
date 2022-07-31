@@ -10,7 +10,6 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
@@ -58,14 +57,13 @@ public class StoryPackConverter {
             // Read pack
             LOGGER.info("Reading {} format pack", inFormat);
             StoryPack storyPack = inFormat.getReader().read(packPath);
-            List<StageNode> stageNodes = storyPack.getStageNodes();
             // Convert
             switch (outFormat) {
             case ARCHIVE:
                 // Compress pack assets
                 if (inFormat == PackFormat.RAW) {
                     LOGGER.info("Compressing pack assets");
-                    processCompressed(stageNodes);
+                    processCompressed(storyPack);
                 }
                 // force enriched pack
                 allowEnriched = true;
@@ -73,15 +71,15 @@ public class StoryPackConverter {
             case FS:
                 // Prepare assets (RLE-encoded BMP, audio must already be MP3)
                 LOGGER.info("Converting assets if necessary");
-                processFirmware2dot4(stageNodes);
+                processFirmware2dot4(storyPack);
                 // force enriched pack
                 allowEnriched = true;
                 break;
             case RAW:
                 // Uncompress pack assets
-                if (hasCompressedAssets(stageNodes)) {
+                if (hasCompressedAssets(storyPack)) {
                     LOGGER.info("Uncompressing pack assets");
-                    processUncompressed(stageNodes);
+                    processUncompressed(storyPack);
                 }
                 break;
             }
@@ -102,8 +100,8 @@ public class StoryPackConverter {
         }
     }
 
-    public static boolean hasCompressedAssets(List<StageNode> stageNodes) {
-        for (StageNode node : stageNodes) {
+    public static boolean hasCompressedAssets(StoryPack storyPack) {
+        for (StageNode node : storyPack.getStageNodes()) {
             if (node.getImage() != null && MediaAssetType.BMP != node.getImage().getType()) {
                 return true;
             }
@@ -114,22 +112,9 @@ public class StoryPackConverter {
         return false;
     }
 
-    private static List<MediaAsset> assetList(List<StageNode> stageNodes, boolean image) {
-        List<MediaAsset> res = new ArrayList<>();
-        for (StageNode node : stageNodes) {
-            if (image && node.getImage() != null) {
-                res.add(node.getImage());
-            }
-            if (!image && node.getAudio() != null) {
-                res.add(node.getAudio());
-            }
-        }
-        return res;
-    }
-
-    private static void processCompressed(List<StageNode> stageNodes) {
+    private static void processCompressed(StoryPack storyPack) {
         // Image
-        processImageAssets(stageNodes, MediaAssetType.PNG, ThrowingFunction.unchecked(ia -> {
+        processImageAssets(storyPack, MediaAssetType.PNG, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
             if (MediaAssetType.BMP == ia.getType()) {
                 LOGGER.debug("Compressing BMP image asset into PNG");
@@ -138,7 +123,7 @@ public class StoryPackConverter {
             return imageData;
         }));
         // Audio
-        processAudioAssets(stageNodes, MediaAssetType.OGG, ThrowingFunction.unchecked(aa -> {
+        processAudioAssets(storyPack, MediaAssetType.OGG, ThrowingFunction.unchecked(aa -> {
             byte[] audioData = aa.getRawData();
             if (MediaAssetType.WAV == aa.getType()) {
                 LOGGER.debug("Compressing WAV audio asset into OGG");
@@ -148,9 +133,9 @@ public class StoryPackConverter {
         }));
     }
 
-    private static void processUncompressed(List<StageNode> stageNodes) {
+    private static void processUncompressed(StoryPack storyPack) {
         // Image
-        processImageAssets(stageNodes, MediaAssetType.BMP, ThrowingFunction.unchecked(ia -> {
+        processImageAssets(storyPack, MediaAssetType.BMP, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
             // Convert from 4-bits depth / RLE encoding BMP
             if (MediaAssetType.BMP == ia.getType() && imageData[28] == 0x04 && imageData[30] == 0x02) {
@@ -164,7 +149,7 @@ public class StoryPackConverter {
             return imageData;
         }));
         // Audio
-        processAudioAssets(stageNodes, MediaAssetType.WAV, ThrowingFunction.unchecked(aa -> {
+        processAudioAssets(storyPack, MediaAssetType.WAV, ThrowingFunction.unchecked(aa -> {
             byte[] audioData = aa.getRawData();
             if (MediaAssetType.OGG == aa.getType()) {
                 LOGGER.debug("Uncompressing OGG audio asset into WAV");
@@ -178,9 +163,9 @@ public class StoryPackConverter {
         }));
     }
 
-    private static void processFirmware2dot4(List<StageNode> stageNodes) {
+    private static void processFirmware2dot4(StoryPack storyPack) {
         // Image
-        processImageAssets(stageNodes, MediaAssetType.BMP, ThrowingFunction.unchecked(ia -> {
+        processImageAssets(storyPack, MediaAssetType.BMP, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
             // Convert to 4-bits depth / RLE encoding BMP
             if (MediaAssetType.BMP != ia.getType() || imageData[28] != 0x04 || imageData[30] != 0x02) {
@@ -190,7 +175,7 @@ public class StoryPackConverter {
             return imageData;
         }));
         // Audio
-        processAudioAssets(stageNodes, MediaAssetType.MP3, ThrowingFunction.unchecked(aa -> {
+        processAudioAssets(storyPack, MediaAssetType.MP3, ThrowingFunction.unchecked(aa -> {
             byte[] audioData = aa.getRawData();
             if (MediaAssetType.MP3 != aa.getType()) {
                 LOGGER.debug("Converting audio asset into MP3");
@@ -213,11 +198,11 @@ public class StoryPackConverter {
         }));
     }
 
-    private static void processImageAssets(List<StageNode> stageNodes, MediaAssetType targetType,
+    private static void processImageAssets(StoryPack storyPack, MediaAssetType targetType,
             Function<MediaAsset, byte[]> imageProcessor) {
         // Cache prepared assets bytes
         Map<String, byte[]> assets = new ConcurrentHashMap<>();
-        List<MediaAsset> medias = assetList(stageNodes, true);
+        List<MediaAsset> medias = storyPack.assets(true);
         AtomicInteger i = new AtomicInteger(0);
 
         // Multi-threaded processing : images
@@ -236,11 +221,11 @@ public class StoryPackConverter {
         assets.clear();
     }
 
-    private static void processAudioAssets(List<StageNode> stageNodes, MediaAssetType targetType,
+    private static void processAudioAssets(StoryPack storyPack, MediaAssetType targetType,
             Function<MediaAsset, byte[]> audioProcessor) {
         // Cache prepared assets bytes
         Map<String, byte[]> assets = new ConcurrentHashMap<>();
-        List<MediaAsset> medias = assetList(stageNodes, false);
+        List<MediaAsset> medias = storyPack.assets(false);
         AtomicInteger i = new AtomicInteger(0);
 
         // Multi-threaded processing : audio
