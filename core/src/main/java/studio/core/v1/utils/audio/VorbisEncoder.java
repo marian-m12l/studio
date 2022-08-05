@@ -125,32 +125,9 @@ public class VorbisEncoder {
 
             LOGGER.trace("Writing header done.\nEncoding");
             int page = 0;
-            byte[] readbuffer = new byte[READ_BLOCK_SIZE];
             while (!og.ogg_page_eos()) {
-                // stereo hardwired here
-                int readBytes = dis.readNBytes(readbuffer, 0, READ_BLOCK_SIZE);
-
-                if (readBytes <= 0) {
-                    // end of file. this can be done implicitly in the mainline,
-                    // but it's easier to see here in non-clever fashion.
-                    // Tell the library we're at end of stream so that it can handle
-                    // the last frame and mark end of stream in the output properly
-                    vd.vorbis_analysis_wrote(0);
-                } else {
-                    // data to encode
-                    // expose the buffer to submit data
-                    Jvorbis_pcm data = vd.vorbis_analysis_buffer(READ_BLOCK_SIZE / 4);
-                    int i;
-                    // duplicate mono channel
-                    for (i = 0; i < readBytes / 2; i++) {
-                        float fb = ((readbuffer[i * 2 + 1] << 8) | (0x00ff & readbuffer[i * 2])) / 32768f;
-                        data.pcm[0][data.pcmret + i] = fb;
-                        data.pcm[1][data.pcmret + i] = fb;
-                    }
-
-                    // tell the library how much we actually submitted
-                    vd.vorbis_analysis_wrote(i);
-                }
+                // parse buffer: stereo hardwired
+                parseData(dis, vd);
 
                 // vorbis does some data preanalysis, then divvies up blocks for more involved
                 // (potentially parallel) processing. Get a single block for encoding now
@@ -170,8 +147,6 @@ public class VorbisEncoder {
                         }
                     }
                 }
-                // notify progress (one more block of samples has been processed)
-                LOGGER.trace("{} block read", readBytes);
             }
 
             LOGGER.debug("Encoding done (pageCount={}, size={})", page, baos.size());
@@ -186,6 +161,32 @@ public class VorbisEncoder {
             vc.vorbis_comment_clear();
             vi.vorbis_info_clear();
         }
+    }
+
+    private static void parseData(DataInputStream dis, Jvorbis_dsp_state vd) throws IOException {
+        byte[] readbuffer = new byte[READ_BLOCK_SIZE];
+        int readBytes = dis.readNBytes(readbuffer, 0, READ_BLOCK_SIZE);
+        // notify progress (one more block of samples has been processed)
+        LOGGER.trace("{} block read", readBytes);
+        if (readBytes <= 0) {
+            // end of file. this can be done implicitly in the mainline,
+            // but it's easier to see here in non-clever fashion.
+            // Tell the library we're at end of stream so that it can handle
+            // the last frame and mark end of stream in the output properly
+            vd.vorbis_analysis_wrote(0);
+            return;
+        }
+        // data to encode : expose the buffer to submit data
+        Jvorbis_pcm data = vd.vorbis_analysis_buffer(READ_BLOCK_SIZE / 4);
+        int i;
+        // stereo hardwired here : duplicate mono channel
+        for (i = 0; i < readBytes / 2; i++) {
+            float fb = ((readbuffer[i * 2 + 1] << 8) | (0x00ff & readbuffer[i * 2])) / 32768f;
+            data.pcm[0][data.pcmret + i] = fb;
+            data.pcm[1][data.pcmret + i] = fb;
+        }
+        // tell the library how much we actually submitted
+        vd.vorbis_analysis_wrote(i);
     }
 
     private static void writeOggPage(Jogg_page og, OutputStream os, int page) throws IOException {

@@ -10,7 +10,6 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
-import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -145,7 +144,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
         }
 
         // Add actions to "li" index file
-        writeActionNode(fsp.getListIndex(), actionNodesOrdered, pack.getStageNodes());
+        writeActionNodeIndex(fsp.getListIndex(), actionNodesOrdered, pack.getStageNodes());
         // Add images in "rf" folder and "ri" index file
         writeMediaIndex(fsp.getImageFolder(), fsp.getImageIndex(), assets, imageHashOrdered);
         // Add sound in "sf" folder and "si" index file
@@ -180,10 +179,6 @@ public class FsStoryPackWriter implements StoryPackWriter {
 
     private static short boolToShort(boolean b) {
         return (short) (b ? 1 : 0);
-    }
-
-    private static String assetPathFromIndex(int index) {
-        return String.format("000\\%08d", index);
     }
 
     private static byte[] computeSpecificKeyFromUUID(byte[] uuid) {
@@ -267,39 +262,29 @@ public class FsStoryPackWriter implements StoryPackWriter {
         }
     }
 
-    private static void writeActionNode(Path indexFile, List<ActionNode> actionNodesOrdered, List<StageNode> stageNodes)
-            throws IOException {
-        try (ByteArrayOutputStream liBaos = new ByteArrayOutputStream();
-                DataOutputStream liDos = new DataOutputStream(liBaos)) {
-            // Add action nodes
+    private static void writeActionNodeIndex(Path indexFile, List<ActionNode> actionNodesOrdered,
+            List<StageNode> stageNodes) throws IOException {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             for (ActionNode actionNode : actionNodesOrdered) {
                 // Each option points to a stage node by index in Nodes Index file (ni)
-                int[] stageNodesIndexes = actionNode.getOptions().stream() //
-                        .mapToInt(stage -> stageNodes.indexOf(stage)).toArray();
-                ByteBuffer bb = ByteBuffer.allocate(stageNodesIndexes.length * 4).order(ByteOrder.LITTLE_ENDIAN);
-                for (int stageNodeIndex : stageNodesIndexes) {
-                    bb.putInt(stageNodeIndex);
+                for (StageNode stageNode : actionNode.getOptions()) {
+                    // change int order for LITTLE_ENDIAN
+                    baos.write(Integer.reverse(stageNodes.indexOf(stageNode)));
                 }
-                liDos.write(bb.array());
-                bb.clear();
-
             }
-            // write File
-            writeCypheredFile(indexFile, liBaos.toByteArray());
+            writeCypheredFile(indexFile, baos.toByteArray());
         }
-
     }
 
     private static void writeMediaIndex(Path folder, Path indexFile, Map<String, byte[]> assets,
             List<String> hashOrdered) throws IOException {
-        try (ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                DataOutputStream dos = new DataOutputStream(baos)) {
+        try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
             // For each asset: 12-bytes relative path (e.g. 000\11111111)
             for (int i = 0; i < hashOrdered.size(); i++) {
                 // Write media path into index file
                 String hash = hashOrdered.get(i);
-                String subPath = assetPathFromIndex(i);
-                dos.write(subPath.getBytes(StandardCharsets.UTF_8));
+                String subPath = String.format("000\\%08d", i);
+                baos.write(subPath.getBytes(StandardCharsets.UTF_8));
                 // Write media data into file
                 Path relativePath = folder.resolve(subPath.replace('\\', '/'));
                 Files.createDirectories(relativePath.getParent());
@@ -311,22 +296,22 @@ public class FsStoryPackWriter implements StoryPackWriter {
 
     private static int writeTransition(ByteBuffer bb, Transition transition, int nextActionNodeIndex,
             List<ActionNode> actionNodesOrdered, Map<ActionNode, Integer> actionNodesIndexes) {
-        if (transition != null) {
-            ActionNode a = transition.getActionNode();
-            if (!actionNodesOrdered.contains(a)) {
-                actionNodesOrdered.add(a);
-                actionNodesIndexes.put(a, nextActionNodeIndex);
-                nextActionNodeIndex += a.getOptions().size();
-            }
-            // Action node index in LI file (index 0 == first action node)
-            bb.putInt(actionNodesIndexes.get(a));
-            // Number of options available
-            bb.putInt(a.getOptions().size());
-            // Menu option index (index 0 == first menu option)
-            bb.putInt(transition.getOptionIndex());
-        } else {
+        if (transition == null) {
             bb.putInt(-1).putInt(-1).putInt(-1);
+            return nextActionNodeIndex;
         }
+        ActionNode a = transition.getActionNode();
+        if (!actionNodesOrdered.contains(a)) {
+            actionNodesOrdered.add(a);
+            actionNodesIndexes.put(a, nextActionNodeIndex);
+            nextActionNodeIndex += a.getOptions().size();
+        }
+        // Action node index in LI file (index 0 == first action node)
+        bb.putInt(actionNodesIndexes.get(a));
+        // Number of options available
+        bb.putInt(a.getOptions().size());
+        // Menu option index (index 0 == first menu option)
+        bb.putInt(transition.getOptionIndex());
         return nextActionNodeIndex;
     }
 }
