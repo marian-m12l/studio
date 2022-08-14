@@ -121,11 +121,10 @@ THIRD-PARTY APPLICATIONS
 ------------------------
 
 If you liked STUdio, you will also like:
-* [mhios (Mes Histoires Interactives Open Stories)](https://www.mhios.com) is an online open library of interactive
-stories (courtesy of [@sebbelese](https://github.com/sebbelese))
 * [Moiki](https://moiki.fr/) is an online tool to create interactive stories that can be exported for STUdio (courtesy
 of [@kaelhem](https://github.com/kaelhem))
-
+* [mhios (Mes Histoires Interactives Open Stories)](https://github.com/sebbelese/mhios) was an online open library of interactive
+stories (courtesy of [@sebbelese](https://github.com/sebbelese))
 
 LICENSE
 -------
