@@ -24,7 +24,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 /**
- * An image Quantizer based on the Octree algorithm. This is a very basic implementation
+ * An image Quantizer based on the OctTree algorithm. This is a very basic implementation
  * at present and could be much improved by picking the nodes to reduce more carefully
  * (i.e. not completely at random) when I get the time.
  */
@@ -38,7 +38,7 @@ public class OctTreeQuantizer implements Quantizer {
     private static final int MAX_LEVEL = 5;
 
     /**
-     * An Octtree node.
+     * An OctTree node.
      */
     class OctTreeNode {
         int children;
