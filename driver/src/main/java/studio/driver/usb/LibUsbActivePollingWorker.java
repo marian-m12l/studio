@@ -19,19 +19,20 @@ import org.usb4java.LibUsbException;
 
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
-import studio.driver.model.DeviceVersion;
+import studio.driver.model.UsbDeviceFirmware;
+import studio.driver.model.UsbDeviceVersion;
 
 public class LibUsbActivePollingWorker implements Runnable {
 
     private static final Logger LOGGER = LogManager.getLogger(LibUsbActivePollingWorker.class);
 
     private final Context context;
-    private final DeviceVersion deviceVersion;
+    private final UsbDeviceVersion deviceVersion;
     private final DevicePluggedListener pluggedlistener;
     private final DeviceUnpluggedListener unpluggedlistener;
     private Device device = null;
 
-    public LibUsbActivePollingWorker(Context context, DeviceVersion deviceVersion,
+    public LibUsbActivePollingWorker(Context context, UsbDeviceVersion deviceVersion,
             DevicePluggedListener pluggedlistener, DeviceUnpluggedListener unpluggedlistener) {
         this.context = context;
         this.deviceVersion = deviceVersion;
@@ -56,8 +57,8 @@ public class LibUsbActivePollingWorker implements Runnable {
                 if (result != LibUsb.SUCCESS) {
                     throw new LibUsbException("Unable to read libusb device descriptor", result);
                 }
-                if ((LibUsbDetectionHelper.isDeviceV1(deviceVersion) && LibUsbDetectionHelper.isFirmwareV1(desc)) || //
-                        (LibUsbDetectionHelper.isDeviceV2(deviceVersion) && LibUsbDetectionHelper.isFirmwareV2(desc))) {
+                if ((deviceVersion.isV1() && UsbDeviceFirmware.isV1(desc))
+                        || (deviceVersion.isV2() && UsbDeviceFirmware.isV2(desc))) {
                     found = d;
                     break;
                 }

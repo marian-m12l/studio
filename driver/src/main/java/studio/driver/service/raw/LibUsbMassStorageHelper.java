@@ -189,7 +189,7 @@ public class LibUsbMassStorageHelper {
             return value;
         }
     }
-    
+
     // Mass storage Command Block Wrapper (CBW)
     private static final int MASS_STORAGE_CBW_LENGTH = 31;
     private static final byte[] MASS_STORAGE_CBW_SIGNATURE = { 0x55, 0x53, 0x42, 0x43 }; // "USBC"
@@ -198,7 +198,7 @@ public class LibUsbMassStorageHelper {
 
     private enum CBWDirection {
         // byte 0x00
-        OUTBOUND, 
+        OUTBOUND,
         // byte 0x80
         INBOUND
     }
@@ -289,7 +289,7 @@ public class LibUsbMassStorageHelper {
             });
         }));
     }
-    
+
     private static CompletionStage<ByteBuffer> asyncReadCommand(DeviceHandle handle, ByteBuffer cbw, short nbSectors) {
         // Read Command Status Wrapper
         return asyncTransferOut(handle, cbw).thenCompose(done -> {

@@ -29,7 +29,7 @@ public class PixelUtils {
         REPLACE, NORMAL, MIN, MAX, ADD, SUBTRACT, DIFFERENCE, MULTIPLY, HUE, SATURATION, VALUE, COLOR, SCREEN, AVERAGE,
         OVERLAY, CLEAR, EXCHANGE, DISSOLVE, DST_IN, ALPHA, ALPHA_TO_GRAY;
     }
-    
+
     // Sonar Fix : SecureRandom
     private static SecureRandom prng = new SecureRandom();
 

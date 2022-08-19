@@ -36,6 +36,7 @@ public class ArchiveStoryPackWriter implements StoryPackWriter {
     private ObjectWriter objectWriter = new ObjectMapper().setSerializationInclusion(Include.NON_NULL)
             .writerWithDefaultPrettyPrinter();
 
+    @Override
     public void write(StoryPack pack, Path zipPath, boolean enriched) throws IOException {
         // Fix missing title
         if (pack.getEnriched() != null && pack.getEnriched().getTitle() == null) {

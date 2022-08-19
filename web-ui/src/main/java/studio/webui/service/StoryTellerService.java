@@ -89,7 +89,7 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
 
     /**
      * Select driver from connected device.
-     * 
+     *
      * @return Optional StoryTellerAsyncDriver
      */
     private Optional<StoryTellerAsyncDriver> currentDriver() {
@@ -102,37 +102,44 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
         return Optional.empty();
     }
 
+    @Override
     public CompletionStage<DeviceInfosDTO> deviceInfos() {
         return currentDriver().map(StoryTellerAsyncDriver::getDeviceInfos) //
                 .orElseGet(() -> CompletableFuture.completedStage(new DeviceInfosDTO()));
     }
 
+    @Override
     public CompletionStage<List<MetaPackDTO>> packs() {
         return currentDriver().map(StoryTellerAsyncDriver::getPacksList) //
                 .orElseGet(() -> CompletableFuture.completedStage(Arrays.asList())) //
                 .thenApply(this::enhancePacks);
     }
 
+    @Override
     public CompletionStage<String> addPack(String uuid, Path packFile) {
         return currentDriver().map(d -> d.getPacksList().thenApply(packs -> upload(packs, d, uuid, packFile))) //
                 .orElseGet(() -> CompletableFuture.completedStage(uuid));
     }
 
+    @Override
     public CompletionStage<Boolean> deletePack(String uuid) {
         return currentDriver().map(d -> d.deletePack(uuid)) //
                 .orElseGet(() -> CompletableFuture.completedStage(false));
     }
 
+    @Override
     public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
         return currentDriver().map(d -> d.reorderPacks(uuids)) //
                 .orElseGet(() -> CompletableFuture.completedStage(false));
     }
 
+    @Override
     public CompletionStage<String> extractPack(String uuid, Path packFile) {
         return currentDriver().map(d -> CompletableFuture.completedStage(download(d, uuid, packFile))) //
                 .orElseGet(() -> CompletableFuture.completedStage(uuid));
     }
 
+    @Override
     public CompletionStage<Void> dump(Path outputPath) {
         return currentDriver().map(d -> d.dump(outputPath)) //
                 .orElseGet(() -> CompletableFuture.completedStage(null));
@@ -186,7 +193,7 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
 
     /**
      * Enhance packs with metadata.
-     * 
+     *
      * @param metaPacks List<MetaPackDTO>
      * @return metaPacks enhanced
      */

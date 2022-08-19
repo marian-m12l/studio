@@ -57,6 +57,7 @@ public class RawStoryPackReader implements StoryPackReader {
 
     private static final Logger LOGGER = LogManager.getLogger(RawStoryPackReader.class);
 
+    @Override
     public StoryPackMetadata readMetadata(Path path) throws IOException {
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(Files.newInputStream(path)))) {
             // Pack metadata model
@@ -88,6 +89,7 @@ public class RawStoryPackReader implements StoryPackReader {
         }
     }
 
+    @Override
     public StoryPack read(Path path) throws IOException {
         try (DataInputStream dis = new DataInputStream(new BufferedInputStream(Files.newInputStream(path)))) {
             StoryPack sp = new StoryPack();

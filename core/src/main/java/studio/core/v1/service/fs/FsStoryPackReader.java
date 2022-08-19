@@ -42,6 +42,7 @@ public class FsStoryPackReader implements StoryPackReader {
 
     private static final Logger LOGGER = LogManager.getLogger(FsStoryPackReader.class);
 
+    @Override
     public StoryPackMetadata readMetadata(Path inputFolder) throws IOException {
         // Pack metadata model
         StoryPackMetadata metadata = new StoryPackMetadata(PackFormat.FS);
@@ -58,6 +59,7 @@ public class FsStoryPackReader implements StoryPackReader {
         return metadata;
     }
 
+    @Override
     public StoryPack read(Path inputFolder) throws IOException {
         // Create storypack
         StoryPack sp = new StoryPack();

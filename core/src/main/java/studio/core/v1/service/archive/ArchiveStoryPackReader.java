@@ -27,6 +27,7 @@ public class ArchiveStoryPackReader implements StoryPackReader {
 
     private ObjectMapper objectMapper = new ObjectMapper().setSerializationInclusion(Include.NON_NULL);
 
+    @Override
     public StoryPackMetadata readMetadata(Path zipPath) throws IOException {
         // Zip archive contains a json file and separate assets
         try (FileSystem zipFs = FileSystems.newFileSystem(zipPath, ClassLoader.getSystemClassLoader())) {
@@ -50,6 +51,7 @@ public class ArchiveStoryPackReader implements StoryPackReader {
         }
     }
 
+    @Override
     public StoryPack read(Path zipPath) throws IOException {
         // Zip archive contains a json file and separate assets
         try (FileSystem zipFs = FileSystems.newFileSystem(zipPath, ClassLoader.getSystemClassLoader())) {

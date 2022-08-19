@@ -43,12 +43,12 @@ import studio.core.v1.utils.io.FileUtils;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
 import studio.driver.event.TransferProgressListener;
-import studio.driver.model.DeviceInfos;
+import studio.driver.model.AbstractDeviceInfos;
 import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.DeviceInfosDTO.StorageDTO;
-import studio.driver.model.DeviceVersion;
 import studio.driver.model.MetaPackDTO;
 import studio.driver.model.TransferStatus;
+import studio.driver.model.UsbDeviceVersion;
 import studio.driver.service.StoryTellerAsyncDriver;
 import studio.driver.usb.LibUsbDetectionHelper;
 
@@ -70,7 +70,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
     @Getter
     @Setter
-    private static class RawDeviceInfos extends DeviceInfos {
+    private static class RawDeviceInfos extends AbstractDeviceInfos {
         private UUID uuid;
         private int sdCardSizeInSectors;
         private int usedSpaceInSectors;
@@ -91,7 +91,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     public RawStoryTellerAsyncDriver() {
         // Initialize libusb, handle and propagate hotplug events
         LOGGER.debug("Registering hotplug listener");
-        LibUsbDetectionHelper.initializeLibUsb(DeviceVersion.DEVICE_VERSION_1, device2 -> {
+        LibUsbDetectionHelper.initializeLibUsb(UsbDeviceVersion.DEVICE_VERSION_1, device2 -> {
             // Update device reference
             this.device = device2;
             // Notify listeners
@@ -418,7 +418,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
             LOGGER.info("Transferring pack ({}) to device: {} ({} sectors)", uuid, FileUtils.readableByteSize(packSize),
                     packSizeInSectors);
         }
-        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, handle -> 
+        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, handle ->
             // Find first large-enough free space
             findFirstSuitableSector(handle, packSizeInSectors)
                     .thenCompose(startSector -> {

@@ -60,6 +60,7 @@ public class RawStoryPackWriter implements StoryPackWriter {
             "C1it9pkqJkgpvvXxw+mvPyQE7qh2Q9hBg5gOJfr3OeQc7Qr34J+LSOSRsBvPzDntJCdDNlPEt0lA",
             "mWIQD0usba3CRBHPhIJLqKCvifXDEFf/5Hn+gJAYTMWXDR1wKhl5Z2JFv1MsfEzli0TDGseDXh0="));
 
+    @Override
     public void write(StoryPack pack, Path path, boolean enriched) throws IOException {
         try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(path)))) {
 

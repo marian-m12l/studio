@@ -45,12 +45,12 @@ import studio.core.v1.utils.stream.ThrowingFunction;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
 import studio.driver.event.TransferProgressListener;
-import studio.driver.model.DeviceInfos;
+import studio.driver.model.AbstractDeviceInfos;
 import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.DeviceInfosDTO.StorageDTO;
-import studio.driver.model.DeviceVersion;
 import studio.driver.model.MetaPackDTO;
 import studio.driver.model.TransferStatus;
+import studio.driver.model.UsbDeviceVersion;
 import studio.driver.service.StoryTellerAsyncDriver;
 import studio.driver.usb.LibUsbDetectionHelper;
 
@@ -68,7 +68,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
     @Getter
     @Setter
-    private static class FsDeviceInfos extends DeviceInfos {
+    private static class FsDeviceInfos extends AbstractDeviceInfos {
         private byte[] deviceId;
         private long sdCardSizeInBytes;
         private long usedSpaceInBytes;
@@ -77,13 +77,12 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     public FsStoryTellerAsyncDriver() {
         // Initialize libusb, handle and propagate hotplug events
         LOGGER.debug("Registering hotplug listener");
-        LibUsbDetectionHelper.initializeLibUsb(DeviceVersion.DEVICE_VERSION_2, //
+        LibUsbDetectionHelper.initializeLibUsb(UsbDeviceVersion.DEVICE_VERSION_2, //
                 device2 -> {
                     // Wait for a partition to be mounted which contains the .md file
                     LOGGER.debug("Waiting for device partition...");
                     for (int i = 0; i < FS_MOUNTPOINT_RETRY && sdPartition == null; i++) {
                         try {
-                            Thread.sleep(FS_MOUNTPOINT_POLL_DELAY);
                             DeviceUtils.listMountPoints().forEach(path -> {
                                 LOGGER.trace("Looking for .md in {}", path);
                                 if (SdPartition.isValid(path)) {
@@ -92,6 +91,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                                     return;
                                 }
                             });
+                            Thread.sleep(FS_MOUNTPOINT_POLL_DELAY);
                         } catch (InterruptedException e) {
                             LOGGER.error("Failed to locate device partition", e);
                             Thread.currentThread().interrupt();

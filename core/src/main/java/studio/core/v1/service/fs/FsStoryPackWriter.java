@@ -67,6 +67,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
     // TODO Enriched metadata in a dedicated file (pack's title, description and
     // thumbnail, nodes' name, group, type and position)
 
+    @Override
     public void write(StoryPack pack, Path packFolder, boolean enriched) throws IOException {
         // Create output dir
         Files.createDirectories(packFolder);

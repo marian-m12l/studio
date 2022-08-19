@@ -19,7 +19,7 @@ public class SecurityUtils {
 
     /**
      * Compute the sha1 of a byte array in Hex string
-     * 
+     *
      * @param input byte array
      * @return sha1 String
      */
@@ -35,7 +35,7 @@ public class SecurityUtils {
 
     /**
      * Compute the sha1 of a String in Hex string
-     * 
+     *
      * @param input UTF-8 string
      * @return sha1 String
      */
@@ -45,7 +45,7 @@ public class SecurityUtils {
 
     /**
      * Convert byte array to (lowercase) Hex String
-     * 
+     *
      * @param bytes byte array
      * @return hexadecimal string
      */
@@ -61,7 +61,7 @@ public class SecurityUtils {
 
     /**
      * Convert UTF-8 String to (lowercase) Hex String
-     * 
+     *
      * @param s String
      * @return hexadecimal string
      */
@@ -71,7 +71,7 @@ public class SecurityUtils {
 
     /**
      * Convert Hex String to byte array.
-     * 
+     *
      * @param s hexadecimal string
      * @return byte array
      */

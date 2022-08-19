@@ -20,6 +20,7 @@ public class LibUsbAsyncEventsWorker extends Thread {
     private Context context;
 
     public LibUsbAsyncEventsWorker(Context context) {
+        super();
         this.context = context;
     }
 
@@ -31,7 +32,7 @@ public class LibUsbAsyncEventsWorker extends Thread {
     public void run() {
         LOGGER.debug("Starting worker thread to handle libusb async events...");
         while (!this.abort) {
-            int result = LibUsb.handleEventsTimeout(this.context, 250000);
+            int result = LibUsb.handleEventsTimeout(this.context, 250_000);
             if (result != LibUsb.SUCCESS) {
                 throw new LibUsbException("Unable to handle libusb async events", result);
             }

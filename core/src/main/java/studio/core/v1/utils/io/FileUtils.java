@@ -54,7 +54,7 @@ public class FileUtils {
 
     /**
      * Return human readable file size. This function is limited to exabyte.
-     * 
+     *
      * @param size
      * @return a human-readable display value (includes units - EB, PB, TB, GB, MB,
      *         KB or bytes).
@@ -72,7 +72,7 @@ public class FileUtils {
 
     /**
      * Create directories. Throw custom unchecked StoryTellerException.
-     * 
+     *
      * @param errorMessage
      * @param dirPath
      */

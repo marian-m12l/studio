@@ -6,7 +6,7 @@ import studio.core.v1.exception.StoryTellerException;
 
 /**
  * Handle checked exception in lambda function.
- * 
+ *
  * @see https://dzone.com/articles/how-to-handle-checked-exception-in-lambda-expressi
  *
  * @param <T> function input

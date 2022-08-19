@@ -91,7 +91,7 @@ public class QuantizeFilter extends WholeImageFilter {
         return serpentine;
     }
 
-    public void quantize(int[] inPixels, int[] outPixels, int width, int height, int numColors, boolean dither,
+    private void quantize(int[] inPixels, int[] outPixels, int width, int height, int numColors, boolean dither,
             boolean serpentine) {
         int count = width * height;
         Quantizer quantizer = new OctTreeQuantizer();
@@ -162,12 +162,14 @@ public class QuantizeFilter extends WholeImageFilter {
         }
     }
 
+    @Override
     protected int[] filterPixels( int width, int height, int[] inPixels, Rectangle transformedSpace ) {
         int[] outPixels = new int[width*height];
         quantize(inPixels, outPixels, width, height, numColors, dither, serpentine);
         return outPixels;
     }
 
+    @Override
     public String toString() {
         return "Colors/Quantize...";
     }

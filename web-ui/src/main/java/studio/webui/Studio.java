@@ -34,7 +34,7 @@ public class Studio {
 
     @ApplicationScoped
     static class MainVerticle {
- 
+
         @ConfigProperty(name = "studio.host")
         String host;
 

@@ -1,11 +1,11 @@
+package studio.driver.service.raw;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.util.Arrays;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
-
-import studio.driver.service.raw.RawStoryTellerAsyncDriver;
 
 class RawStoryTellerAsyncDriverTests {
 

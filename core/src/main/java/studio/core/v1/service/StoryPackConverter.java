@@ -102,10 +102,7 @@ public class StoryPackConverter {
 
     public static boolean hasCompressedAssets(StoryPack storyPack) {
         for (StageNode node : storyPack.getStageNodes()) {
-            if (node.getImage() != null && MediaAssetType.BMP != node.getImage().getType()) {
-                return true;
-            }
-            if (node.getAudio() != null && MediaAssetType.WAV != node.getAudio().getType()) {
+            if ((node.getImage() != null && MediaAssetType.BMP != node.getImage().getType()) || (node.getAudio() != null && MediaAssetType.WAV != node.getAudio().getType())) {
                 return true;
             }
         }

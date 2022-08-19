@@ -78,22 +78,27 @@ public class MockStoryTellerService implements IStoryTellerService {
         sendDeviceUnplugged(eventBus);
     }
 
+    @Override
     public CompletionStage<DeviceInfosDTO> deviceInfos() {
         return CompletableFuture.completedStage(getDeviceInfo());
     }
 
+    @Override
     public CompletionStage<List<MetaPackDTO>> packs() {
         return readPackIndex(devicePath).thenApply(p -> p.stream().map(this::toDto).collect(Collectors.toList()));
     }
 
+    @Override
     public CompletionStage<String> addPack(String uuid, Path packFile) {
         return copyPack("add pack", packFile, getDevicePack(uuid));
     }
 
+    @Override
     public CompletionStage<String> extractPack(String uuid, Path destFile) {
         return copyPack("extract pack", getDevicePack(uuid), destFile);
     }
 
+    @Override
     public CompletionStage<Boolean> deletePack(String uuid) {
         try {
             LOGGER.warn("Remove pack {}", uuid);
@@ -104,11 +109,13 @@ public class MockStoryTellerService implements IStoryTellerService {
         }
     }
 
+    @Override
     public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
         LOGGER.warn("Not supported : reorderPacks");
         return CompletableFuture.completedStage(false);
     }
 
+    @Override
     public CompletionStage<Void> dump(Path outputPath) {
         LOGGER.warn("Not supported : dump");
         return CompletableFuture.completedStage(null);

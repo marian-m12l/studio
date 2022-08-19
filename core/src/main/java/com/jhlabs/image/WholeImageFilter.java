@@ -36,6 +36,7 @@ public abstract class WholeImageFilter extends AbstractBufferedImageOp {
      */
     protected Rectangle originalSpace;
 
+    @Override
     public BufferedImage filter( BufferedImage src, BufferedImage dst ) {
         int width = src.getWidth();
         int height = src.getHeight();

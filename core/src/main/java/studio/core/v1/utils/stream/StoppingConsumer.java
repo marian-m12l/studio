@@ -8,7 +8,7 @@ import studio.core.v1.exception.StoryTellerException;
 
 /**
  * Stop parallel stream on StoryTellerException.
- * 
+ *
  * @see https://dzone.com/articles/how-to-handle-checked-exception-in-lambda-expressi
  *
  * @param <T> function consumer

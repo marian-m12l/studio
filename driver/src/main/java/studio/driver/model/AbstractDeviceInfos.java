@@ -6,8 +6,13 @@
 
 package studio.driver.model;
 
-public enum DeviceVersion {
-    DEVICE_VERSION_1,
-    DEVICE_VERSION_2,
-    DEVICE_VERSION_ANY
+import lombok.Getter;
+import lombok.Setter;
+
+@Getter
+@Setter
+public abstract class AbstractDeviceInfos {
+    private short firmwareMajor;
+    private short firmwareMinor;
+    private String serialNumber;
 }
