@@ -30,21 +30,21 @@
         <maven.compiler.release>${java.version}</maven.compiler.release>
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <!-- Maven plugins -->
-        <mvn.compiler.version>3.8.1</mvn.compiler.version>
-        <mvn.resources.version>3.2.0</mvn.resources.version>
-        <mvn.surefire.version>3.0.0-M5</mvn.surefire.version>
-        <mvn.assembly.version>3.3.0</mvn.assembly.version>
+        <mvn.compiler.version>3.10.1</mvn.compiler.version>
+        <mvn.resources.version>3.3.0</mvn.resources.version>
+        <mvn.surefire.version>3.0.0-M7</mvn.surefire.version>
+        <mvn.assembly.version>3.4.2</mvn.assembly.version>
         <!-- Devops -->
         <sonar.organization>kairoh</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <!-- quarkus -->
         <quarkus.platform.artifact-id>quarkus-bom</quarkus.platform.artifact-id>
         <quarkus.platform.group-id>io.quarkus</quarkus.platform.group-id>
-        <quarkus.platform.version>2.9.2.Final</quarkus.platform.version>
+        <quarkus.platform.version>2.11.2.Final</quarkus.platform.version>
         <!-- Dependencies -->
-        <lombok.version>1.18.22</lombok.version>
-        <log4j2.version>2.17.1</log4j2.version>
-        <junit.version>5.8.2</junit.version>
+        <lombok.version>1.18.24</lombok.version>
+        <log4j2.version>2.18.0</log4j2.version>
+        <junit.version>5.9.0</junit.version>
     </properties>
 
     <dependencyManagement>
@@ -92,14 +92,6 @@
             <plugin>
                <artifactId>maven-surefire-plugin</artifactId>
                <version>${mvn.surefire.version}</version>
-<!-- Reactivate later ?
-               <configuration>
-                   <systemPropertyVariables>
-                       <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                       <maven.home>${maven.home}</maven.home>
-                   </systemPropertyVariables>
-               </configuration>
--->
             </plugin>
          </plugins>
       </pluginManagement>
