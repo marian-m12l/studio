@@ -6,6 +6,7 @@
 
 package studio.core.v1.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonInclude.Include;
 import com.fasterxml.jackson.annotation.JsonProperty;
@@ -20,6 +21,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @JsonInclude(Include.NON_DEFAULT)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ControlSettings {
 
     @JsonProperty("wheel")

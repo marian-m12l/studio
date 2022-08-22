@@ -80,8 +80,8 @@ public class FsStoryPackWriter implements StoryPackWriter {
         // Store assets bytes
         Map<String, byte[]> assets = new TreeMap<>();
         // Keep track of action nodes and assets
-        List<ActionNode> actionNodesOrdered = new ArrayList<>();
-        Map<ActionNode, Integer> actionNodesIndexes = new HashMap<>();
+        List<ActionNode> actionsOrdered = new ArrayList<>();
+        Map<ActionNode, Integer> actionsIndexes = new HashMap<>();
         List<String> imageHashOrdered = new ArrayList<>();
         List<String> audioHashOrdered = new ArrayList<>();
 
@@ -113,7 +113,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
             bb.clear();
 
             // Write stage nodes
-            int nextActionNodeIndex = 0;
+            int nextAction = 0;
             for (StageNode node : pack.getStageNodes()) {
                 bb = ByteBuffer.allocate(44).order(ByteOrder.LITTLE_ENDIAN);
 
@@ -125,10 +125,8 @@ public class FsStoryPackWriter implements StoryPackWriter {
                 bb.putInt(audioIndex);
 
                 // Transitions
-                writeTransition(bb, node.getOkTransition(), nextActionNodeIndex, actionNodesOrdered,
-                        actionNodesIndexes);
-                writeTransition(bb, node.getHomeTransition(), nextActionNodeIndex, actionNodesOrdered,
-                        actionNodesIndexes);
+                nextAction = writeTransition(bb, node.getOkTransition(), nextAction, actionsOrdered, actionsIndexes);
+                nextAction = writeTransition(bb, node.getHomeTransition(), nextAction, actionsOrdered, actionsIndexes);
 
                 // ControlSettings
                 ControlSettings ctrl = node.getControlSettings();
@@ -145,15 +143,15 @@ public class FsStoryPackWriter implements StoryPackWriter {
         }
 
         // Add actions to "li" index file
-        writeActionNodeIndex(fsp.getListIndex(), actionNodesOrdered, pack.getStageNodes());
+        writeActionListIndex(fsp.getListIndex(), actionsOrdered, pack.getStageNodes());
         // Add images in "rf" folder and "ri" index file
         writeMediaIndex(fsp.getImageFolder(), fsp.getImageIndex(), assets, imageHashOrdered);
         // Add sound in "sf" folder and "si" index file
         writeMediaIndex(fsp.getSoundFolder(), fsp.getSoundIndex(), assets, audioHashOrdered);
 
         // cleanup
-        Stream.of(actionNodesIndexes, assets).forEach(Map::clear);
-        Stream.of(actionNodesOrdered, imageHashOrdered, audioHashOrdered).forEach(Collection::clear);
+        Stream.of(actionsIndexes, assets).forEach(Map::clear);
+        Stream.of(actionsOrdered, imageHashOrdered, audioHashOrdered).forEach(Collection::clear);
     }
 
     private static void writeCypheredFile(Path path, byte[] byteArray) throws IOException {
@@ -263,16 +261,20 @@ public class FsStoryPackWriter implements StoryPackWriter {
         }
     }
 
-    private static void writeActionNodeIndex(Path indexFile, List<ActionNode> actionNodesOrdered,
+    private static void writeActionListIndex(Path indexFile, List<ActionNode> actionsOrdered,
             List<StageNode> stageNodes) throws IOException {
         try (ByteArrayOutputStream baos = new ByteArrayOutputStream()) {
-            for (ActionNode actionNode : actionNodesOrdered) {
+            for (ActionNode actionNode : actionsOrdered) {
+                int stageCount = actionNode.getOptions().size();
+                LOGGER.trace("Writing li : action {} has {} stages", actionNode.getUuid(), stageCount);
                 // Each option points to a stage node by index in Nodes Index file (ni)
+                ByteBuffer bb = ByteBuffer.allocate(stageCount * 4).order(ByteOrder.LITTLE_ENDIAN);
                 for (StageNode stageNode : actionNode.getOptions()) {
-                    // change int order for LITTLE_ENDIAN
-                    baos.write(Integer.reverse(stageNodes.indexOf(stageNode)));
+                    bb.putInt(stageNodes.indexOf(stageNode));
                 }
+                baos.write(bb.array());
             }
+            // write to li file
             writeCypheredFile(indexFile, baos.toByteArray());
         }
     }
@@ -295,24 +297,24 @@ public class FsStoryPackWriter implements StoryPackWriter {
         }
     }
 
-    private static int writeTransition(ByteBuffer bb, Transition transition, int nextActionNodeIndex,
-            List<ActionNode> actionNodesOrdered, Map<ActionNode, Integer> actionNodesIndexes) {
+    private static int writeTransition(ByteBuffer bb, Transition transition, int nextAction,
+            List<ActionNode> actionsOrdered, Map<ActionNode, Integer> actionsIndexes) {
         if (transition == null) {
             bb.putInt(-1).putInt(-1).putInt(-1);
-            return nextActionNodeIndex;
+            return nextAction;
         }
         ActionNode a = transition.getActionNode();
-        if (!actionNodesOrdered.contains(a)) {
-            actionNodesOrdered.add(a);
-            actionNodesIndexes.put(a, nextActionNodeIndex);
-            nextActionNodeIndex += a.getOptions().size();
+        if (!actionsOrdered.contains(a)) {
+            actionsOrdered.add(a);
+            actionsIndexes.put(a, nextAction);
+            nextAction += a.getOptions().size();
         }
         // Action node index in LI file (index 0 == first action node)
-        bb.putInt(actionNodesIndexes.get(a));
+        bb.putInt(actionsIndexes.get(a));
         // Number of options available
         bb.putInt(a.getOptions().size());
         // Menu option index (index 0 == first menu option)
         bb.putInt(transition.getOptionIndex());
-        return nextActionNodeIndex;
+        return nextAction;
     }
 }

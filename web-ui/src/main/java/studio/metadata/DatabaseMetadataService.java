@@ -178,8 +178,10 @@ public class DatabaseMetadataService {
     }
 
     private void writeDbs() throws IOException {
-        // write official db
-        writeDatabaseFile(dbOfficialPath, dbOfficialCache);
+        // write official db, if missing or older than 15 days
+        if (Files.notExists(dbOfficialPath) || olderThanDays(Files.getLastModifiedTime(dbOfficialPath), 15)) {
+            writeDatabaseFile(dbOfficialPath, dbOfficialCache);
+        }
         // Remove official packs from library database
         LOGGER.info("Clean official packs in library database");
         if (dbLibraryCache.keySet().removeAll(dbOfficialCache.keySet())) {

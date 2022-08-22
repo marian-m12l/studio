@@ -67,12 +67,14 @@ public class LibraryController {
     /** List library packs. */
     @GET
     @Path("packs")
-    public List<UuidPacksDTO> packs() {
-        long t1 = System.currentTimeMillis();
-        List<UuidPacksDTO> libraryPacks = libraryService.packs();
-        long t2 = System.currentTimeMillis();
-        LOGGER.info("Library packs scanned in {}ms", t2 - t1);
-        return libraryPacks;
+    public CompletionStage<List<UuidPacksDTO>> packs() {
+        return CompletableFuture.supplyAsync(() -> {
+            long t1 = System.currentTimeMillis();
+            List<UuidPacksDTO> libraryPacks = libraryService.packs();
+            long t2 = System.currentTimeMillis();
+            LOGGER.info("Library packs scanned in {}ms", t2 - t1);
+            return libraryPacks;
+        });
     }
 
     /** Download existing library pack. */

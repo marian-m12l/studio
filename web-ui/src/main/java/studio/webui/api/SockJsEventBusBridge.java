@@ -23,7 +23,7 @@ public class SockJsEventBusBridge {
         SockJSBridgeOptions options = new SockJSBridgeOptions().addOutboundPermitted(address);
 
         SockJSHandler sockHandler = SockJSHandler.create(vertx);
-        sockHandler.bridge(options, event -> {
+        Router subRouter = sockHandler.bridge(options, event -> {
             switch (event.type()) {
             case SOCKET_CREATED:
                 LOGGER.info("Sockjs open");
@@ -37,6 +37,6 @@ public class SockJsEventBusBridge {
             event.complete(true);
         });
         // add as route
-        router.route("/eventbus/*").handler(sockHandler);
+        router.route("/eventbus/*").subRouter(subRouter);
     }
 }
