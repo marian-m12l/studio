@@ -82,9 +82,7 @@ public class RawStoryPackReader implements StoryPackReader {
                     - BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE * 2);
 
             // Read main stage node UUID
-            long uuidLowBytes = dis.readLong();
-            long uuidHighBytes = dis.readLong();
-            metadata.setUuid(new UUID(uuidLowBytes, uuidHighBytes).toString());
+            metadata.setUuid(readUuid(dis));
             return metadata;
         }
     }
@@ -122,9 +120,9 @@ public class RawStoryPackReader implements StoryPackReader {
             // Transitions must be updated with the actual ActionNode
             Map<SectorAddr, List<Transition>> transitionsWithAction = new TreeMap<>();
             // Stage nodes / transitions reference action nodes, which are read after
-            Set<SectorAddr> actionNodesToVisit = new TreeSet<>();
+            Set<SectorAddr> actionNodes = new TreeSet<>();
             // Stage nodes reference assets, which are read after all nodes
-            Set<AssetAddr> assetAddrsToVisit = new TreeSet<>();
+            Set<AssetAddr> assetAddrs = new TreeSet<>();
 
             for (int i = 0; i < stages; i++) {
                 // Build stage node
@@ -132,21 +130,17 @@ public class RawStoryPackReader implements StoryPackReader {
                 stageNodes.put(new SectorAddr(i), stageNode);
 
                 // Reading sector i+2 : StageNode UUID
-                long uuidLowBytes = dis.readLong();
-                long uuidHighBytes = dis.readLong();
-                stageNode.setUuid(new UUID(uuidLowBytes, uuidHighBytes).toString());
+                stageNode.setUuid(readUuid(dis));
 
                 // Keep Asset addresses
-                readAssetAddr(AssetType.IMAGE, dis.readInt(), dis.readInt(), assetAddrsToVisit, stagesWithImage,
-                        stageNode);
-                readAssetAddr(AssetType.AUDIO, dis.readInt(), dis.readInt(), assetAddrsToVisit, stagesWithAudio,
-                        stageNode);
+                readAssetAddr(AssetType.IMAGE, dis.readInt(), dis.readInt(), assetAddrs, stagesWithImage, stageNode);
+                readAssetAddr(AssetType.AUDIO, dis.readInt(), dis.readInt(), assetAddrs, stagesWithAudio, stageNode);
 
                 // Transitions
                 stageNode.setOkTransition(readTransition(dis.readShort(), dis.readShort(), dis.readShort(),
-                        transitionsWithAction, actionNodesToVisit));
+                        transitionsWithAction, actionNodes));
                 stageNode.setHomeTransition(readTransition(dis.readShort(), dis.readShort(), dis.readShort(),
-                        transitionsWithAction, actionNodesToVisit));
+                        transitionsWithAction, actionNodes));
 
                 // Control settings
                 ControlSettings ctrl = new ControlSettings();
@@ -169,7 +163,7 @@ public class RawStoryPackReader implements StoryPackReader {
             // Read action nodes
             // We are positioned at the end of sector stages+1
             int currentOffset = stages;
-            for (SectorAddr actionNodeAddr : actionNodesToVisit) {
+            for (SectorAddr actionNodeAddr : actionNodes) {
                 // Skip to the beginning of the sector, if needed
                 while (actionNodeAddr.getOffset() > currentOffset) {
                     dis.skipBytes(SECTOR_SIZE);
@@ -204,7 +198,7 @@ public class RawStoryPackReader implements StoryPackReader {
             }
 
             // Read assets
-            for (AssetAddr assetAddr : assetAddrsToVisit) {
+            for (AssetAddr assetAddr : assetAddrs) {
                 // Skip to the beginning of the sector, if needed
                 while (assetAddr.getOffset() > currentOffset) {
                     dis.skipBytes(SECTOR_SIZE);
@@ -225,14 +219,15 @@ public class RawStoryPackReader implements StoryPackReader {
                 }
                 currentOffset += assetAddr.getSize();
             }
-            // Update storypack
-            sp.setNightModeAvailable(false);
-            sp.setUuid(stageNodes.get(new SectorAddr(0)).getUuid());
             sp.setStageNodes(List.copyOf(stageNodes.values()));
+            // night mode is not available on this firmware
+            sp.setNightModeAvailable(false);
+            // copy first node uuid
+            sp.setUuid(stageNodes.get(new SectorAddr(0)).getUuid());
 
             // cleanup
             Stream.of(stageNodes, stagesWithImage, stagesWithAudio, transitionsWithAction).forEach(Map::clear);
-            Stream.of(actionNodesToVisit, assetAddrsToVisit).forEach(Set::clear);
+            Stream.of(actionNodes, assetAddrs).forEach(Set::clear);
             return sp;
         }
     }
@@ -251,27 +246,27 @@ public class RawStoryPackReader implements StoryPackReader {
         return Optional.of(str.substring(0, firstNullChar));
     }
 
-    private static void readAssetAddr(AssetType type, int offset, int size, Set<AssetAddr> assetAddrsToVisit,
+    private static void readAssetAddr(AssetType type, int offset, int size, Set<AssetAddr> assetAddrs,
             Map<AssetAddr, List<StageNode>> stagesWithMedia, StageNode stageNode) {
         if (offset != -1) {
             // Asset must be visited
-            AssetAddr audioAssetAddr = new AssetAddr(type, offset, size);
-            assetAddrsToVisit.add(audioAssetAddr);
+            AssetAddr assetAddr = new AssetAddr(type, offset, size);
+            assetAddrs.add(assetAddr);
             // flag stageNode
-            List<StageNode> sw = stagesWithMedia.getOrDefault(audioAssetAddr, new ArrayList<>());
+            List<StageNode> sw = stagesWithMedia.getOrDefault(assetAddr, new ArrayList<>());
             sw.add(stageNode);
-            stagesWithMedia.put(audioAssetAddr, sw);
+            stagesWithMedia.put(assetAddr, sw);
         }
     }
 
     private static Transition readTransition(short offset, short count, short index,
-            Map<SectorAddr, List<Transition>> transitionsWithAction, Set<SectorAddr> actionNodesToVisit) {
+            Map<SectorAddr, List<Transition>> transitionsWithAction, Set<SectorAddr> actionNodes) {
         LOGGER.trace("Read {} transition", count);
         Transition transition = null;
         if (offset != -1) {
             // Action node must be visited
             SectorAddr actionNodeAddr = new SectorAddr(offset);
-            actionNodesToVisit.add(actionNodeAddr);
+            actionNodes.add(actionNodeAddr);
             transition = new Transition(null, index);
             List<Transition> twa = transitionsWithAction.getOrDefault(actionNodeAddr, new ArrayList<>());
             twa.add(transition);
@@ -282,12 +277,7 @@ public class RawStoryPackReader implements StoryPackReader {
 
     private static EnrichedNodeMetadata readEnrichedNodeMetadata(DataInputStream dis) throws IOException {
         Optional<String> maybeName = readString(dis, BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE);
-        Optional<String> maybeGroupId = Optional.empty();
-        long groupIdLowBytes = dis.readLong();
-        long groupIdHighBytes = dis.readLong();
-        if (groupIdLowBytes != 0 || groupIdHighBytes != 0) {
-            maybeGroupId = Optional.of(new UUID(groupIdLowBytes, groupIdHighBytes).toString());
-        }
+        Optional<String> maybeGroupId = Optional.ofNullable(readUuid(dis));
         Optional<EnrichedNodeType> maybeType = Optional.empty();
         byte nodeTypeByte = dis.readByte();
         if (nodeTypeByte != 0x00) {
@@ -302,6 +292,15 @@ public class RawStoryPackReader implements StoryPackReader {
         if (maybeName.isPresent() || maybeType.isPresent() || maybeGroupId.isPresent() || maybePosition.isPresent()) {
             return new EnrichedNodeMetadata(maybeName.orElse(null), maybeType.orElse(null), maybeGroupId.orElse(null),
                     maybePosition.orElse(null));
+        }
+        return null;
+    }
+
+    private static String readUuid(DataInputStream dis) throws IOException {
+        long uuidLowBytes = dis.readLong();
+        long uuidHighBytes = dis.readLong();
+        if (uuidLowBytes != 0 || uuidHighBytes != 0) {
+            return new UUID(uuidLowBytes, uuidHighBytes).toString();
         }
         return null;
     }

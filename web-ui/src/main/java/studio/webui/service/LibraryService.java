@@ -89,7 +89,7 @@ public class LibraryService {
                     .collect(Collectors.groupingBy(p -> p.getMetadata().getUuid()));
 
             // Converts metadata to Json
-            List<UuidPacksDTO> jsonMetasByUuid = metadataByUuid.entrySet().stream()
+            List<UuidPacksDTO> jsonMetasByUuid = metadataByUuid.entrySet().parallelStream()
                     // convert
                     .map(e -> {
                         // find first zip pack

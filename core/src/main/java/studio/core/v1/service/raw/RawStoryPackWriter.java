@@ -24,7 +24,6 @@ import java.util.Base64;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -88,7 +87,19 @@ public class RawStoryPackWriter implements StoryPackWriter {
             Map<SectorAddr, ActionNode> actionNodesMap = new TreeMap<>();
             Map<String, AssetAddr> assetsHashes = new TreeMap<>();
             Map<AssetAddr, byte[]> assetsData = new TreeMap<>();
-            prepareAssets(pack, actionNodesMap, assetsHashes, assetsData);
+
+            // offset
+            int nextFreeOffset = pack.getStageNodes().size();
+            // action nodes
+            for (Transition t : pack.transitions()) {
+                if (!actionNodesMap.containsValue(t.getActionNode())) {
+                    actionNodesMap.put(new SectorAddr(nextFreeOffset++), t.getActionNode());
+                }
+            }
+            // distinct images
+            nextFreeOffset = prepareAssets(AssetType.IMAGE, pack, nextFreeOffset, assetsHashes, assetsData);
+            // distinct audio
+            nextFreeOffset = prepareAssets(AssetType.AUDIO, pack, nextFreeOffset, assetsHashes, assetsData);
 
             // Write stage nodes (from sector 2)
             writeStageNodes(dos, pack.getStageNodes(), assetsHashes, actionNodesMap, enriched);
@@ -97,7 +108,7 @@ public class RawStoryPackWriter implements StoryPackWriter {
             int currentOffset = writeActionNode(dos, pack.getStageNodes(), actionNodesMap, enriched);
 
             // Write assets (images / audio)
-            for (Map.Entry<AssetAddr, byte[]> assetEntry : assetsData.entrySet()) {
+            for (var assetEntry : assetsData.entrySet()) {
                 // First sector to write
                 AssetAddr assetAddr = assetEntry.getKey();
                 // Skip to the beginning of the sector, if needed
@@ -124,55 +135,29 @@ public class RawStoryPackWriter implements StoryPackWriter {
         }
     }
 
-    private static void prepareAssets(StoryPack pack, Map<SectorAddr, ActionNode> actionNodesMap,
+    private static int prepareAssets(AssetType assetType, StoryPack pack, int nextFreeOffset,
             Map<String, AssetAddr> assetsHashes, Map<AssetAddr, byte[]> assetsData) {
-        // offset
-        int nextFreeOffset = pack.getStageNodes().size();
-        // action nodes
-        List<Transition> transitions = pack.transitions();
-        for (Transition t : transitions) {
-            if (!actionNodesMap.containsValue(t.getActionNode())) {
-                actionNodesMap.put(new SectorAddr(nextFreeOffset++), t.getActionNode());
-            }
-        }
-        // distinct images
-        Set<MediaAsset> images = new HashSet<>(pack.assets(true));
-        for (MediaAsset image : images) {
-            byte[] imageData = image.getRawData();
-            String assetHash = SecurityUtils.sha1Hex(imageData);
-            if (MediaAssetType.BMP != image.getType()) {
+        boolean isImage = (AssetType.IMAGE == assetType);
+        // distinct media
+        for (MediaAsset asset : new HashSet<>(pack.assets(isImage))) {
+            byte[] data = asset.getRawData();
+            String hash = SecurityUtils.sha1Hex(data);
+            MediaAssetType targetType = isImage ? MediaAssetType.BMP : MediaAssetType.WAV;
+            if (targetType != asset.getType()) {
                 throw new StoryTellerException(
                         "Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
             }
-            int imageSize = imageData.length;
-            int imageSectors = imageSize / SECTOR_SIZE;
-            if (imageSize % SECTOR_SIZE > 0) {
-                imageSectors++;
+            int size = data.length;
+            int sectors = size / SECTOR_SIZE;
+            if (size % SECTOR_SIZE > 0) {
+                sectors++;
             }
-            AssetAddr addr = new AssetAddr(AssetType.IMAGE, nextFreeOffset, imageSectors);
-            assetsHashes.put(assetHash, addr);
-            assetsData.put(addr, imageData);
-            nextFreeOffset += imageSectors;
+            AssetAddr addr = new AssetAddr(assetType, nextFreeOffset, sectors);
+            assetsHashes.put(hash, addr);
+            assetsData.put(addr, data);
+            nextFreeOffset += sectors;
         }
-        // distinct audio
-        Set<MediaAsset> audios = new HashSet<>(pack.assets(false));
-        for (MediaAsset audio : audios) {
-            byte[] audioData = audio.getRawData();
-            String assetHash = SecurityUtils.sha1Hex(audioData);
-            if (MediaAssetType.WAV != audio.getType()) {
-                throw new StoryTellerException(
-                        "Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
-            }
-            int audioSize = audioData.length;
-            int audioSectors = audioSize / SECTOR_SIZE;
-            if (audioSize % SECTOR_SIZE > 0) {
-                audioSectors++;
-            }
-            AssetAddr addr = new AssetAddr(AssetType.AUDIO, nextFreeOffset, audioSectors);
-            assetsHashes.put(assetHash, addr);
-            assetsData.put(addr, audioData);
-            nextFreeOffset += audioSectors;
-        }
+        return nextFreeOffset;
     }
 
     private static void writeStageNodes(DataOutputStream dos, List<StageNode> stageNodes,
@@ -243,7 +228,7 @@ public class RawStoryPackWriter implements StoryPackWriter {
     private static int writeActionNode(DataOutputStream dos, List<StageNode> stageNodes,
             Map<SectorAddr, ActionNode> actionNodesMap, boolean enriched) throws IOException {
         int currentOffset = stageNodes.size();
-        for (Map.Entry<SectorAddr, ActionNode> actionNodeEntry : actionNodesMap.entrySet()) {
+        for (var actionNodeEntry : actionNodesMap.entrySet()) {
             // Sector to write
             SectorAddr actionNodeAddr = actionNodeEntry.getKey();
             // Add padding to the beginning of the sector, if needed
