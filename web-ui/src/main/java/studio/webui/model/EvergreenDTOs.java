@@ -14,6 +14,7 @@ import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.NoArgsConstructor;
 
 public interface EvergreenDTOs {
 
@@ -65,17 +66,20 @@ public interface EvergreenDTOs {
 
     @Getter
     @AllArgsConstructor
+    @NoArgsConstructor
     final class CommitDto {
         private Commit commit;
 
         @Getter
         @AllArgsConstructor
+        @NoArgsConstructor
         public static final class Commit {
             private Committer committer;
         }
 
         @Getter
         @AllArgsConstructor
+        @NoArgsConstructor
         public static final class Committer {
             private String date;
         }

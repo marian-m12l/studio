@@ -65,7 +65,7 @@ public class VorbisEncoder {
 
     private static final int READ_BLOCK_SIZE = 4096;
     // need to randomize seed
-    private static final SecureRandom prng = new SecureRandom();
+    private static SecureRandom PRNG;
 
     private VorbisEncoder() {
         throw new IllegalArgumentException("Utility class");
@@ -73,7 +73,9 @@ public class VorbisEncoder {
 
     public static byte[] encode(InputStream is) throws VorbisEncodingException {
         LOGGER.debug("Start encoding with {} channels, {}Hz, quality {}", CHANNELS, RATE, QUALITY);
-
+        if (PRNG == null) {
+            PRNG = new SecureRandom();
+        }
         // struct that stores all the static vorbis bitstream settings
         Jvorbis_info vi = new Jvorbis_info();
         vi.vorbis_info_init();
@@ -98,7 +100,7 @@ public class VorbisEncoder {
 
         // take physical pages, weld into a logical stream of packets
         Jogg_stream_state os = new Jogg_stream_state();
-        os.ogg_stream_init(prng.nextInt(256));
+        os.ogg_stream_init(PRNG.nextInt(256));
 
         LOGGER.trace("Writing header.");
         Jogg_packet header = new Jogg_packet();

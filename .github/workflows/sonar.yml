@@ -1,7 +1,7 @@
 name: Sonar
 on:
   push:
-    branches-ignore: [ master ]
+    branches-ignore: [ master, branch-quarkus-native ]
   pull_request:
     types: [ opened, synchronize, reopened ]
 jobs:

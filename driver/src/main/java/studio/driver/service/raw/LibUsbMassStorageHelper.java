@@ -215,7 +215,7 @@ public class LibUsbMassStorageHelper {
     public static final short SECTOR_SIZE = 512;
 
     // To generate random packet tags
-    private static final SecureRandom prng = new SecureRandom();
+    private static SecureRandom prng;
 
     /**
      * Execute the given function on a libusb handle for the given device. Opens and frees the handle and interface.
@@ -342,6 +342,10 @@ public class LibUsbMassStorageHelper {
     /** Binary command to usb device. */
     private static ByteBuffer createCommandWrapper(byte[] commands, CBWDirection direction, int offsetSector,
             short nbSectors) {
+        // pseudo singleton for native
+        if(prng == null) {
+            prng = new SecureRandom();
+        }
         ByteBuffer bb = ByteBuffer.allocateDirect(MASS_STORAGE_CBW_LENGTH);
         // CBW signature (4 bytes)
         bb.put(MASS_STORAGE_CBW_SIGNATURE);

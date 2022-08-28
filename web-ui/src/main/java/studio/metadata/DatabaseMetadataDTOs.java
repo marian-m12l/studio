@@ -20,6 +20,8 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.PropertyNamingStrategies;
 import com.fasterxml.jackson.databind.annotation.JsonNaming;
 
+import io.quarkus.runtime.annotations.RegisterForReflection;
+
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.Getter;
@@ -44,6 +46,7 @@ public interface DatabaseMetadataDTOs {
         PacksResponse packs(@HeaderParam("X-AUTH-TOKEN") String token);
     }
 
+    @RegisterForReflection
     @Data
     @NoArgsConstructor
     @AllArgsConstructor

@@ -1,0 +1,89 @@
+name: Native
+on:
+  push:
+    branches-ignore: [ master ]
+  pull_request:
+    types: [ opened, synchronize, reopened ]
+jobs:
+  build-jar:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+        with:
+          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
+
+      - name: Cache JS
+        uses: actions/cache@v3
+        with:
+          path: web-ui/javascript
+          key: studio-js-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: 17
+          cache: maven
+
+      - name: Build Maven Native src
+        run: mvn verify -B -Pnative2
+
+      - name: Upload Native src
+        uses: actions/upload-artifact@v3
+        with:
+          name: studio-native-src
+          path: web-ui/target/native-sources
+
+  build-native:
+    needs: build-jar
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest, macOS-latest]
+        java: [11]
+
+    steps:
+      - name: Set up GraalVM
+        uses: graalvm/setup-graalvm@v1
+        with:
+          version: latest
+          java-version: ${{ matrix.java }}
+          components: native-image
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: (Windows) Set up compiler
+        uses: ilammy/msvc-dev-cmd@v1.4.1
+        if: ${{ runner.os == 'Windows' }}
+
+      - name: Download Native src
+        uses: actions/download-artifact@v3
+        with:
+          name: studio-native-src
+
+      - name: (Windows) Build native
+        run: |
+          native-image $(cat native-image.args).Split()
+          "artifact_name=$((ls *.exe).Name)" >> $env:GITHUB_ENV
+        if: ${{ runner.os == 'Windows' }}
+
+      - name: (*nix) Build native
+        run: |
+          native-image $(cat native-image.args)
+          echo "artifact_name=$(ls *runner)" >> $GITHUB_ENV
+        if: ${{ runner.os != 'Windows' }}
+
+      - name: Compress exec
+        uses: svenstaro/upx-action@v2
+        with:
+          file: ${{ env.artifact_name }}
+          args: -7
+          strip: false
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: studio-1.0-${{runner.os}}
+          path: |
+            *runner
+            *.exe
+            *.dll
