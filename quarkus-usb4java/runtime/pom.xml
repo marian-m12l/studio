@@ -18,6 +18,10 @@
             <groupId>org.usb4java</groupId>
             <artifactId>usb4java</artifactId>
         </dependency>
+        <dependency>
+            <groupId>io.github.dsheirer</groupId>
+            <artifactId>libusb4java-darwin-aarch64</artifactId>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

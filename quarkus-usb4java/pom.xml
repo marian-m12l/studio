@@ -41,6 +41,12 @@
                 <artifactId>usb4java</artifactId>
                 <version>${usb4java.version}</version>
             </dependency>
+            <!-- MacOS M1 -->
+            <dependency>
+                <groupId>io.github.dsheirer</groupId>
+                <artifactId>libusb4java-darwin-aarch64</artifactId>
+                <version>1.3.1</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
     <build>
@@ -58,20 +64,4 @@
             </plugins>
         </pluginManagement>
     </build>
-    <!--
-    <profiles>
-        <profile>
-            <id>it</id>
-            <activation>
-                <property>
-                    <name>performRelease</name>
-                    <value>!true</value>
-                </property>
-            </activation>
-            <modules>
-                <module>integration-tests</module>
-            </modules>
-        </profile>
-    </profiles>
--->
 </project>

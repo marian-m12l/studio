@@ -9,10 +9,6 @@
     <artifactId>quarkus-usb4java-integration-tests</artifactId>
     <name>Quarkus - usb4java - Integration Tests</name>
     <dependencies>
-        <!-- <dependency>
-            <groupId>io.quarkus</groupId>
-            <artifactId>quarkus-resteasy</artifactId>
-        </dependency>-->
         <dependency>
             <groupId>io.quarkiverse.usb4java</groupId>
             <artifactId>quarkus-usb4java</artifactId>
@@ -23,11 +19,6 @@
             <artifactId>quarkus-junit5</artifactId>
             <scope>test</scope>
         </dependency>
-      <!-- <dependency>
-            <groupId>io.rest-assured</groupId>
-            <artifactId>rest-assured</artifactId>
-            <scope>test</scope>
-        </dependency>-->
     </dependencies>
     <build>
         <plugins>

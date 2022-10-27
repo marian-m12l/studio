@@ -4,7 +4,7 @@
 name: Nightly Build
 on:
   push:
-    branches: [ master ]
+    branches: [ '*' ]
   repository_dispatch:
     types: [ trigger-nightly ]
 
@@ -16,10 +16,10 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, windows-latest, macOS-latest]
-        java: [ 11, 17 ]
+        java: [ 17 ]
         include:
           - os: ubuntu-latest
-            java: 11
+            java: 17
             mode: deploy
 
     steps:
@@ -30,9 +30,7 @@ jobs:
 
     - name: Use GNU tar
       shell: cmd
-      run: |
-        echo "Adding GNU tar to PATH"
-        echo C:\Program Files\Git\usr\bin>>"%GITHUB_PATH%"
+      run: echo C:\Program Files\Git\usr\bin>>"%GITHUB_PATH%"
       if: ${{ runner.os == 'Windows' }}
 
     - name: Set up JDK ${{ matrix.java }}
@@ -71,20 +69,3 @@ jobs:
         report_paths: '**/surefire-reports/TEST-*.xml'
         check_name: test (${{ matrix.os }}, ${{ matrix.java }})
       if: always()
-
-    - name: Package with Maven
-      run: mvn package -B '-DskipTests'
-      if: matrix.mode == 'deploy'
-
-    - name: Upload artifact
-      uses: actions/upload-artifact@v3
-      with:
-        path: web-ui/target/*.zip
-      if: matrix.mode == 'deploy'
-
-    - name: Release
-      uses: softprops/action-gh-release@v1
-      with:
-        files: web-ui/target/*.zip
-      if: matrix.mode == 'deploy'
-      if: startsWith(github.ref, 'refs/tags/')

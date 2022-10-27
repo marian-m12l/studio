@@ -1,7 +1,7 @@
 name: Native
 on:
   push:
-    branches-ignore: [ master ]
+    branches: [ '*' ]
   pull_request:
     types: [ opened, synchronize, reopened ]
 jobs:
