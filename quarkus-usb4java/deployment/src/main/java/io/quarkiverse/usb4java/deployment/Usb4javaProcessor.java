@@ -1,12 +1,10 @@
 package io.quarkiverse.usb4java.deployment;
 
+import static io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem.allProvidersFromClassPath;
+
 import java.io.IOException;
-import java.util.stream.Stream;
-
-import javax.sound.sampled.spi.AudioFileReader;
-import javax.sound.sampled.spi.AudioFileWriter;
-import javax.sound.sampled.spi.FormatConversionProvider;
-
+import java.util.stream.Stream; 
+import org.jboss.logging.Logger;
 import io.quarkiverse.usb4java.runtime.Usb4javaRecorder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -23,6 +21,8 @@ class Usb4javaProcessor {
 
     private static final String FEATURE = "usb4java";
     private static final String PKG = "org.usb4java.";
+
+    private static final Logger LOG = Logger.getLogger(Usb4javaProcessor.class);
 
     @BuildStep
     FeatureBuildItem feature() {
@@ -41,7 +41,7 @@ class Usb4javaProcessor {
         } else {
             src = Usb4javaLibraryUtil.extractLibrary();
         }
-        System.out.println("Libusb: " + src);
+        LOG.info("Libusb: " + src);
         nativeResources.produce(new NativeImageResourceBuildItem(src));
 
         // We don't want to load usb4java during build
@@ -92,11 +92,9 @@ class Usb4javaProcessor {
     void audioServiceLoader(BuildProducer<ServiceProviderBuildItem> serviceProviders) {
         // need local META-INF/services/ because native can't load java.desktop module
         // services implementation list copied from module-info.java
-        Stream.of(AudioFileReader.class, AudioFileWriter.class, FormatConversionProvider.class) //
-                .forEach(c -> {
-                    var sbi = ServiceProviderBuildItem.allProvidersFromClassPath(c.getName());
-                    serviceProviders.produce(sbi);
-                });
+        serviceProviders.produce(allProvidersFromClassPath("javax.sound.sampled.spi.AudioFileReader"));
+        serviceProviders.produce(allProvidersFromClassPath("javax.sound.sampled.spi.AudioFileWriter"));
+        serviceProviders.produce(allProvidersFromClassPath("javax.sound.sampled.spi.FormatConversionProvider"));
     }
 
     @BuildStep

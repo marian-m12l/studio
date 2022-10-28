@@ -15,6 +15,7 @@ import java.nio.file.Path;
 import java.util.Arrays;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
+import org.eclipse.microprofile.config.ConfigProvider;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,8 +36,9 @@ import studio.webui.model.LibraryDTOs.SuccessPathDTO;
 @ExtendWith(TestNameExtension.class)
 class LibraryControllerTest {
 
-    @ConfigProperty(name = "studio.library")
-    Path libraryPath;
+//    @ConfigProperty(name = "studio.library")
+//    Path libraryPath;
+    Path libraryPath = ConfigProvider.getConfig().getValue("studio.library", Path.class);
 
     // test pack name
     private static final String TEST_PACK_NAME = "SimplifiedSamplePack.zip";

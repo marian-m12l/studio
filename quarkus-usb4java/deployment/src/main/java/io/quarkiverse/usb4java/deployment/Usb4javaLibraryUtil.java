@@ -6,6 +6,10 @@ package io.quarkiverse.usb4java.deployment;
  */
 public class Usb4javaLibraryUtil {
 
+    private Usb4javaLibraryUtil() {
+        // empty
+    }
+
     public static String extractLibrary() {
         final String platform = getPlatform();
         final String lib = getLibName();
@@ -25,7 +29,7 @@ public class Usb4javaLibraryUtil {
      *
      * @return The architecture name. Never null.
      */
-    private static String getPlatform() {
+    public static String getPlatform() {
         return getOS() + "-" + getArch();
     }
 
@@ -35,7 +39,7 @@ public class Usb4javaLibraryUtil {
      *
      * @return The usb4java native library name. Never null.
      */
-    private static String getLibName() {
+    public static String getLibName() {
         return "libusb4java." + getExt();
     }
 

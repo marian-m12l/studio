@@ -22,6 +22,12 @@
             <groupId>io.github.dsheirer</groupId>
             <artifactId>libusb4java-darwin-aarch64</artifactId>
         </dependency>
+        <!-- AWT -->
+        <dependency>
+            <groupId>org.graalvm.nativeimage</groupId>
+            <artifactId>svm</artifactId>
+            <scope>provided</scope>
+        </dependency>
     </dependencies>
     <build>
         <plugins>

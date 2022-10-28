@@ -5,10 +5,10 @@ import org.junit.jupiter.api.Test;
 import io.quarkus.test.junit.QuarkusIntegrationTest;
 
 @QuarkusIntegrationTest
-public class NativeUsb4javaIT {// extends Usb4javaTest {
+class NativeUsb4javaIT {// extends Usb4javaTest {
 
     @Test
-    public void testBasic() {
+    void testBasic() {
         System.out.println("Started");
     }
 }

@@ -6,10 +6,8 @@
 
 package studio.webui;
 
-import java.awt.Desktop;
 import java.io.IOException;
-import java.net.URI;
-import java.net.URISyntaxException;
+import java.net.URL;
 
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
@@ -39,20 +37,31 @@ public class Studio {
         String host;
 
         @ConfigProperty(name = "studio.port")
-        String port;
+        Integer port;
 
         @ConfigProperty(name = "studio.open.browser", defaultValue = "false")
         boolean openBrowser;
 
         void init(@Observes StartupEvent se) {
             // Automatically open URL in browser, unless instructed otherwise
-            if (openBrowser && Desktop.isDesktopSupported()) {
-                LOGGER.info("Opening URL in default browser...");
-                try {
-                    Desktop.getDesktop().browse(new URI("http://" + host + ":" + port));
-                } catch (IOException | URISyntaxException e) {
-                    LOGGER.error("Failed to open URL in default browser", e);
+            if (!openBrowser) {
+                return;
+            }
+            String os = System.getProperty("os.name");
+            ProcessBuilder pb = new ProcessBuilder();
+            try {
+                String url = new URL("http", host, port, "/").toString();
+                LOGGER.info("Opening URL {} in default browser...", url);
+                if (os.startsWith("Mac OS")) {
+                    pb.command("open", url);
+                } else if (os.startsWith("Windows")) {
+                    pb.command("rundll32", "url.dll,FileProtocolHandler", url);
+                } else { // unix or linux
+                    pb.command("xdg-open", url);
                 }
+                pb.start();
+            } catch (IOException e) {
+                LOGGER.error("Failed to open URL in default browser", e);
             }
         }
     }

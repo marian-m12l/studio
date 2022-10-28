@@ -8,7 +8,6 @@ import io.quarkus.runtime.annotations.Recorder;
 public class Usb4javaRecorder {
 
     public void loadUsb4javaLibrary() {
-        System.out.println("Loading libusb4java");
         Loader.load();
     }
 }

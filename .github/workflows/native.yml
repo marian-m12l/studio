@@ -4,19 +4,40 @@ on:
     branches: [ '*' ]
   pull_request:
     types: [ opened, synchronize, reopened ]
+concurrency: 
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
-  build-jar:
+  build-front:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
-        with:
-          fetch-depth: 0  # Shallow clones should be disabled for a better relevancy of analysis
 
-      - name: Cache JS
-        uses: actions/cache@v3
+      - uses: actions/setup-node@v3
         with:
-          path: web-ui/javascript
+          node-version: 12
+
+      - uses: actions/cache@v3
+        with:
+          path: web-ui/javascript/
           key: studio-js-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Run yarn
+        working-directory: web-ui/javascript/
+        run: |
+           yarn install --frozen-lockfile
+           yarn build
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: studio-front
+          path: web-ui/javascript/build/
+
+  build-jar:
+    needs: build-front
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
 
       - name: Set up JDK 17
         uses: actions/setup-java@v3
@@ -25,65 +46,110 @@ jobs:
           java-version: 17
           cache: maven
 
-      - name: Build Maven Native src
-        run: mvn verify -B -Pnative2
-
-      - name: Upload Native src
-        uses: actions/upload-artifact@v3
-        with:
-          name: studio-native-src
-          path: web-ui/target/native-sources
-
-  build-native:
-    needs: build-jar
-    runs-on: ${{ matrix.os }}
-    strategy:
-      matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
-        java: [11]
-
-    steps:
-      - name: Set up GraalVM
-        uses: graalvm/setup-graalvm@v1
-        with:
-          version: latest
-          java-version: ${{ matrix.java }}
-          components: native-image
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: (Windows) Set up compiler
-        uses: ilammy/msvc-dev-cmd@v1.4.1
-        if: ${{ runner.os == 'Windows' }}
-
-      - name: Download Native src
+      - name: Download JS front
         uses: actions/download-artifact@v3
         with:
-          name: studio-native-src
+          name: studio-front
+          path: web-ui/javascript/build/
 
-      - name: (Windows) Build native
+      - name: Build Maven Jar
+        run: mvn install -B -DskipTests -Pide
+
+      - name: Upload Quarkus app
+        uses: actions/upload-artifact@v3
+        with:
+          name: studio-app
+          path: web-ui/target/quarkus-app
+
+  build-native:
+    needs: build-front
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # GraalVM: Oracle, Mandrel or Liberica
+          # Mandrel (mac): no support
+          # Upx support (win): only<22, see https://github.com/oracle/graal/issues/4340
+          # AWT support (win & mac): only Liberica>22 see https://bell-sw.com/announcements/2022/08/05/liberica-native-image-kit-22-2-0-and-21-3-3-builds-are-out/#create-a-native-image-for-swingset2-app-linux-and-macos
+
+          - os: ubuntu-latest
+            jdk-suffix: linux-amd64.tar.gz
+            native-cmd: |
+              mvn verify -B -Pnative -Pide -DskipTests
+              echo "artifact_name=$(ls web-ui/target/*runner)" >> $GITHUB_ENV
+
+          - os: macOS-latest
+            jdk-suffix: macos-amd64.tar.gz
+            native-cmd: |
+              mvn verify -B -Pnative -Pide -DskipTests
+              echo "artifact_name=$(ls web-ui/target/*runner)" >> $GITHUB_ENV
+
+          - os: windows-latest
+            jdk-suffix: windows-amd64.zip
+            native-cmd: |
+              mvn verify -B -Pnative -Pide -DskipTests
+              "artifact_name=$((ls web-ui/target/*.exe).FullName)" >> $env:GITHUB_ENV
+              cp web-ui/target/studio-web-ui-quarkus-SNAPSHOT-native-image-source-jar/*.dll web-ui/target/
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Use GNU tar
         run: |
-          native-image $(cat native-image.args).Split()
-          "artifact_name=$((ls *.exe).Name)" >> $env:GITHUB_ENV
+          "$env:ProgramFiles/Git/usr/bin" >> $env:GITHUB_PATH
         if: ${{ runner.os == 'Windows' }}
 
-      - name: (*nix) Build native
-        run: |
-          native-image $(cat native-image.args)
-          echo "artifact_name=$(ls *runner)" >> $GITHUB_ENV
-        if: ${{ runner.os != 'Windows' }}
+      - name: Download Liberica NIK
+        env:
+          liberica-url: https://download.bell-sw.com/vm/22.3.0/bellsoft-liberica-vm-core-openjdk17.0.5+8-22.3.0+2-${{ matrix.jdk-suffix }}
+        run: curl -sLo ${{ runner.temp }}/${{ matrix.jdk-suffix }} ${{ env.liberica-url }}
+
+      - name: Set up GraalVM
+        uses: actions/setup-java@v3
+        with:
+          java-version: 17
+          distribution: jdkfile
+          jdkFile: ${{ runner.temp }}/${{ matrix.jdk-suffix }}
+          cache: maven
+
+      - name: (Windows) Set up compiler
+        uses: ilammy/msvc-dev-cmd@v1
+        if: ${{ runner.os == 'Windows' }}
+
+      - name: Download JS front
+        uses: actions/download-artifact@v3
+        with:
+          name: studio-front
+          path: web-ui/javascript/build/
+
+      - name: Build native
+        run: ${{ matrix.native-cmd }}
 
       - name: Compress exec
         uses: svenstaro/upx-action@v2
         with:
           file: ${{ env.artifact_name }}
-          args: -7
+          args: '-7'
           strip: false
+        if: ${{ runner.os != 'Windows' }}
 
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
           name: studio-1.0-${{runner.os}}
           path: |
-            *runner
-            *.exe
-            *.dll
+            web-ui/target/*runner
+            web-ui/target/*.exe
+            web-ui/target/*.dll
+
+      - name: Test native
+        run: mvn test-compile failsafe:integration-test -B -Pnative -Pide -DskipITs=false
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v3
+        with:
+          report_paths: '**/failsafe-reports/TEST-*.xml'
+          check_name: IT (${{ matrix.os }})
+        if: always()

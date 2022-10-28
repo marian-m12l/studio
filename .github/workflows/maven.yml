@@ -1,13 +1,15 @@
 # This workflow will build a Java project with Maven
 # For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
 
-name: Nightly Build
+name: Sonar
 on:
   push:
     branches: [ '*' ]
   repository_dispatch:
     types: [ trigger-nightly ]
-
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 jobs:
   build:
     runs-on: ${{ matrix.os }}
@@ -15,11 +17,9 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macOS-latest]
-        java: [ 17 ]
+        os: [windows-latest, macOS-latest]
         include:
           - os: ubuntu-latest
-            java: 17
             mode: deploy
 
     steps:
@@ -28,16 +28,11 @@ jobs:
       with:
         fetch-depth: 0  # Shallow clone
 
-    - name: Use GNU tar
-      shell: cmd
-      run: echo C:\Program Files\Git\usr\bin>>"%GITHUB_PATH%"
-      if: ${{ runner.os == 'Windows' }}
-
-    - name: Set up JDK ${{ matrix.java }}
+    - name: Set up JDK 17
       uses: actions/setup-java@v3
       with:
         distribution: temurin
-        java-version: ${{ matrix.java }}
+        java-version: 17
         cache: maven
 
     - name: Test with Maven
@@ -49,7 +44,6 @@ jobs:
       with:
         path: ~/.sonar/cache
         key: ${{ runner.os }}-sonar
-        restore-keys: ${{ runner.os }}-sonar
       if: matrix.mode == 'deploy'
 
     - name: Sonar analyze
@@ -57,7 +51,7 @@ jobs:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
         SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
         MVN_SONAR: ${{ 'org.sonarsource.scanner.maven:sonar-maven-plugin' }}
-        MVN_JACOCO: ${{ 'org.jacoco:jacoco-maven-plugin:0.8.5' }}
+        MVN_JACOCO: ${{ 'org.jacoco:jacoco-maven-plugin:0.8.8' }}
         MVN_PARAMS: '-Pide -Dmaven.test.failure.ignore=true -Dsonar.projectKey=kairoh_studio'
       # Ide profile to skip javascript 
       run: mvn -B ${MVN_JACOCO}:prepare-agent verify ${MVN_JACOCO}:report ${MVN_SONAR}:sonar ${MVN_PARAMS}
