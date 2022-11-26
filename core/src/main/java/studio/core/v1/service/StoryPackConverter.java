@@ -3,7 +3,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
 package studio.core.v1.service;
 
 import java.io.ByteArrayInputStream;
@@ -195,50 +194,40 @@ public class StoryPackConverter {
         }));
     }
 
+    private enum MediaGroup {
+       AUDIO, IMAGE;
+    }
+
     private static void processImageAssets(StoryPack storyPack, MediaAssetType targetType,
             Function<MediaAsset, byte[]> imageProcessor) {
-        // Cache prepared assets bytes
-        Map<String, byte[]> assets = new ConcurrentHashMap<>();
-        List<MediaAsset> medias = storyPack.assets(true);
-        AtomicInteger i = new AtomicInteger(0);
-
-        // Multi-threaded processing : images
-        medias.parallelStream().forEach(StoppingConsumer.stopped(a -> {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Image from node {}/{} [{}]", i.incrementAndGet(), medias.size(),
-                        Thread.currentThread().getName());
-            }
-            String assetHash = a.findHash();
-            // Update data (converted if needed)
-            a.setRawData(assets.computeIfAbsent(assetHash, s -> imageProcessor.apply(a)));
-            // force type
-            a.setType(targetType);
-        }));
-        // Clean cache
-        assets.clear();
+       processAssets(MediaGroup.IMAGE, storyPack, targetType, imageProcessor);
     }
 
     private static void processAudioAssets(StoryPack storyPack, MediaAssetType targetType,
             Function<MediaAsset, byte[]> audioProcessor) {
+       processAssets(MediaGroup.AUDIO, storyPack, targetType, audioProcessor);
+    }
+
+    private static void processAssets(MediaGroup mg, StoryPack storyPack, MediaAssetType targetType,
+            Function<MediaAsset, byte[]> processor) {
         // Cache prepared assets bytes
         Map<String, byte[]> assets = new ConcurrentHashMap<>();
-        List<MediaAsset> medias = storyPack.assets(false);
+        List<MediaAsset> medias = storyPack.assets(mg == MediaGroup.IMAGE);
         AtomicInteger i = new AtomicInteger(0);
 
-        // Multi-threaded processing : audio
+        // Multi-threaded processing
         medias.parallelStream().forEach(StoppingConsumer.stopped(a -> {
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("Audio from node {}/{} [{}]", i.incrementAndGet(), medias.size(),
+                LOGGER.debug("{} from node {}/{} [{}]", mg, i.incrementAndGet(), medias.size(),
                         Thread.currentThread().getName());
             }
             String assetHash = a.findHash();
             // Update data (converted if needed)
-            a.setRawData(assets.computeIfAbsent(assetHash, s -> audioProcessor.apply(a)));
+            a.setRawData(assets.computeIfAbsent(assetHash, s -> processor.apply(a)));
             // force type
             a.setType(targetType);
         }));
         // Clean cache
         assets.clear();
     }
-
 }
