@@ -36,6 +36,10 @@ public class StoryPackConverter {
 
     private static final Logger LOGGER = LogManager.getLogger(StoryPackConverter.class);
 
+    private enum MediaGroup {
+       AUDIO, IMAGE;
+    }
+
     private Path libraryPath;
     private Path tmpDirPath;
 
@@ -110,7 +114,7 @@ public class StoryPackConverter {
 
     private static void processCompressed(StoryPack storyPack) {
         // Image
-        processImageAssets(storyPack, MediaAssetType.PNG, ThrowingFunction.unchecked(ia -> {
+        processAssets(storyPack, MediaGroup.IMAGE, MediaAssetType.PNG, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
             if (MediaAssetType.BMP == ia.getType()) {
                 LOGGER.debug("Compressing BMP image asset into PNG");
@@ -119,7 +123,7 @@ public class StoryPackConverter {
             return imageData;
         }));
         // Audio
-        processAudioAssets(storyPack, MediaAssetType.OGG, ThrowingFunction.unchecked(aa -> {
+        processAssets(storyPack, MediaGroup.AUDIO, MediaAssetType.OGG, ThrowingFunction.unchecked(aa -> {
             byte[] audioData = aa.getRawData();
             if (MediaAssetType.WAV == aa.getType()) {
                 LOGGER.debug("Compressing WAV audio asset into OGG");
@@ -131,7 +135,7 @@ public class StoryPackConverter {
 
     private static void processUncompressed(StoryPack storyPack) {
         // Image
-        processImageAssets(storyPack, MediaAssetType.BMP, ThrowingFunction.unchecked(ia -> {
+        processAssets(storyPack, MediaGroup.IMAGE, MediaAssetType.BMP, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
             // Convert from 4-bits depth / RLE encoding BMP
             if (MediaAssetType.BMP == ia.getType() && imageData[28] == 0x04 && imageData[30] == 0x02) {
@@ -145,7 +149,7 @@ public class StoryPackConverter {
             return imageData;
         }));
         // Audio
-        processAudioAssets(storyPack, MediaAssetType.WAV, ThrowingFunction.unchecked(aa -> {
+        processAssets(storyPack, MediaGroup.AUDIO, MediaAssetType.WAV, ThrowingFunction.unchecked(aa -> {
             byte[] audioData = aa.getRawData();
             if (MediaAssetType.OGG == aa.getType()) {
                 LOGGER.debug("Uncompressing OGG audio asset into WAV");
@@ -161,7 +165,7 @@ public class StoryPackConverter {
 
     private static void processFirmware2dot4(StoryPack storyPack) {
         // Image
-        processImageAssets(storyPack, MediaAssetType.BMP, ThrowingFunction.unchecked(ia -> {
+        processAssets(storyPack, MediaGroup.IMAGE, MediaAssetType.BMP, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
             // Convert to 4-bits depth / RLE encoding BMP
             if (MediaAssetType.BMP != ia.getType() || imageData[28] != 0x04 || imageData[30] != 0x02) {
@@ -171,7 +175,7 @@ public class StoryPackConverter {
             return imageData;
         }));
         // Audio
-        processAudioAssets(storyPack, MediaAssetType.MP3, ThrowingFunction.unchecked(aa -> {
+        processAssets(storyPack, MediaGroup.AUDIO, MediaAssetType.MP3, ThrowingFunction.unchecked(aa -> {
             byte[] audioData = aa.getRawData();
             if (MediaAssetType.MP3 != aa.getType()) {
                 LOGGER.debug("Converting audio asset into MP3");
@@ -194,21 +198,7 @@ public class StoryPackConverter {
         }));
     }
 
-    private enum MediaGroup {
-       AUDIO, IMAGE;
-    }
-
-    private static void processImageAssets(StoryPack storyPack, MediaAssetType targetType,
-            Function<MediaAsset, byte[]> imageProcessor) {
-       processAssets(MediaGroup.IMAGE, storyPack, targetType, imageProcessor);
-    }
-
-    private static void processAudioAssets(StoryPack storyPack, MediaAssetType targetType,
-            Function<MediaAsset, byte[]> audioProcessor) {
-       processAssets(MediaGroup.AUDIO, storyPack, targetType, audioProcessor);
-    }
-
-    private static void processAssets(MediaGroup mg, StoryPack storyPack, MediaAssetType targetType,
+    private static void processAssets(StoryPack storyPack, MediaGroup mg, MediaAssetType targetType,
             Function<MediaAsset, byte[]> processor) {
         // Cache prepared assets bytes
         Map<String, byte[]> assets = new ConcurrentHashMap<>();
@@ -217,8 +207,8 @@ public class StoryPackConverter {
 
         // Multi-threaded processing
         medias.parallelStream().forEach(StoppingConsumer.stopped(a -> {
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("{} from node {}/{} [{}]", mg, i.incrementAndGet(), medias.size(),
+            if (LOGGER.isInfoEnabled()) {
+                LOGGER.info("{} from node {}/{} [{}]", mg, i.incrementAndGet(), medias.size(),
                         Thread.currentThread().getName());
             }
             String assetHash = a.findHash();

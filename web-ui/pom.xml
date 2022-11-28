@@ -221,6 +221,13 @@
         </profile>
 
         <profile>
+             <id>headfull</id>
+             <properties>
+                <quarkus.native.headless>false</quarkus.native.headless>
+             </properties>
+        </profile>
+
+        <profile>
              <id>native</id>
              <properties>
                 <quarkus.package.type>native</quarkus.package.type>
@@ -236,6 +243,5 @@
                 <skipITs>false</skipITs>
             </properties>
         </profile>
-
     </profiles>
 </project>

@@ -60,8 +60,8 @@ class AwtProcessor {
                 // macos
 //
 "sun.lwawt.macosx.LWCToolkit",
-"com.apple.eawt.Application",
-"sun.swing.SwingUtilities2"
+"com.apple.eawt.Application"
+// ,"sun.swing.SwingUtilities2"
 //
         );
     }
