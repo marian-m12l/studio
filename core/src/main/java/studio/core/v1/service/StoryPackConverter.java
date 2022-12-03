@@ -208,8 +208,7 @@ public class StoryPackConverter {
         // Multi-threaded processing
         medias.parallelStream().forEach(StoppingConsumer.stopped(a -> {
             if (LOGGER.isInfoEnabled()) {
-                LOGGER.info("{} from node {}/{} [{}]", mg, i.incrementAndGet(), medias.size(),
-                        Thread.currentThread().getName());
+                LOGGER.info("{} from node {}/{}", mg, i.incrementAndGet(), medias.size());
             }
             String assetHash = a.findHash();
             // Update data (converted if needed)

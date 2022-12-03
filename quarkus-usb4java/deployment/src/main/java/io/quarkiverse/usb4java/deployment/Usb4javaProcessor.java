@@ -2,9 +2,8 @@ package io.quarkiverse.usb4java.deployment;
 
 import static io.quarkus.deployment.builditem.nativeimage.ServiceProviderBuildItem.allProvidersFromClassPath;
 
-import java.io.IOException;
-import java.util.stream.Stream; 
 import org.jboss.logging.Logger;
+
 import io.quarkiverse.usb4java.runtime.Usb4javaRecorder;
 import io.quarkus.deployment.annotations.BuildProducer;
 import io.quarkus.deployment.annotations.BuildStep;
@@ -33,7 +32,7 @@ class Usb4javaProcessor {
     void nativeJni(NativeConfig nativeConfig,
             BuildProducer<NativeImageResourceBuildItem> nativeResources,
             BuildProducer<JniRuntimeAccessBuildItem> jniAccess,
-            BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses) throws IOException {
+            BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses) {
         // native binary path
         String src;
         if (nativeConfig.isContainerBuild()) {

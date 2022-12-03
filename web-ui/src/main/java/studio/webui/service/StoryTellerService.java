@@ -3,7 +3,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
 package studio.webui.service;
 
 import java.nio.file.Files;
@@ -53,11 +52,9 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
 
     public StoryTellerService() {
         LOGGER.info("Setting up story teller driver");
-
         // React when a device with firmware 1.x is plugged or unplugged
         rawDriver = new RawStoryTellerAsyncDriver();
         rawDriver.registerDeviceListener(this, this);
-
         // React when a device with firmware 2.x is plugged or unplugged
         fsDriver = new FsStoryTellerAsyncDriver();
         fsDriver.registerDeviceListener(this, this);
@@ -68,17 +65,17 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
         if (device == null) {
             LOGGER.error("Device plugged but is null");
             sendFailure(eventBus);
-        } else {
-            LOGGER.info("Device plugged");
-            deviceInfos().whenComplete((infos, e) -> {
-                if (e != null) {
-                    LOGGER.error("Failed to plug device", e);
-                    sendFailure(eventBus);
-                } else {
-                    sendDevicePlugged(eventBus, infos);
-                }
-            });
+            return;
         }
+        LOGGER.info("Device plugged");
+        deviceInfos().whenComplete((infos, e) -> {
+            if (e != null) {
+                LOGGER.error("Failed to plug device", e);
+                sendFailure(eventBus);
+            } else {
+                sendDevicePlugged(eventBus, infos);
+            }
+        });
     }
 
     @Override

@@ -11,7 +11,7 @@ import com.oracle.svm.core.annotate.TargetClass;
  * We are not doing that unless there is an explicit demand.
  */
 @TargetClass(className = "sun.font.Type1Font")
-final class Target_sun_font_Type1Font {
+final class TargetSunFontType1Font {
     @Substitute
     private void verifyPFA(ByteBuffer bb) throws FontFormatException {
         throw new FontFormatException(
@@ -25,5 +25,5 @@ final class Target_sun_font_Type1Font {
     }
 }
 
-public class JDKSubstitutions {
+public interface JDKSubstitutions {
 }

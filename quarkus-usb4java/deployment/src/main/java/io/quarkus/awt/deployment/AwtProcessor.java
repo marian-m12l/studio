@@ -58,11 +58,10 @@ class AwtProcessor {
                 "sun.awt.X11FontManager",
                 "sun.awt.X11GraphicsEnvironment",
                 // macos
-//
-"sun.lwawt.macosx.LWCToolkit",
-"com.apple.eawt.Application"
-// ,"sun.swing.SwingUtilities2"
-//
+                //
+                "sun.lwawt.macosx.LWCToolkit",
+                "com.apple.eawt.Application"
+        //
         );
     }
 
@@ -201,7 +200,6 @@ class AwtProcessor {
                 "sun.java2d.pipe.SpanClipRenderer",
                 "sun.java2d.pipe.ValidatePipe",
                 "sun.java2d.SunGraphics2D",
-                "sun.java2d.SurfaceData"
-           );
+                "sun.java2d.SurfaceData");
     }
 }

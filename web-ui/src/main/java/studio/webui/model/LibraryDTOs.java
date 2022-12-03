@@ -6,25 +6,15 @@
 
 package studio.webui.model;
 
-import java.nio.file.Path;
 import java.util.List;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.driver.model.MetaPackDTO;
 
 public interface LibraryDTOs {
-
-    @Getter
-    @AllArgsConstructor
-    final class LibraryPackDTO {
-        private Path path;
-        private long timestamp;
-        private StoryPackMetadata metadata;
-    }
 
     @Getter
     @AllArgsConstructor

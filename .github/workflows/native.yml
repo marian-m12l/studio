@@ -53,7 +53,7 @@ jobs:
           path: web-ui/javascript/build/
 
       - name: Build Maven Jar
-        run: mvn install -B -DskipTests -Pide
+        run: mvn install -B -Pide
 
       - name: Upload Quarkus app
         uses: actions/upload-artifact@v3

@@ -3,7 +3,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
 package studio.webui.service;
 
 import java.io.IOException;
@@ -13,7 +12,6 @@ import java.nio.file.StandardCopyOption;
 import java.util.Base64;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -32,10 +30,10 @@ import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.service.PackFormat;
 import studio.core.v1.service.StoryPackConverter;
 import studio.core.v1.utils.io.FileUtils;
+import studio.core.v1.utils.stream.ThrowingFunction;
 import studio.driver.model.MetaPackDTO;
 import studio.metadata.DatabaseMetadataDTOs.DatabasePackMetadata;
 import studio.metadata.DatabaseMetadataService;
-import studio.webui.model.LibraryDTOs.LibraryPackDTO;
 import studio.webui.model.LibraryDTOs.PathDTO;
 import studio.webui.model.LibraryDTOs.UuidPacksDTO;
 
@@ -70,52 +68,24 @@ public class LibraryService {
 
     public List<UuidPacksDTO> packs() {
         // List pack files in library folder
-        try (Stream<Path> paths = Files.walk(libraryPath, 1).filter(p -> p != libraryPath)) {
-
-            // Group pack by uuid
-            Map<String, List<LibraryPackDTO>> metadataByUuid = paths
-                    // debuging
-                    .filter(p -> {
-                        LOGGER.info("Read metadata from `{}`", p.getFileName());
-                        return true;
-                    })
-                    // actual read
-                    .map(this::readMetadata)
-                    // filter empty
-                    .filter(Optional::isPresent).map(Optional::get)
-                    // sort by timestamp DESC (=newer first)
-                    .sorted(Comparator.comparingLong(LibraryPackDTO::getTimestamp).reversed())
-                    // Group packs by UUID
-                    .collect(Collectors.groupingBy(p -> p.getMetadata().getUuid()));
-
-            // Converts metadata to Json
-            List<UuidPacksDTO> jsonMetasByUuid = metadataByUuid.entrySet().parallelStream()
-                    // convert
-                    .map(e -> {
-                        // find first zip pack
-                        e.getValue().stream()
-                                // get Metadata
-                                .map(LibraryPackDTO::getMetadata)
-                                // only zip
-                                .filter(meta -> meta.getPackFormat() == PackFormat.ARCHIVE) //
-                                // update database with newest zip
-                                .findFirst().ifPresent(meta -> {
-                                    LOGGER.debug("Refresh metadata from zip for {} ({})", meta.getUuid(),
-                                            meta.getTitle());
-                                    String thumbBase64 = Optional.ofNullable(meta.getThumbnail()).map(this::base64)
-                                            .orElse(null);
-                                    databaseMetadataService.updateLibrary(new DatabasePackMetadata( //
-                                            meta.getUuid(), meta.getTitle(), meta.getDescription(), thumbBase64,
-                                            false));
-                                });
-                        // Convert to MetaPackDTO
-                        List<MetaPackDTO> jsonMetaList = e.getValue().stream() //
-                                .map(this::toDto) //
-                                .collect(Collectors.toList());
-
-                        return new UuidPacksDTO(e.getKey(), jsonMetaList);
-                    }) //
-                    .collect(Collectors.toList());
+        try (Stream<Path> paths = Files.walk(libraryPath, 1)) {
+            List<UuidPacksDTO> jsonMetasByUuid = paths
+            // only supported packs
+            .filter(p -> PackFormat.fromPath(p) != null)
+            // actual read
+            .map(ThrowingFunction.unchecked(this::readMetadata))
+            // sort by timestamp DESC (=newer first)
+            .sorted(Comparator.comparingLong(MetaPackDTO::getTimestamp).reversed())
+            // group by uuid and convert to list
+            .collect(Collectors.collectingAndThen(
+                // group by uuid
+                Collectors.groupingBy(MetaPackDTO::getUuid),
+                // convert map to UuidPacksDTOs
+                s -> s.entrySet().stream() //
+                        .map(e -> new UuidPacksDTO(e.getKey(), e.getValue())) //
+                        .collect(Collectors.toUnmodifiableList()) //
+                )
+            );
             // persist unofficial database cache (if needed)
             databaseMetadataService.persistLibrary();
             return jsonMetasByUuid;
@@ -135,11 +105,10 @@ public class LibraryService {
     }
 
     public boolean addPackFile(String destPath, String uploadedFilePath) {
+        LOGGER.info("Add pack {} from {}", destPath, uploadedFilePath);
+        Path src = Path.of(uploadedFilePath);
+        Path dest = libraryPath.resolve(destPath);
         try {
-            LOGGER.info("Add pack {} from {}", destPath, uploadedFilePath);
-            // Copy temporary file to local library
-            Path src = Path.of(uploadedFilePath);
-            Path dest = libraryPath.resolve(destPath);
             Files.move(src, dest, StandardCopyOption.REPLACE_EXISTING);
             return true;
         } catch (IOException e) {
@@ -166,43 +135,33 @@ public class LibraryService {
         return "data:image/png;base64," + Base64.getEncoder().encodeToString(thumbnail);
     }
 
-    private Optional<LibraryPackDTO> readMetadata(Path path) {
-        // Select reader
+    private MetaPackDTO readMetadata(Path path) throws IOException {
         PackFormat inputFormat = PackFormat.fromPath(path);
-        // Ignore other files
-        if (inputFormat == null) {
-            return Optional.empty();
+        LOGGER.info("Read metadata {} from pack: {}", inputFormat, path.getFileName());
+        StoryPackMetadata meta = inputFormat.getReader().readMetadata(path);
+        if (meta == null) {
+            throw new StoryTellerException("No metadata found for pack " + path);
         }
-        // read Metadata
-        try {
-            LOGGER.debug("Reading metadata {} from pack: {}", inputFormat, path);
-            StoryPackMetadata meta = inputFormat.getReader().readMetadata(path);
-            if (meta != null) {
-                meta.setSectorSize((int) Math.ceil(Files.size(path) / 512d));
-                return Optional.of(new LibraryPackDTO(path, Files.getLastModifiedTime(path).toMillis(), meta));
-            }
-        } catch (IOException e) {
-            LOGGER.atError().withThrowable(e).log("Failed to read metadata {} from pack: {}", inputFormat, path);
+        // metadata from zip
+        if(meta.getPackFormat() == PackFormat.ARCHIVE ) {
+            LOGGER.debug("Refresh metadata from zip for {} ({})", meta.getUuid(), meta.getTitle());
+            String thumbBase64 = Optional.ofNullable(meta.getThumbnail()).map(this::base64).orElse(null);
+            databaseMetadataService.updateLibrary(new DatabasePackMetadata( //
+                meta.getUuid(), meta.getTitle(), meta.getDescription(), thumbBase64, false));
         }
-        // Ignore other files OR read error
-        return Optional.empty();
-    }
 
-    private MetaPackDTO toDto(LibraryPackDTO pack) {
-        StoryPackMetadata spMeta = pack.getMetadata();
         MetaPackDTO mp = new MetaPackDTO();
-        mp.setFormat(spMeta.getPackFormat().getLabel());
-        mp.setUuid(spMeta.getUuid());
-        mp.setVersion(spMeta.getVersion());
-        mp.setPath(pack.getPath().getFileName().toString());
-        mp.setTimestamp(pack.getTimestamp());
-        mp.setNightModeAvailable(spMeta.isNightModeAvailable());
-        mp.setSectorSize(spMeta.getSectorSize());
-        mp.setTitle(spMeta.getTitle());
-        mp.setDescription(spMeta.getDescription());
-        Optional.ofNullable(spMeta.getThumbnail()).ifPresent(this::base64);
+        mp.setFormat(meta.getPackFormat().getLabel());
+        mp.setUuid(meta.getUuid());
+        mp.setVersion(meta.getVersion());
+        mp.setPath(path.getFileName().toString());
+        mp.setTimestamp(Files.getLastModifiedTime(path).toMillis());
+        mp.setSectorSize((int) Math.ceil(Files.size(path)/512d));
+        mp.setTitle(meta.getTitle());
+        mp.setDescription(meta.getDescription());
+        mp.setNightModeAvailable(meta.isNightModeAvailable());
 
-        return databaseMetadataService.getMetadata(spMeta.getUuid()).map(metadata -> {
+        return databaseMetadataService.getMetadata(meta.getUuid()).map(metadata -> {
             mp.setTitle(metadata.getTitle());
             mp.setDescription(metadata.getDescription());
             mp.setImage(metadata.getThumbnail());

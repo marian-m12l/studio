@@ -14,11 +14,11 @@ public class DarwinAwtFeature implements Feature {
         if (JavaVersionUtil.isJava17OrHigher()) {
             // Quarkus run time init for AWT in Darwin
             RuntimeClassInitialization.initializeAtRunTime( // "sun.lwawt.macosx"
-//
-"sun.lwawt", "com.apple.eawt", "sun.swing",
-"com.apple.laf", "javax.swing", "com.sun.java.swing.plaf"
-//
-);
+                    //
+                    "sun.lwawt", "com.apple.eawt", "sun.swing",
+                    "com.apple.laf", "javax.swing", "com.sun.java.swing.plaf"
+            //
+            );
         }
     }
 }
