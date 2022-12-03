@@ -159,6 +159,16 @@
                             <arguments>install</arguments>
                         </configuration>
                     </execution>
+                    <!-- npx -->
+                    <execution>
+                        <id>yarn-update-browserslist</id>
+                        <goals>
+                            <goal>yarn</goal>
+                        </goals>
+                        <configuration>
+                            <arguments>update-browserslist</arguments>
+                        </configuration>
+                    </execution>
                     <!-- build bundle -->
                     <execution>
                         <id>build-frontend</id>
