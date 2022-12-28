@@ -44,7 +44,7 @@ public class DeviceUtils {
         // Unix & Mac
         for (FileStore f : fs.getFileStores()) {
             // Mounted devices only (without Fuse, Loopback...)
-            if (f.name().startsWith("/dev/s") || f.name().startsWith("/dev/disk")) {
+            if (f.name().startsWith("/dev/s") || f.name().startsWith("/dev/disk") || f.name().startsWith("msdos")) {
                 // find mount path in toString()
                 l.add(Path.of(f.toString().split(" ")[0]));
             }
