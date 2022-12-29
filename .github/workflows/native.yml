@@ -1,6 +1,7 @@
 name: Native
 on:
   push:
+    paths-ignore: [ '*.md' ]
     branches: [ '*' ]
   pull_request:
     types: [ opened, synchronize, reopened ]
@@ -25,8 +26,8 @@ jobs:
       - name: Run yarn
         working-directory: web-ui/javascript/
         run: |
-           yarn install --frozen-lockfile
-           yarn build
+            yarn install --frozen-lockfile
+            yarn build
 
       - uses: actions/upload-artifact@v3
         with:
@@ -54,6 +55,9 @@ jobs:
 
       - name: Build Maven Jar
         run: mvn install -B -Pide
+
+      - name: Copy start scripts
+        run: cp web-ui/src/main/scripts/* web-ui/target/quarkus-app/
 
       - name: Upload Quarkus app
         uses: actions/upload-artifact@v3

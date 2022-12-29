@@ -1,9 +1,7 @@
-# This workflow will build a Java project with Maven
-# For more information see: https://help.github.com/actions/language-and-framework-guides/building-and-testing-java-with-maven
-
 name: Sonar
 on:
   push:
+    paths-ignore: [ '*.md' ]
     branches: [ '*' ]
   repository_dispatch:
     types: [ trigger-nightly ]
@@ -53,7 +51,7 @@ jobs:
         MVN_SONAR: ${{ 'org.sonarsource.scanner.maven:sonar-maven-plugin' }}
         MVN_JACOCO: ${{ 'org.jacoco:jacoco-maven-plugin:0.8.8' }}
         MVN_PARAMS: '-Pide -Dmaven.test.failure.ignore=true -Dsonar.projectKey=kairoh_studio'
-      # Ide profile to skip javascript 
+      # Profile "ide" to skip javascript 
       run: mvn -B ${MVN_JACOCO}:prepare-agent verify ${MVN_JACOCO}:report ${MVN_SONAR}:sonar ${MVN_PARAMS}
       if: matrix.mode == 'deploy'
 

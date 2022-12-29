@@ -1,6 +1,5 @@
 [![Build](https://github.com/kairoh/studio/actions/workflows/maven.yml/badge.svg)](https://github.com/kairoh/studio/actions/workflows/maven.yml)
 [![Release](https://img.shields.io/github/v/release/kairoh/studio)](https://github.com/kairoh/studio/releases/latest)
-<!-- [![Gitter](https://badges.gitter.im/STUdio-Story-Teller-Unleashed/general.svg)](https://gitter.im/STUdio-Story-Teller-Unleashed/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge) -->
 
 [![Quality Scale](https://sonarcloud.io/api/project_badges/measure?project=kairoh_studio&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=kairoh_studio)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=kairoh_studio&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=kairoh_studio)
@@ -14,43 +13,63 @@ STUdio - Story Teller Unleashed
 
 [Instructions in english](README.md)
 
-Créez et transférez vos propres packs d'histoires de et vers la Fabrique à Histoires Lunii\*.
+Créez et transférez vos propres packs d'histoires de et vers la Fabrique à Histoires Lunii[^1].
 
 
 PRÉAMBULE
 ---------
 
-Ce logiciel s'appuie sur mes propres recherches de rétro ingénierie, limitées à la collecte des informations nécessaires
-à l'interopérabilité avec la Fabrique à Histoires Lunii\*, et ne distribue aucun contenu protégé.
+Ce logiciel s'appuie sur des recherches de rétro-ingénierie, limitées à la collecte des informations nécessaires à l'interopérabilité avec la Fabrique à Histoires Lunii[^1], et ne distribue aucun contenu protégé.
 
-**EN UTILISANT CE LOGICIEL, VOUS EN ASSUMEZ LE RISQUE**. Malgré mes efforts pour que l'utilisation de ce logiciel soit
-sûre, il est distribué **SANS AUCUNE GARANTIE** et pourrait endommager votre appareil.
+**EN UTILISANT CE LOGICIEL, VOUS EN ASSUMEZ LE RISQUE**. Malgré les efforts pour que l'utilisation de ce logiciel soit sûre, il est distribué **SANS AUCUNE GARANTIE** et pourrait endommager votre appareil.
 
-\* Lunii et "ma fabrique à histoires" sont des marques enregistrées de Lunii SAS. Je ne suis (et ce travail n'est) en aucun cas affilié à Lunii SAS.
+[^1]: Lunii, Luniistore et "ma fabrique à histoires" sont des marques enregistrées de Lunii SAS. Ce travail n'est en aucun cas affilié à Lunii SAS.
 
 
 UTILISATION
 -----------
 
+### Choisir son édition
+
+L'édition "Native" est plus rapide et n'a pas besoin d'avoir Java installé.
+Peu d'architecture sont disponibles (dépend des hôtes Github), mais vous pouvez créer la [votre](#build-native-edition).
+
+| CPU/OS  | Linux              | Windows            | MacOS              | 
+| :---:   | :---:              | :---:              | :---:              |
+| x86_64  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| x86     |                    |                    |                    |
+| arm     |                    |                    |                    |
+| aarch64 |                    |                    |                    |
+
+L'édition "Java" a besoin d'avoir Java 11+ installé. 
+Elle supporte presque toutes les architectures (selon la compatibilité de [usb4java](http://usb4java.org]) ).
+
+| CPU/OS  | Linux              | Windows            | MacOS              | 
+| :---:   | :---:              | :---:              | :---:              |
+| x86_64  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
+| x86     | :heavy_check_mark: | :heavy_check_mark: |                    |
+| arm     | :heavy_check_mark: |                    |                    |
+| aarch64 | :heavy_check_mark: |                    | :heavy_check_mark: |
+
 ### Prérequis
 
-* Java JRE 11+
-* Sur Windows, cette application nécessite que le pilote _libusb_ soit installé. Le moyen le plus simple pour cela est
-  d'installer le logiciel officiel Luniistore\* (mais il ne doit pas être exécuté en même temps que STUdio).
+* (Edition Java uniquement) Java JRE 11+
+* Sur Windows, cette application nécessite que le pilote _libusb_ soit installé. Le moyen le plus simple pour cela est d'installer le logiciel officiel Luniistore\* (mais il ne doit pas être exécuté en même temps que STUdio).
 
 ### Installation
 
-* **Téléchargez** [la dernière release](https://github.com/marian-m12l/studio/releases/latest) (ou
-[construisez l'application](#pour-les-développeurs)).
+* **Téléchargez** [la dernière release](../releases/latest) (ou [construisez l'application](#pour-les-développeurs)).
 * **Décompressez** l'archive de distribution
-* **Exécutez le script de lancement** : `studio-linux.sh`, `studio-macos.sh` ou `studio-windows.bat` selon votre
-plate-forme. Vous devrez probablement rendre ce fichier exécutable d'abord.
-* S'il ne s'ouvre pas automatiquement, **ouvrez un navigateur** et saisissez l'url `http://localhost:8080` pour charger
-l'interface web.
+* **Exécutez le script de lancement** : `studio.sh` ou `studio.bat` selon votre plate-forme. Vous devrez probablement rendre ce fichier exécutable d'abord.
+* S'il ne s'ouvre pas automatiquement, **ouvrez un navigateur** et saisissez l'url `http://localhost:8080` pour charger l'interface web.
 
 Note: Évitez d'exécuter le script en tant que superutilisateur/administrateur, ce qui pourrait créer des problèmes de permissions.
 
 ### Configuration
+
+Studio est portable par défaut: tout (si ce n'est la JRE pour l'édition Java) est dans le répertoire courant.
+
+Plusieurs personnalisations sont possibles.
 
 L'ordre de configuration est le suivant 
 1. (si présente) variable système Java (ex: `-Dstudio.port=8081` )
@@ -59,6 +78,7 @@ L'ordre de configuration est le suivant
 
 | Variable d'environnement | Variable système Java | Défaut | Description |
 | ------------------------ | -------------------- | ------ | ----------- |
+| `STUDIO_HOME`          | `studio.home`          | `.` (=current dir)             | Répertoire de Studio    |
 | `STUDIO_HOST`          | `studio.host`          | `localhost`                    | Adresse d'écoute HTTP |
 | `STUDIO_PORT`          | `studio.port`          | `8080`                         | Port d'écoute HTTP |
 | `STUDIO_DB_OFFICIAL`   | `studio.db.official`   | `~/.studio/db/official.json`   | Fichier BDD json officiel  |
@@ -66,52 +86,33 @@ L'ordre de configuration est le suivant
 | `STUDIO_LIBRARY`       | `studio.library`       | `~/.studio/library/`           | Répertoire de la bibliothèque |
 | `STUDIO_TMPDIR`        | `studio.tmpdir`        | `~/.studio/tmp/`               | Répertoire temporaire |
 | `STUDIO_OPEN_BROWSER`  | `studio.open.browser`  | `true`                         | Ouverture auto du navigateur |
-| `STUDIO_DEV_MODE`      | `studio.dev.mode`      | `prod`                         | Si `dev`, active le mode bouchon |
 | `STUDIO_MOCK_DEVICE`   | `studio.mock.device`   | `~/.studio/device/`            | Répertoire de l'appareil bouchon |
 
-Ex pour ne pas lancer de navigateur (via la variable d'environnement) et écouter sur le port 8081 (via la variable systeme) :
-- sous Windows
-```
-set STUDIO_OPEN_BROWSER=false
-
-java -Dstudio.port=8081 \
- -Dfile.encoding=UTF-8 -Dvertx.disableDnsResolver=true \
- -cp $STUDIO_PATH/${project.build.finalName}.jar:$STUDIO_PATH/lib/*:. \
- io.vertx.core.Launcher run ${vertx.main.verticle}
-```
-
-- sous Linux / MacOS
-```
-export STUDIO_OPEN_BROWSER=false
-
-java -Dstudio.port=8081 \
- -Dfile.encoding=UTF-8 -Dvertx.disableDnsResolver=true \
- -cp $STUDIO_PATH/${project.build.finalName}.jar:$STUDIO_PATH/lib/*:. \
- io.vertx.core.Launcher run ${vertx.main.verticle}` |
-```
+Ex pour écouter sur le port 8081 (via la variable systeme) :
+- sous Windows: `studio.bat -Dstudio.port=8081`
+- sous Linux / MacOS: `./studio.sh -Dstudio.port=8081`
 
 ### Utiliser l'application
 
 L'interface web est composée de deux écrans :
 
-* La bibliothèque d'histoires, qui permet de gérer la bibliothèque locale et de transférer de / vers la Fabrique à Histoire\* 
+* La bibliothèque d'histoires, qui permet de gérer la bibliothèque locale et de transférer de / vers la Fabrique à Histoire[^1]
 * L'éditeur d'histoire, pour créer ou modifier un pack d'histoire
 
 #### Bibliothèque locale d'histoires et transfert de/vers l'appareil
 
-L'écran de la bibliothèque d'histoires affiche toujours votre bibliothèque locale. Il s'agit des packs d'histoires situés
-sur votre ordinateur (dans un répertoire `.studio` spécifique à chaque utilisateur). **Trois formats de fichier** peuvent
-être présents dans votre bibliothèque :
+L'écran de la bibliothèque d'histoires affiche toujours votre bibliothèque locale. Il s'agit des packs d'histoires situés sur votre ordinateur (dans le répertoire `library` de studio). 
+
+**3 formats de fichier** peuvent être présents dans votre bibliothèque :
 * `Brut` est le format officiel supporté par les **appareils plus anciens** (firmware v1.x -- ces appareils utilisent un protocole USB bas-niveau)
 * `FS` est le format officiel supporté par les **nouveaux appareils** (firmware v2.x -- ces appareils apparaîssent comme un stockage amovible)
 * `Archive` est un format officieux, utilisé uniquement par STUdio dans l'**éditeur** d'histoires
 
 La **conversion** d'un pack d'histoires est automatique lors d'un transfert, ou peut être invoquée manuellement.
-Les variantes d'un pack d'histoires donné sont regroupées dans l'interface pour une meilleure lisibilité. **Le fichier
-le plus récent** (mis en avant par l'interface) est transféré vers l'appareil.
+Les variantes d'un pack d'histoires donné sont regroupées dans l'interface pour une meilleure lisibilité. 
+**Le fichier le plus récent** (mis en avant par l'interface) est transféré vers l'appareil.
 
-Quand l'appareil est branché, un panneau apparaît sur la gauche, affichant les métadonnées et les packs d'histoires de
-l'appareil. Glisser et déposer un pack depuis ou vers l'appareil commencera le transfert.
+Quand l'appareil est branché, **un panneau apparaît sur la gauche**, affichant les métadonnées et les packs d'histoires de l'appareil. **Glisser et déposer** un pack depuis ou vers l'appareil commencera le transfert.
 
 #### Éditeur d'histoire
 
@@ -133,8 +134,7 @@ convertis lors du transfert vers l'appareil) :
 * BMP (24-bits)
 
 **Les dimensions doivent être 320x240**. Les images peuvent être en couleurs, bien que certaines couleurs ne seront
-certainement pas affichées fidèlement par l'écran situé derrière le boîtier en plastique. Gardez à l'esprit que la
-couleur du boîtier peut changer.
+certainement pas affichées fidèlement par l'écran situé derrière le boîtier en plastique. Gardez à l'esprit que le boîtier peut altérer la couleur des images.
 
 ##### Audio
 
@@ -148,33 +148,54 @@ Les fichiers MP3 et OGG doivent, eux, être échantillonnés à 44100Hz.
 
 #### Wiki
 
-Pour plus d'informations, y compris un guide d'utilisation illustré (merci à
-[@appenzellois](https://github.com/appenzellois)), consultez
-[le wiki du projet](https://github.com/marian-m12l/studio/wiki/Documentation).
+Pour plus d'informations, y compris un guide d'utilisation illustré (merci à [@appenzellois](https://github.com/appenzellois)), consultez [le wiki du projet](https://github.com/marian-m12l/studio/wiki/Documentation).
 
 
 POUR LES DÉVELOPPEURS
 ---------------------
 
-### Prérequis
+### Compiler avec gitops
 
-* Java JDK 11+
+* Forker ce dépot Github
+* Aller dans votre onglet "Actions"
+* Vérifier les artifacts générés par le workflow [native.yml](.github/workflows/native.yml)
+
+### Compiler l'édition "Java"
+
+#### Prérequis
+
 * Maven 3+
+* Java JDK 11+
 
-### Building the application
+#### Compiler localement
 
-* Cloner ce dépôt : `git clone https://github.com/marian-m12l/studio.git`
-* Construire l'application : `mvn clean install`
+* Cloner ce dépot Github
+* Compiler l'application: `mvn install`
+La **distribution** sera créée dans `web-ui/target/quarkus-app/`.
 
-Ceci créera **l'archive de distribution** dans `web-ui/target/`.
+### Compiler l'édition "Native"
 
+Voir le [guide Quarkus](https://quarkus.io/guides/building-native-image).
+
+#### Prérequis
+
+* Maven 3+
+* Docker ou un GraalVM supportant AWT : [Mandrel 22.3+ pour Linux](https://github.com/graalvm/mandrel) ou [Liberica NIK 22.3+ pour Win et Mac](https://bell-sw.com/pages/downloads/native-image-kit/#/nik-22-17)
+
+#### Compiler localement
+
+* Cloner ce dépôt Github
+* Compiler l'application: `mvn install -Pnative`
+
+La **distribution** sera crée dans `web-ui/target/`.
+Sous Windows, les DLL nécessaires seront dans un sous-répertoire `native-image`.
 
 APPLICATIONS TIERCES
 --------------------
 
 Si vous avez aimé STUdio, vous aimerez aussi :
-* [mhios (Mes Histoires Interactives Open Stories)](https://www.mhios.com) est une bibliothèque ouverte, en ligne,
-d'histoires interactives (développé par [@sebbelese](https://github.com/sebbelese))
+* ~~[mhios (Mes Histoires Interactives Open Stories)](https://www.mhios.com) est une bibliothèque ouverte, en ligne,
+d'histoires interactives (développé par [@sebbelese](https://github.com/sebbelese))~~
 * [Moiki](https://moiki.fr/) est un outil en ligne de création d'histoires interactives, qui peuvent être exportées
 vers STUdio (développé par [@kaelhem](https://github.com/kaelhem))
 
@@ -183,10 +204,11 @@ LICENCE
 -------
 
 Ce projet est distribué sous la licence **Mozilla Public License 2.0**. Les termes de la licence sont dans le
-fichier `LICENSE`.
+fichier [LICENSE.md](LICENSE.md).
 
-La bibliothèque `vorbis-java`, ainsi que la classe `VorbisEncoder` sont distribuées par Xiph.org Foundation. Les termes
-de la licence se trouvent dans le fichier `LICENSE.vorbis-java`.
+La bibliothèque `jvorbis`, ainsi que la classe `VorbisEncoder` sont distribuées par Xiph.org Foundation. Les termes
+de la licence se trouvent dans le fichier [LICENSE-jvorbis.md](LICENSE-jvorbis.md).
 
 Le package `com.jhlabs.image` est distribué par Jerry Huxtable sous la licence Apache License 2.0. Les termes
-de la licence se trouvent dans le fichier `LICENSE.jhlabs`.
+de la licence se trouvent dans le fichier [LICENSE-jhlabs.md](LICENSE-jhlabs.md).
+
