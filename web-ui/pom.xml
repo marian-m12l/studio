@@ -125,7 +125,7 @@
                 </executions>
             </plugin>
 
-             <plugin>
+            <plugin>
                 <artifactId>maven-resources-plugin</artifactId>
                 <executions>
                     <!-- Copy bundle into jar resources -->
@@ -164,45 +164,24 @@
                 </executions>
             </plugin>
 
-            <!-- Distributable assembly -->
-            <!--
             <plugin>
-                <artifactId>maven-assembly-plugin</artifactId>
+                <artifactId>maven-failsafe-plugin</artifactId>
+                <version>${mvn.surefire.version}</version>
                 <executions>
                     <execution>
-                        <id>make-assembly</id>
-                        <phase>package</phase>
                         <goals>
-                            <goal>single</goal>
+                            <goal>integration-test</goal>
+                            <goal>verify</goal>
                         </goals>
+                        <configuration>
+                            <systemPropertyVariables>
+                                <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
+                                <maven.home>${maven.home}</maven.home>
+                            </systemPropertyVariables>
+                        </configuration>
                     </execution>
                 </executions>
-                <configuration>
-                    <descriptors>
-                        <descriptor>src/assembly/dist.xml</descriptor>
-                    </descriptors>
-                </configuration>
             </plugin>
-            -->
-
-         <plugin>
-            <artifactId>maven-failsafe-plugin</artifactId>
-            <version>${mvn.surefire.version}</version>
-            <executions>
-                <execution>
-                    <goals>
-                        <goal>integration-test</goal>
-                        <goal>verify</goal>
-                    </goals>
-                    <configuration>
-                        <systemPropertyVariables>
-                            <java.util.logging.manager>org.jboss.logmanager.LogManager</java.util.logging.manager>
-                            <maven.home>${maven.home}</maven.home>
-                        </systemPropertyVariables>
-                    </configuration>
-                </execution>
-            </executions>
-          </plugin>
 
         </plugins>
     </build>

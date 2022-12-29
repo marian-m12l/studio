@@ -57,7 +57,7 @@ jobs:
         run: mvn install -B -Pide
 
       - name: Copy start scripts
-        run: cp web-ui/src/main/scripts/* web-ui/target/quarkus-app/
+        run: cp web-ui/src/main/scripts/java/* web-ui/target/quarkus-app/
 
       - name: Upload Quarkus app
         uses: actions/upload-artifact@v3
@@ -77,25 +77,12 @@ jobs:
           # Mandrel (mac): no support
           # Upx support (win): only<22, see https://github.com/oracle/graal/issues/4340
           # AWT support (win & mac): only Liberica>22 see https://bell-sw.com/announcements/2022/08/05/liberica-native-image-kit-22-2-0-and-21-3-3-builds-are-out/#create-a-native-image-for-swingset2-app-linux-and-macos
-
           - os: ubuntu-latest
             jdk-suffix: linux-amd64.tar.gz
-            native-cmd: |
-              mvn verify -B -Pnative,ide -DskipTests
-              echo "artifact_name=$(ls web-ui/target/*runner)" >> $GITHUB_ENV
-
           - os: macOS-latest
             jdk-suffix: macos-amd64.tar.gz
-            native-cmd: |
-              mvn verify -B -Pnative -Pide -DskipTests
-              echo "artifact_name=$(ls web-ui/target/*runner)" >> $GITHUB_ENV
-
           - os: windows-latest
             jdk-suffix: windows-amd64.zip
-            native-cmd: |
-              mvn verify -B -Pnative -Pide -DskipTests
-              "artifact_name=$((ls web-ui/target/*.exe).FullName)" >> $env:GITHUB_ENV
-              cp web-ui/target/studio-web-ui-quarkus-SNAPSHOT-native-image-source-jar/*.dll web-ui/target/
 
     steps:
       - uses: actions/checkout@v3
@@ -137,8 +124,20 @@ jobs:
           name: studio-front
           path: web-ui/javascript/build/
 
-      - name: Build native
-        run: ${{ matrix.native-cmd }}
+      - name: Build native (*nix)
+        run: |
+          mvn verify -B -Pnative -Pide -DskipTests
+          echo "artifact_name=$(ls web-ui/target/*runner)" >> $GITHUB_ENV
+          cp web-ui/src/main/scripts/native/*.sh web-ui/target/
+        if: ${{ runner.os != 'Windows' }}
+
+      - name: Build native (win)
+        run: |
+          mvn verify -B -Pnative -Pide -DskipTests
+          "artifact_name=$((ls web-ui/target/*.exe).FullName)" >> $env:GITHUB_ENV
+          cp web-ui/target/*native-image-source-jar/*.dll web-ui/target/
+          cp web-ui/src/main/scripts/native/*.bat web-ui/target/
+        if: ${{ runner.os == 'Windows' }}
 
       - name: Compress exec
         uses: svenstaro/upx-action@v2
@@ -156,6 +155,8 @@ jobs:
             web-ui/target/*runner
             web-ui/target/*.exe
             web-ui/target/*.dll
+            web-ui/target/*.sh
+            web-ui/target/*.bat
 
       - name: Test native
         run: mvn test-compile failsafe:integration-test -B -Pnative -Pide -DskipITs=false
