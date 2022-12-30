@@ -5,6 +5,7 @@
         <groupId>io.quarkiverse</groupId>
         <artifactId>quarkiverse-parent</artifactId>
         <version>10</version>
+        <relativePath/>
     </parent>
     <groupId>io.quarkiverse.usb4java</groupId>
     <artifactId>quarkus-usb4java-parent</artifactId>
