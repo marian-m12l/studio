@@ -17,7 +17,7 @@
     "i18next": "^17.0.4",
     "i18next-browser-languagedetector": "^3.0.1",
     "i18next-xhr-backend": "^3.0.0",
-    "jszip": "^3.2.1",
+    "jszip": "^3.7.0",
     "lodash": "^4.17.15",
     "marked": "^1.0.0",
     "mathjs": "^6.2.5",
