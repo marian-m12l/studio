@@ -32,7 +32,7 @@ UTILISATION
 ### Choisir son édition
 
 L'édition "Native" est plus rapide et n'a pas besoin d'avoir Java installé.
-Peu d'architecture sont disponibles (dépend des hôtes Github), mais vous pouvez créer la [votre](#build-native-edition).
+Peu d'architecture sont disponibles (dépend des hôtes Github), mais vous pouvez [compiler la vôtre](#compiler-l%C3%A9dition-native).
 
 | CPU/OS  | Linux              | Windows            | MacOS              | 
 | :---:   | :---:              | :---:              | :---:              |
@@ -69,11 +69,14 @@ Note: Évitez d'exécuter le script en tant que superutilisateur/administrateur,
 
 Studio est portable par défaut: tout (si ce n'est la JRE pour l'édition Java) est dans le répertoire courant.
 
+<details>
+  <summary>Customization</summary>
+
 Plusieurs personnalisations sont possibles.
 
 L'ordre de configuration est le suivant 
-1. (si présente) variable système Java (ex: `-Dstudio.port=8081` )
-2. (si présente) variable d'environnement (ex: `STUDIO_PORT=8081` )
+1. (si présente) variable système Java (ex: `-Dstudio.port=8081`)
+2. (si présente) variable d'environnement (ex: `STUDIO_PORT=8081`)
 3. valeur par défaut (dans le code)
 
 | Variable d'environnement | Variable système Java | Défaut | Description |
@@ -92,9 +95,11 @@ Ex pour écouter sur le port 8081 (via la variable systeme) :
 - sous Windows: `studio.bat -Dstudio.port=8081`
 - sous Linux / MacOS: `./studio.sh -Dstudio.port=8081`
 
+</details>
+
 ### Utiliser l'application
 
-L'interface web est composée de deux écrans :
+L'interface web est composée de 2 écrans:
 
 * La bibliothèque d'histoires, qui permet de gérer la bibliothèque locale et de transférer de / vers la Fabrique à Histoire[^1]
 * L'éditeur d'histoire, pour créer ou modifier un pack d'histoire

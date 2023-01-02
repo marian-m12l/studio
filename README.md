@@ -33,7 +33,7 @@ USAGE
 ### Choose your edition
 
 "Native edition" is faster and doesn't need java to be installed.
-Few architecture are available (depending on available Github Host Runners), but you may build [your own](#build-native-edition).
+Few architecture are available (depending on available Github Host Runners), but you may [build your own](#build-native-edition).
 
 | CPU/OS  | Linux              | Windows            | MacOS              | 
 | :---:   | :---:              | :---:              | :---:              |
@@ -42,7 +42,7 @@ Few architecture are available (depending on available Github Host Runners), but
 | arm     |                    |                    |                    |
 | aarch64 |                    |                    |                    |
 
-"Java edition" needs java and supports almost any architecture (compatibility from [usb4java](http://usb4java.org) )
+"Java edition" needs java and supports almost any architecture (restricted by [usb4java](http://usb4java.org) )
 
 | CPU/OS  | Linux              | Windows            | MacOS              | 
 | :---:   | :---:              | :---:              | :---:              |
@@ -69,11 +69,12 @@ Note: avoid running the script as superuser/administrator, as this may create pe
 
 Studio is portable by default: everything (except JRE for java edition) is relative to current directory.
 
-But many customizations are available.
+<details>
+  <summary>Customization</summary>
 
 Configuration order is :
-1. (if defined) Java System property (ie: `-Dstudio.port=8081` )
-2. (if defined) environment variable (ie: `STUDIO_PORT=8081` )
+1. (if defined) Java System property (ie: `-Dstudio.port=8081`)
+2. (if defined) environment variable (ie: `STUDIO_PORT=8081`)
 3. default value (inside code)
 
 | Environment variable   | Java System Property   | Default value | Description |
@@ -92,9 +93,11 @@ Sample to listen on port 8081 (with system property) :
 - On Windows: `studio.bat -Dstudio.port=8081`
 - On Linux / MacOS: `./studio.sh -Dstudio.port=8081`
 
+</details>
+
 ### Using the application
 
-The web UI is made of two screens:
+The web UI is made of 2 screens:
 
 * The pack library, to manage your local library and transfer to / from your device
 * The pack editor, to create or edit a story pack
