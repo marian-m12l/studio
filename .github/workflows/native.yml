@@ -37,6 +37,8 @@ jobs:
   build-jar:
     needs: build-front
     runs-on: ubuntu-latest
+    env:
+      zip-name: studio-${{github.ref_name}}-Java.zip
     steps:
       - uses: actions/checkout@v3
 
@@ -56,19 +58,34 @@ jobs:
       - name: Build Maven Jar
         run: mvn install -B -Pide
 
-      - name: Copy start scripts
+      - name: Copy startup scripts
         run: cp web-ui/src/main/scripts/java/* web-ui/target/quarkus-app/
 
-      - name: Upload Quarkus app
+      - name: Create zip
+        uses: thedoctor0/zip-release@main
+        with:
+          filename: ${{env.zip-name}}
+          directory: web-ui/target/quarkus-app
+
+      - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: studio-app
-          path: web-ui/target/quarkus-app
+          name: ${{env.zip-name}}
+          path: web-ui/target/quarkus-app/${{env.zip-name}}
+
+      - name: Upload release artifact
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          generate_release_notes: true
+          files: web-ui/target/quarkus-app/${{env.zip-name}}
 
   build-native:
     needs: build-front
-    runs-on: ${{ matrix.os }}
+    runs-on: ${{ matrix.runner }}
     continue-on-error: true
+    env:
+      zip-name: studio-${{github.ref_name}}-${{matrix.os}}.zip
     strategy:
       fail-fast: false
       matrix:
@@ -77,11 +94,15 @@ jobs:
           # Mandrel (mac): no support
           # Upx support (win): only<22, see https://github.com/oracle/graal/issues/4340
           # AWT support (win & mac): only Liberica>22 see https://bell-sw.com/announcements/2022/08/05/liberica-native-image-kit-22-2-0-and-21-3-3-builds-are-out/#create-a-native-image-for-swingset2-app-linux-and-macos
-          - os: ubuntu-latest
+          # Runner: no latest for better compatibility
+          - runner: ubuntu-20.04
+            os: Linux
             jdk-suffix: linux-amd64.tar.gz
-          - os: macOS-latest
+          - runner: macOS-12
+            os: MacOS
             jdk-suffix: macos-amd64.tar.gz
-          - os: windows-latest
+          - runner: windows-latest
+            os: Windows
             jdk-suffix: windows-amd64.zip
 
     steps:
@@ -124,14 +145,14 @@ jobs:
           name: studio-front
           path: web-ui/javascript/build/
 
-      - name: Build native (*nix)
+      - name: (*nix) Build native
         run: |
           mvn verify -B -Pnative -Pide -DskipTests
           echo "artifact_name=$(ls web-ui/target/*runner)" >> $GITHUB_ENV
           cp web-ui/src/main/scripts/native/*.sh web-ui/target/
         if: ${{ runner.os != 'Windows' }}
 
-      - name: Build native (win)
+      - name: (Windows) Build native
         run: |
           mvn verify -B -Pnative -Pide -DskipTests
           "artifact_name=$((ls web-ui/target/*.exe).FullName)" >> $env:GITHUB_ENV
@@ -147,16 +168,18 @@ jobs:
           strip: false
         if: ${{ runner.os != 'Windows' }}
 
+      - name: Create zip
+        uses: thedoctor0/zip-release@main
+        with:
+          filename: ${{env.zip-name}}
+          directory: web-ui/target
+          path: '*runner *.exe *.dll *.sh *.bat'
+
       - name: Upload artifact
         uses: actions/upload-artifact@v3
         with:
-          name: studio-1.0-${{runner.os}}
-          path: |
-            web-ui/target/*runner
-            web-ui/target/*.exe
-            web-ui/target/*.dll
-            web-ui/target/*.sh
-            web-ui/target/*.bat
+          name: ${{env.zip-name}}
+          path: web-ui/target/${{env.zip-name}}
 
       - name: Test native
         run: mvn test-compile failsafe:integration-test -B -Pnative -Pide -DskipITs=false
@@ -165,5 +188,11 @@ jobs:
         uses: mikepenz/action-junit-report@v3
         with:
           report_paths: '**/failsafe-reports/TEST-*.xml'
-          check_name: IT (${{ matrix.os }})
+          check_name: IT (${{ matrix.runner }})
         if: always()
+
+      - name: Upload release artifact
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: web-ui/target/${{env.zip-name}}
