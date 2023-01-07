@@ -6,4 +6,4 @@ set CWD=%~dp0
 set STUDIO_HOME=%CWD%
 
 :: batch args as command args
-%CWD%\studio*runner.exe %*
+for %%i in (%CWD%\studio*runner.exe) do "%%~i" %*
