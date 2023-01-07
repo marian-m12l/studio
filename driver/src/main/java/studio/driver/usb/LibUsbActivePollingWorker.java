@@ -3,7 +3,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
 package studio.driver.usb;
 
 import java.util.concurrent.CompletableFuture;
@@ -42,6 +41,8 @@ public class LibUsbActivePollingWorker implements Runnable {
 
     @Override
     public void run() {
+        LOGGER.debug("Active polling for USB device");
+
         // List available devices
         DeviceList devices = new DeviceList();
         int result = LibUsb.getDeviceList(context, devices);
@@ -78,5 +79,4 @@ public class LibUsbActivePollingWorker implements Runnable {
             LibUsb.freeDeviceList(devices, false); // Do NOT unref devices
         }
     }
-
 }
