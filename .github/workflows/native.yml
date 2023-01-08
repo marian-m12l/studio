@@ -2,7 +2,6 @@ name: Native
 on:
   push:
     paths-ignore: [ '*.md' ]
-    branches: [ '*' ]
   pull_request:
     types: [ opened, synchronize, reopened ]
 concurrency: 
