@@ -1,5 +1,6 @@
-[![Build](https://github.com/kairoh/studio/actions/workflows/maven.yml/badge.svg)](https://github.com/kairoh/studio/actions/workflows/maven.yml)
 [![Release](https://img.shields.io/github/v/release/kairoh/studio)](https://github.com/kairoh/studio/releases/latest)
+[![Sonar Build](https://github.com/kairoh/studio/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/kairoh/studio/actions/workflows/sonarcloud.yml)
+[![Native Build](https://github.com/kairoh/studio/actions/workflows/native.yml/badge.svg)](https://github.com/kairoh/studio/actions/workflows/native.yml)
 
 [![Quality Scale](https://sonarcloud.io/api/project_badges/measure?project=kairoh_studio&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=kairoh_studio)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=kairoh_studio&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=kairoh_studio)
@@ -15,7 +16,6 @@ STUdio - Story Teller Unleashed
 
 Create and transfer your own story packs to and from the Lunii[^1] story teller device.
 
-
 DISCLAIMER
 ----------
 
@@ -26,30 +26,22 @@ This software relies on reverse engineering research, which is limited to gather
 
 [^1]: Lunii and Luniistore are registered trademarks of Lunii SAS. This work is in no way affiliated with Lunii SAS.
 
-
 USAGE
 -----
 
 ### Choose your edition
 
-"Native edition" is faster and doesn't need java to be installed.
+:rocket: "Native edition" is faster and doesn't need java to be installed.
 Few architecture are available (depending on available Github Host Runners), but you may [build your own](#build-native-edition).
 
-| CPU/OS  | Linux              | Windows            | MacOS              | 
-| :---:   | :---:              | :---:              | :---:              |
-| x86_64  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| x86     |                    |                    |                    |
-| arm     |                    |                    |                    |
-| aarch64 |                    |                    |                    |
+:hotsprings: "Java edition" needs java and supports almost any architecture (restricted by [usb4java](http://usb4java.org) )
 
-"Java edition" needs java and supports almost any architecture (restricted by [usb4java](http://usb4java.org) )
-
-| CPU/OS  | Linux              | Windows            | MacOS              | 
-| :---:   | :---:              | :---:              | :---:              |
-| x86_64  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| x86     | :heavy_check_mark: | :heavy_check_mark: |                    |
-| arm     | :heavy_check_mark: |                    |                    |
-| aarch64 | :heavy_check_mark: |                    | :heavy_check_mark: |
+| CPU/OS  | Linux        | Windows            | MacOS              | 
+| :---:   | :---:        | :---:              | :---:              |
+| x86_64  | :hotsprings: :rocket: | :hotsprings: :rocket: | :hotsprings: :rocket: |
+| x86     | :hotsprings: | :hotsprings:       |                    |
+| arm     | :hotsprings: |                    |                    |
+| aarch64 | :hotsprings: |                    | :hotsprings:       |
 
 ### Prerequisite
 
@@ -58,7 +50,7 @@ Few architecture are available (depending on available Github Host Runners), but
 
 ### Installation
 
-* **Download** [the latest release](../releases/latest) (or [build the application](#for-developers)).
+* **Download** [the latest release](https://github.com/kairoh/studio/releases/latest) (or [build the application](#for-developers)).
 * **Unzip** the distribution archive
 * **Run the launcher script**: either `studio.sh` or `studio.bat` according to your platform. You may need to make them executable first.
 * If it does not open automatically, **open a browser** and type the url `http://localhost:8080` to load the web UI.
@@ -151,7 +143,6 @@ MP3 and OGG files are expected to be sampled at 44100Hz.
 More information, including an illustrated usage guide courtesy of [@appenzellois](https://github.com/appenzellois),
 available [in the project wiki](https://github.com/marian-m12l/studio/wiki/Documentation).
 
-
 FOR DEVELOPERS
 --------------
 
@@ -199,7 +190,6 @@ If you liked STUdio, you will also like:
 * [Moiki](https://moiki.fr/) is an online tool to create interactive stories that can be exported for STUdio (courtesy
 of [@kaelhem](https://github.com/kaelhem))
 
-
 LICENSE
 -------
 
@@ -208,4 +198,3 @@ This project is licensed under the terms of the **Mozilla Public License 2.0**. 
 The `jvorbis` library, as well as the `VorbisEncoder` class are licensed by the Xiph.org Foundation. The terms of the license can be found in the [LICENSE-jvorbis.md](LICENSE-jvorbis.md) file.
 
 The `com.jhlabs.image` package is licensed by Jerry Huxtable under the terms of the Apache License 2.0. The terms of the license can be found in the [LICENSE-jhlabs.md](LICENSE-jhlabs.md) file.
-

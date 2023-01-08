@@ -1,5 +1,6 @@
-[![Build](https://github.com/kairoh/studio/actions/workflows/maven.yml/badge.svg)](https://github.com/kairoh/studio/actions/workflows/maven.yml)
 [![Release](https://img.shields.io/github/v/release/kairoh/studio)](https://github.com/kairoh/studio/releases/latest)
+[![Sonar Build](https://github.com/kairoh/studio/actions/workflows/sonarcloud.yml/badge.svg)](https://github.com/kairoh/studio/actions/workflows/sonarcloud.yml)
+[![Native Build](https://github.com/kairoh/studio/actions/workflows/native.yml/badge.svg)](https://github.com/kairoh/studio/actions/workflows/native.yml)
 
 [![Quality Scale](https://sonarcloud.io/api/project_badges/measure?project=kairoh_studio&metric=sqale_rating)](https://sonarcloud.io/dashboard?id=kairoh_studio)
 [![Reliability Rating](https://sonarcloud.io/api/project_badges/measure?project=kairoh_studio&metric=reliability_rating)](https://sonarcloud.io/dashboard?id=kairoh_studio)
@@ -15,7 +16,6 @@ STUdio - Story Teller Unleashed
 
 Créez et transférez vos propres packs d'histoires de et vers la Fabrique à Histoires Lunii[^1].
 
-
 PRÉAMBULE
 ---------
 
@@ -25,31 +25,23 @@ Ce logiciel s'appuie sur des recherches de rétro-ingénierie, limitées à la c
 
 [^1]: Lunii, Luniistore et "ma fabrique à histoires" sont des marques enregistrées de Lunii SAS. Ce travail n'est en aucun cas affilié à Lunii SAS.
 
-
 UTILISATION
 -----------
 
 ### Choisir son édition
 
-L'édition "Native" est plus rapide et n'a pas besoin d'avoir Java installé.
+:rocket: L'édition "Native" est plus rapide et n'a pas besoin d'avoir Java installé.
 Peu d'architecture sont disponibles (dépend des hôtes Github), mais vous pouvez [compiler la vôtre](#compiler-l%C3%A9dition-native).
 
-| CPU/OS  | Linux              | Windows            | MacOS              | 
-| :---:   | :---:              | :---:              | :---:              |
-| x86_64  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| x86     |                    |                    |                    |
-| arm     |                    |                    |                    |
-| aarch64 |                    |                    |                    |
-
-L'édition "Java" a besoin d'avoir Java 11+ installé. 
+:hotsprings: L'édition "Java" a besoin d'avoir Java 11+ installé. 
 Elle supporte presque toutes les architectures (selon la compatibilité de [usb4java](http://usb4java.org]) ).
 
-| CPU/OS  | Linux              | Windows            | MacOS              | 
-| :---:   | :---:              | :---:              | :---:              |
-| x86_64  | :heavy_check_mark: | :heavy_check_mark: | :heavy_check_mark: |
-| x86     | :heavy_check_mark: | :heavy_check_mark: |                    |
-| arm     | :heavy_check_mark: |                    |                    |
-| aarch64 | :heavy_check_mark: |                    | :heavy_check_mark: |
+| CPU/OS  | Linux        | Windows            | MacOS              | 
+| :---:   | :---:        | :---:              | :---:              |
+| x86_64  | :hotsprings: :rocket: | :hotsprings: :rocket: | :hotsprings: :rocket: |
+| x86     | :hotsprings: | :hotsprings:       |                    |
+| arm     | :hotsprings: |                    |                    |
+| aarch64 | :hotsprings: |                    | :hotsprings:       |
 
 ### Prérequis
 
@@ -58,7 +50,7 @@ Elle supporte presque toutes les architectures (selon la compatibilité de [usb4
 
 ### Installation
 
-* **Téléchargez** [la dernière release](../releases/latest) (ou [construisez l'application](#pour-les-développeurs)).
+* **Téléchargez** [la dernière release](https://github.com/kairoh/studio/releases/latest) (ou [construisez l'application](#pour-les-développeurs)).
 * **Décompressez** l'archive de distribution
 * **Exécutez le script de lancement** : `studio.sh` ou `studio.bat` selon votre plate-forme. Vous devrez probablement rendre ce fichier exécutable d'abord.
 * S'il ne s'ouvre pas automatiquement, **ouvrez un navigateur** et saisissez l'url `http://localhost:8080` pour charger l'interface web.
@@ -155,7 +147,6 @@ Les fichiers MP3 et OGG doivent, eux, être échantillonnés à 44100Hz.
 
 Pour plus d'informations, y compris un guide d'utilisation illustré (merci à [@appenzellois](https://github.com/appenzellois)), consultez [le wiki du projet](https://github.com/marian-m12l/studio/wiki/Documentation).
 
-
 POUR LES DÉVELOPPEURS
 ---------------------
 
@@ -204,7 +195,6 @@ d'histoires interactives (développé par [@sebbelese](https://github.com/sebbel
 * [Moiki](https://moiki.fr/) est un outil en ligne de création d'histoires interactives, qui peuvent être exportées
 vers STUdio (développé par [@kaelhem](https://github.com/kaelhem))
 
-
 LICENCE
 -------
 
@@ -216,4 +206,3 @@ de la licence se trouvent dans le fichier [LICENSE-jvorbis.md](LICENSE-jvorbis.m
 
 Le package `com.jhlabs.image` est distribué par Jerry Huxtable sous la licence Apache License 2.0. Les termes
 de la licence se trouvent dans le fichier [LICENSE-jhlabs.md](LICENSE-jhlabs.md).
-
