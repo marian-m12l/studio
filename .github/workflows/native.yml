@@ -2,6 +2,8 @@ name: Native
 on:
   push:
     paths-ignore: [ '*.md' ]
+    branches: [ '*' ]
+    tags: [ '*.*.*' ]
   pull_request:
     types: [ opened, synchronize, reopened ]
 concurrency: 
@@ -55,10 +57,9 @@ jobs:
           path: web-ui/javascript/build/
 
       - name: Build Maven Jar
-        run: mvn install -B -Pide
-
-      - name: Copy startup scripts
-        run: cp web-ui/src/main/scripts/java/* web-ui/target/quarkus-app/
+        run: |
+          mvn install -B -Pide
+          cp web-ui/src/main/scripts/java/* web-ui/target/quarkus-app/
 
       - name: Create zip
         uses: thedoctor0/zip-release@main
@@ -77,6 +78,7 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         with:
           generate_release_notes: true
+          discussion_category_name: Announcements
           files: web-ui/target/quarkus-app/${{env.zip-name}}
 
   build-native:

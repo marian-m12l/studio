@@ -5,8 +5,12 @@ updates:
     directory: "/"
     schedule:
       interval: "weekly"
+    pull-request-branch-name:
+      separator: "-"
 
   - package-ecosystem: "maven"
     directory: "/"
     schedule:
       interval: "weekly"
+    pull-request-branch-name:
+      separator: "-"
