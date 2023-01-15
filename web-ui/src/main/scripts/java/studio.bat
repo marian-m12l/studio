@@ -6,4 +6,4 @@ set CWD=%~dp0
 set STUDIO_HOME=%CWD%
 
 :: batch args as java system properties
-java %* -jar %CWD%/quarkus-run.jar
+java %* -jar "%CWD%/quarkus-run.jar"
