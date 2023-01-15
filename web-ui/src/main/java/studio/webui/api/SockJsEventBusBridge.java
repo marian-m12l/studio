@@ -3,19 +3,18 @@ package studio.webui.api;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import io.vertx.ext.bridge.PermittedOptions;
 import io.vertx.ext.web.handler.sockjs.SockJSBridgeOptions;
 import io.vertx.mutiny.core.Vertx;
 import io.vertx.mutiny.ext.web.Router;
 import io.vertx.mutiny.ext.web.handler.sockjs.SockJSHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @ApplicationScoped
 public class SockJsEventBusBridge {
 
-    private static final Logger LOGGER = LogManager.getLogger(SockJsEventBusBridge.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(SockJsEventBusBridge.class);
 
     public void init(@Observes Router router, Vertx vertx) {
         LOGGER.info("Start Sockjs EventBus");

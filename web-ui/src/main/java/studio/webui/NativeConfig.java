@@ -1,8 +1,6 @@
 package studio.webui;
 
 import javax.enterprise.context.ApplicationScoped;
-import org.apache.logging.log4j.message.DefaultFlowMessageFactory;
-import org.apache.logging.log4j.message.ReusableMessageFactory;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.ControlSettings;
@@ -32,10 +30,7 @@ import studio.webui.model.EvergreenDTOs;
         EnrichedNodePosition.class,
         EnrichedNodeType.class,
         EnrichedPackMetadata.class,
-        EvergreenDTOs.CommitDto.class,
-        // log4j2
-        ReusableMessageFactory.class,
-        DefaultFlowMessageFactory.class //
+        EvergreenDTOs.CommitDto.class //
 })
 @ApplicationScoped
 public class NativeConfig {

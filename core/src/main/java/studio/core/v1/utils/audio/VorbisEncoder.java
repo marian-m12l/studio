@@ -7,9 +7,6 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.security.SecureRandom;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
 import com.github.axet.libogg.Jogg_packet;
 import com.github.axet.libogg.Jogg_page;
 import com.github.axet.libogg.Jogg_stream_state;
@@ -18,6 +15,8 @@ import com.github.axet.libvorbis.Jvorbis_comment;
 import com.github.axet.libvorbis.Jvorbis_dsp_state;
 import com.github.axet.libvorbis.Jvorbis_info;
 import com.github.axet.libvorbis.Jvorbis_pcm;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 /**
  * This class is *heavily* inspired by the OggVorbis software codec source code,
@@ -57,7 +56,7 @@ import com.github.axet.libvorbis.Jvorbis_pcm;
  */
 public class VorbisEncoder {
 
-    private static final Logger LOGGER = LogManager.getLogger(VorbisEncoder.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(VorbisEncoder.class);
 
     private static final int CHANNELS = 2;
     private static final int RATE = 44100;

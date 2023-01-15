@@ -18,9 +18,8 @@ import java.util.function.Function;
 import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
@@ -34,7 +33,7 @@ import studio.core.v1.utils.stream.ThrowingFunction;
 
 public class StoryPackConverter {
 
-    private static final Logger LOGGER = LogManager.getLogger(StoryPackConverter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(StoryPackConverter.class);
 
     private enum MediaGroup {
        AUDIO, IMAGE;

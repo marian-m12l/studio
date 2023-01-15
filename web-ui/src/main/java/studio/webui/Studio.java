@@ -12,18 +12,18 @@ import java.net.URL;
 import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.runtime.Quarkus;
 import io.quarkus.runtime.StartupEvent;
 import io.quarkus.runtime.annotations.QuarkusMain;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 @QuarkusMain
 public class Studio {
 
-    private static final Logger LOGGER = LogManager.getLogger(Studio.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(Studio.class);
 
     public static void main(String... args) {
         LOGGER.info("Running Studio");

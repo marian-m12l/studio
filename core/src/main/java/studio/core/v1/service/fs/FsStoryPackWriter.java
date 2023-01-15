@@ -31,9 +31,8 @@ import javax.sound.sampled.AudioFormat;
 import javax.sound.sampled.AudioSystem;
 import javax.sound.sampled.UnsupportedAudioFileException;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.ControlSettings;
@@ -59,7 +58,7 @@ import studio.core.v1.utils.security.XXTEACipher.CipherMode;
  */
 public class FsStoryPackWriter implements StoryPackWriter {
 
-    private static final Logger LOGGER = LogManager.getLogger(FsStoryPackWriter.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FsStoryPackWriter.class);
 
     /** Blank MP3 file. */
     private static final byte[] BLANK_MP3 = readRelative("blank.mp3");
@@ -256,7 +255,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
         try (InputStream is = classLoader.getResourceAsStream(relative)) {
             return is.readAllBytes();
         } catch (IOException e) {
-            LOGGER.atError().withThrowable(e).log("Cannot load relative resource {}!", relative);
+            LOGGER.error("Cannot load relative resource {}!", relative, e);
             return new byte[0];
         }
     }

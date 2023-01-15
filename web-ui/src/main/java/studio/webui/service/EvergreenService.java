@@ -14,11 +14,11 @@ import java.util.concurrent.CompletionStage;
 
 import javax.enterprise.context.ApplicationScoped;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import studio.webui.model.EvergreenDTOs.AnnounceDTO;
 import studio.webui.model.EvergreenDTOs.GithubClient;
 import studio.webui.model.EvergreenDTOs.GithubRawClient;
@@ -28,7 +28,7 @@ import studio.webui.model.EvergreenDTOs.VersionDTO;
 @ApplicationScoped
 public class EvergreenService {
 
-    private static final Logger LOGGER = LogManager.getLogger(EvergreenService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(EvergreenService.class);
 
     @ConfigProperty(name = "version")
     String version;

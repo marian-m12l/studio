@@ -14,14 +14,14 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.function.Function;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.usb4java.Device;
 import org.usb4java.DeviceHandle;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 import org.usb4java.Transfer;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.utils.security.SecurityUtils;
 
@@ -170,7 +170,7 @@ import studio.core.v1.utils.security.SecurityUtils;
  */
 public class LibUsbMassStorageHelper {
 
-    private static final Logger LOGGER = LogManager.getLogger(LibUsbMassStorageHelper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LibUsbMassStorageHelper.class);
 
     // USB device
     private static final short INTERFACE_ID = 0;

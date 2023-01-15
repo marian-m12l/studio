@@ -11,12 +11,12 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.usb4java.Context;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import studio.core.v1.exception.StoryTellerException;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
@@ -25,7 +25,7 @@ import studio.driver.model.UsbDeviceVersion;
 
 public class LibUsbDetectionHelper {
 
-    private static final Logger LOGGER = LogManager.getLogger(LibUsbDetectionHelper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LibUsbDetectionHelper.class);
 
     private static final long POLL_DELAY = 5L;
 

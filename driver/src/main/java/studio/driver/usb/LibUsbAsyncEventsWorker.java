@@ -6,15 +6,16 @@
 
 package studio.driver.usb;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.usb4java.Context;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 public class LibUsbAsyncEventsWorker extends Thread {
 
-    private static final Logger LOGGER = LogManager.getLogger(LibUsbAsyncEventsWorker.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LibUsbAsyncEventsWorker.class);
 
     private volatile boolean abort;
     private Context context;

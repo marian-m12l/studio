@@ -22,8 +22,6 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
@@ -31,6 +29,8 @@ import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import io.quarkus.runtime.StartupEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.utils.io.FileUtils;
 import studio.metadata.DatabaseMetadataDTOs.DatabasePackMetadata;
@@ -42,7 +42,7 @@ import studio.metadata.DatabaseMetadataDTOs.TokenResponse;
 @ApplicationScoped
 public class DatabaseMetadataService {
 
-    private static final Logger LOGGER = LogManager.getLogger(DatabaseMetadataService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DatabaseMetadataService.class);
 
     @RestClient
     LuniiGuestClient luniiGuestClient;

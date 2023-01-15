@@ -7,8 +7,6 @@ package studio.driver.usb;
 
 import java.util.concurrent.CompletableFuture;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.usb4java.Context;
 import org.usb4java.Device;
 import org.usb4java.DeviceDescriptor;
@@ -16,6 +14,8 @@ import org.usb4java.DeviceList;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
 import studio.driver.model.UsbDeviceFirmware;
@@ -23,7 +23,7 @@ import studio.driver.model.UsbDeviceVersion;
 
 public class LibUsbActivePollingWorker implements Runnable {
 
-    private static final Logger LOGGER = LogManager.getLogger(LibUsbActivePollingWorker.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LibUsbActivePollingWorker.class);
 
     private final Context context;
     private final UsbDeviceVersion deviceVersion;

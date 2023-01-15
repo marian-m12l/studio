@@ -17,9 +17,8 @@ import java.util.function.BiConsumer;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
-
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.usb4java.Device;
 
 import io.quarkus.arc.profile.IfBuildProfile;
@@ -39,7 +38,7 @@ import studio.metadata.DatabaseMetadataService;
 @Singleton
 public class StoryTellerService implements IStoryTellerService, DevicePluggedListener, DeviceUnpluggedListener {
 
-    private static final Logger LOGGER = LogManager.getLogger(StoryTellerService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(StoryTellerService.class);
 
     @Inject
     DatabaseMetadataService databaseMetadataService;

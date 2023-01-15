@@ -31,21 +31,11 @@
             <groupId>studio</groupId>
             <artifactId>studio-driver</artifactId>
             <version>${project.version}</version>
-            <exclusions>
-                <exclusion>
-                    <groupId>org.apache.logging.log4j</groupId>
-                    <artifactId>log4j-core</artifactId>
-                </exclusion>
-            </exclusions>
         </dependency>
         <dependency>
-           <groupId>org.projectlombok</groupId>
-           <artifactId>lombok</artifactId>
-           <scope>provided</scope>
-        </dependency>
-        <dependency>
-            <groupId>org.jboss.logmanager</groupId>
-            <artifactId>log4j2-jboss-logmanager</artifactId>
+            <groupId>org.projectlombok</groupId>
+            <artifactId>lombok</artifactId>
+            <scope>provided</scope>
         </dependency>
         <!-- included
        <dependency>
@@ -212,16 +202,6 @@
              <properties>
                 <quarkus.package.type>native</quarkus.package.type>
              </properties>
-        </profile>
-
-        <profile>
-            <id>native-docker</id>
-            <properties>
-                <quarkus.package.type>native</quarkus.package.type>
-                <quarkus.native.container-build>true</quarkus.native.container-build>
-                <quarkus.native.builder-image>mandrel</quarkus.native.builder-image>
-                <skipITs>false</skipITs>
-            </properties>
         </profile>
     </profiles>
 </project>

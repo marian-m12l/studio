@@ -14,10 +14,10 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import studio.core.v1.service.PackFormat;
 import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.MetaPackDTO;
@@ -31,7 +31,7 @@ import studio.webui.service.IStoryTellerService;
 @Path("/api/device")
 public class DeviceController {
 
-    private static final Logger LOGGER = LogManager.getLogger(DeviceController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(DeviceController.class);
 
     @ConfigProperty(name = "studio.library")
     java.nio.file.Path libraryPath;

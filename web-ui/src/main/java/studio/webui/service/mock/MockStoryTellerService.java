@@ -29,14 +29,14 @@ import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 import javax.inject.Singleton;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
 import io.vertx.mutiny.core.eventbus.EventBus;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.service.PackFormat;
@@ -52,7 +52,7 @@ import studio.webui.service.IStoryTellerService;
 @Singleton
 public class MockStoryTellerService implements IStoryTellerService {
 
-    private static final Logger LOGGER = LogManager.getLogger(MockStoryTellerService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MockStoryTellerService.class);
 
     private static final int BUFFER_SIZE = 1024 * 1024 * 10;
 
@@ -152,7 +152,7 @@ public class MockStoryTellerService implements IStoryTellerService {
                     return Optional.of(meta);
                 }
             } catch (IOException e) {
-                LOGGER.atError().withThrowable(e).log("Failed to read binary-format pack {} from mocked device", path);
+                LOGGER.error("Failed to read binary-format pack {} from mocked device", path, e);
             }
         } else {
             LOGGER.error("Mocked device should only contain .pack files");

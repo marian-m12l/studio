@@ -20,11 +20,11 @@ import javax.enterprise.context.ApplicationScoped;
 import javax.enterprise.event.Observes;
 import javax.inject.Inject;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 
 import io.quarkus.runtime.StartupEvent;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.service.PackFormat;
@@ -40,7 +40,7 @@ import studio.webui.model.LibraryDTOs.UuidPacksDTO;
 @ApplicationScoped
 public class LibraryService {
 
-    private static final Logger LOGGER = LogManager.getLogger(LibraryService.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LibraryService.class);
 
     @ConfigProperty(name = "studio.library")
     Path libraryPath;

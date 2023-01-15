@@ -9,12 +9,12 @@ package studio.core.v1.utils.audio;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 public class ID3Tags {
 
-    private static final Logger LOGGER = LogManager.getLogger(ID3Tags.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(ID3Tags.class);
 
     private static final int ID3V1_SIZE = 128;
     private static final int ID3V2_HEADER_SIZE = 10;

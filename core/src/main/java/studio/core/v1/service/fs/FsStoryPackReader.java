@@ -21,9 +21,8 @@ import java.util.TreeMap;
 import java.util.UUID;
 import java.util.stream.Stream;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.ControlSettings;
 import studio.core.v1.model.StageNode;
@@ -40,7 +39,7 @@ import studio.core.v1.utils.security.XXTEACipher.CipherMode;
 
 public class FsStoryPackReader implements StoryPackReader {
 
-    private static final Logger LOGGER = LogManager.getLogger(FsStoryPackReader.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FsStoryPackReader.class);
 
     @Override
     public StoryPackMetadata readMetadata(Path inputFolder) throws IOException {

@@ -26,12 +26,12 @@ import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.usb4java.Device;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.service.PackFormat;
 import studio.core.v1.service.fs.FsStoryPackDTO.FsStoryPack;
@@ -55,7 +55,7 @@ import studio.driver.usb.LibUsbDetectionHelper;
 
 public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
-    private static final Logger LOGGER = LogManager.getLogger(FsStoryTellerAsyncDriver.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(FsStoryTellerAsyncDriver.class);
 
     private static final long FS_MOUNTPOINT_POLL_DELAY = 1000L;
     private static final long FS_MOUNTPOINT_RETRY = 10;

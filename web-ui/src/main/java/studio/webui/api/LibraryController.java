@@ -14,11 +14,10 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.jboss.resteasy.reactive.RestForm;
 import org.jboss.resteasy.reactive.multipart.FileUpload;
-
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import io.smallrye.mutiny.infrastructure.Infrastructure;
 import io.smallrye.common.annotation.NonBlocking;
 import studio.core.v1.service.PackFormat;
@@ -32,7 +31,7 @@ import studio.webui.service.LibraryService;
 @Path("/api/library")
 public class LibraryController {
 
-    private static final Logger LOGGER = LogManager.getLogger(LibraryController.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LibraryController.class);
 
     @Inject
     LibraryService libraryService;

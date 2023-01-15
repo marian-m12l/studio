@@ -30,13 +30,13 @@ import java.util.concurrent.CompletionStage;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.usb4java.Device;
 import org.usb4java.DeviceHandle;
 
 import lombok.Getter;
 import lombok.Setter;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.service.PackFormat;
 import studio.core.v1.utils.io.FileUtils;
@@ -54,7 +54,7 @@ import studio.driver.usb.LibUsbDetectionHelper;
 
 public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
-    private static final Logger LOGGER = LogManager.getLogger(RawStoryTellerAsyncDriver.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(RawStoryTellerAsyncDriver.class);
 
     private static final int SDCARD_DEFAULT_SIZE_IN_SECTORS = 6815513;
     private static final int SDCARD_FAT16_PARTITION_SIZE_IN_SECTORS = 20480;    // 10.5 MB
