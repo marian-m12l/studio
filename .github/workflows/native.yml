@@ -149,14 +149,12 @@ jobs:
       - name: (*nix) Build native
         run: |
           mvn verify -B -Pnative -Pide -DskipTests
-          echo "artifact_name=$(ls web-ui/target/*runner)" >> $GITHUB_ENV
           cp web-ui/src/main/scripts/native/*.sh web-ui/target/
         if: ${{ runner.os != 'Windows' }}
 
       - name: (Windows) Build native
         run: |
           mvn verify -B -Pnative -Pide -DskipTests
-          "artifact_name=$((ls web-ui/target/*.exe).FullName)" >> $env:GITHUB_ENV
           cp web-ui/target/*native-image-source-jar/*.dll web-ui/target/
           cp web-ui/src/main/scripts/native/*.bat web-ui/target/
         if: ${{ runner.os == 'Windows' }}
@@ -164,9 +162,11 @@ jobs:
       - name: Compress exec
         uses: svenstaro/upx-action@v2
         with:
-          file: ${{ env.artifact_name }}
           args: '-7'
           strip: false
+          files: |
+            web-ui/target/*runner
+            web-ui/target/*.exe
         if: ${{ runner.os != 'Windows' }}
 
       - name: Create zip
