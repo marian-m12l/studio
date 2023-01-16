@@ -3,8 +3,6 @@ on:
   push:
     paths-ignore: [ '*.md' ]
     branches: [ '*' ]
-  repository_dispatch:
-    types: [ trigger-nightly ]
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

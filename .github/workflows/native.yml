@@ -4,9 +4,7 @@ on:
     paths-ignore: [ '*.md' ]
     branches: [ '*' ]
     tags: [ '*.*.*' ]
-  pull_request:
-    types: [ opened, synchronize, reopened ]
-concurrency: 
+concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 jobs:
