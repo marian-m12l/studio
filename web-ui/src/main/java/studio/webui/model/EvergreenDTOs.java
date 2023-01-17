@@ -23,7 +23,7 @@ public interface EvergreenDTOs {
     String DEFAULT_ANNOUNCE_CONTENT = ANNOUNCE_EN + "\n\n-----\n\n" + ANNOUNCE_FR;
     String DEFAULT_ANNOUNCE_DATE = "2020-05-12T00:00:00.000Z";
 
-    @RegisterRestClient(baseUri = "https://api.github.com/repos/marian-m12l/studio")
+    @RegisterRestClient(baseUri = "https://api.github.com/repos/kairoh/studio")
     interface GithubClient {
         @GET
         @Path("/releases/latest")
@@ -34,7 +34,7 @@ public interface EvergreenDTOs {
         CompletionStage<List<CommitDto>> commits(@QueryParam("path") String path);
     }
 
-    @RegisterRestClient(baseUri = "https://raw.githubusercontent.com/marian-m12l/studio")
+    @RegisterRestClient(baseUri = "https://raw.githubusercontent.com/kairoh/studio")
     interface GithubRawClient {
         @GET
         @Path("/master/ANNOUNCE.md")

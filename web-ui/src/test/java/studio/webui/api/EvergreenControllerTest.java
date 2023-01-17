@@ -56,7 +56,7 @@ class EvergreenControllerTest {
     @Test
     void testLatest() {
         LatestVersionDTO v = new LatestVersionDTO("0.3.1", "2021-08-15T13:04:41Z",
-                "https://github.com/marian-m12l/studio/releases/tag/0.3.1");
+                "https://github.com/kairoh/studio/releases/tag/0.3.1");
         Mockito.when(githubClient.latestRelease()).thenReturn(CompletableFuture.completedStage(v));
 
         when().get("latest") //
