@@ -90,8 +90,7 @@ public class LibraryService {
             databaseMetadataService.persistLibrary();
             return jsonMetasByUuid;
         } catch (IOException e) {
-            LOGGER.error("Failed to read packs from local library", e);
-            throw new StoryTellerException(e);
+            throw new StoryTellerException("Failed to read packs from local library", e);
         }
     }
 

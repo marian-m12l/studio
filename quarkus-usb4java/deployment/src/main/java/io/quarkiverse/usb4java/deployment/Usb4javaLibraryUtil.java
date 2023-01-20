@@ -1,5 +1,7 @@
 package io.quarkiverse.usb4java.deployment;
 
+import org.usb4java.LoaderException;
+
 /**
  * This code is extracted from the {@link Loader} class as most things are
  * private there.
@@ -110,7 +112,7 @@ public class Usb4javaLibraryUtil {
         if (os.equals("darwin")) {
             return "dylib";
         }
-        throw new RuntimeException("Unable to determine the shared library "
+        throw new LoaderException("Unable to determine the shared library "
                 + "file extension for operating system '" + os
                 + "'. Please specify Java parameter -D" + key
                 + "=<FILE-EXTENSION>");

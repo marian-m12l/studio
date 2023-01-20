@@ -135,8 +135,7 @@ public class MockStoryTellerService implements IStoryTellerService {
                             .collect(Collectors.toList()) //
             );
         } catch (IOException e) {
-            LOGGER.error("Failed to read packs from mocked device", e);
-            throw new StoryTellerException(e);
+            throw new StoryTellerException("Failed to read packs from mocked device", e);
         }
     }
 
@@ -223,8 +222,7 @@ public class MockStoryTellerService implements IStoryTellerService {
             di.setStorage(new StorageDTO(total, total - used, used));
             return di;
         } catch (IOException e) {
-            LOGGER.error("Failed to initialize mocked device", e);
-            throw new StoryTellerException(e);
+            throw new StoryTellerException("Failed to initialize mocked device", e);
         }
     }
 

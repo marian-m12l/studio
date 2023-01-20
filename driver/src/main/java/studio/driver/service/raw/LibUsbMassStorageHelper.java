@@ -19,7 +19,7 @@ import org.usb4java.DeviceHandle;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 import org.usb4java.Transfer;
-
+import org.usb4java.TransferCallback;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import studio.core.v1.exception.StoryTellerException;
@@ -314,7 +314,7 @@ public class LibUsbMassStorageHelper {
         CompletableFuture<Boolean> promise = new CompletableFuture<>();
 
         Transfer transfer = LibUsb.allocTransfer();
-        LibUsb.fillBulkTransfer(transfer, handle, endpoint.getValue(), data, xfer -> {
+        LibUsb.fillBulkTransfer(transfer, handle, endpoint.getValue(), data, (TransferCallback) xfer -> {
             if (xfer.status() != LibUsb.TRANSFER_COMPLETED) {
                 LOGGER.error("TRANSFER {} NOT COMPLETED: {}", endpoint, xfer.status());
                 promise.completeExceptionally(new StoryTellerException("Transfer failed" + endpoint));
