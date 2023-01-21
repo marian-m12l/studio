@@ -38,10 +38,12 @@ Few architecture are available (depending on available Github Host Runners), but
 
 | CPU/OS  | Linux        | Windows            | MacOS              | 
 | :---:   | :---:        | :---:              | :---:              |
-| x86_64  | :hotsprings: :rocket: | :hotsprings: :rocket: | :hotsprings: :rocket: |
-| x86     | :hotsprings: | :hotsprings:       |                    |
-| arm     | :hotsprings: |                    |                    |
-| aarch64 | :hotsprings: |                    | :hotsprings:       |
+| x86_64, amd64  | :hotsprings: :rocket: | :hotsprings: :rocket: | :hotsprings: :rocket: |
+| x86, i386      | :hotsprings: | :hotsprings:       |                    |
+| armhf, armv7l, aarch32 | :hotsprings: |                    |                    |
+| arm64, aarch64 | :hotsprings: |                    | :hotsprings:       |
+
+Nowadays most PC and Mac are amd64 except Apple M1, M2, M3 which are arm64.
 
 ### Prerequisite
 

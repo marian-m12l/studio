@@ -38,10 +38,12 @@ Elle supporte presque toutes les architectures (selon la compatibilité de [usb4
 
 | CPU/OS  | Linux        | Windows            | MacOS              | 
 | :---:   | :---:        | :---:              | :---:              |
-| x86_64  | :hotsprings: :rocket: | :hotsprings: :rocket: | :hotsprings: :rocket: |
-| x86     | :hotsprings: | :hotsprings:       |                    |
-| arm     | :hotsprings: |                    |                    |
-| aarch64 | :hotsprings: |                    | :hotsprings:       |
+| x86_64, amd64  | :hotsprings: :rocket: | :hotsprings: :rocket: | :hotsprings: :rocket: |
+| x86, i386      | :hotsprings: | :hotsprings:       |                    |
+| armhf, armv7l, aarch32 | :hotsprings: |                    |                    |
+| arm64, aarch64 | :hotsprings: |                    | :hotsprings:       |
+
+De nos jours la plupart des PC et Mac sont compatibles amd64, sauf les Apple M1, M2, M3 qui sont arm64. 
 
 ### Prérequis
 
