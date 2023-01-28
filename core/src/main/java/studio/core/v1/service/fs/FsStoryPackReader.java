@@ -3,10 +3,11 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
 package studio.core.v1.service.fs;
 
-import java.io.BufferedInputStream;
+import static studio.core.v1.utils.io.FileUtils.dataInputStream;
+
+import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
@@ -47,9 +48,9 @@ public class FsStoryPackReader implements StoryPackReader {
         StoryPackMetadata metadata = new StoryPackMetadata(PackFormat.FS);
         FsStoryPack fsp = new FsStoryPack(inputFolder);
         // Open 'ni' file
-        try (InputStream niDis = new BufferedInputStream(Files.newInputStream(fsp.getNodeIndex()))) {
-            ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
-            metadata.setVersion(bb.getShort(2));
+        try (DataInputStream niDis = dataInputStream(fsp.getNodeIndex())) {
+            niDis.readShort();
+            metadata.setVersion(Short.reverseBytes(niDis.readShort()));
         }
         // Get uuid from folder name
         metadata.setUuid(fsp.getUuid());
@@ -82,7 +83,7 @@ public class FsStoryPackReader implements StoryPackReader {
         byte[] liContent = readCipheredFile(fsp.getListIndex());
 
         // Open 'ni' file
-        try (InputStream niDis = new BufferedInputStream(Files.newInputStream(fsp.getNodeIndex()))) {
+        try (InputStream niDis = dataInputStream(fsp.getNodeIndex())) {
             ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
             // Nodes index file format version (1)
             bb.getShort();

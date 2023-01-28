@@ -3,6 +3,8 @@ on:
   push:
     paths-ignore: [ '*.md' ]
     branches: [ '*' ]
+permissions:
+  checks: write
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

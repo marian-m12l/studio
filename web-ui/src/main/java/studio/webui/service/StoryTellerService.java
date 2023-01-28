@@ -23,6 +23,7 @@ import org.usb4java.Device;
 
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.vertx.mutiny.core.eventbus.EventBus;
+import studio.core.v1.utils.io.FileUtils;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
 import studio.driver.event.TransferProgressListener;
@@ -145,7 +146,12 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
     private TransferProgressListener onTransferProgress(String transferId) {
         return status -> {
             double p = status.getPercent();
-            LOGGER.debug("Transfer progress... {}% ({} / {})", p, status.getTransferred(), status.getTotal());
+            if(LOGGER.isInfoEnabled()) {
+                LOGGER.info("Transferring {} ({} / {})", //
+                   FileUtils.readablePercent(p), //
+                   FileUtils.readableByteSize(status.getTransferred()), //
+                   FileUtils.readableByteSize(status.getTotal()));
+            }
             sendProgress(eventBus, transferId, p);
         };
     }

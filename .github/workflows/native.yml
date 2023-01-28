@@ -4,6 +4,8 @@ on:
     paths-ignore: [ '*.md' ]
     branches: [ '*' ]
     tags: [ '*.*.*' ]
+permissions:
+  checks: write
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true

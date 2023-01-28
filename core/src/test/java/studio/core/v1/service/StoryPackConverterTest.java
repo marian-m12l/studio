@@ -110,5 +110,4 @@ class StoryPackConverterTest {
         Path newZipPath = storyPackConverter.convert(newFs.getFileName().toString(), PackFormat.ARCHIVE, true);
         assertEquals(PackFormat.ARCHIVE, PackFormat.fromPath(newZipPath), "Pack " + newZipPath.getFileName());
     }
-
 }

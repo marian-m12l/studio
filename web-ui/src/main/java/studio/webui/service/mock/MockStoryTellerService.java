@@ -6,8 +6,9 @@
 
 package studio.webui.service.mock;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
+import static studio.core.v1.utils.io.FileUtils.dataInputStream;
+import static studio.core.v1.utils.io.FileUtils.dataOutputStream;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -177,8 +178,8 @@ public class MockStoryTellerService implements IStoryTellerService {
                 sendDone(eventBus, transferId, true);
                 return;
             }
-            try (InputStream input = new BufferedInputStream(Files.newInputStream(packFile));
-                    OutputStream output = new BufferedOutputStream(Files.newOutputStream(destFile))) {
+            try (InputStream input = dataInputStream(packFile);
+                 OutputStream output = dataOutputStream(destFile)) {
                 long fileSize = Files.size(packFile);
                 final byte[] buffer = new byte[BUFFER_SIZE];
                 long count = 0;

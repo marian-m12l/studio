@@ -11,5 +11,4 @@ public interface StoryPackReader {
     StoryPackMetadata readMetadata(Path path) throws IOException;
 
     StoryPack read(Path path) throws IOException;
-
 }

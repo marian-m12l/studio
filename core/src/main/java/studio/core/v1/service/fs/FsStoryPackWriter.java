@@ -3,16 +3,16 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
 package studio.core.v1.service.fs;
 
-import java.io.BufferedInputStream;
-import java.io.BufferedOutputStream;
+import static studio.core.v1.utils.io.FileUtils.dataInputStream;
+import static studio.core.v1.utils.io.FileUtils.dataOutputStream;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.DataOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
-import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
 import java.nio.charset.StandardCharsets;
@@ -77,15 +77,15 @@ public class FsStoryPackWriter implements StoryPackWriter {
         }
 
         // Store assets bytes
-        Map<String, byte[]> assets = new TreeMap<>();
+        var assets = new TreeMap<String, byte[]>();
         // Keep track of action nodes and assets
-        List<ActionNode> actionsOrdered = new ArrayList<>();
-        Map<ActionNode, Integer> actionsIndexes = new HashMap<>();
-        List<String> imageHashOrdered = new ArrayList<>();
-        List<String> audioHashOrdered = new ArrayList<>();
+        var actionsOrdered = new ArrayList<ActionNode>();
+        var actionsIndexes = new HashMap<ActionNode, Integer>();
+        var imageHashOrdered = new ArrayList<String>();
+        var audioHashOrdered = new ArrayList<String>();
 
         // Add nodes index file: ni
-        try (OutputStream niDos = new BufferedOutputStream(Files.newOutputStream(fsp.getNodeIndex()))) {
+        try (DataOutputStream niDos = dataOutputStream(fsp.getNodeIndex())) {
             ByteBuffer bb = ByteBuffer.allocate(512).order(ByteOrder.LITTLE_ENDIAN);
 
             // Nodes index file format version (1)
@@ -163,7 +163,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
         FsStoryPack fsp = new FsStoryPack(packFolder);
         // Compute specific key
         byte[] specificKey = computeSpecificKeyFromUUID(deviceUuid);
-        try (InputStream is = new BufferedInputStream(Files.newInputStream(fsp.getImageIndex()))) {
+        try (InputStream is = dataInputStream(fsp.getImageIndex())) {
             int cypherBlockSize = 64;
             // Read ciphered block of ri file
             byte[] riCipheredBlock = is.readNBytes(cypherBlockSize);

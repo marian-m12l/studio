@@ -14,13 +14,12 @@ import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADAT
 import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING;
 import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE;
 import static studio.core.v1.service.raw.RawStoryPackDTO.SECTOR_SIZE;
+import static studio.core.v1.utils.io.FileUtils.dataInputStream;
 
-import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
@@ -58,7 +57,7 @@ public class RawStoryPackReader implements StoryPackReader {
 
     @Override
     public StoryPackMetadata readMetadata(Path path) throws IOException {
-        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(Files.newInputStream(path)))) {
+        try(DataInputStream dis = dataInputStream(path)) {
             // Pack metadata model
             StoryPackMetadata metadata = new StoryPackMetadata(PackFormat.RAW);
 
@@ -81,14 +80,14 @@ public class RawStoryPackReader implements StoryPackReader {
                     - BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE * 2);
 
             // Read main stage node UUID
-            metadata.setUuid(readUuid(dis));
+            metadata.setUuid(readUuid(dis.readLong(), dis.readLong()));
             return metadata;
         }
     }
 
     @Override
     public StoryPack read(Path path) throws IOException {
-        try (DataInputStream dis = new DataInputStream(new BufferedInputStream(Files.newInputStream(path)))) {
+        try (DataInputStream dis = dataInputStream(path)) {
             StoryPack sp = new StoryPack();
 
             // Read sector 1 : stageNode number
@@ -111,17 +110,17 @@ public class RawStoryPackReader implements StoryPackReader {
                     - BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE * 2);
 
             // Read stage nodes (`stages` sectors, starting from sector 2)
-            Map<SectorAddr, StageNode> stageNodes = new TreeMap<>();
+            var stageNodes = new TreeMap<SectorAddr,StageNode>();
             // StageNodes must be updated with the actual ImageAsset
-            Map<AssetAddr, List<StageNode>> stagesWithImage = new TreeMap<>();
+            var stagesWithImage = new TreeMap<AssetAddr,List<StageNode>>();
             // StageNodes must be updated with the actual AudioAsset
-            Map<AssetAddr, List<StageNode>> stagesWithAudio = new TreeMap<>();
+            var stagesWithAudio = new TreeMap<AssetAddr,List<StageNode>>();
             // Transitions must be updated with the actual ActionNode
-            Map<SectorAddr, List<Transition>> transitionsWithAction = new TreeMap<>();
+            var transitionsWithAction = new TreeMap<SectorAddr,List<Transition>>();
             // Stage nodes / transitions reference action nodes, which are read after
-            Set<SectorAddr> actionNodes = new TreeSet<>();
+            var actionNodes = new TreeSet<SectorAddr>();
             // Stage nodes reference assets, which are read after all nodes
-            Set<AssetAddr> assetAddrs = new TreeSet<>();
+            var assetAddrs = new TreeSet<AssetAddr>();
 
             for (int i = 0; i < stages; i++) {
                 // Build stage node
@@ -129,7 +128,7 @@ public class RawStoryPackReader implements StoryPackReader {
                 stageNodes.put(new SectorAddr(i), stageNode);
 
                 // Reading sector i+2 : StageNode UUID
-                stageNode.setUuid(readUuid(dis));
+                stageNode.setUuid(readUuid(dis.readLong(), dis.readLong()));
 
                 // Keep Asset addresses
                 readAssetAddr(AssetType.IMAGE, dis.readInt(), dis.readInt(), assetAddrs, stagesWithImage, stageNode);
@@ -276,7 +275,7 @@ public class RawStoryPackReader implements StoryPackReader {
 
     private static EnrichedNodeMetadata readEnrichedNodeMetadata(DataInputStream dis) throws IOException {
         Optional<String> maybeName = readString(dis, BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE);
-        Optional<String> maybeGroupId = Optional.ofNullable(readUuid(dis));
+        Optional<String> maybeGroupId = Optional.ofNullable(readUuid(dis.readLong(), dis.readLong()));
         Optional<EnrichedNodeType> maybeType = Optional.empty();
         byte nodeTypeByte = dis.readByte();
         if (nodeTypeByte != 0x00) {
@@ -295,11 +294,9 @@ public class RawStoryPackReader implements StoryPackReader {
         return null;
     }
 
-    private static String readUuid(DataInputStream dis) throws IOException {
-        long uuidLowBytes = dis.readLong();
-        long uuidHighBytes = dis.readLong();
-        if (uuidLowBytes != 0 || uuidHighBytes != 0) {
-            return new UUID(uuidLowBytes, uuidHighBytes).toString();
+    private static String readUuid(long low, long high) {
+        if (low != 0 || high != 0) {
+            return new UUID(low, high).toString();
         }
         return null;
     }

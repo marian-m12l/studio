@@ -23,11 +23,20 @@ public final class DeviceInfosDTO {
     private boolean plugged;
     private StorageDTO storage;
 
+    public void setFirmware(short major, short minor) {
+        firmware = major + "." + minor;
+    }
+
     @Getter
+    @Setter
     @AllArgsConstructor
     public static final class StorageDTO {
         private long size;
         private long free;
         private long taken;
+
+        public void updateFree() {
+            free = size - taken;
+        }
     }
 }

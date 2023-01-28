@@ -65,7 +65,7 @@ public class StoryPackConverter {
                 // Compress pack assets
                 if (inFormat == PackFormat.RAW) {
                     LOGGER.info("Compressing pack assets");
-                    processCompressed(storyPack);
+                    convertToArchive(storyPack);
                 }
                 // force enriched pack
                 allowEnriched = true;
@@ -73,7 +73,7 @@ public class StoryPackConverter {
             case FS:
                 // Prepare assets (RLE-encoded BMP, audio must already be MP3)
                 LOGGER.info("Converting assets if necessary");
-                processFirmware2dot4(storyPack);
+                convertToFs(storyPack);
                 // force enriched pack
                 allowEnriched = true;
                 break;
@@ -81,7 +81,7 @@ public class StoryPackConverter {
                 // Uncompress pack assets
                 if (hasCompressedAssets(storyPack)) {
                     LOGGER.info("Uncompressing pack assets");
-                    processUncompressed(storyPack);
+                    convertToRaw(storyPack);
                 }
                 break;
             }
@@ -111,7 +111,7 @@ public class StoryPackConverter {
         return false;
     }
 
-    private static void processCompressed(StoryPack storyPack) {
+    private static void convertToArchive(StoryPack storyPack) {
         // Image
         processAssets(storyPack, MediaGroup.IMAGE, MediaAssetType.PNG, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
@@ -132,7 +132,7 @@ public class StoryPackConverter {
         }));
     }
 
-    private static void processUncompressed(StoryPack storyPack) {
+    private static void convertToRaw(StoryPack storyPack) {
         // Image
         processAssets(storyPack, MediaGroup.IMAGE, MediaAssetType.BMP, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();
@@ -162,7 +162,7 @@ public class StoryPackConverter {
         }));
     }
 
-    private static void processFirmware2dot4(StoryPack storyPack) {
+    private static void convertToFs(StoryPack storyPack) {
         // Image
         processAssets(storyPack, MediaGroup.IMAGE, MediaAssetType.BMP, ThrowingFunction.unchecked(ia -> {
             byte[] imageData = ia.getRawData();

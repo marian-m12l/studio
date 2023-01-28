@@ -14,11 +14,10 @@ import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADAT
 import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING;
 import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE;
 import static studio.core.v1.service.raw.RawStoryPackDTO.SECTOR_SIZE;
+import static studio.core.v1.utils.io.FileUtils.dataOutputStream;
 
-import java.io.BufferedOutputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Base64;
 import java.util.HashSet;
@@ -61,8 +60,7 @@ public class RawStoryPackWriter implements StoryPackWriter {
 
     @Override
     public void write(StoryPack pack, Path path, boolean enriched) throws IOException {
-        try (DataOutputStream dos = new DataOutputStream(new BufferedOutputStream(Files.newOutputStream(path)))) {
-
+        try (DataOutputStream dos = dataOutputStream(path)) {
             // Write sector 1
             dos.writeShort(pack.getStageNodes().size());
             dos.writeByte(pack.isFactoryDisabled() ? 1 : 0);
@@ -84,9 +82,9 @@ public class RawStoryPackWriter implements StoryPackWriter {
 
             // Count action nodes and assets (with sizes) and attribute a sector address
             // (offset) to each
-            Map<SectorAddr, ActionNode> actionNodesMap = new TreeMap<>();
-            Map<String, AssetAddr> assetsHashes = new TreeMap<>();
-            Map<AssetAddr, byte[]> assetsData = new TreeMap<>();
+            var actionNodesMap = new TreeMap<SectorAddr, ActionNode>();
+            var assetsHashes = new TreeMap<String, AssetAddr>();
+            var assetsData = new TreeMap<AssetAddr, byte[]>();
 
             // offset
             int nextFreeOffset = pack.getStageNodes().size();

@@ -11,13 +11,13 @@ import static java.nio.file.StandardOpenOption.CREATE;
 import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static studio.driver.service.raw.LibUsbMassStorageHelper.SECTOR_SIZE;
+import static studio.core.v1.utils.io.FileUtils.dataInputStream;
 
-import java.io.BufferedInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.ByteBuffer;
+import java.nio.ByteOrder;
 import java.nio.channels.SeekableByteChannel;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -35,6 +35,7 @@ import org.usb4java.DeviceHandle;
 
 import lombok.Getter;
 import lombok.Setter;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import studio.core.v1.exception.StoryTellerException;
@@ -43,7 +44,6 @@ import studio.core.v1.utils.io.FileUtils;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
 import studio.driver.event.TransferProgressListener;
-import studio.driver.model.AbstractDeviceInfos;
 import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.DeviceInfosDTO.StorageDTO;
 import studio.driver.model.MetaPackDTO;
@@ -56,13 +56,13 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RawStoryTellerAsyncDriver.class);
 
-    private static final int SDCARD_DEFAULT_SIZE_IN_SECTORS = 6815513;
-    private static final int SDCARD_FAT16_PARTITION_SIZE_IN_SECTORS = 20480;    // 10.5 MB
-    private static final int DEVICE_INFOS_SPI_OFFSET = 520192;
-    private static final int DEVICE_INFOS_SD_SECTOR_0 = 0;
-    private static final int DEVICE_INFOS_SD_SECTOR_2 = 2;
-    private static final int PACK_INDEX_SD_SECTOR = 100000;
-    private static final int PACK_TRANSFER_CHUNK_SECTOR_SIZE = 5000;    // 2.5 MB
+    static final int SDCARD_DEFAULT_SIZE_IN_SECTORS = 6815513;
+    static final int SDCARD_FAT16_PARTITION_SIZE_IN_SECTORS = 20480;    // 10.5 MB
+    static final int DEVICE_INFOS_SPI_OFFSET = 520192;
+    static final int DEVICE_INFOS_SD_SECTOR_0 = 0;
+    static final int DEVICE_INFOS_SD_SECTOR_2 = 2;
+    static final int PACK_INDEX_SD_SECTOR = 100000;
+    static final int PACK_TRANSFER_CHUNK_SECTOR_SIZE = 5000;    // 2.5 MB
 
     private Device device = null;
     private List<DevicePluggedListener> pluggedlisteners = new ArrayList<>();
@@ -70,16 +70,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
     @Getter
     @Setter
-    private static class RawDeviceInfos extends AbstractDeviceInfos {
-        private UUID uuid;
-        private int sdCardSizeInSectors;
-        private int usedSpaceInSectors;
-        private boolean inError;
-    }
-
-    @Getter
-    @Setter
-    private static class RawStoryPackInfos {
+    protected static class RawStoryPackInfos {
         private UUID uuid;
         private short version;
         private int startSector;
@@ -120,25 +111,10 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
-        return LibUsbMassStorageHelper.executeOnDeviceHandle(device, this::readDeviceInfos)//
-                .thenApply(infos -> {
-                    long total = (long) infos.getSdCardSizeInSectors() * SECTOR_SIZE;
-                    long used = (long) infos.getUsedSpaceInSectors() * SECTOR_SIZE;
-                    String fw = infos.getFirmwareMajor() == -1 ? null : infos.getFirmwareMajor() + "." + infos.getFirmwareMinor();
-
-                    DeviceInfosDTO di = new DeviceInfosDTO();
-                    di.setUuid(infos.getUuid().toString());
-                    di.setSerial(infos.getSerialNumber());
-                    di.setFirmware(fw);
-                    di.setError(infos.isInError());
-                    di.setPlugged(true);
-                    di.setDriver(PackFormat.RAW.getLabel());
-                    di.setStorage(new StorageDTO(total, total - used, used));
-                    return di;
-                });
+        return LibUsbMassStorageHelper.executeOnDeviceHandle(device, this::readDeviceInfos);
     }
 
-    private CompletionStage<RawDeviceInfos> readDeviceInfos(DeviceHandle handle) {
+    private CompletionStage<DeviceInfosDTO> readDeviceInfos(DeviceHandle handle) {
         // Read UUID and Serial Number from SPI
         return LibUsbMassStorageHelper.asyncReadSPISectors(handle, DEVICE_INFOS_SPI_OFFSET, (short) 1)
                 // Read firmware version, card size and error from SD
@@ -146,8 +122,9 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                         this::readRawDeviceInfos)
                 // Compute used SD card space from packs index
                 .thenCompose(rd -> readPackIndex(handle).thenApply(packs -> {
-                    int usedSpace = packs.stream().map(RawStoryPackInfos::getSizeInSectors).reduce(0, Integer::sum);
-                    rd.setUsedSpaceInSectors(usedSpace);
+                    int usedSectors = packs.stream().map(RawStoryPackInfos::getSizeInSectors).reduce(0, Integer::sum);
+                    rd.getStorage().setTaken(usedSectors * SECTOR_SIZE);
+                    rd.getStorage().updateFree();
                     return rd;
                 }));
     }
@@ -156,51 +133,54 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         return Stream.of(0L, -1L, -4294967296L).allMatch(v -> lowBytes != v || highBytes != v);
     }
 
-    private RawDeviceInfos readRawDeviceInfos(ByteBuffer spiSector, ByteBuffer sdSector) {
-        RawDeviceInfos rd = new RawDeviceInfos();
-
-        UUID uuid = null;
-        long uuidLowBytes = spiSector.getLong(8); // Read low 8 bytes
-        long uuidHighBytes = spiSector.getLong(16); // Read high 8 bytes
-        if (checkUuidBytes(uuidLowBytes, uuidHighBytes)) {
-            uuid = new UUID(uuidHighBytes, uuidLowBytes);
-            LOGGER.debug("UUID from SPI: {}", uuid);
-        } else {
-            LOGGER.warn("No UUID in SPI");
-        }
-        rd.setUuid(uuid);
+    protected DeviceInfosDTO readRawDeviceInfos(ByteBuffer spiSector, ByteBuffer sdSector) {
+        DeviceInfosDTO infos = new DeviceInfosDTO();
+        infos.setPlugged(true);
+        infos.setDriver(PackFormat.RAW.getLabel());
 
         // Read serial number from SPI
-        String serialNumber = null;
         long sn = spiSector.getLong(0);
         if (sn != 0L && sn != -1L && sn != -4294967296L) {
-            serialNumber = String.format("%014d", sn);
+            String serialNumber = String.format("%014d", sn);
             LOGGER.debug("Serial Number: {}", serialNumber);
+            infos.setSerial(serialNumber);
         } else {
             LOGGER.warn("No serial number in SPI");
         }
-        rd.setSerialNumber(serialNumber);
 
-        // Firmware version
+        // Read UUID from SPI
+        long uuidLowBytes = spiSector.getLong(8); // Read low 8 bytes
+        long uuidHighBytes = spiSector.getLong(16); // Read high 8 bytes
+        if (checkUuidBytes(uuidLowBytes, uuidHighBytes)) {
+            UUID uuid = new UUID(uuidHighBytes, uuidLowBytes);
+            LOGGER.debug("UUID from SPI: {}", uuid);
+            infos.setUuid(uuid.toString());
+        } else {
+            LOGGER.warn("No UUID in SPI");
+        }
+
+        sdSector.order(ByteOrder.LITTLE_ENDIAN);
+        // Read firmware version from SD
+        String version = new String(new char[]{ sdSector.getChar(0), sdSector.getChar(2), sdSector.getChar(4), //
+            sdSector.getChar(6), sdSector.getChar(8), sdSector.getChar(10), sdSector.getChar(12) });
+        LOGGER.debug("Firmware header '{}'", version);
         short major = -1;
         short minor = -1;
-        byte[] version = new byte[14];
-        sdSector.get(version);
-        if ("version".equals(new String(version, StandardCharsets.UTF_16))) {
-            major = sdSector.get(16);
-            minor = sdSector.get(20);
-            LOGGER.debug("Firmware version: {}.{}", major, minor);
+        if ("version".equals(version)) {
+            major = sdSector.getShort(16);
+            minor = sdSector.getShort(20);
+            infos.setFirmware(major, minor);
+            LOGGER.info("Firmware version: {}", infos.getFirmware());
         } else {
             LOGGER.warn("No firmware version");
         }
-        rd.setFirmwareMinor(minor);
-        rd.setFirmwareMajor(major);
 
         // Read card size from SD, if needed (firmware >= 1.1)
         int sdCardSizeInSectors = -1;
         if (major >= 1 && minor >= 1) {
             sdCardSizeInSectors = (sdSector.get(26) & 0xff) << 24 | (sdSector.get(27) & 0xff) << 16
-                    | (sdSector.get(24) & 0xff) << 8 | sdSector.get(26) & 0xff;
+                    | (sdSector.get(24) & 0xff) << 8 | sdSector.get(25) & 0xff;
+            LOGGER.debug("SD sector size: {}", sdCardSizeInSectors);
         }
         // Fix card size
         if (sdCardSizeInSectors == -1) {
@@ -212,13 +192,13 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         // Account for the 100000 reserved sectors
         sdCardSizeInSectors -= PACK_INDEX_SD_SECTOR;
         LOGGER.debug("SD card size: {}", sdCardSizeInSectors);
-        rd.setSdCardSizeInSectors(sdCardSizeInSectors);
+        infos.setStorage(new StorageDTO(sdCardSizeInSectors * SECTOR_SIZE, 0, 0));
 
         // Read error from SD
         short errorCode = sdSector.getShort(0);
         LOGGER.debug("Error code: {}", errorCode);
-        rd.setInError(errorCode == 1);
-        return rd;
+        infos.setError(errorCode == 1);
+        return infos;
     }
 
     @Override
@@ -286,8 +266,8 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
-        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device,
-                handle -> readPackIndex(handle).thenCompose(packs -> {
+        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, handle -> readPackIndex(handle) //
+                .thenCompose(packs -> {
                     // Look for UUIDs in packs index (ALL uuids must match)
                     boolean allUUIDsAreOnDevice = uuids.stream()
                             .allMatch(uuid -> packs.stream().anyMatch(p -> p.getUuid().equals(UUID.fromString(uuid))));
@@ -315,8 +295,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                         throw new StoryTellerException("Pack not found");
                     }
                     RawStoryPackInfos rspi = matched.get();
-                    LOGGER.debug("Found pack with uuid: {}", uuid);
-                    LOGGER.debug("Matched: {} - {}", rspi.getStartSector(), rspi.getSizeInSectors());
+                    LOGGER.debug("Found pack with uuid {} (start={}, size={})", uuid, rspi.getStartSector(), rspi.getSizeInSectors());
                     // Remove from index
                     packs.remove(rspi);
                     // Write pack index
@@ -342,8 +321,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         double speed = status.getTransferred() / (elapsed / 1000.0);
         status.setSpeed(speed);
         if(LOGGER.isTraceEnabled()) {
-            LOGGER.trace("Transferred {} bytes in {} ms", status.getTransferred(), elapsed);
-            LOGGER.trace("Average speed = {}/sec", FileUtils.readableByteSize((long)speed));
+            LOGGER.trace("Transferred {}bytes in {}ms, avg speed={}/s", status.getTransferred(), elapsed, FileUtils.readableByteSize((long)speed));
         }
         // Call (optional) listener with transfer status
         if (listener != null) {
@@ -359,11 +337,10 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         return LibUsbMassStorageHelper.executeOnDeviceHandle(device, handle -> readPackIndex(handle) //
                 .thenCompose(packs -> {
                     // Look for UUID in packs index
-                    LOGGER.debug("Search pack with uuid: {}", uuid);
                     UUID searchUUID = UUID.fromString(uuid);
                     RawStoryPackInfos rspi = packs.stream().filter(p -> searchUUID.equals(p.getUuid())).findFirst()
                             .orElseThrow();
-                    LOGGER.debug("Matched: {} - {}", rspi.getStartSector(), rspi.getSizeInSectors());
+                    LOGGER.debug("Found pack with uuid {} (starts={}, size={})", uuid, rspi.getStartSector(), rspi.getSizeInSectors());
                     // Keep track of transferred bytes and elapsed time
                     long startTime = System.currentTimeMillis();
                     // Copy pack chunk by chunk into the output stream
@@ -431,7 +408,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                 promise = promise.thenCompose(status -> {
                     // Read next chunk from input stream
                     int chunkSize = nbSectorsToWrite * SECTOR_SIZE;
-                    try (InputStream is = new BufferedInputStream(Files.newInputStream(inputPath))) {
+                    try (InputStream is = dataInputStream(inputPath)) {
                         LOGGER.trace("Reading {} bytes from input stream", chunkSize);
                         ByteBuffer bb = ByteBuffer.wrap(is.readNBytes(chunkSize));
                         // write to SD
@@ -485,7 +462,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
             // Check if there is enough space after the last pack
             final int lastUsedSector = previousUsedSector;
             return readDeviceInfos(handle).thenApply(infos -> {
-                int firstUnavailableSector = infos.getSdCardSizeInSectors() + 1;
+                int firstUnavailableSector = (int) (infos.getStorage().getSize() / SECTOR_SIZE + 1);
                 int freeSpace = firstUnavailableSector - lastUsedSector;
                 if (freeSpace >= packSizeInSectors) {
                     // Free space is large enough, use it

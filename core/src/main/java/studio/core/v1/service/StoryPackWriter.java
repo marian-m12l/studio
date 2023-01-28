@@ -8,5 +8,4 @@ import studio.core.v1.model.StoryPack;
 public interface StoryPackWriter {
 
     void write(StoryPack pack, Path path, boolean enriched) throws IOException;
-
 }

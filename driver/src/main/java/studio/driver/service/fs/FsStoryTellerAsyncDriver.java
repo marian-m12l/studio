@@ -3,8 +3,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
 package studio.driver.service.fs;
+
+import static studio.core.v1.utils.io.FileUtils.dataInputStream;
 
 import java.io.BufferedInputStream;
 import java.io.DataInputStream;
@@ -28,8 +29,6 @@ import java.util.stream.Stream;
 
 import org.usb4java.Device;
 
-import lombok.Getter;
-import lombok.Setter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import studio.core.v1.exception.StoryTellerException;
@@ -37,14 +36,12 @@ import studio.core.v1.service.PackFormat;
 import studio.core.v1.service.fs.FsStoryPackDTO.FsStoryPack;
 import studio.core.v1.service.fs.FsStoryPackDTO.SdPartition;
 import studio.core.v1.service.fs.FsStoryPackWriter;
-import studio.core.v1.utils.io.DeviceUtils;
 import studio.core.v1.utils.io.FileUtils;
 import studio.core.v1.utils.security.SecurityUtils;
 import studio.core.v1.utils.stream.ThrowingConsumer;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
 import studio.driver.event.TransferProgressListener;
-import studio.driver.model.AbstractDeviceInfos;
 import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.DeviceInfosDTO.StorageDTO;
 import studio.driver.model.MetaPackDTO;
@@ -65,49 +62,21 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     private List<DevicePluggedListener> pluggedlisteners = new ArrayList<>();
     private List<DeviceUnpluggedListener> unpluggedlisteners = new ArrayList<>();
 
-    @Getter
-    @Setter
-    private static class FsDeviceInfos extends AbstractDeviceInfos {
-        private byte[] deviceId;
-        private long sdCardSizeInBytes;
-        private long usedSpaceInBytes;
-    }
-
     public FsStoryTellerAsyncDriver() {
         // Initialize libusb, handle and propagate hotplug events
         LOGGER.debug("Registering hotplug listener");
         LibUsbDetectionHelper.initializeLibUsb(UsbDeviceVersion.DEVICE_VERSION_2, //
                 device2 -> {
-                    // Wait for a partition to be mounted which contains the .md file
-                    LOGGER.debug("Waiting for device partition...");
-                    for (int i = 0; i < FS_MOUNTPOINT_RETRY && sdPartition == null; i++) {
-                        try {
-                            DeviceUtils.listMountPoints().forEach(path -> {
-                                LOGGER.trace("Looking for .md in {}", path);
-                                if (SdPartition.isValid(path)) {
-                                    sdPartition = new SdPartition(path);
-                                    LOGGER.info("FS device partition located: {}", path);
-                                    return;
-                                }
-                            });
-                            Thread.sleep(FS_MOUNTPOINT_POLL_DELAY);
-                        } catch (InterruptedException e) {
-                            LOGGER.error("Failed to locate device partition", e);
-                            Thread.currentThread().interrupt();
-                        }
-                    }
-                    if (!hasPartition()) {
-                        throw new StoryTellerException("Could not locate device partition");
-                    }
                     // Update device reference
+                    sdPartition = findPartition();
                     device = device2;
                     // Notify listeners
                     pluggedlisteners.forEach(l -> l.onDevicePlugged(device2));
                 }, //
                 device2 -> {
                     // Update device reference
-                    device = null;
                     sdPartition = null;
+                    device = null;
                     // Notify listeners
                     unpluggedlisteners.forEach(l -> l.onDeviceUnplugged(device2));
                 });
@@ -129,34 +98,46 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         this.unpluggedlisteners.add(unpluggedlistener);
     }
 
-    @Override
-    public CompletionStage<DeviceInfosDTO> getDeviceInfos() {
-        return getFsDeviceInfos().thenApply(infos -> {
-            long total = infos.getSdCardSizeInBytes();
-            long used = infos.getUsedSpaceInBytes();
-
-            DeviceInfosDTO di = new DeviceInfosDTO();
-            di.setUuid(SecurityUtils.encodeHex(infos.getDeviceId()));
-            di.setSerial(infos.getSerialNumber());
-            di.setFirmware(infos.getFirmwareMajor() + "." + infos.getFirmwareMinor());
-            di.setPlugged(true);
-            di.setDriver(PackFormat.FS.getLabel());
-            di.setStorage(new StorageDTO(total, total - used, used));
-            return di;
-        });
+    /**
+     * Wait for a partition to be mounted which contains the .md file
+     */
+    private SdPartition findPartition() {
+        LOGGER.debug("Waiting for device partition...");
+        for (int i = 0; i < FS_MOUNTPOINT_RETRY && sdPartition == null; i++) {
+            try {
+                for(Path path : FileUtils.listMountPoints()) {
+                    LOGGER.trace("Looking for .md in {}", path);
+                    if (SdPartition.isValid(path)) {
+                        LOGGER.info("FS device partition located: {}", path);
+                        return new SdPartition(path);
+                    }
+                }
+                Thread.sleep(FS_MOUNTPOINT_POLL_DELAY);
+            } catch (InterruptedException e) {
+                LOGGER.error("Failed to locate device partition", e);
+                Thread.currentThread().interrupt();
+            }
+        }
+        if (!hasPartition()) {
+            throw new StoryTellerException("Could not locate device partition");
+        }
+        return null;
     }
 
-    private CompletionStage<FsDeviceInfos> getFsDeviceInfos() {
+    public CompletionStage<DeviceInfosDTO> getDeviceInfos() {
         if (!hasDevice() || !hasPartition()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
-        FsDeviceInfos infos = new FsDeviceInfos();
+        DeviceInfosDTO infos = new DeviceInfosDTO();
+        infos.setPlugged(true);
+        infos.setDriver(PackFormat.FS.getLabel());
+
         Path mdFile = sdPartition.getDeviceMetada();
         LOGGER.trace("Reading device infos from file: {}", mdFile);
 
-        try (DataInputStream is = new DataInputStream(new BufferedInputStream(Files.newInputStream(mdFile)))) {
+        try (DataInputStream is = dataInputStream(mdFile)) {
             // MD file format version
-            short mdVersion = DeviceUtils.readLittleEndianShort(is);
+            short mdVersion = Short.reverseBytes(is.readShort());
             LOGGER.trace("Device metadata format version: {}", mdVersion);
             if (mdVersion < 1 || mdVersion > 3) {
                 return CompletableFuture.failedStage(
@@ -165,41 +146,37 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
             // Firmware version
             is.skipBytes(4);
-            short major = DeviceUtils.readLittleEndianShort(is);
-            short minor = DeviceUtils.readLittleEndianShort(is);
-            infos.setFirmwareMajor(major);
-            infos.setFirmwareMinor(minor);
-            LOGGER.debug("Firmware version: {}.{}", major, minor);
+            infos.setFirmware(Short.reverseBytes(is.readShort()), Short.reverseBytes(is.readShort()));
+            LOGGER.debug("Firmware version: {}", infos.getFirmware());
 
             // Serial number
-            String serialNumber = null;
-            long sn = DeviceUtils.readBigEndianLong(is);
+            long sn = is.readLong();
             if (sn != 0L && sn != -1L && sn != -4294967296L) {
-                serialNumber = String.format("%014d", sn);
-                LOGGER.debug("Serial Number: {}", serialNumber);
+                infos.setSerial(String.format("%014d", sn));
+                LOGGER.debug("Serial Number: {}", infos.getSerial());
             } else {
                 LOGGER.warn("No serial number in SPI");
             }
-            infos.setSerialNumber(serialNumber);
 
             // UUID
             is.skipBytes(238);
             byte[] deviceId = is.readNBytes(256);
-            infos.setDeviceId(deviceId);
+            infos.setUuid(SecurityUtils.encodeHex(deviceId));
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("UUID: {}", SecurityUtils.encodeHex(deviceId));
+                LOGGER.trace("UUID: {}", infos.getUuid());
             }
 
             // SD card size and used space
             FileStore mdFd = Files.getFileStore(mdFile);
-            long sdCardTotalSpace = mdFd.getTotalSpace();
-            long sdCardUsedSpace = mdFd.getTotalSpace() - mdFd.getUnallocatedSpace();
-            double percent = Math.round(100d * 100d * sdCardUsedSpace / sdCardTotalSpace) / 100d;
-            infos.setSdCardSizeInBytes(sdCardTotalSpace);
-            infos.setUsedSpaceInBytes(sdCardUsedSpace);
+            long total = mdFd.getTotalSpace();
+            long free = mdFd.getUnallocatedSpace();
+            long used = total - free;
+            infos.setStorage(new StorageDTO(total, free, used));
             if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("SD card used : {}% ({} / {})", percent, FileUtils.readableByteSize(sdCardUsedSpace),
-                        FileUtils.readableByteSize(sdCardTotalSpace));
+                LOGGER.debug("SD card used : {} ({} / {})", //
+                    FileUtils.readablePercent(used, total), //
+                    FileUtils.readableByteSize(used), //
+                    FileUtils.readableByteSize(total));
             }
         } catch (IOException e) {
             return CompletableFuture.failedStage(noMetadataPackException(e));
@@ -231,10 +208,9 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                 packInfos.setNightModeAvailable(fsp.isNightModeAvailable());
 
                 // Open 'ni' file
-                try (InputStream niDis = new BufferedInputStream(Files.newInputStream(fsp.getNodeIndex()))) {
-                    ByteBuffer bb = ByteBuffer.wrap(niDis.readNBytes(512)).order(ByteOrder.LITTLE_ENDIAN);
-                    short version = bb.getShort(2);
-                    packInfos.setVersion(version);
+                try (DataInputStream niDis = dataInputStream(fsp.getNodeIndex())) {
+                    niDis.readShort();
+                    packInfos.setVersion(Short.reverseBytes(niDis.readShort()));
                     // Compute folder size
                     packInfos.setSizeInBytes(FileUtils.getFolderSize(packPath));
                 } catch (IOException e) {
@@ -255,9 +231,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         try {
             ByteBuffer bb = ByteBuffer.wrap(Files.readAllBytes(piFile));
             while (bb.hasRemaining()) {
-                long high = bb.getLong();
-                long low = bb.getLong();
-                packUUIDs.add(new UUID(high, low));
+                packUUIDs.add(new UUID(bb.getLong(), bb.getLong()));
             }
             return packUUIDs;
         } catch (IOException e) {
@@ -399,9 +373,10 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         }).thenCompose(status -> {
             // When transfer complete, generate device-specific boot file from device UUID
             LOGGER.debug("Generating device-specific boot file");
-            return getFsDeviceInfos().thenApply(deviceInfos -> {
+            return getDeviceInfos().thenApply(deviceInfos -> {
                 try {
-                    FsStoryPackWriter.addBootFile(folderPath, deviceInfos.getDeviceId());
+                    byte [] deviceId = SecurityUtils.decodeHex(deviceInfos.getUuid());
+                    FsStoryPackWriter.addBootFile(folderPath, deviceId);
                 } catch (IOException e) {
                     throw new StoryTellerException("Failed to create boot file", e);
                 }
