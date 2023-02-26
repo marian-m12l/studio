@@ -15,5 +15,4 @@ class EnrichedNodeTypeTest {
             assertEquals(e, EnrichedNodeType.fromLabel(e.getLabel()));
         }
     }
-
 }

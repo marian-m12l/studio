@@ -6,6 +6,8 @@
 
 package studio.core.v1.model.enriched;
 
+import java.util.UUID;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -19,6 +21,6 @@ public class EnrichedNodeMetadata {
 
     private String name;
     private EnrichedNodeType type;
-    private String groupId;
+    private UUID groupId;
     private EnrichedNodePosition position;
 }

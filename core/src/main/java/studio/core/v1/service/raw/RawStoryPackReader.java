@@ -185,7 +185,7 @@ public class RawStoryPackReader implements StoryPackReader {
                 EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(dis);
 
                 // Update action on transitions referencing this sector
-                String id = UUID.randomUUID().toString();
+                UUID id = UUID.randomUUID();
                 ActionNode actionNode = new ActionNode(id, enrichedNodeMetadata, options);
                 transitionsWithAction.get(actionNodeAddr).forEach(transition -> transition.setActionNode(actionNode));
 
@@ -275,7 +275,7 @@ public class RawStoryPackReader implements StoryPackReader {
 
     private static EnrichedNodeMetadata readEnrichedNodeMetadata(DataInputStream dis) throws IOException {
         Optional<String> maybeName = readString(dis, BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE);
-        Optional<String> maybeGroupId = Optional.ofNullable(readUuid(dis.readLong(), dis.readLong()));
+        Optional<UUID> maybeGroupId = Optional.ofNullable(readUuid(dis.readLong(), dis.readLong()));
         Optional<EnrichedNodeType> maybeType = Optional.empty();
         byte nodeTypeByte = dis.readByte();
         if (nodeTypeByte != 0x00) {
@@ -294,9 +294,9 @@ public class RawStoryPackReader implements StoryPackReader {
         return null;
     }
 
-    private static String readUuid(long low, long high) {
+    private static UUID readUuid(long low, long high) {
         if (low != 0 || high != 0) {
-            return new UUID(low, high).toString();
+            return new UUID(low, high);
         }
         return null;
     }

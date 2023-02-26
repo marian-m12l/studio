@@ -11,6 +11,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -54,7 +55,8 @@ class DeviceControllerTest {
     // test raw pack name
     private static final String TEST_RAW_PACK_NAME = "SimplifiedSamplePack.pack";
     private static final String TEST_RAW_PACK_UUID = "60f84e3d-8a37-4b4a-9e67-fc13daad9bb9";
-    private UuidDTO testUuidDto = new UuidDTO(TEST_RAW_PACK_UUID, TEST_RAW_PACK_NAME, PackFormat.RAW.getLabel());
+    private UuidDTO testUuidDto = new UuidDTO(UUID.fromString(TEST_RAW_PACK_UUID), TEST_RAW_PACK_NAME, PackFormat.RAW.getLabel());
+    private UuidDTO fakeUuidDto = new UuidDTO(UUID.randomUUID(), "fake.pack", PackFormat.RAW.getLabel());
 
     // test pack from src/test/resource
     private Path testPackSource;
@@ -143,7 +145,7 @@ class DeviceControllerTest {
                 .then().statusCode(200) //
                 .body( //
                         "driver", is(PackFormat.RAW.getLabel()), //
-                        "uuid", is("mocked-device"), //
+                        "uuid", is(new UUID(0, 0).toString()), //
                         "serial", is("mocked-serial"), //
                         "firmware", is("mocked-version"), //
                         "error", is(false), //
@@ -153,8 +155,12 @@ class DeviceControllerTest {
 
     @Test
     void testReorder() {
-        UuidsDTO uuids = new UuidsDTO(Arrays.asList("123", "456"));
-        restSuccess("reorder", uuids, false);
+        // KO
+        UuidsDTO uuids2 = new UuidsDTO(Arrays.asList(fakeUuidDto.getUuid(), testUuidDto.getUuid()));
+        restSuccess("reorder", uuids2, false);
+        // OK
+        UuidsDTO uuids1 = new UuidsDTO(Arrays.asList(testUuidDto.getUuid()));
+        restSuccess("reorder", uuids1, true);
     }
 
     @Test
@@ -167,11 +173,10 @@ class DeviceControllerTest {
     void testRemoveFromDevice() {
         // list 1 test pack
         list1Pack();
-        // remove pack
+        // OK: remove pack
         restSuccess("removeFromDevice", testUuidDto, true);
         list0Pack();
-        // don't need to remove fake pack
-        UuidDTO fakeUuidDto = new UuidDTO(TEST_RAW_PACK_UUID, "fake.pack", PackFormat.RAW.getLabel());
+        // KO: don't need to remove fake pack
         restSuccess("removeFromDevice", fakeUuidDto, false);
         list0Pack();
     }
@@ -179,15 +184,12 @@ class DeviceControllerTest {
     @Test
     void testAddToLibrary() throws IOException, InterruptedException {
         // KO: absent on device
-        UuidDTO fakeUuidDto = new UuidDTO("1234", "fake.pack", PackFormat.FS.getLabel());
         restTransfer("addToLibrary", fakeUuidDto, false);
-
         // OK: copy from device to library
         restTransfer("addToLibrary", testUuidDto, true);
         Path newPack = libraryPath.resolve(TEST_RAW_PACK_UUID + PackFormat.RAW.getExtension());
         assertTrue(Files.exists(newPack), "Pack is absent from library");
-
-        // KO: present on device
+        // OK: present on device
         restTransfer("addToLibrary", testUuidDto, true);
     }
 

@@ -91,7 +91,7 @@ class RawStoryTellerAsyncDriverTests {
         rdExp.setDriver(PackFormat.RAW.getLabel());
         rdExp.setFirmware((short)1,(short)2);
         rdExp.setSerial(String.format("%014d", 11111l));
-        rdExp.setUuid(new UUID(2222l, 4444l).toString());
+        rdExp.setUuid(new UUID(2222l, 4444l));
         long sdSize = SECTOR_SIZE * (size - SDCARD_FAT16_PARTITION_SIZE_IN_SECTORS - PACK_INDEX_SD_SECTOR);
         rdExp.setStorage(new StorageDTO(sdSize, 0, 0));
 

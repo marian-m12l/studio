@@ -2,6 +2,7 @@ package studio.webui.model;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -15,7 +16,7 @@ public interface DeviceDTOs {
     @NoArgsConstructor
     @ToString
     final class UuidDTO {
-        private String uuid;
+        private UUID uuid;
         private String path;
         private String driver; // PackFormat (in lowercase)
     }
@@ -25,7 +26,7 @@ public interface DeviceDTOs {
     @NoArgsConstructor
     @ToString
     final class UuidsDTO {
-        private List<String> uuids;
+        private List<UUID> uuids;
     }
 
     @Getter

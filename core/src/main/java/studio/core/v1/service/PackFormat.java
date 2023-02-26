@@ -2,6 +2,8 @@ package studio.core.v1.service;
 
 import java.nio.file.Path;
 
+import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 import studio.core.v1.service.archive.ArchiveStoryPackReader;
 import studio.core.v1.service.archive.ArchiveStoryPackWriter;
 import studio.core.v1.service.fs.FsStoryPackDTO.FsStoryPack;
@@ -10,6 +12,8 @@ import studio.core.v1.service.fs.FsStoryPackWriter;
 import studio.core.v1.service.raw.RawStoryPackReader;
 import studio.core.v1.service.raw.RawStoryPackWriter;
 
+@Getter
+@RequiredArgsConstructor
 public enum PackFormat {
 
     ARCHIVE(".zip", new ArchiveStoryPackReader(), new ArchiveStoryPackWriter()),
@@ -30,12 +34,6 @@ public enum PackFormat {
         return null;
     }
 
-    private PackFormat(String extension, StoryPackReader reader, StoryPackWriter writer) {
-        this.extension = extension;
-        this.reader = reader;
-        this.writer = writer;
-    }
-
     private final String extension;
     private final StoryPackReader reader;
     private final StoryPackWriter writer;
@@ -43,17 +41,5 @@ public enum PackFormat {
     /** Lowercase for trace and json conversion */
     public String getLabel() {
         return name().toLowerCase();
-    }
-
-    public StoryPackReader getReader() {
-        return reader;
-    }
-
-    public StoryPackWriter getWriter() {
-        return writer;
-    }
-
-    public String getExtension() {
-        return extension;
     }
 }

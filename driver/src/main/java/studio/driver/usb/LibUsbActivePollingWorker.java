@@ -14,6 +14,8 @@ import org.usb4java.DeviceList;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
+import lombok.RequiredArgsConstructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import studio.driver.event.DevicePluggedListener;
@@ -21,6 +23,7 @@ import studio.driver.event.DeviceUnpluggedListener;
 import studio.driver.model.UsbDeviceFirmware;
 import studio.driver.model.UsbDeviceVersion;
 
+@RequiredArgsConstructor
 public class LibUsbActivePollingWorker implements Runnable {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LibUsbActivePollingWorker.class);
@@ -30,14 +33,6 @@ public class LibUsbActivePollingWorker implements Runnable {
     private final DevicePluggedListener pluggedlistener;
     private final DeviceUnpluggedListener unpluggedlistener;
     private Device device = null;
-
-    public LibUsbActivePollingWorker(Context context, UsbDeviceVersion deviceVersion,
-            DevicePluggedListener pluggedlistener, DeviceUnpluggedListener unpluggedlistener) {
-        this.context = context;
-        this.deviceVersion = deviceVersion;
-        this.pluggedlistener = pluggedlistener;
-        this.unpluggedlistener = unpluggedlistener;
-    }
 
     @Override
     public void run() {

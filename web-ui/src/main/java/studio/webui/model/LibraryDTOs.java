@@ -7,6 +7,7 @@
 package studio.webui.model;
 
 import java.util.List;
+import java.util.UUID;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -55,7 +56,7 @@ public interface LibraryDTOs {
     @Getter
     @AllArgsConstructor
     final class UuidPacksDTO {
-        private String uuid;
+        private UUID uuid;
         private List<MetaPackDTO> packs;
     }
 }

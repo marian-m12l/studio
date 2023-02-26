@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardCopyOption;
 import java.util.Arrays;
+import java.util.UUID;
 
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
@@ -50,9 +51,9 @@ class StoryPackConverterTest {
     void hasCompressedAssets() {
         StoryPack sp = new StoryPack();
         sp.setStageNodes(Arrays.asList( //
-                new StageNode("60f84e3d-8a37-4b4a-9e67-fc13daad9bb9", null, null, null, null, null, null), //
-                new StageNode("10f84e3d-8as7-5b4a-6e67-4968daad9bb9", null, null, null, null, null, null), //
-                new StageNode("0607ef7d-89db-4b09-9e7f-077d0c8c5690", null, null, null, null, null, null) //
+                new StageNode( UUID.randomUUID(), null, null, null, null, null, null), //
+                new StageNode( UUID.randomUUID(), null, null, null, null, null, null), //
+                new StageNode( UUID.randomUUID(), null, null, null, null, null, null) //
         ));
         StageNode sn = sp.getStageNodes().get(1);
         // 1) KO

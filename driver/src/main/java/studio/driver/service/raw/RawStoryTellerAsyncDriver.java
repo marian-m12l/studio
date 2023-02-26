@@ -152,9 +152,8 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         long uuidLowBytes = spiSector.getLong(8); // Read low 8 bytes
         long uuidHighBytes = spiSector.getLong(16); // Read high 8 bytes
         if (checkUuidBytes(uuidLowBytes, uuidHighBytes)) {
-            UUID uuid = new UUID(uuidHighBytes, uuidLowBytes);
-            LOGGER.debug("UUID from SPI: {}", uuid);
-            infos.setUuid(uuid.toString());
+            infos.setUuid(new UUID(uuidHighBytes, uuidLowBytes));
+            LOGGER.debug("UUID from SPI: {}", infos.getUuid());
         } else {
             LOGGER.warn("No UUID in SPI");
         }
@@ -210,7 +209,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, this::readPackIndex)
                 .thenApply(rawlist -> rawlist.stream().map(pack -> {
                     MetaPackDTO mp = new MetaPackDTO();
-                    mp.setUuid(pack.getUuid().toString());
+                    mp.setUuid(pack.getUuid());
                     mp.setFormat(PackFormat.RAW.getLabel());
                     mp.setVersion(pack.getVersion());
                     mp.setSectorSize(pack.getSizeInSectors());
@@ -262,39 +261,35 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     @Override
-    public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
+    public CompletionStage<Boolean> reorderPacks(List<UUID> uuids) {
         if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, handle -> readPackIndex(handle) //
                 .thenCompose(packs -> {
                     // Look for UUIDs in packs index (ALL uuids must match)
-                    boolean allUUIDsAreOnDevice = uuids.stream()
-                            .allMatch(uuid -> packs.stream().anyMatch(p -> p.getUuid().equals(UUID.fromString(uuid))));
-                    if (!allUUIDsAreOnDevice) {
+                    var packsUuids = packs.stream().map(RawStoryPackInfos::getUuid).collect(Collectors.toUnmodifiableList());
+                    if (!packsUuids.containsAll(uuids)) {
                         throw new StoryTellerException("Packs on device do not match UUIDs");
                     }
                     // Reorder list according to uuids list
-                    packs.sort(Comparator.comparingInt(p -> uuids.indexOf(p.getUuid().toString())));
+                    packs.sort(Comparator.comparingInt(p -> uuids.indexOf(p.getUuid())));
                     // Write pack index
                     return writePackIndex(handle, packs);
                 }));
     }
 
     @Override
-    public CompletionStage<Boolean> deletePack(String uuid) {
+    public CompletionStage<Boolean> deletePack(UUID uuid) {
         if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
-        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device,
-                handle -> readPackIndex(handle).thenCompose(packs -> {
+        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, handle -> readPackIndex(handle) //
+                .thenCompose(packs -> {
                     // Look for UUID in packs index
-                    Optional<RawStoryPackInfos> matched = packs.stream()
-                            .filter(p -> p.getUuid().equals(UUID.fromString(uuid))).findFirst();
-                    if (matched.isEmpty()) {
-                        throw new StoryTellerException("Pack not found");
-                    }
-                    RawStoryPackInfos rspi = matched.get();
+                    RawStoryPackInfos rspi = packs.stream() //
+                            .filter(p -> p.getUuid().equals(uuid)).findFirst() //
+                            .orElseThrow(() -> new StoryTellerException("Pack not found"));
                     LOGGER.debug("Found pack with uuid {} (start={}, size={})", uuid, rspi.getStartSector(), rspi.getSizeInSectors());
                     // Remove from index
                     packs.remove(rspi);
@@ -330,16 +325,16 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     @Override
-    public CompletionStage<TransferStatus> downloadPack(String uuid, Path destPath, TransferProgressListener listener) {
+    public CompletionStage<TransferStatus> downloadPack(UUID uuid, Path destPath, TransferProgressListener listener) {
         if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         return LibUsbMassStorageHelper.executeOnDeviceHandle(device, handle -> readPackIndex(handle) //
                 .thenCompose(packs -> {
                     // Look for UUID in packs index
-                    UUID searchUUID = UUID.fromString(uuid);
-                    RawStoryPackInfos rspi = packs.stream().filter(p -> searchUUID.equals(p.getUuid())).findFirst()
-                            .orElseThrow();
+                    RawStoryPackInfos rspi = packs.stream() //
+                        .filter(p -> p.getUuid().equals(uuid)).findFirst() //
+                        .orElseThrow();
                     LOGGER.debug("Found pack with uuid {} (starts={}, size={})", uuid, rspi.getStartSector(), rspi.getSizeInSectors());
                     // Keep track of transferred bytes and elapsed time
                     long startTime = System.currentTimeMillis();
@@ -373,7 +368,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     @Override
-    public CompletionStage<TransferStatus> uploadPack(String uuid, Path inputPath, TransferProgressListener listener) {
+    public CompletionStage<TransferStatus> uploadPack(UUID uuid, Path inputPath, TransferProgressListener listener) {
         if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }

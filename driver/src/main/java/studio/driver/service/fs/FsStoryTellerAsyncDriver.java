@@ -7,12 +7,9 @@ package studio.driver.service.fs;
 
 import static studio.core.v1.utils.io.FileUtils.dataInputStream;
 
-import java.io.BufferedInputStream;
 import java.io.DataInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -20,17 +17,16 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Optional;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.stream.Stream;
 
-import org.usb4java.Device;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.usb4java.Device;
+
 import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.service.PackFormat;
 import studio.core.v1.service.fs.FsStoryPackDTO.FsStoryPack;
@@ -160,10 +156,10 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
             // UUID
             is.skipBytes(238);
-            byte[] deviceId = is.readNBytes(256);
-            infos.setUuid(SecurityUtils.encodeHex(deviceId));
+            byte[] deviceKey = is.readNBytes(256);
+            infos.setDeviceKey(deviceKey);
             if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("UUID: {}", infos.getUuid());
+                LOGGER.trace("UUID: {}", SecurityUtils.encodeHex(deviceKey));
             }
 
             // SD card size and used space
@@ -193,16 +189,14 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
             List<UUID> packUUIDs = readPackIndex();
             LOGGER.debug("Number of packs in index: {}", packUUIDs.size());
             List<MetaPackDTO> packs = new ArrayList<>();
-            for (UUID packUUID : packUUIDs) {
-                String uuid = packUUID.toString();
+            for (UUID uuid : packUUIDs) {
                 MetaPackDTO packInfos = new MetaPackDTO();
                 packInfos.setFormat(PackFormat.FS.getLabel());
                 packInfos.setUuid(uuid);
 
                 // Compute .content folder (last 4 bytes of UUID)
-                String folderName = transformUuid(uuid);
-                packInfos.setFolderName(folderName);
-                Path packPath = sdPartition.getContentFolder().resolve(folderName);
+                Path packPath = sdPartition.getPackFolder(uuid);
+                packInfos.setFolderName(packPath.getFileName().toString());
                 FsStoryPack fsp = new FsStoryPack(packPath);
                 // Night mode is available if file 'nm' exists
                 packInfos.setNightModeAvailable(fsp.isNightModeAvailable());
@@ -240,19 +234,17 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     @Override
-    public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
+    public CompletionStage<Boolean> reorderPacks(List<UUID> uuids) {
         if (!hasDevice() || !hasPartition()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         return CompletableFuture.supplyAsync(() -> {
             List<UUID> packUUIDs = readPackIndex();
-            boolean allUUIDsAreOnDevice = uuids.stream()
-                    .allMatch(uuid -> packUUIDs.stream().anyMatch(p -> p.equals(UUID.fromString(uuid))));
-            if (!allUUIDsAreOnDevice) {
+            if(!packUUIDs.containsAll(uuids)) {
                 throw new StoryTellerException("Packs on device do not match UUIDs");
             }
             // Reorder list according to uuids list
-            packUUIDs.sort(Comparator.comparingInt(p -> uuids.indexOf(p.toString())));
+            packUUIDs.sort(Comparator.comparingInt(uuids::indexOf));
             // Write pack index
             writePackIndex(packUUIDs);
             return true;
@@ -260,28 +252,26 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     @Override
-    public CompletionStage<Boolean> deletePack(String uuid) {
+    public CompletionStage<Boolean> deletePack(UUID uuid) {
         if (!hasDevice() || !hasPartition()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         return CompletableFuture.supplyAsync(() -> {
             List<UUID> packUUIDs = readPackIndex();
             // Look for UUID in packs index
-            Optional<UUID> matched = packUUIDs.stream().filter(p -> p.equals(UUID.fromString(uuid))).findFirst();
-            if (matched.isEmpty()) {
+            if(!packUUIDs.contains(uuid)) {
                 throw new StoryTellerException("Pack not found");
             }
             LOGGER.debug("Found pack with uuid: {}", uuid);
             // Remove from index
-            packUUIDs.remove(matched.get());
+            packUUIDs.remove(uuid);
             // Write pack index
             writePackIndex(packUUIDs);
-            // Generate folder name
-            String folderName = transformUuid(uuid);
-            Path folderPath = sdPartition.getContentFolder().resolve(folderName);
-            LOGGER.debug("Removing pack folder: {}", folderPath);
+            // Get pack folder
+            Path packPath = sdPartition.getPackFolder(uuid);
+            LOGGER.debug("Removing pack folder: {}", packPath);
             try {
-                FileUtils.deleteDirectory(folderPath);
+                FileUtils.deleteDirectory(packPath);
                 return true;
             } catch (IOException e) {
                 throw new StoryTellerException("Failed to delete pack folder on device partition", e);
@@ -305,23 +295,20 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     @Override
-    public CompletionStage<TransferStatus> downloadPack(String uuid, Path destPath, TransferProgressListener listener) {
+    public CompletionStage<TransferStatus> downloadPack(UUID uuid, Path destPath, TransferProgressListener listener) {
         if (!hasDevice() || !hasPartition()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         return CompletableFuture.supplyAsync(() -> {
             List<UUID> packUUIDs = readPackIndex();
-            // Look for UUID in packs index
-            Optional<UUID> matched = packUUIDs.stream().filter(p -> p.equals(UUID.fromString(uuid))).findFirst();
-            if (matched.isEmpty()) {
+            if(!packUUIDs.contains(uuid)) {
                 throw new StoryTellerException("Pack not found");
             }
             LOGGER.debug("Found pack with uuid: {}", uuid);
             // Destination folder
-            Path destFolder = destPath.resolve(uuid);
-            // Generate folder name
-            String folderName = transformUuid(uuid);
-            Path sourceFolder = sdPartition.getContentFolder().resolve(folderName);
+            Path destFolder = destPath.resolve(uuid.toString());
+            // Get pack folder
+            Path sourceFolder = sdPartition.getPackFolder(uuid);
             LOGGER.trace("Downloading pack folder: {}", sourceFolder);
             if (Files.notExists(sourceFolder)) {
                 throw new StoryTellerException("Pack folder not found");
@@ -336,7 +323,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     @Override
-    public CompletionStage<TransferStatus> uploadPack(String uuid, Path inputPath, TransferProgressListener listener) {
+    public CompletionStage<TransferStatus> uploadPack(UUID uuid, Path inputPath, TransferProgressListener listener) {
         if (!hasDevice() || !hasPartition()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
@@ -358,15 +345,14 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
             throw new StoryTellerException("Failed to check device space", e);
         }
 
-        // Generate folder name
-        String folderName = transformUuid(uuid);
-        Path folderPath = sdPartition.getContentFolder().resolve(folderName);
-        LOGGER.debug("Uploading pack to folder: {}", folderName);
+        // Get pack folder
+        Path packPath = sdPartition.getPackFolder(uuid);
+        LOGGER.debug("Uploading pack to folder: {}", packPath);
 
         // Copy folder with progress tracking
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return copyPackFolder(inputPath, folderPath, listener);
+                return copyPackFolder(inputPath, packPath, listener);
             } catch (IOException e) {
                 throw new StoryTellerException("Failed to copy pack from device", e);
             }
@@ -374,12 +360,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
             // When transfer complete, generate device-specific boot file from device UUID
             LOGGER.debug("Generating device-specific boot file");
             return getDeviceInfos().thenApply(deviceInfos -> {
-                try {
-                    byte [] deviceId = SecurityUtils.decodeHex(deviceInfos.getUuid());
-                    FsStoryPackWriter.addBootFile(folderPath, deviceId);
-                } catch (IOException e) {
-                    throw new StoryTellerException("Failed to create boot file", e);
-                }
+                FsStoryPackWriter.addBootFile(packPath, deviceInfos.getDeviceKey());
                 return status;
             });
         }).thenApplyAsync(status -> {
@@ -387,7 +368,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
             LOGGER.debug("Add pack uuid to index");
             List<UUID> packUUIDs = readPackIndex();
             // Add UUID in packs index
-            packUUIDs.add(UUID.fromString(uuid));
+            packUUIDs.add(uuid);
             // Write pack index
             writePackIndex(packUUIDs);
             return status;
@@ -446,11 +427,6 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     public CompletionStage<Void> dump(Path outputPath) {
         LOGGER.warn("Not supported : dump");
         return CompletableFuture.completedStage(null);
-    }
-
-    public static String transformUuid(String uuid) {
-        String uuidStr = uuid.replace("-", "");
-        return uuidStr.substring(uuidStr.length() - 8).toUpperCase();
     }
 
     private static StoryTellerException noDevicePluggedException() {

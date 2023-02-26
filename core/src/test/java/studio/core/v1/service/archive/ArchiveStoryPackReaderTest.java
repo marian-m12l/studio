@@ -9,6 +9,7 @@ import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 
@@ -49,7 +50,7 @@ class ArchiveStoryPackReaderTest {
         StoryPackMetadata metaExpected = new StoryPackMetadata(PackFormat.ARCHIVE);
         metaExpected.setVersion((short) 1);
         metaExpected.setTitle("SimplifiedSamplePack");
-        metaExpected.setUuid("60f84e3d-8a37-4b4a-9e67-fc13daad9bb9");
+        metaExpected.setUuid(UUID.fromString("60f84e3d-8a37-4b4a-9e67-fc13daad9bb9"));
         metaExpected.setDescription("");
         metaExpected.setSectorSize(null);
         metaExpected.setThumbnail(null);
@@ -79,29 +80,29 @@ class ArchiveStoryPackReaderTest {
         spExpected.setVersion((short) 1);
         spExpected.setFactoryDisabled(false);
         spExpected.setNightModeAvailable(false);
-        spExpected.setUuid("60f84e3d-8a37-4b4a-9e67-fc13daad9bb9");
+        spExpected.setUuid(UUID.fromString("60f84e3d-8a37-4b4a-9e67-fc13daad9bb9"));
         spExpected.setEnriched(new EnrichedPackMetadata("SimplifiedSamplePack", ""));
 
         List<StageNode> stages = Arrays.asList( //
-                new StageNode("60f84e3d-8a37-4b4a-9e67-fc13daad9bb9", null, null, null, null,
+                new StageNode(UUID.fromString("60f84e3d-8a37-4b4a-9e67-fc13daad9bb9"), null, null, null, null,
                         new ControlSettings(false, false, false, false, false), //
                         new EnrichedNodeMetadata("Pack selection stage", EnrichedNodeType.COVER, null, null)), //
-                new StageNode("0607ef7d-89db-4b09-9e7f-077d0c8c5690", null, null, null, null, //
+                new StageNode(UUID.fromString("0607ef7d-89db-4b09-9e7f-077d0c8c5690"), null, null, null, null, //
                         new ControlSettings(false, false, false, false, false), //
                         new EnrichedNodeMetadata("Story: Alice + Jungle", EnrichedNodeType.STORY,
-                                "0607ef7d-89db-4b09-9e7f-077d0c8c5690", null)), //
-                new StageNode("c4aebf59-e53f-443e-8e52-cf1872181784", null, null, null, null, //
+                                UUID.fromString("0607ef7d-89db-4b09-9e7f-077d0c8c5690"), null)), //
+                new StageNode(UUID.fromString("c4aebf59-e53f-443e-8e52-cf1872181784"), null, null, null, null, //
                         new ControlSettings(false, false, false, false, false), //
                         new EnrichedNodeMetadata("Story: Alice + City", EnrichedNodeType.STORY,
-                                "c4aebf59-e53f-443e-8e52-cf1872181784", null)), //
-                new StageNode("b6f86bdd-30ee-4ef7-a50d-5d9bab6c28e1", null, null, null, null, //
+                                UUID.fromString("c4aebf59-e53f-443e-8e52-cf1872181784"), null)), //
+                new StageNode(UUID.fromString("b6f86bdd-30ee-4ef7-a50d-5d9bab6c28e1"), null, null, null, null, //
                         new ControlSettings(false, false, false, false, false), //
                         new EnrichedNodeMetadata("Story: Bob + Jungle", EnrichedNodeType.STORY,
-                                "b6f86bdd-30ee-4ef7-a50d-5d9bab6c28e1", null)), //
-                new StageNode("1ed3b560-7ec0-4b4a-8f63-555b508b2186", null, null, null, null, //
+                                UUID.fromString("b6f86bdd-30ee-4ef7-a50d-5d9bab6c28e1"), null)), //
+                new StageNode(UUID.fromString("1ed3b560-7ec0-4b4a-8f63-555b508b2186"), null, null, null, null, //
                         new ControlSettings(false, false, false, false, false), //
                         new EnrichedNodeMetadata("Story: Bob + Desert", EnrichedNodeType.STORY,
-                                "1ed3b560-7ec0-4b4a-8f63-555b508b2186", null))//
+                                UUID.fromString("1ed3b560-7ec0-4b4a-8f63-555b508b2186"), null))//
         // etc...
         );
         spExpected.setStageNodes(stages);

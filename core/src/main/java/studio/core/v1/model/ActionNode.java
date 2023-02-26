@@ -7,6 +7,7 @@
 package studio.core.v1.model;
 
 import java.util.List;
+import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonIdentityReference;
 
@@ -25,7 +26,7 @@ public class ActionNode extends Node {
     @JsonIdentityReference(alwaysAsId = true)
     private List<StageNode> options;
 
-    public ActionNode(String uuid, EnrichedNodeMetadata enriched, List<StageNode> options) {
+    public ActionNode(UUID uuid, EnrichedNodeMetadata enriched, List<StageNode> options) {
         super(uuid, enriched);
         this.options = options;
     }

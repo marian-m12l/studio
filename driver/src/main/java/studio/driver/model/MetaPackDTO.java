@@ -6,15 +6,16 @@
 
 package studio.driver.model;
 
+import java.util.UUID;
+
 import lombok.Getter;
 import lombok.Setter;
 
 @Getter
 @Setter
-//@JsonInclude(Include.NON_NULL)
 public final class MetaPackDTO {
     private String format; // PackFormat (in lowercase)
-    private String uuid;
+    private UUID uuid;
     private short version;
     private String path; // relative path
     private long timestamp;

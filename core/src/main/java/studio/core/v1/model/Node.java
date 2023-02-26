@@ -6,6 +6,8 @@
 
 package studio.core.v1.model;
 
+import java.util.UUID;
+
 import com.fasterxml.jackson.annotation.JsonAlias;
 import com.fasterxml.jackson.annotation.JsonIdentityInfo;
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
@@ -25,12 +27,12 @@ import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 public abstract class Node {
 
     @JsonAlias("id")
-    private String uuid;
+    private UUID uuid;
 
     @JsonUnwrapped
     private EnrichedNodeMetadata enriched;
 
-    protected Node(String uuid, EnrichedNodeMetadata enriched) {
+    protected Node(UUID uuid, EnrichedNodeMetadata enriched) {
         this.uuid = uuid;
         this.enriched = enriched;
     }

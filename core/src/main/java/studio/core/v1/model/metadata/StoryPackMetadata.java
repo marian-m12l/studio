@@ -6,6 +6,8 @@
 
 package studio.core.v1.model.metadata;
 
+import java.util.UUID;
+
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -23,7 +25,7 @@ public class StoryPackMetadata {
 
     private PackFormat packFormat;
     private String format = "v1";
-    private String uuid;
+    private UUID uuid;
     private short version;
     private String title;
     private String description;
@@ -31,12 +33,13 @@ public class StoryPackMetadata {
     private Integer sectorSize;
     private boolean nightModeAvailable;
     // 1st stageNode uuid
-    private String uuidFirst;
+    private UUID uuidFirst;
 
     // Extract nested : stageNodes[0].uuid
     @JsonProperty("stageNodes")
     private void unpackUuidFirst(JsonNode stageNodes) {
-        uuidFirst = stageNodes.get(0).get("uuid").asText();
+        String s = stageNodes.get(0).get("uuid").asText();
+        uuidFirst = (s == null) ? null : UUID.fromString(s);
     }
 
     public StoryPackMetadata(PackFormat packFormat) {

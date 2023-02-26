@@ -7,6 +7,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 import java.io.IOException;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.inject.Inject;
 
@@ -29,10 +30,10 @@ class DatabaseMetadataServiceTest {
     @Inject
     DatabaseMetadataService ms;
 
-    final DatabasePackMetadata metaOfficial = new DatabasePackMetadata("c4139d59-872a-4d15-8cf1-76d34cdf38c6",
+    final DatabasePackMetadata metaOfficial = new DatabasePackMetadata(UUID.fromString("c4139d59-872a-4d15-8cf1-76d34cdf38c6"),
             "official", "official pack", null, true);
-    final DatabasePackMetadata metaUnofficial = new DatabasePackMetadata("1-2-3-4", "new", "new pack", null, false);
-    final DatabasePackMetadata metaFake = new DatabasePackMetadata("0-0-0-0", "fake", "fake pack", null, false);
+    final DatabasePackMetadata metaUnofficial = new DatabasePackMetadata(UUID.randomUUID(), "new", "new pack", null, false);
+    final DatabasePackMetadata metaFake = new DatabasePackMetadata(UUID.randomUUID(), "fake", "fake pack", null, false);
 
     // Quarkus profile for resetting databases
     public static class ResetDatabaseTestProfile implements QuarkusTestProfile {
@@ -42,7 +43,7 @@ class DatabaseMetadataServiceTest {
         }
     }
 
-    private void assertPackMetadata(String uuid, boolean isOfficial, boolean isUnofficial) {
+    private void assertPackMetadata(UUID uuid, boolean isOfficial, boolean isUnofficial) {
         assertAll("pack " + uuid, //
                 () -> assertEquals(isOfficial, ms.getMetadataOfficial(uuid).isPresent(), "should be official"), //
                 () -> assertEquals(isUnofficial, ms.getMetadataLibrary(uuid).isPresent(), "should be unofficial"), //

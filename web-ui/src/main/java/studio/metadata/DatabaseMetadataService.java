@@ -16,6 +16,7 @@ import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import javax.enterprise.context.ApplicationScoped;
@@ -62,8 +63,8 @@ public class DatabaseMetadataService {
     boolean dbReset;
 
     // databases caches
-    private Map<String, DatabasePackMetadata> dbLibraryCache;
-    private Map<String, DatabasePackMetadata> dbOfficialCache;
+    private Map<UUID, DatabasePackMetadata> dbLibraryCache;
+    private Map<UUID, DatabasePackMetadata> dbOfficialCache;
     private long lastModifiedCache = 0;
 
     public void init(@Observes StartupEvent ev) {
@@ -80,23 +81,23 @@ public class DatabaseMetadataService {
         this.dbReset = dbReset;
     }
 
-    public Optional<DatabasePackMetadata> getMetadata(String uuid) {
+    public Optional<DatabasePackMetadata> getMetadata(UUID uuid) {
         LOGGER.debug("Fetching metadata for pack: {}", uuid);
         return getMetadataOfficial(uuid).or(() -> getMetadataLibrary(uuid));
     }
 
-    public Optional<DatabasePackMetadata> getMetadataOfficial(String uuid) {
+    public Optional<DatabasePackMetadata> getMetadataOfficial(UUID uuid) {
         LOGGER.debug("Fetching metadata from official database for pack: {}", uuid);
         return Optional.ofNullable(dbOfficialCache.get(uuid));
     }
 
-    public Optional<DatabasePackMetadata> getMetadataLibrary(String uuid) {
+    public Optional<DatabasePackMetadata> getMetadataLibrary(UUID uuid) {
         LOGGER.debug("Fetching metadata from library database for pack: {}", uuid);
         return Optional.ofNullable(dbLibraryCache.get(uuid));
     }
 
     public void updateLibrary(DatabasePackMetadata meta) {
-        String uuid = meta.getUuid();
+        UUID uuid = meta.getUuid();
         // Refresh library database only if the pack isn't an official one
         if (dbOfficialCache.containsKey(uuid)) {
             return;
@@ -129,7 +130,7 @@ public class DatabaseMetadataService {
         return ChronoUnit.DAYS.between(ft.toInstant(), Instant.now()) > days;
     }
 
-    private Map<String, DatabasePackMetadata> initDbLibrary() throws IOException {
+    private Map<UUID, DatabasePackMetadata> initDbLibrary() throws IOException {
         if (dbReset) {
             LOGGER.info("Remove database {}", dbLibraryPath);
             Files.deleteIfExists(dbLibraryPath);
@@ -143,7 +144,7 @@ public class DatabaseMetadataService {
         return new HashMap<>();
     }
 
-    private Map<String, DatabasePackMetadata> initDbOfficial() throws IOException {
+    private Map<UUID, DatabasePackMetadata> initDbOfficial() throws IOException {
         if (dbReset) {
             LOGGER.info("Remove database {}", dbOfficialPath);
             Files.deleteIfExists(dbOfficialPath);
@@ -192,13 +193,13 @@ public class DatabaseMetadataService {
         persistLibrary();
     }
 
-    private Map<String, DatabasePackMetadata> readDatabaseFile(Path dbPath) throws IOException {
+    private Map<UUID, DatabasePackMetadata> readDatabaseFile(Path dbPath) throws IOException {
         LOGGER.info("Read database {}", dbPath);
-        return objectMapper.readValue(dbPath.toFile(), new TypeReference<Map<String, DatabasePackMetadata>>() {
+        return objectMapper.readValue(dbPath.toFile(), new TypeReference<Map<UUID, DatabasePackMetadata>>() {
         });
     }
 
-    private void writeDatabaseFile(Path dbPath, Map<String, DatabasePackMetadata> dbCache) throws IOException {
+    private void writeDatabaseFile(Path dbPath, Map<UUID, DatabasePackMetadata> dbCache) throws IOException {
         LOGGER.info("Write database {}", dbPath);
         objectMapper.writeValue(dbPath.toFile(), dbCache);
     }

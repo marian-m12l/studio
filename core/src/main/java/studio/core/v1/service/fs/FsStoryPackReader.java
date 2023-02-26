@@ -127,7 +127,7 @@ public class FsStoryPackReader implements StoryPackReader {
 
                 // First node should have the same UUID as the story pack
                 // TODO node uuids from metadata file
-                String id = (i == 0) ? sp.getUuid() : UUID.randomUUID().toString();
+                UUID id = (i == 0) ? sp.getUuid() : UUID.randomUUID();
                 StageNode stageNode = new StageNode(id, image, audio, okTransition, homeTransition, ctrl, null);
                 sp.getStageNodes().add(stageNode);
             }
@@ -145,7 +145,7 @@ public class FsStoryPackReader implements StoryPackReader {
                 options.add(sp.getStageNodes().get(stageNodeIndex));
             }
             // Update action on transitions referencing this sector
-            String id = UUID.randomUUID().toString();
+            UUID id = UUID.randomUUID();
             ActionNode actionNode = new ActionNode(id, null, options);
             transitionsWithAction.get(offset).forEach(transition -> transition.setActionNode(actionNode));
         }

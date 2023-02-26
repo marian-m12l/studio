@@ -17,7 +17,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.DecimalFormat;
 import java.util.List;
-import java.util.Optional;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -31,7 +31,6 @@ import javax.inject.Inject;
 import javax.inject.Singleton;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 import io.quarkus.arc.profile.UnlessBuildProfile;
 import io.quarkus.runtime.ShutdownEvent;
 import io.quarkus.runtime.StartupEvent;
@@ -90,17 +89,17 @@ public class MockStoryTellerService implements IStoryTellerService {
     }
 
     @Override
-    public CompletionStage<String> addPack(String uuid, Path packFile) {
+    public CompletionStage<String> addPack(UUID uuid, Path packFile) {
         return copyPack("add pack", packFile, getDevicePack(uuid));
     }
 
     @Override
-    public CompletionStage<String> extractPack(String uuid, Path destFile) {
+    public CompletionStage<String> extractPack(UUID uuid, Path destFile) {
         return copyPack("extract pack", getDevicePack(uuid), destFile);
     }
 
     @Override
-    public CompletionStage<Boolean> deletePack(String uuid) {
+    public CompletionStage<Boolean> deletePack(UUID uuid) {
         try {
             LOGGER.warn("Remove pack {}", uuid);
             return CompletableFuture.completedStage(Files.deleteIfExists(getDevicePack(uuid)));
@@ -111,9 +110,12 @@ public class MockStoryTellerService implements IStoryTellerService {
     }
 
     @Override
-    public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
-        LOGGER.warn("Not supported : reorderPacks");
-        return CompletableFuture.completedStage(false);
+    public CompletionStage<Boolean> reorderPacks(List<UUID> uuids) {
+        return readPackIndex(devicePath).thenApply(p -> { //
+            List<UUID> packs = p.stream().map(StoryPackMetadata::getUuid).collect(Collectors.toList()); //
+            LOGGER.info("Device packs {}", packs);
+            return packs.containsAll(uuids); //
+        });
     }
 
     @Override
@@ -122,7 +124,7 @@ public class MockStoryTellerService implements IStoryTellerService {
         return CompletableFuture.completedStage(null);
     }
 
-    private Path getDevicePack(String uuid) {
+    private Path getDevicePack(UUID uuid) {
         return devicePath.resolve(uuid + PackFormat.RAW.getExtension());
     }
 
@@ -131,8 +133,7 @@ public class MockStoryTellerService implements IStoryTellerService {
         try (Stream<Path> paths = Files.walk(deviceFolder).filter(Files::isRegularFile)) {
             return CompletableFuture.completedStage( //
                     paths.map(this::readBinaryPackFile) //
-                            .filter(Optional::isPresent) //
-                            .map(Optional::get) //
+                            .filter(Objects::nonNull) //
                             .collect(Collectors.toList()) //
             );
         } catch (IOException e) {
@@ -140,25 +141,25 @@ public class MockStoryTellerService implements IStoryTellerService {
         }
     }
 
-    private Optional<StoryPackMetadata> readBinaryPackFile(Path path) {
+    private StoryPackMetadata readBinaryPackFile(Path path) {
         LOGGER.debug("Reading pack file: {}", path);
         // Handle only binary file format
-        if (PackFormat.fromPath(path) == PackFormat.RAW) {
-            try {
-                LOGGER.debug("Reading binary pack metadata.");
-                StoryPackMetadata meta = new RawStoryPackReader().readMetadata(path);
-                if (meta != null) {
-                    meta.setSectorSize((int) Math.ceil(Files.size(path) / 512d));
-                    return Optional.of(meta);
-                }
-            } catch (IOException e) {
-                LOGGER.error("Failed to read binary-format pack {} from mocked device", path, e);
-            }
-        } else {
+        if (PackFormat.fromPath(path) != PackFormat.RAW) {
             LOGGER.error("Mocked device should only contain .pack files");
+            return null;
+        }
+        try {
+            LOGGER.debug("Reading binary pack metadata.");
+            StoryPackMetadata meta = new RawStoryPackReader().readMetadata(path);
+            if (meta != null) {
+                meta.setSectorSize((int) Math.ceil(Files.size(path) / 512d));
+                return meta;
+            }
+        } catch (IOException e) {
+            LOGGER.error("Failed to read binary-format pack {} from mocked device", path, e);
         }
         // Ignore other files
-        return Optional.empty();
+        return null;
     }
 
     private CompletionStage<String> copyPack(String opName, Path packFile, Path destFile) {
@@ -214,7 +215,7 @@ public class MockStoryTellerService implements IStoryTellerService {
             long used = mdFd.getTotalSpace() - mdFd.getUnallocatedSpace();
 
             DeviceInfosDTO di = new DeviceInfosDTO();
-            di.setUuid("mocked-device");
+            di.setUuid(new UUID(0, 0));
             di.setSerial("mocked-serial");
             di.setFirmware("mocked-version");
             di.setError(false);
@@ -232,7 +233,6 @@ public class MockStoryTellerService implements IStoryTellerService {
         mp.setUuid(pack.getUuid());
         mp.setFormat(PackFormat.RAW.getLabel());
         mp.setVersion(pack.getVersion());
-
         mp.setSectorSize(pack.getSectorSize());
         // add meta
         databaseMetadataService.getMetadata(pack.getUuid()).ifPresent(meta -> {//

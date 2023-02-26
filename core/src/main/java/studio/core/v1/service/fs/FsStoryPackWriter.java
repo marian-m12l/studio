@@ -159,7 +159,7 @@ public class FsStoryPackWriter implements StoryPackWriter {
         Files.write(path, ciphered);
     }
 
-    public static void addBootFile(Path packFolder, byte[] deviceUuid) throws IOException {
+    public static void addBootFile(Path packFolder, byte[] deviceUuid) {
         FsStoryPack fsp = new FsStoryPack(packFolder);
         // Compute specific key
         byte[] specificKey = computeSpecificKeyFromUUID(deviceUuid);
@@ -172,6 +172,8 @@ public class FsStoryPackWriter implements StoryPackWriter {
             byte[] btCiphered = XXTEACipher.cipher(CipherMode.CIPHER, riCipheredBlock, cypherBlockSize, specificKey);
             // Add boot file: bt
             Files.write(fsp.getBoot(), btCiphered);
+        } catch(IOException e) {
+            throw new StoryTellerException("Failed to create boot file", e);
         }
     }
 

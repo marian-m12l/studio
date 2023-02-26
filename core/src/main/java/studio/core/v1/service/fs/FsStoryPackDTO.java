@@ -2,12 +2,13 @@ package studio.core.v1.service.fs;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.UUID;
 
-import lombok.AllArgsConstructor;
+import lombok.RequiredArgsConstructor;
 
 public interface FsStoryPackDTO {
 
-    @AllArgsConstructor
+    @RequiredArgsConstructor
     final class SdPartition {
         private final Path sdPath;
 
@@ -26,9 +27,16 @@ public interface FsStoryPackDTO {
         public Path getContentFolder() {
             return sdPath.resolve(".content");
         }
+
+        // Compute .content folder with last 4 bytes of uuid.
+        public Path getPackFolder(UUID uuid) {
+            String fullUuid = uuid.toString().replace("-", "").toUpperCase();
+            String shortUuid = fullUuid.substring(fullUuid.length() - 8);
+            return getContentFolder().resolve(shortUuid);
+        }
     }
 
-    @AllArgsConstructor
+    @RequiredArgsConstructor
     final class FsStoryPack {
         private final Path fsPath;
 
@@ -68,9 +76,10 @@ public interface FsStoryPackDTO {
             return fsPath.resolve("bt");
         }
 
-        public String getUuid() {
+        public UUID getUuid() {
             // Folder name is the uuid (minus the eventual timestamp suffix)
-            return fsPath.getFileName().toString().split("\\.", 2)[0];
+            String s = fsPath.getFileName().toString().split("\\.", 2)[0];
+            return (s == null) ? null : UUID.fromString(s);
         }
 
         public boolean isNightModeAvailable() {

@@ -8,6 +8,7 @@ package studio.metadata;
 
 import java.util.Locale;
 import java.util.Map;
+import java.util.UUID;
 
 import javax.ws.rs.GET;
 import javax.ws.rs.HeaderParam;
@@ -51,7 +52,7 @@ public interface DatabaseMetadataDTOs {
     @NoArgsConstructor
     @AllArgsConstructor
     final class DatabasePackMetadata {
-        private String uuid;
+        private UUID uuid;
         private String title;
         private String description;
         private String thumbnail;
@@ -78,7 +79,7 @@ public interface DatabaseMetadataDTOs {
         @Setter
         @JsonNaming(PropertyNamingStrategies.SnakeCaseStrategy.class)
         static final class OfficialPack {
-            private String uuid;
+            private UUID uuid;
             private Map<Locale, Boolean> localesAvailable;
             private Map<Locale, Infos> localizedInfos;
 

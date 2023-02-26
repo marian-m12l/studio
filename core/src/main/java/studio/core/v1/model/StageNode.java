@@ -7,6 +7,7 @@
 package studio.core.v1.model;
 
 import java.util.Objects;
+import java.util.UUID;
 import java.util.stream.Stream;
 
 import lombok.EqualsAndHashCode;
@@ -29,7 +30,7 @@ public class StageNode extends Node {
     private Transition homeTransition;
     private ControlSettings controlSettings;
 
-    public StageNode(String uuid, MediaAsset image, MediaAsset audio, Transition okTransition,
+    public StageNode(UUID uuid, MediaAsset image, MediaAsset audio, Transition okTransition,
             Transition homeTransition, ControlSettings controlSettings, EnrichedNodeMetadata enriched) {
         super(uuid, enriched);
         this.image = image;

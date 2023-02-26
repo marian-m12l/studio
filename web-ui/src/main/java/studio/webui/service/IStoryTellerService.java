@@ -8,6 +8,7 @@ package studio.webui.service;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 
 import io.vertx.core.json.JsonObject;
@@ -21,13 +22,13 @@ public interface IStoryTellerService {
 
     CompletionStage<List<MetaPackDTO>> packs();
 
-    CompletionStage<String> addPack(String uuid, Path packFile);
+    CompletionStage<String> addPack(UUID uuid, Path packFile);
 
-    CompletionStage<Boolean> deletePack(String uuid);
+    CompletionStage<Boolean> deletePack(UUID uuid);
 
-    CompletionStage<Boolean> reorderPacks(List<String> uuids);
+    CompletionStage<Boolean> reorderPacks(List<UUID> uuids);
 
-    CompletionStage<String> extractPack(String uuid, Path destFile);
+    CompletionStage<String> extractPack(UUID uuid, Path destFile);
 
     CompletionStage<Void> dump(Path outputPath);
 

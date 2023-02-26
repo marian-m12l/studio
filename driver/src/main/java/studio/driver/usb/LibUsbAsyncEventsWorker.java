@@ -10,30 +10,28 @@ import org.usb4java.Context;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
+import lombok.RequiredArgsConstructor;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+@RequiredArgsConstructor
 public class LibUsbAsyncEventsWorker extends Thread {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LibUsbAsyncEventsWorker.class);
 
-    private volatile boolean abort;
-    private Context context;
-
-    public LibUsbAsyncEventsWorker(Context context) {
-        super();
-        this.context = context;
-    }
+    private final Context context;
+    private boolean abort;
 
     public void abort() {
-        this.abort = true;
+        abort = true;
     }
 
     @Override
     public void run() {
         LOGGER.debug("Starting worker thread to handle libusb async events...");
-        while (!this.abort) {
-            int result = LibUsb.handleEventsTimeout(this.context, 250_000);
+        while (!abort) {
+            int result = LibUsb.handleEventsTimeout(context, 250_000);
             if (result != LibUsb.SUCCESS) {
                 throw new LibUsbException("Unable to handle libusb async events", result);
             }

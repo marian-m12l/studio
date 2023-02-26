@@ -63,7 +63,7 @@ public class LibUsbDetectionHelper {
         asyncEvtWorker.start();
         // Future when polling
         ScheduledFuture<?> pollTask = null;
-        
+
         // Hotplug detection
         if (LibUsb.hasCapability(LibUsb.CAP_HAS_HOTPLUG)) {
             LOGGER.info("Hotplug is supported. Registering hotplug callback(s)...");

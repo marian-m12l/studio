@@ -6,6 +6,8 @@
 
 package studio.driver.model;
 
+import java.util.UUID;
+
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -15,7 +17,8 @@ import lombok.Setter;
 @Setter
 @NoArgsConstructor
 public final class DeviceInfosDTO {
-    private String uuid;
+    private UUID uuid; // driver v1 only
+    private byte[] deviceKey; // driver v2 only
     private String serial;
     private String firmware;
     private String driver; // PackFormat

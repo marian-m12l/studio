@@ -8,6 +8,7 @@ package studio.core.v1.model;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 import com.fasterxml.jackson.annotation.JsonUnwrapped;
 
@@ -23,7 +24,7 @@ import studio.core.v1.model.enriched.EnrichedPackMetadata;
 public class StoryPack {
 
     private String format = "v1";
-    private String uuid;
+    private UUID uuid;
 
     @JsonUnwrapped
     private EnrichedPackMetadata enriched;

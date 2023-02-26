@@ -8,6 +8,7 @@ package studio.driver.service;
 
 import java.nio.file.Path;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.CompletionStage;
 
 import studio.driver.event.DevicePluggedListener;
@@ -27,13 +28,13 @@ public interface StoryTellerAsyncDriver {
 
     CompletionStage<List<MetaPackDTO>> getPacksList();
 
-    CompletionStage<Boolean> reorderPacks(List<String> uuids);
+    CompletionStage<Boolean> reorderPacks(List<UUID> uuids);
 
-    CompletionStage<Boolean> deletePack(String uuid);
+    CompletionStage<Boolean> deletePack(UUID uuid);
 
-    CompletionStage<TransferStatus> downloadPack(String uuid, Path destPath, TransferProgressListener listener);
+    CompletionStage<TransferStatus> downloadPack(UUID uuid, Path destPath, TransferProgressListener listener);
 
-    CompletionStage<TransferStatus> uploadPack(String uuid, Path inputPath, TransferProgressListener listener);
+    CompletionStage<TransferStatus> uploadPack(UUID uuid, Path inputPath, TransferProgressListener listener);
 
     CompletionStage<Void> dump(Path outputPath);
 }

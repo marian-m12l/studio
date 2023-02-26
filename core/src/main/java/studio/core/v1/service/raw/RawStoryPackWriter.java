@@ -163,7 +163,7 @@ public class RawStoryPackWriter implements StoryPackWriter {
             throws IOException {
         for (StageNode stageNode : stageNodes) {
             // UUID
-            UUID nodeUuid = UUID.fromString(stageNode.getUuid());
+            UUID nodeUuid = stageNode.getUuid();
             dos.writeLong(nodeUuid.getMostSignificantBits());
             dos.writeLong(nodeUuid.getLeastSignificantBits());
 
@@ -260,9 +260,8 @@ public class RawStoryPackWriter implements StoryPackWriter {
 
     private static int writeEnrichedNodeMetadata(DataOutputStream dos, Node node) throws IOException {
         writeTruncatedString(dos, node.getEnriched().getName(), BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE);
-        String nodeGroupId = node.getEnriched().getGroupId();
-        if (nodeGroupId != null) {
-            UUID groupId = UUID.fromString(nodeGroupId);
+        UUID groupId = node.getEnriched().getGroupId();
+        if (groupId != null) {
             dos.writeLong(groupId.getMostSignificantBits());
             dos.writeLong(groupId.getLeastSignificantBits());
         } else {

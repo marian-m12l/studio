@@ -20,6 +20,8 @@ import javax.sound.sampled.AudioSystem;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import lombok.RequiredArgsConstructor;
 import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.model.StageNode;
 import studio.core.v1.model.StoryPack;
@@ -31,6 +33,7 @@ import studio.core.v1.utils.image.ImageConversion;
 import studio.core.v1.utils.stream.StoppingConsumer;
 import studio.core.v1.utils.stream.ThrowingFunction;
 
+@RequiredArgsConstructor
 public class StoryPackConverter {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StoryPackConverter.class);
@@ -39,13 +42,8 @@ public class StoryPackConverter {
        AUDIO, IMAGE;
     }
 
-    private Path libraryPath;
-    private Path tmpDirPath;
-
-    public StoryPackConverter(Path libraryPath, Path tmpDirPath) {
-        this.libraryPath = libraryPath;
-        this.tmpDirPath = tmpDirPath;
-    }
+    private final Path libraryPath;
+    private final Path tmpDirPath;
 
     public Path convert(String packName, PackFormat outFormat, boolean allowEnriched) {
         Path packPath = libraryPath.resolve(packName);

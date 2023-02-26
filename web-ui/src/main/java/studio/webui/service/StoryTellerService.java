@@ -47,8 +47,8 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
     @Inject
     EventBus eventBus;
 
-    private RawStoryTellerAsyncDriver rawDriver;
-    private FsStoryTellerAsyncDriver fsDriver;
+    private StoryTellerAsyncDriver rawDriver;
+    private StoryTellerAsyncDriver fsDriver;
 
     public StoryTellerService() {
         LOGGER.info("Setting up story teller driver");
@@ -113,27 +113,27 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
     }
 
     @Override
-    public CompletionStage<String> addPack(String uuid, Path packFile) {
+    public CompletionStage<String> addPack(UUID uuid, Path packFile) {
         return currentDriver().map(d -> d.getPacksList().thenApply(packs -> upload(packs, d, uuid, packFile))) //
-                .orElseGet(() -> CompletableFuture.completedStage(uuid));
+                .orElseGet(() -> CompletableFuture.completedStage(uuid.toString()));
     }
 
     @Override
-    public CompletionStage<Boolean> deletePack(String uuid) {
+    public CompletionStage<Boolean> deletePack(UUID uuid) {
         return currentDriver().map(d -> d.deletePack(uuid)) //
                 .orElseGet(() -> CompletableFuture.completedStage(false));
     }
 
     @Override
-    public CompletionStage<Boolean> reorderPacks(List<String> uuids) {
+    public CompletionStage<Boolean> reorderPacks(List<UUID> uuids) {
         return currentDriver().map(d -> d.reorderPacks(uuids)) //
                 .orElseGet(() -> CompletableFuture.completedStage(false));
     }
 
     @Override
-    public CompletionStage<String> extractPack(String uuid, Path packFile) {
+    public CompletionStage<String> extractPack(UUID uuid, Path packFile) {
         return currentDriver().map(d -> CompletableFuture.completedStage(download(d, uuid, packFile))) //
-                .orElseGet(() -> CompletableFuture.completedStage(uuid));
+                .orElseGet(() -> CompletableFuture.completedStage(uuid.toString()));
     }
 
     @Override
@@ -168,25 +168,25 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
         };
     }
 
-    private String upload(List<MetaPackDTO> packs, StoryTellerAsyncDriver driver, String uuid, Path packFile) {
+    private String upload(List<MetaPackDTO> packs, StoryTellerAsyncDriver driver, UUID uuid, Path packFile) {
         // Check that the pack on device : Look for UUID in packs index
-        boolean matched = packs.stream().anyMatch(p -> p.getUuid().equals(uuid));
+        boolean matched = packs.stream().map(MetaPackDTO::getUuid).anyMatch(uuid::equals);
         if (matched) {
             LOGGER.warn("Pack already exists on device");
-            sendDone(eventBus, uuid, true);
-            return uuid;
+            sendDone(eventBus, uuid.toString(), true);
+            return uuid.toString();
         }
         String transferId = UUID.randomUUID().toString();
         driver.uploadPack(uuid, packFile, onTransferProgress(transferId)).whenComplete(onTransferEnd(transferId));
         return transferId;
     }
 
-    private String download(StoryTellerAsyncDriver driver, String uuid, Path destFile) {
+    private String download(StoryTellerAsyncDriver driver, UUID uuid, Path destFile) {
         // Check that the destination is available
-        if (Files.exists(destFile.resolve(uuid))) {
+        if (Files.exists(destFile.resolve(uuid.toString()))) {
             LOGGER.warn("Cannot extract pack from device because the destination file already exists");
-            sendDone(eventBus, uuid, true);
-            return uuid;
+            sendDone(eventBus, uuid.toString(), true);
+            return uuid.toString();
         }
         String transferId = UUID.randomUUID().toString();
         driver.downloadPack(uuid, destFile, onTransferProgress(transferId)).whenComplete(onTransferEnd(transferId));
