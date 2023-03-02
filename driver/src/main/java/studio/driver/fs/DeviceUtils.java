@@ -32,9 +32,9 @@ public class DeviceUtils {
                     .map(root -> root.toPath().toString())
                     .collect(Collectors.toList());
         } else {
-            final String CMD_DF = "df -l";
-            final Pattern dfPattern = Pattern.compile("^(\\/[^ ]+)[^/]+(/.*)$");
-
+        	final String[] CMD_DF = new String[] {"/bin/sh", "-c", "df | tail -n +2"};
+            final Pattern dfPattern = Pattern.compile("^([a-zA-Z:-]*\\/[^ ]+)[^/]+(\\/.*)$");
+            
             List<String> mountPoints = new ArrayList<>();
 
             Process dfProcess = null;
@@ -51,7 +51,7 @@ public class DeviceUtils {
                     if (matcher.matches()) {
                         final String dev = matcher.group(1);
                         final String rootPath = matcher.group(2);
-                        if (dev.startsWith("/dev/")) {
+                        if (dev.contains("/")) {
                             mountPoints.add(rootPath);
                         }
                     }
