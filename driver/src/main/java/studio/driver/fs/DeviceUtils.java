@@ -32,7 +32,8 @@ public class DeviceUtils {
                     .map(root -> root.toPath().toString())
                     .collect(Collectors.toList());
         } else {
-        	final String[] CMD_DF = new String[] {"/bin/sh", "-c", "df | tail -n +2"};
+        	final String[] CMD_DF = 
+                SystemUtils.IS_OS_MAC ? new String[] {"/bin/sh", "-c", "df | tail -n +2"} : new String[] {"df", "-l"};
             final Pattern dfPattern = Pattern.compile("^([a-zA-Z:-]*\\/[^ ]+)[^/]+(\\/.*)$");
             
             List<String> mountPoints = new ArrayList<>();
@@ -51,7 +52,7 @@ public class DeviceUtils {
                     if (matcher.matches()) {
                         final String dev = matcher.group(1);
                         final String rootPath = matcher.group(2);
-                        if (dev.contains("/")) {
+                        if (dev.startsWith("/dev/") || SystemUtils.IS_OS_MAC) {
                             mountPoints.add(rootPath);
                         }
                     }
