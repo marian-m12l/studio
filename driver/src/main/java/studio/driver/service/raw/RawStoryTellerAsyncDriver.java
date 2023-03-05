@@ -38,16 +38,18 @@ import lombok.Setter;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import studio.core.v1.exception.NoDevicePluggedException;
 import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.service.PackFormat;
 import studio.core.v1.utils.io.FileUtils;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
-import studio.driver.event.TransferProgressListener;
+import studio.core.v1.model.TransferProgressListener;
+import studio.core.v1.model.TransferProgressListener.TransferStatus;
 import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.DeviceInfosDTO.StorageDTO;
 import studio.driver.model.MetaPackDTO;
-import studio.driver.model.TransferStatus;
 import studio.driver.model.UsbDeviceVersion;
 import studio.driver.service.StoryTellerAsyncDriver;
 import studio.driver.usb.LibUsbDetectionHelper;
@@ -325,7 +327,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     @Override
-    public CompletionStage<TransferStatus> downloadPack(UUID uuid, Path destPath, TransferProgressListener listener) {
+    public CompletionStage<TransferStatus> downloadPack(UUID uuid, Path destFolder, TransferProgressListener listener) {
         if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
@@ -352,6 +354,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                                         byte[] bytes = bb.array();
                                         LOGGER.trace("Writing {} bytes to output stream", bytes.length);
                                         try {
+                                            Path destPath = destFolder.resolve(uuid.toString() + PackFormat.RAW.getExtension());
                                             Files.write(destPath, bytes, CREATE, APPEND);
                                         } catch (IOException e) {
                                             throw new StoryTellerException("Failed to write to destination file", e);
@@ -368,14 +371,14 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     @Override
-    public CompletionStage<TransferStatus> uploadPack(UUID uuid, Path inputPath, TransferProgressListener listener) {
+    public CompletionStage<TransferStatus> uploadPack(UUID uuid, Path srcPath, TransferProgressListener listener) {
         if (!hasDevice()) {
             return CompletableFuture.failedStage(noDevicePluggedException());
         }
         // file size and sectors
         long packSize = 0;
         try {
-            packSize = Files.size(inputPath);
+            packSize = Files.size(srcPath);
         } catch (IOException e) {
             return CompletableFuture.failedStage(e);
         }
@@ -403,7 +406,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                 promise = promise.thenCompose(status -> {
                     // Read next chunk from input stream
                     int chunkSize = nbSectorsToWrite * SECTOR_SIZE;
-                    try (InputStream is = dataInputStream(inputPath)) {
+                    try (InputStream is = dataInputStream(srcPath)) {
                         LOGGER.trace("Reading {} bytes from input stream", chunkSize);
                         ByteBuffer bb = ByteBuffer.wrap(is.readNBytes(chunkSize));
                         // write to SD
@@ -527,6 +530,6 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     private static StoryTellerException noDevicePluggedException() {
-        return new StoryTellerException("No device plugged");
+        return new NoDevicePluggedException();
     }
 }

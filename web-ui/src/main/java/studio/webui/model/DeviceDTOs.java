@@ -35,4 +35,11 @@ public interface DeviceDTOs {
     final class OutputDTO {
         private Path outputPath;
     }
+
+    @Getter
+    @AllArgsConstructor
+    @NoArgsConstructor
+    final class TransferDTO {
+        private String transferId;
+    }
 }

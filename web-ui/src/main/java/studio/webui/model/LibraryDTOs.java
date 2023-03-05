@@ -19,13 +19,6 @@ public interface LibraryDTOs {
 
     @Getter
     @AllArgsConstructor
-    @NoArgsConstructor
-    final class TransferDTO {
-        private String transferId;
-    }
-
-    @Getter
-    @AllArgsConstructor
     final class SuccessDTO {
         private boolean success;
     }

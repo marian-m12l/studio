@@ -5,9 +5,7 @@
  */
 package studio.webui.service;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -17,19 +15,24 @@ import java.util.function.BiConsumer;
 
 import javax.inject.Inject;
 import javax.inject.Singleton;
+
+import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Device;
 
 import io.quarkus.arc.profile.IfBuildProfile;
 import io.vertx.mutiny.core.eventbus.EventBus;
+import studio.core.v1.exception.NoDevicePluggedException;
+import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.utils.io.FileUtils;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
-import studio.driver.event.TransferProgressListener;
+import studio.core.v1.model.TransferProgressListener;
+import studio.core.v1.model.TransferProgressListener.TransferStatus;
 import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.MetaPackDTO;
-import studio.driver.model.TransferStatus;
+import studio.webui.model.DeviceDTOs.TransferDTO;
 import studio.driver.service.StoryTellerAsyncDriver;
 import studio.driver.service.fs.FsStoryTellerAsyncDriver;
 import studio.driver.service.raw.RawStoryTellerAsyncDriver;
@@ -46,6 +49,9 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
 
     @Inject
     EventBus eventBus;
+
+    @ConfigProperty(name = "studio.library")
+    Path libraryPath;
 
     private StoryTellerAsyncDriver rawDriver;
     private StoryTellerAsyncDriver fsDriver;
@@ -102,44 +108,46 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
     @Override
     public CompletionStage<DeviceInfosDTO> deviceInfos() {
         return currentDriver().map(StoryTellerAsyncDriver::getDeviceInfos) //
-                .orElseGet(() -> CompletableFuture.completedStage(new DeviceInfosDTO()));
+             .orElseGet(() -> CompletableFuture.completedStage(new DeviceInfosDTO()));
     }
 
     @Override
     public CompletionStage<List<MetaPackDTO>> packs() {
         return currentDriver().map(StoryTellerAsyncDriver::getPacksList) //
-                .orElseGet(() -> CompletableFuture.completedStage(Arrays.asList())) //
+                .orElseThrow(NoDevicePluggedException::new)
                 .thenApply(this::enhancePacks);
     }
 
     @Override
-    public CompletionStage<String> addPack(UUID uuid, Path packFile) {
-        return currentDriver().map(d -> d.getPacksList().thenApply(packs -> upload(packs, d, uuid, packFile))) //
-                .orElseGet(() -> CompletableFuture.completedStage(uuid.toString()));
+    public TransferDTO addPack(UUID uuid, String packName) {
+        return currentDriver().map(d -> //
+            d.getPacksList().toCompletableFuture() //
+            .thenApply(packs -> upload(packs, d, uuid, packName)).join()) //
+        .orElseThrow(NoDevicePluggedException::new);
     }
 
     @Override
     public CompletionStage<Boolean> deletePack(UUID uuid) {
         return currentDriver().map(d -> d.deletePack(uuid)) //
-                .orElseGet(() -> CompletableFuture.completedStage(false));
+                .orElseThrow(NoDevicePluggedException::new);
     }
 
     @Override
     public CompletionStage<Boolean> reorderPacks(List<UUID> uuids) {
         return currentDriver().map(d -> d.reorderPacks(uuids)) //
-                .orElseGet(() -> CompletableFuture.completedStage(false));
+                .orElseThrow(NoDevicePluggedException::new);
     }
 
     @Override
-    public CompletionStage<String> extractPack(UUID uuid, Path packFile) {
-        return currentDriver().map(d -> CompletableFuture.completedStage(download(d, uuid, packFile))) //
-                .orElseGet(() -> CompletableFuture.completedStage(uuid.toString()));
+    public TransferDTO extractPack(UUID uuid) {
+        return currentDriver().map(d -> download(d, uuid)) //
+                .orElseThrow(NoDevicePluggedException::new);
     }
 
     @Override
     public CompletionStage<Void> dump(Path outputPath) {
         return currentDriver().map(d -> d.dump(outputPath)) //
-                .orElseGet(() -> CompletableFuture.completedStage(null));
+                .orElseThrow(NoDevicePluggedException::new);
     }
 
     // Send event on eventbus to monitor progress
@@ -168,29 +176,22 @@ public class StoryTellerService implements IStoryTellerService, DevicePluggedLis
         };
     }
 
-    private String upload(List<MetaPackDTO> packs, StoryTellerAsyncDriver driver, UUID uuid, Path packFile) {
-        // Check that the pack on device : Look for UUID in packs index
+    private TransferDTO upload(List<MetaPackDTO> packs, StoryTellerAsyncDriver driver, UUID uuid, String packName) {
+        // Check that the pack is on device : Look for UUID in packs index
         boolean matched = packs.stream().map(MetaPackDTO::getUuid).anyMatch(uuid::equals);
         if (matched) {
-            LOGGER.warn("Pack already exists on device");
-            sendDone(eventBus, uuid.toString(), true);
-            return uuid.toString();
+            throw new StoryTellerException("Pack already exists on device");
         }
+        Path packFile = libraryPath.resolve(packName);
         String transferId = UUID.randomUUID().toString();
         driver.uploadPack(uuid, packFile, onTransferProgress(transferId)).whenComplete(onTransferEnd(transferId));
-        return transferId;
+        return new TransferDTO(transferId);
     }
 
-    private String download(StoryTellerAsyncDriver driver, UUID uuid, Path destFile) {
-        // Check that the destination is available
-        if (Files.exists(destFile.resolve(uuid.toString()))) {
-            LOGGER.warn("Cannot extract pack from device because the destination file already exists");
-            sendDone(eventBus, uuid.toString(), true);
-            return uuid.toString();
-        }
+    private TransferDTO download(StoryTellerAsyncDriver driver, UUID uuid) {
         String transferId = UUID.randomUUID().toString();
-        driver.downloadPack(uuid, destFile, onTransferProgress(transferId)).whenComplete(onTransferEnd(transferId));
-        return transferId;
+        driver.downloadPack(uuid, libraryPath, onTransferProgress(transferId)).whenComplete(onTransferEnd(transferId));
+        return new TransferDTO(transferId);
     }
 
     /**

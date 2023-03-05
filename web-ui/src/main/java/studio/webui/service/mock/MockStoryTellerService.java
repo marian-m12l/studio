@@ -46,6 +46,7 @@ import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.DeviceInfosDTO.StorageDTO;
 import studio.driver.model.MetaPackDTO;
 import studio.metadata.DatabaseMetadataService;
+import studio.webui.model.DeviceDTOs.TransferDTO;
 import studio.webui.service.IStoryTellerService;
 
 @UnlessBuildProfile("prod")
@@ -64,6 +65,9 @@ public class MockStoryTellerService implements IStoryTellerService {
 
     @ConfigProperty(name = "studio.mock.device")
     Path devicePath;
+
+    @ConfigProperty(name = "studio.library")
+    Path libraryPath;
 
     public void onStart(@Observes StartupEvent ev) {
         LOGGER.info("Setting up mocked story teller service in {}", devicePath);
@@ -89,20 +93,20 @@ public class MockStoryTellerService implements IStoryTellerService {
     }
 
     @Override
-    public CompletionStage<String> addPack(UUID uuid, Path packFile) {
-        return copyPack("add pack", packFile, getDevicePack(uuid));
+    public TransferDTO addPack(UUID uuid, String packName) {
+        return copyPack("add pack", libraryPath.resolve(packName), packPath(devicePath, uuid));
     }
 
     @Override
-    public CompletionStage<String> extractPack(UUID uuid, Path destFile) {
-        return copyPack("extract pack", getDevicePack(uuid), destFile);
+    public TransferDTO extractPack(UUID uuid) {
+        return copyPack("extract pack", packPath(devicePath, uuid), packPath(libraryPath, uuid));
     }
 
     @Override
     public CompletionStage<Boolean> deletePack(UUID uuid) {
         try {
             LOGGER.warn("Remove pack {}", uuid);
-            return CompletableFuture.completedStage(Files.deleteIfExists(getDevicePack(uuid)));
+            return CompletableFuture.completedStage(Files.deleteIfExists(packPath(devicePath, uuid)));
         } catch (IOException e) {
             LOGGER.error("Failed to remove pack from mocked device", e);
             return CompletableFuture.completedStage(false);
@@ -124,8 +128,8 @@ public class MockStoryTellerService implements IStoryTellerService {
         return CompletableFuture.completedStage(null);
     }
 
-    private Path getDevicePack(UUID uuid) {
-        return devicePath.resolve(uuid + PackFormat.RAW.getExtension());
+    private Path packPath(Path p, UUID uuid) {
+        return p.resolve(uuid + PackFormat.RAW.getExtension());
     }
 
     private CompletionStage<List<StoryPackMetadata>> readPackIndex(Path deviceFolder) {
@@ -162,7 +166,7 @@ public class MockStoryTellerService implements IStoryTellerService {
         return null;
     }
 
-    private CompletionStage<String> copyPack(String opName, Path packFile, Path destFile) {
+    private TransferDTO copyPack(String opName, Path packFile, Path destFile) {
         String transferId = UUID.randomUUID().toString();
         // Perform transfer asynchronously, and send events on eventbus to monitor
         // progress and end of transfer
@@ -205,7 +209,7 @@ public class MockStoryTellerService implements IStoryTellerService {
                 sendDone(eventBus, transferId, false);
             }
         }, after300ms);
-        return CompletableFuture.completedStage(transferId);
+        return new TransferDTO(transferId);
     }
 
     private DeviceInfosDTO getDeviceInfo() {

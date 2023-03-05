@@ -14,27 +14,21 @@ import javax.ws.rs.GET;
 import javax.ws.rs.POST;
 import javax.ws.rs.Path;
 
-import org.eclipse.microprofile.config.inject.ConfigProperty;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import studio.core.v1.service.PackFormat;
 import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.MetaPackDTO;
+import studio.webui.model.DeviceDTOs.TransferDTO;
 import studio.webui.model.DeviceDTOs.OutputDTO;
 import studio.webui.model.DeviceDTOs.UuidDTO;
 import studio.webui.model.DeviceDTOs.UuidsDTO;
 import studio.webui.model.LibraryDTOs.SuccessDTO;
-import studio.webui.model.LibraryDTOs.TransferDTO;
 import studio.webui.service.IStoryTellerService;
 
 @Path("/api/device")
 public class DeviceController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DeviceController.class);
-
-    @ConfigProperty(name = "studio.library")
-    java.nio.file.Path libraryPath;
 
     @Inject
     IStoryTellerService storyTellerService;
@@ -53,29 +47,20 @@ public class DeviceController {
         return storyTellerService.packs();
     }
 
-    /** Add pack from library to device. */
+    /** Add pack from library to device : return id to watch async copy. */
     @POST
     @Path("addFromLibrary")
-    public CompletionStage<TransferDTO> copyToDevice(UuidDTO uuidDTO) {
+    public TransferDTO copyToDevice(UuidDTO uuidDTO) {
         LOGGER.info("addFromLibrary : {}", uuidDTO);
-        var packFile = libraryPath.resolve(uuidDTO.getPath());
-        // Return the transfer id, which is used to monitor transfer progress
-        return storyTellerService.addPack(uuidDTO.getUuid(), packFile).thenApply(TransferDTO::new);
+        return storyTellerService.addPack(uuidDTO.getUuid(), uuidDTO.getPath());
     }
 
-    /** Extract pack from device to library. */
+    /** Extract pack from device to library : return id to watch async copy. */
     @POST
     @Path("addToLibrary")
-    public CompletionStage<TransferDTO> extractFromDevice(UuidDTO uuidDTO) {
+    public TransferDTO extractFromDevice(UuidDTO uuidDTO) {
         LOGGER.info("addToLibrary : {}", uuidDTO);
-        // newDriver
-        var packFile = libraryPath;
-        // oldDriver
-        if (PackFormat.RAW.getLabel().equals(uuidDTO.getDriver())) {
-            packFile = libraryPath.resolve(uuidDTO.getUuid() + PackFormat.RAW.getExtension());
-        }
-        // Return the transfer id, which is used to monitor transfer progress
-        return storyTellerService.extractPack(uuidDTO.getUuid(), packFile).thenApply(TransferDTO::new);
+        return storyTellerService.extractPack(uuidDTO.getUuid());
     }
 
     /** Remove pack from device. */

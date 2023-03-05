@@ -13,10 +13,10 @@ import java.util.concurrent.CompletionStage;
 
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
-import studio.driver.event.TransferProgressListener;
+import studio.core.v1.model.TransferProgressListener;
+import studio.core.v1.model.TransferProgressListener.TransferStatus;
 import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.MetaPackDTO;
-import studio.driver.model.TransferStatus;
 
 public interface StoryTellerAsyncDriver {
 

@@ -8,14 +8,16 @@ package studio.driver.model;
 
 import org.usb4java.DeviceDescriptor;
 
-import lombok.AllArgsConstructor;
 import lombok.Getter;
+import lombok.RequiredArgsConstructor;
 
-@AllArgsConstructor
 @Getter
+@RequiredArgsConstructor
 public enum UsbDeviceFirmware {
 
-    FW1((short) 0x0c45, (short) 0x6820), FW2((short) 0x0c45, (short) 0x6840), V2((short) 0x0483, (short) 0xa341);
+    FW1((short) 0x0c45, (short) 0x6820), //
+    FW2((short) 0x0c45, (short) 0x6840), //
+    V2((short) 0x0483, (short) 0xa341);
 
     private final short vendorId;
     private final short productId;

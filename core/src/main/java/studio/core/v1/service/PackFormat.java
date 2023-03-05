@@ -16,11 +16,18 @@ import studio.core.v1.service.raw.RawStoryPackWriter;
 @RequiredArgsConstructor
 public enum PackFormat {
 
-    ARCHIVE(".zip", new ArchiveStoryPackReader(), new ArchiveStoryPackWriter()),
-
-    RAW(".pack", new RawStoryPackReader(), new RawStoryPackWriter()),
-
+    ARCHIVE(".zip", new ArchiveStoryPackReader(), new ArchiveStoryPackWriter()), //
+    RAW(".pack", new RawStoryPackReader(), new RawStoryPackWriter()), //
     FS("", new FsStoryPackReader(), new FsStoryPackWriter());
+
+    private final String extension;
+    private final StoryPackReader reader;
+    private final StoryPackWriter writer;
+
+    /** Lowercase for trace and json conversion */
+    public String getLabel() {
+        return name().toLowerCase();
+    }
 
     /** Guess format from file input. */
     public static PackFormat fromPath(Path path) {
@@ -32,14 +39,5 @@ public enum PackFormat {
             return FS;
         }
         return null;
-    }
-
-    private final String extension;
-    private final StoryPackReader reader;
-    private final StoryPackWriter writer;
-
-    /** Lowercase for trace and json conversion */
-    public String getLabel() {
-        return name().toLowerCase();
     }
 }

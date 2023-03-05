@@ -19,16 +19,27 @@ import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import lombok.AllArgsConstructor;
 import studio.core.v1.exception.StoryTellerException;
+import studio.core.v1.model.TransferProgressListener;
+import studio.core.v1.model.TransferProgressListener.TransferStatus;
+import studio.core.v1.utils.stream.ThrowingConsumer;
 
 public class FileUtils {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(FileUtils.class);
 
     // Mounted devices only (without Fuse, Loopback...)
     protected static final Pattern SD_MOUNT_PATTERN = Pattern.compile("^(/dev/s|/dev/disk/|msdos).*$");
@@ -178,4 +189,49 @@ public class FileUtils {
             throw new StoryTellerException(errorMessage, e);
         }
     }
+
+    public static void copyFolder(Path sourceFolder, Path destFolder, TransferProgressListener listener) throws IOException {
+        // Keep track of transferred bytes and elapsed time
+        final long startTime = System.currentTimeMillis();
+        AtomicLong transferred = new AtomicLong(0);
+        long folderSize = getFolderSize(sourceFolder);
+        if (LOGGER.isTraceEnabled()) {
+            LOGGER.trace("Pack folder size: {}", readableByteSize(folderSize));
+        }
+        // Target directory
+        Files.createDirectories(destFolder);
+        // Copy folders and files
+        try (Stream<Path> paths = Files.walk(sourceFolder)) {
+            paths.forEach(ThrowingConsumer.unchecked(s -> {
+                Path d = destFolder.resolve(sourceFolder.relativize(s));
+                // Copy directory
+                if (Files.isDirectory(s)) {
+                    LOGGER.debug("Creating directory {}", d);
+                    Files.createDirectories(d);
+                } else {
+                    // Copy files
+                    long fileSize = getFileSize(s);
+                    if (LOGGER.isDebugEnabled()) {
+                        LOGGER.debug("Copying file {} ({}) to {}", s.getFileName(), readableByteSize(fileSize), d);
+                    }
+                    Files.copy(s, d, StandardCopyOption.REPLACE_EXISTING);
+
+                    if (listener != null) {
+                        // Compute progress and speed
+                        long xferred = transferred.addAndGet(fileSize);
+                        long elapsed = System.currentTimeMillis() - startTime;
+                        double speed = xferred / (elapsed / 1000.0);
+                        if (LOGGER.isTraceEnabled()) {
+                            LOGGER.trace("Transferred {} in {} ms", readableByteSize(xferred), elapsed);
+                            LOGGER.trace("Average speed = {}/sec", readableByteSize((long) speed));
+                        }
+                        TransferStatus status = new TransferStatus(xferred, folderSize, speed);
+                        // Call listener with transfer status
+                        CompletableFuture.runAsync(() -> listener.onProgress(status));
+                    }
+                }
+            }));
+        }
+    }
+
 }

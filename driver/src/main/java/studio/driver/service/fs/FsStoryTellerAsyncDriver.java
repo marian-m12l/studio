@@ -13,20 +13,19 @@ import java.nio.ByteBuffer;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.usb4java.Device;
 
+import lombok.Setter;
+import studio.core.v1.exception.NoDevicePluggedException;
 import studio.core.v1.exception.StoryTellerException;
 import studio.core.v1.service.PackFormat;
 import studio.core.v1.service.fs.FsStoryPackDTO.FsStoryPack;
@@ -34,14 +33,13 @@ import studio.core.v1.service.fs.FsStoryPackDTO.SdPartition;
 import studio.core.v1.service.fs.FsStoryPackWriter;
 import studio.core.v1.utils.io.FileUtils;
 import studio.core.v1.utils.security.SecurityUtils;
-import studio.core.v1.utils.stream.ThrowingConsumer;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
-import studio.driver.event.TransferProgressListener;
+import studio.core.v1.model.TransferProgressListener;
+import studio.core.v1.model.TransferProgressListener.TransferStatus;
 import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.DeviceInfosDTO.StorageDTO;
 import studio.driver.model.MetaPackDTO;
-import studio.driver.model.TransferStatus;
 import studio.driver.model.UsbDeviceVersion;
 import studio.driver.service.StoryTellerAsyncDriver;
 import studio.driver.usb.LibUsbDetectionHelper;
@@ -53,8 +51,12 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     private static final long FS_MOUNTPOINT_POLL_DELAY = 1000L;
     private static final long FS_MOUNTPOINT_RETRY = 10;
 
+    @Setter
     private Device device = null;
+
+    @Setter
     private SdPartition sdPartition = null;
+
     private List<DevicePluggedListener> pluggedlisteners = new ArrayList<>();
     private List<DeviceUnpluggedListener> unpluggedlisteners = new ArrayList<>();
 
@@ -120,70 +122,102 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         return null;
     }
 
+    List<UUID> readPackIndex() {
+        List<UUID> packUUIDs = new ArrayList<>();
+        Path piFile = sdPartition.getPackIndex();
+        LOGGER.trace("Reading packs index from file: {}", piFile);
+        try {
+            ByteBuffer bb = ByteBuffer.wrap(Files.readAllBytes(piFile));
+            while (bb.hasRemaining()) {
+                packUUIDs.add(new UUID(bb.getLong(), bb.getLong()));
+            }
+            return packUUIDs;
+        } catch (IOException e) {
+            throw new StoryTellerException("Failed to read pack index on device partition", e);
+        }
+    }
+
+    void writePackIndex(List<UUID> packUUIDs) {
+        Path piFile = sdPartition.getPackIndex();
+        LOGGER.info("Replacing pack index file: {}", piFile);
+        ByteBuffer bb = ByteBuffer.allocate(16 * packUUIDs.size());
+        for (UUID packUUID : packUUIDs) {
+            bb.putLong(packUUID.getMostSignificantBits());
+            bb.putLong(packUUID.getLeastSignificantBits());
+        }
+        try {
+            Files.write(piFile, bb.array());
+        } catch (IOException e) {
+            throw new StoryTellerException("Failed to write pack index on device partition", e);
+        }
+    }
+
+    @Override
     public CompletionStage<DeviceInfosDTO> getDeviceInfos() {
         if (!hasDevice() || !hasPartition()) {
-            return CompletableFuture.failedStage(noDevicePluggedException());
+            return CompletableFuture.failedStage(new NoDevicePluggedException());
         }
-        DeviceInfosDTO infos = new DeviceInfosDTO();
-        infos.setPlugged(true);
-        infos.setDriver(PackFormat.FS.getLabel());
+        return CompletableFuture.supplyAsync(() -> {
+            DeviceInfosDTO infos = new DeviceInfosDTO();
+            infos.setPlugged(true);
+            infos.setDriver(PackFormat.FS.getLabel());
 
-        Path mdFile = sdPartition.getDeviceMetada();
-        LOGGER.trace("Reading device infos from file: {}", mdFile);
+            Path mdFile = sdPartition.getDeviceMetada();
+            LOGGER.trace("Reading device infos from file: {}", mdFile);
 
-        try (DataInputStream is = dataInputStream(mdFile)) {
-            // MD file format version
-            short mdVersion = Short.reverseBytes(is.readShort());
-            LOGGER.trace("Device metadata format version: {}", mdVersion);
-            if (mdVersion < 1 || mdVersion > 3) {
-                return CompletableFuture.failedStage(
-                        new StoryTellerException("Unsupported device metadata format version: " + mdVersion));
+            try (DataInputStream is = dataInputStream(mdFile)) {
+                // MD file format version
+                short mdVersion = Short.reverseBytes(is.readShort());
+                LOGGER.trace("Device metadata format version: {}", mdVersion);
+                if (mdVersion < 1 || mdVersion > 3) {
+                    throw new StoryTellerException("Unsupported device metadata format version: " + mdVersion);
+                }
+
+                // Firmware version
+                is.skipBytes(4);
+                infos.setFirmware(Short.reverseBytes(is.readShort()), Short.reverseBytes(is.readShort()));
+                LOGGER.debug("Firmware version: {}", infos.getFirmware());
+
+                 // Serial number
+                long sn = is.readLong();
+                if (sn != 0L && sn != -1L && sn != -4294967296L) {
+                    infos.setSerial(String.format("%014d", sn));
+                    LOGGER.debug("Serial Number: {}", infos.getSerial());
+                } else {
+                    LOGGER.warn("No serial number in SPI");
+                }
+
+                // UUID
+                is.skipBytes(238);
+                byte[] deviceKey = is.readNBytes(256);
+                infos.setDeviceKey(deviceKey);
+                if (LOGGER.isTraceEnabled()) {
+                    LOGGER.trace("UUID: {}", SecurityUtils.encodeHex(deviceKey));
+                }
+
+                // SD card size and used space
+                FileStore mdFd = Files.getFileStore(mdFile);
+                long total = mdFd.getTotalSpace();
+                long free = mdFd.getUnallocatedSpace();
+                long used = total - free;
+                infos.setStorage(new StorageDTO(total, free, used));
+                if (LOGGER.isDebugEnabled()) {
+                    LOGGER.debug("SD card used : {} ({} / {})", //
+                        FileUtils.readablePercent(used, total), //
+                        FileUtils.readableByteSize(used), //
+                        FileUtils.readableByteSize(total));
+                }
+            } catch (IOException e) {
+                throw new StoryTellerException("Fail to read device metadata " + mdFile, e);
             }
-
-            // Firmware version
-            is.skipBytes(4);
-            infos.setFirmware(Short.reverseBytes(is.readShort()), Short.reverseBytes(is.readShort()));
-            LOGGER.debug("Firmware version: {}", infos.getFirmware());
-
-            // Serial number
-            long sn = is.readLong();
-            if (sn != 0L && sn != -1L && sn != -4294967296L) {
-                infos.setSerial(String.format("%014d", sn));
-                LOGGER.debug("Serial Number: {}", infos.getSerial());
-            } else {
-                LOGGER.warn("No serial number in SPI");
-            }
-
-            // UUID
-            is.skipBytes(238);
-            byte[] deviceKey = is.readNBytes(256);
-            infos.setDeviceKey(deviceKey);
-            if (LOGGER.isTraceEnabled()) {
-                LOGGER.trace("UUID: {}", SecurityUtils.encodeHex(deviceKey));
-            }
-
-            // SD card size and used space
-            FileStore mdFd = Files.getFileStore(mdFile);
-            long total = mdFd.getTotalSpace();
-            long free = mdFd.getUnallocatedSpace();
-            long used = total - free;
-            infos.setStorage(new StorageDTO(total, free, used));
-            if (LOGGER.isDebugEnabled()) {
-                LOGGER.debug("SD card used : {} ({} / {})", //
-                    FileUtils.readablePercent(used, total), //
-                    FileUtils.readableByteSize(used), //
-                    FileUtils.readableByteSize(total));
-            }
-        } catch (IOException e) {
-            return CompletableFuture.failedStage(noMetadataPackException(e));
-        }
-        return CompletableFuture.completedStage(infos);
+            return infos;
+        });
     }
 
     @Override
     public CompletionStage<List<MetaPackDTO>> getPacksList() {
         if (!hasDevice() || !hasPartition()) {
-            return CompletableFuture.failedStage(noDevicePluggedException());
+            return CompletableFuture.failedStage(new NoDevicePluggedException());
         }
         return CompletableFuture.supplyAsync(() -> {
             List<UUID> packUUIDs = readPackIndex();
@@ -218,25 +252,10 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         });
     }
 
-    private List<UUID> readPackIndex() {
-        List<UUID> packUUIDs = new ArrayList<>();
-        Path piFile = sdPartition.getPackIndex();
-        LOGGER.trace("Reading packs index from file: {}", piFile);
-        try {
-            ByteBuffer bb = ByteBuffer.wrap(Files.readAllBytes(piFile));
-            while (bb.hasRemaining()) {
-                packUUIDs.add(new UUID(bb.getLong(), bb.getLong()));
-            }
-            return packUUIDs;
-        } catch (IOException e) {
-            throw new StoryTellerException("Failed to read pack index on device partition", e);
-        }
-    }
-
     @Override
     public CompletionStage<Boolean> reorderPacks(List<UUID> uuids) {
         if (!hasDevice() || !hasPartition()) {
-            return CompletableFuture.failedStage(noDevicePluggedException());
+            return CompletableFuture.failedStage(new NoDevicePluggedException());
         }
         return CompletableFuture.supplyAsync(() -> {
             List<UUID> packUUIDs = readPackIndex();
@@ -254,7 +273,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     @Override
     public CompletionStage<Boolean> deletePack(UUID uuid) {
         if (!hasDevice() || !hasPartition()) {
-            return CompletableFuture.failedStage(noDevicePluggedException());
+            return CompletableFuture.failedStage(new NoDevicePluggedException());
         }
         return CompletableFuture.supplyAsync(() -> {
             List<UUID> packUUIDs = readPackIndex();
@@ -279,25 +298,10 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         });
     }
 
-    private void writePackIndex(List<UUID> packUUIDs) {
-        Path piFile = sdPartition.getPackIndex();
-        LOGGER.info("Replacing pack index file: {}", piFile);
-        ByteBuffer bb = ByteBuffer.allocate(16 * packUUIDs.size());
-        for (UUID packUUID : packUUIDs) {
-            bb.putLong(packUUID.getMostSignificantBits());
-            bb.putLong(packUUID.getLeastSignificantBits());
-        }
-        try {
-            Files.write(piFile, bb.array());
-        } catch (IOException e) {
-            throw new StoryTellerException("Failed to write pack index on device partition", e);
-        }
-    }
-
     @Override
-    public CompletionStage<TransferStatus> downloadPack(UUID uuid, Path destPath, TransferProgressListener listener) {
+    public CompletionStage<TransferStatus> downloadPack(UUID uuid, Path destFolder, TransferProgressListener listener) {
         if (!hasDevice() || !hasPartition()) {
-            return CompletableFuture.failedStage(noDevicePluggedException());
+            return CompletableFuture.failedStage(new NoDevicePluggedException());
         }
         return CompletableFuture.supplyAsync(() -> {
             List<UUID> packUUIDs = readPackIndex();
@@ -306,16 +310,17 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
             }
             LOGGER.debug("Found pack with uuid: {}", uuid);
             // Destination folder
-            Path destFolder = destPath.resolve(uuid.toString());
+            Path destPath = destFolder.resolve(uuid.toString());
             // Get pack folder
-            Path sourceFolder = sdPartition.getPackFolder(uuid);
-            LOGGER.trace("Downloading pack folder: {}", sourceFolder);
-            if (Files.notExists(sourceFolder)) {
+            Path srcPath = sdPartition.getPackFolder(uuid);
+            LOGGER.trace("Downloading pack folder: {}", srcPath);
+            if (Files.notExists(srcPath)) {
                 throw new StoryTellerException("Pack folder not found");
             }
             try {
                 // Copy folder with progress tracking
-                return copyPackFolder(sourceFolder, destFolder, listener);
+                FileUtils.copyFolder(srcPath, destPath, listener);
+                return new TransferStatus(0, 0, 0);
             } catch (IOException e) {
                 throw new StoryTellerException("Failed to copy pack from device", e);
             }
@@ -323,13 +328,13 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     @Override
-    public CompletionStage<TransferStatus> uploadPack(UUID uuid, Path inputPath, TransferProgressListener listener) {
+    public CompletionStage<TransferStatus> uploadPack(UUID uuid, Path srcPath, TransferProgressListener listener) {
         if (!hasDevice() || !hasPartition()) {
-            return CompletableFuture.failedStage(noDevicePluggedException());
+            return CompletableFuture.failedStage(new NoDevicePluggedException());
         }
         try {
             // Check free space
-            long folderSize = FileUtils.getFolderSize(inputPath);
+            long folderSize = FileUtils.getFolderSize(srcPath);
             if (LOGGER.isTraceEnabled()) {
                 LOGGER.trace("Pack folder size: {}", FileUtils.readableByteSize(folderSize));
             }
@@ -346,13 +351,14 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         }
 
         // Get pack folder
-        Path packPath = sdPartition.getPackFolder(uuid);
-        LOGGER.debug("Uploading pack to folder: {}", packPath);
+        Path destPath = sdPartition.getPackFolder(uuid);
+        LOGGER.debug("Uploading pack to folder: {}", destPath);
 
         // Copy folder with progress tracking
         return CompletableFuture.supplyAsync(() -> {
             try {
-                return copyPackFolder(inputPath, packPath, listener);
+                FileUtils.copyFolder(srcPath, destPath, listener);
+                return new TransferStatus(0, 0, 0);
             } catch (IOException e) {
                 throw new StoryTellerException("Failed to copy pack from device", e);
             }
@@ -360,7 +366,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
             // When transfer complete, generate device-specific boot file from device UUID
             LOGGER.debug("Generating device-specific boot file");
             return getDeviceInfos().thenApply(deviceInfos -> {
-                FsStoryPackWriter.addBootFile(packPath, deviceInfos.getDeviceKey());
+                FsStoryPackWriter.addBootFile(destPath, deviceInfos.getDeviceKey());
                 return status;
             });
         }).thenApplyAsync(status -> {
@@ -375,65 +381,10 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         });
     }
 
-    private static TransferStatus copyPackFolder(Path sourceFolder, Path destFolder, TransferProgressListener listener)
-            throws IOException {
-        // Keep track of transferred bytes and elapsed time
-        final long startTime = System.currentTimeMillis();
-        AtomicLong transferred = new AtomicLong(0);
-        long folderSize = FileUtils.getFolderSize(sourceFolder);
-        if (LOGGER.isTraceEnabled()) {
-            LOGGER.trace("Pack folder size: {}", FileUtils.readableByteSize(folderSize));
-        }
-        // Target directory
-        Files.createDirectories(destFolder);
-        // Copy folders and files
-        try (Stream<Path> paths = Files.walk(sourceFolder)) {
-            paths.forEach(ThrowingConsumer.unchecked(s -> {
-                Path d = destFolder.resolve(sourceFolder.relativize(s));
-                // Copy directory
-                if (Files.isDirectory(s)) {
-                    LOGGER.debug("Creating directory {}", d);
-                    Files.createDirectories(d);
-                } else {
-                    // Copy files
-                    long fileSize = FileUtils.getFileSize(s);
-                    if (LOGGER.isDebugEnabled()) {
-                        LOGGER.debug("Copying file {} ({}) to {}", s.getFileName(),
-                                FileUtils.readableByteSize(fileSize), d);
-                    }
-                    Files.copy(s, d, StandardCopyOption.REPLACE_EXISTING);
-
-                    // Compute progress and speed
-                    long xferred = transferred.addAndGet(fileSize);
-                    long elapsed = System.currentTimeMillis() - startTime;
-                    double speed = xferred / (elapsed / 1000.0);
-                    if (LOGGER.isTraceEnabled()) {
-                        LOGGER.trace("Transferred {} in {} ms", FileUtils.readableByteSize(xferred), elapsed);
-                        LOGGER.trace("Average speed = {}/sec", FileUtils.readableByteSize((long) speed));
-                    }
-                    TransferStatus status = new TransferStatus(xferred, folderSize, speed);
-
-                    // Call (optional) listener with transfer status
-                    if (listener != null) {
-                        CompletableFuture.runAsync(() -> listener.onProgress(status));
-                    }
-                }
-            }));
-        }
-        return new TransferStatus(transferred.get(), folderSize, 0.0);
-    }
-
     @Override
     public CompletionStage<Void> dump(Path outputPath) {
         LOGGER.warn("Not supported : dump");
         return CompletableFuture.completedStage(null);
     }
-
-    private static StoryTellerException noDevicePluggedException() {
-        return new StoryTellerException("No device plugged");
-    }
-
-    private static StoryTellerException noMetadataPackException(Exception e) {
-        return new StoryTellerException("Failed to read pack metadata on device partition", e);
-    }
 }
+

@@ -15,6 +15,7 @@ import io.vertx.core.json.JsonObject;
 import io.vertx.mutiny.core.eventbus.EventBus;
 import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.MetaPackDTO;
+import studio.webui.model.DeviceDTOs.TransferDTO;
 
 public interface IStoryTellerService {
 
@@ -22,13 +23,13 @@ public interface IStoryTellerService {
 
     CompletionStage<List<MetaPackDTO>> packs();
 
-    CompletionStage<String> addPack(UUID uuid, Path packFile);
+    TransferDTO addPack(UUID uuid, String packName);
 
     CompletionStage<Boolean> deletePack(UUID uuid);
 
     CompletionStage<Boolean> reorderPacks(List<UUID> uuids);
 
-    CompletionStage<String> extractPack(UUID uuid, Path destFile);
+    TransferDTO extractPack(UUID uuid);
 
     CompletionStage<Void> dump(Path outputPath);
 

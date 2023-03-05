@@ -33,10 +33,10 @@ import io.vertx.core.json.JsonObject;
 import studio.core.v1.service.PackFormat;
 import studio.core.v1.utils.io.FileUtils;
 import studio.junit.TestNameExtension;
+import studio.webui.model.DeviceDTOs.TransferDTO;
 import studio.webui.model.DeviceDTOs.OutputDTO;
 import studio.webui.model.DeviceDTOs.UuidDTO;
 import studio.webui.model.DeviceDTOs.UuidsDTO;
-import studio.webui.model.LibraryDTOs.TransferDTO;
 
 @QuarkusTest
 @TestHTTPEndpoint(DeviceController.class)
