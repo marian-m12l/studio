@@ -22,6 +22,7 @@
         <module>driver</module>
         <module>metadata</module>
         <module>web-ui</module>
+        <module>studio-desktop</module>
     </modules>
 
     <build>

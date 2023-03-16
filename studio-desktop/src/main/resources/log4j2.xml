@@ -1,0 +1,47 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ This Source Code Form is subject to the terms of the Mozilla Public
+  ~ License, v. 2.0. If a copy of the MPL was not distributed with this
+  ~ file, You can obtain one at https://mozilla.org/MPL/2.0/.
+  -->
+<Configuration strict="true">
+
+    <Appenders>
+        <Appender type="Console" name="STDOUT">
+            <Layout type="PatternLayout" pattern="%highlight{%date [%-5level] [%logger{1.}]: %msg%n%throwable}"/>
+        </Appender>
+        <Appender type="RollingFile" name="RollingFile" fileName="studio-latest.log" filePattern="studio-%d{yyyyMMdd}-%i.log">
+            <Layout type="PatternLayout" pattern="%date [%-5level] [%logger] [%file:%line]: %msg%n%throwable"/>
+            <Policies>
+                <OnStartupTriggeringPolicy />
+            </Policies>
+            <DefaultRolloverStrategy max="10"/>
+        </Appender>
+
+    </Appenders>
+
+    <Loggers>
+
+        <Root level="INFO">
+            <AppenderRef ref="STDOUT"/>
+            <AppenderRef ref="RollingFile"/>
+        </Root>
+
+        <Logger name="studio" level="INFO" additivity="false">
+            <AppenderRef ref="STDOUT"/>
+            <AppenderRef ref="RollingFile"/>
+        </Logger>
+
+        <Logger name="studio.driver" level="TRACE" additivity="false">
+            <AppenderRef ref="STDOUT"/>
+            <AppenderRef ref="RollingFile"/>
+        </Logger>
+
+        <Logger name="studio.core" level="TRACE" additivity="false">
+            <AppenderRef ref="STDOUT"/>
+            <AppenderRef ref="RollingFile"/>
+        </Logger>
+
+    </Loggers>
+
+</Configuration>
