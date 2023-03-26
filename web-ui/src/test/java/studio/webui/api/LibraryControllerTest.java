@@ -115,13 +115,16 @@ class LibraryControllerTest {
     @Test
     void testUpload() throws IOException {
         // upload
-        given().multiPart("pack", testPackSource.toFile()) //
-                .when().post("upload") //
-                .then().statusCode(200).body("success", is(true));
+        given() //
+          .multiPart("path", TEST_PACK_NAME) //
+          .multiPart("pack", testPackSource.toFile()) //
+        .when().post("upload") //
+        .then().statusCode(200).body("success", is(true));
         // list 1 pack
         list1Pack();
 
         // compare file
+        assertEquals(TEST_PACK_NAME, testPackLibrary.getFileName().toString(), "Different file name");
         byte[] expContent = Files.readAllBytes(testPackSource);
         byte[] actualContent = Files.readAllBytes(testPackLibrary);
         assertEquals(Arrays.mismatch(expContent, actualContent), -1, "Different file download");

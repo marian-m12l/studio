@@ -70,10 +70,9 @@ public class LibraryController {
     @POST
     @Path("upload")
     @NonBlocking
-    public SuccessDTO uploadZip(@RestForm("pack") FileUpload pack) {
-        String destName = pack.fileName();
-        String uploadedName = pack.uploadedFile().toString();
+    public SuccessDTO uploadZip(@RestForm("pack") FileUpload pack, @RestForm("path") String destName) {
         LOGGER.info("Upload pack '{}'", destName);
+        String uploadedName = pack.uploadedFile().toString();
         boolean status = libraryService.addPackFile(destName, uploadedName);
         return new SuccessDTO(status);
     }
