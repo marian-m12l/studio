@@ -11,9 +11,6 @@ import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
 import java.nio.file.FileStore;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -23,18 +20,16 @@ import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.Stream;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import lombok.AllArgsConstructor;
 import studio.core.v1.exception.StoryTellerException;
-import studio.core.v1.model.TransferProgressListener;
-import studio.core.v1.model.TransferProgressListener.TransferStatus;
+import studio.core.v1.model.TransferListener.TransferProgressListener;
+import studio.core.v1.model.TransferListener.TransferStatus;
 import studio.core.v1.utils.stream.ThrowingConsumer;
 
 public class FileUtils {
@@ -138,42 +133,6 @@ public class FileUtils {
         return "" + Math.round(100.0 * 100.0 * value) / 100.0 + "%";
     }
 
-    @AllArgsConstructor
-    public static class ByteBufferBackedInputStream extends InputStream {
-
-        private final ByteBuffer buf;
-
-        @Override
-        public synchronized int read() throws IOException {
-          if (!buf.hasRemaining()) {
-            return -1;
-          }
-          return buf.get() & 0xFF;
-        }
-
-        @Override
-        public synchronized int read(byte[] bytes, int off, int len) throws IOException {
-          len = Math.min(len, buf.remaining());
-          buf.get(bytes, off, len);
-          return len;
-        }
-      }
-
-    @AllArgsConstructor
-    public static class ByteBufferBackedOutputStream extends OutputStream {
-
-        private final ByteBuffer buf;
-
-        public synchronized void write(int b) throws IOException {
-          buf.put((byte) b);
-        }
-
-        @Override
-        public synchronized void write(byte[] bytes, int off, int len) throws IOException {
-          buf.put(bytes, off, len);
-        }
-      }
-
     /**
      * Create directories. Throw custom unchecked StoryTellerException.
      *
@@ -190,14 +149,12 @@ public class FileUtils {
         }
     }
 
-    public static void copyFolder(Path sourceFolder, Path destFolder, TransferProgressListener listener) throws IOException {
-        // Keep track of transferred bytes and elapsed time
-        final long startTime = System.currentTimeMillis();
-        AtomicLong transferred = new AtomicLong(0);
+    public static TransferStatus copyFolder(UUID uuid, Path sourceFolder, Path destFolder, TransferProgressListener listener) throws IOException {
         long folderSize = getFolderSize(sourceFolder);
         if (LOGGER.isTraceEnabled()) {
             LOGGER.trace("Pack folder size: {}", readableByteSize(folderSize));
         }
+        TransferStatus status = new TransferStatus(uuid, folderSize);
         // Target directory
         Files.createDirectories(destFolder);
         // Copy folders and files
@@ -215,23 +172,15 @@ public class FileUtils {
                         LOGGER.debug("Copying file {} ({}) to {}", s.getFileName(), readableByteSize(fileSize), d);
                     }
                     Files.copy(s, d, StandardCopyOption.REPLACE_EXISTING);
-
+                    // Compute progress and speed
+                    status.update(fileSize);
+                    // Call listener with transfer status
                     if (listener != null) {
-                        // Compute progress and speed
-                        long xferred = transferred.addAndGet(fileSize);
-                        long elapsed = System.currentTimeMillis() - startTime;
-                        double speed = xferred / (elapsed / 1000.0);
-                        if (LOGGER.isTraceEnabled()) {
-                            LOGGER.trace("Transferred {} in {} ms", readableByteSize(xferred), elapsed);
-                            LOGGER.trace("Average speed = {}/sec", readableByteSize((long) speed));
-                        }
-                        TransferStatus status = new TransferStatus(xferred, folderSize, speed);
-                        // Call listener with transfer status
-                        CompletableFuture.runAsync(() -> listener.onProgress(status));
+                        listener.onProgress(status);
                     }
                 }
             }));
         }
+        return status;
     }
-
 }

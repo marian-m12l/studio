@@ -6,6 +6,7 @@
 package studio.driver.service.fs;
 
 import static studio.core.v1.utils.io.FileUtils.dataInputStream;
+import static studio.core.v1.utils.io.FileUtils.dataOutputStream;
 
 import java.io.DataInputStream;
 import java.io.IOException;
@@ -33,10 +34,10 @@ import studio.core.v1.service.fs.FsStoryPackDTO.SdPartition;
 import studio.core.v1.service.fs.FsStoryPackWriter;
 import studio.core.v1.utils.io.FileUtils;
 import studio.core.v1.utils.security.SecurityUtils;
+import studio.core.v1.utils.stream.ThrowingFunction;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
-import studio.core.v1.model.TransferProgressListener;
-import studio.core.v1.model.TransferProgressListener.TransferStatus;
+import studio.core.v1.model.TransferListener.TransferProgressListener;
 import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.DeviceInfosDTO.StorageDTO;
 import studio.driver.model.MetaPackDTO;
@@ -48,8 +49,8 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(FsStoryTellerAsyncDriver.class);
 
-    private static final long FS_MOUNTPOINT_POLL_DELAY = 1000L;
-    private static final long FS_MOUNTPOINT_RETRY = 10;
+    static final long FS_MOUNTPOINT_POLL_DELAY = 1000L;
+    static final long FS_MOUNTPOINT_RETRY = 10L;
 
     @Setter
     private Device device = null;
@@ -64,19 +65,19 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         // Initialize libusb, handle and propagate hotplug events
         LOGGER.debug("Registering hotplug listener");
         LibUsbDetectionHelper.initializeLibUsb(UsbDeviceVersion.DEVICE_VERSION_2, //
-                device2 -> {
+                dev -> {
                     // Update device reference
                     sdPartition = findPartition();
-                    device = device2;
+                    device = dev;
                     // Notify listeners
-                    pluggedlisteners.forEach(l -> l.onDevicePlugged(device2));
+                    pluggedlisteners.forEach(l -> l.onDevicePlugged(dev));
                 }, //
-                device2 -> {
+                dev -> {
                     // Update device reference
                     sdPartition = null;
                     device = null;
                     // Notify listeners
-                    unpluggedlisteners.forEach(l -> l.onDeviceUnplugged(device2));
+                    unpluggedlisteners.forEach(l -> l.onDeviceUnplugged(dev));
                 });
     }
 
@@ -90,10 +91,9 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     @Override
-    public void registerDeviceListener(DevicePluggedListener pluggedlistener,
-            DeviceUnpluggedListener unpluggedlistener) {
-        this.pluggedlisteners.add(pluggedlistener);
-        this.unpluggedlisteners.add(unpluggedlistener);
+    public void registerDeviceListener(DevicePluggedListener pluggedlistener, DeviceUnpluggedListener unpluggedlistener) {
+        pluggedlisteners.add(pluggedlistener);
+        unpluggedlisteners.add(unpluggedlistener);
     }
 
     /**
@@ -103,7 +103,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         LOGGER.debug("Waiting for device partition...");
         for (int i = 0; i < FS_MOUNTPOINT_RETRY && sdPartition == null; i++) {
             try {
-                for(Path path : FileUtils.listMountPoints()) {
+                for (Path path : FileUtils.listMountPoints()) {
                     LOGGER.trace("Looking for .md in {}", path);
                     if (SdPartition.isValid(path)) {
                         LOGGER.info("FS device partition located: {}", path);
@@ -122,7 +122,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         return null;
     }
 
-    List<UUID> readPackIndex() {
+    public List<UUID> readPackIndex() {
         List<UUID> packUUIDs = new ArrayList<>();
         Path piFile = sdPartition.getPackIndex();
         LOGGER.trace("Reading packs index from file: {}", piFile);
@@ -137,7 +137,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         }
     }
 
-    void writePackIndex(List<UUID> packUUIDs) {
+    public void writePackIndex(List<UUID> packUUIDs) {
         Path piFile = sdPartition.getPackIndex();
         LOGGER.info("Replacing pack index file: {}", piFile);
         ByteBuffer bb = ByteBuffer.allocate(16 * packUUIDs.size());
@@ -149,6 +149,21 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
             Files.write(piFile, bb.array());
         } catch (IOException e) {
             throw new StoryTellerException("Failed to write pack index on device partition", e);
+        }
+    }
+
+    // Create fake device info
+    public void writeDeviceInfo(Path mdPath, short mdVersion, short major, short minor, String serial, byte[] deviceKey) {
+        try (var os = dataOutputStream(mdPath)) {
+            os.writeShort(Short.reverseBytes(mdVersion));
+            os.write(new byte[4]);
+            os.writeShort(Short.reverseBytes(minor));
+            os.writeShort(Short.reverseBytes(major));
+            os.writeLong(Long.parseLong(serial));
+            os.write(new byte[238]);
+            os.write(deviceKey);
+        } catch (IOException e) {
+            throw new StoryTellerException(e);
         }
     }
 
@@ -178,7 +193,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                 infos.setFirmware(Short.reverseBytes(is.readShort()), Short.reverseBytes(is.readShort()));
                 LOGGER.debug("Firmware version: {}", infos.getFirmware());
 
-                 // Serial number
+                // Serial number
                 long sn = is.readLong();
                 if (sn != 0L && sn != -1L && sn != -4294967296L) {
                     infos.setSerial(String.format("%014d", sn));
@@ -203,9 +218,9 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                 infos.setStorage(new StorageDTO(total, free, used));
                 if (LOGGER.isDebugEnabled()) {
                     LOGGER.debug("SD card used : {} ({} / {})", //
-                        FileUtils.readablePercent(used, total), //
-                        FileUtils.readableByteSize(used), //
-                        FileUtils.readableByteSize(total));
+                            FileUtils.readablePercent(used, total), //
+                            FileUtils.readableByteSize(used), //
+                            FileUtils.readableByteSize(total));
                 }
             } catch (IOException e) {
                 throw new StoryTellerException("Fail to read device metadata " + mdFile, e);
@@ -230,6 +245,9 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
                 // Compute .content folder (last 4 bytes of UUID)
                 Path packPath = sdPartition.getPackFolder(uuid);
+                if(!FsStoryPack.isValid(packPath)) {
+                    throw new StoryTellerException("Invalid pack " + packPath);
+                }
                 packInfos.setFolderName(packPath.getFileName().toString());
                 FsStoryPack fsp = new FsStoryPack(packPath);
                 // Night mode is available if file 'nm' exists
@@ -259,7 +277,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         }
         return CompletableFuture.supplyAsync(() -> {
             List<UUID> packUUIDs = readPackIndex();
-            if(!packUUIDs.containsAll(uuids)) {
+            if (!packUUIDs.containsAll(uuids)) {
                 throw new StoryTellerException("Packs on device do not match UUIDs");
             }
             // Reorder list according to uuids list
@@ -278,7 +296,7 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         return CompletableFuture.supplyAsync(() -> {
             List<UUID> packUUIDs = readPackIndex();
             // Look for UUID in packs index
-            if(!packUUIDs.contains(uuid)) {
+            if (!packUUIDs.contains(uuid)) {
                 throw new StoryTellerException("Pack not found");
             }
             LOGGER.debug("Found pack with uuid: {}", uuid);
@@ -299,36 +317,34 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     }
 
     @Override
-    public CompletionStage<TransferStatus> downloadPack(UUID uuid, Path destFolder, TransferProgressListener listener) {
+    public CompletionStage<UUID> downloadPack(UUID uuid, Path destFolder, TransferProgressListener listener) {
         if (!hasDevice() || !hasPartition()) {
             return CompletableFuture.failedStage(new NoDevicePluggedException());
         }
-        return CompletableFuture.supplyAsync(() -> {
-            List<UUID> packUUIDs = readPackIndex();
-            if(!packUUIDs.contains(uuid)) {
-                throw new StoryTellerException("Pack not found");
-            }
-            LOGGER.debug("Found pack with uuid: {}", uuid);
-            // Destination folder
-            Path destPath = destFolder.resolve(uuid.toString());
-            // Get pack folder
-            Path srcPath = sdPartition.getPackFolder(uuid);
-            LOGGER.trace("Downloading pack folder: {}", srcPath);
-            if (Files.notExists(srcPath)) {
-                throw new StoryTellerException("Pack folder not found");
-            }
-            try {
-                // Copy folder with progress tracking
-                FileUtils.copyFolder(srcPath, destPath, listener);
-                return new TransferStatus(0, 0, 0);
-            } catch (IOException e) {
-                throw new StoryTellerException("Failed to copy pack from device", e);
-            }
-        });
+        List<UUID> packUUIDs = readPackIndex();
+        if (!packUUIDs.contains(uuid)) {
+            throw new StoryTellerException("Pack not found");
+        }
+        LOGGER.debug("Found pack with uuid: {}", uuid);
+        // Destination folder
+        Path destPath = destFolder.resolve(uuid.toString());
+        // Get pack folder
+        Path srcPath = sdPartition.getPackFolder(uuid);
+        LOGGER.trace("Downloading pack folder: {}", srcPath);
+        if (Files.notExists(srcPath)) {
+            throw new StoryTellerException("Pack folder not found");
+        }
+        try {
+            // Copy folder with progress tracking
+            FileUtils.copyFolder(uuid, srcPath, destPath, listener);
+        } catch (IOException e) {
+            throw new StoryTellerException("Failed to copy pack from device", e);
+        }
+        return CompletableFuture.completedStage(uuid);
     }
 
     @Override
-    public CompletionStage<TransferStatus> uploadPack(UUID uuid, Path srcPath, TransferProgressListener listener) {
+    public CompletionStage<UUID> uploadPack(UUID uuid, Path srcPath, TransferProgressListener listener) {
         if (!hasDevice() || !hasPartition()) {
             return CompletableFuture.failedStage(new NoDevicePluggedException());
         }
@@ -354,22 +370,12 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         Path destPath = sdPartition.getPackFolder(uuid);
         LOGGER.debug("Uploading pack to folder: {}", destPath);
 
-        // Copy folder with progress tracking
-        return CompletableFuture.supplyAsync(() -> {
-            try {
-                FileUtils.copyFolder(srcPath, destPath, listener);
-                return new TransferStatus(0, 0, 0);
-            } catch (IOException e) {
-                throw new StoryTellerException("Failed to copy pack from device", e);
-            }
-        }).thenCompose(status -> {
+        return getDeviceInfos().thenApply(ThrowingFunction.unchecked(di -> {
+            // Copy folder with progress tracking
+            FileUtils.copyFolder(uuid, srcPath, destPath, listener);
             // When transfer complete, generate device-specific boot file from device UUID
             LOGGER.debug("Generating device-specific boot file");
-            return getDeviceInfos().thenApply(deviceInfos -> {
-                FsStoryPackWriter.addBootFile(destPath, deviceInfos.getDeviceKey());
-                return status;
-            });
-        }).thenApplyAsync(status -> {
+            FsStoryPackWriter.addBootFile(destPath, di.getDeviceKey());
             // Finally, add pack UUID to index
             LOGGER.debug("Add pack uuid to index");
             List<UUID> packUUIDs = readPackIndex();
@@ -377,8 +383,9 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
             packUUIDs.add(uuid);
             // Write pack index
             writePackIndex(packUUIDs);
-            return status;
-        });
+            // return transferId
+            return uuid;
+        }));
     }
 
     @Override
@@ -387,4 +394,3 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         return CompletableFuture.completedStage(null);
     }
 }
-

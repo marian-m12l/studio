@@ -3,7 +3,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
 package studio.driver.service.raw;
 
 import static java.nio.file.StandardOpenOption.APPEND;
@@ -45,8 +44,8 @@ import studio.core.v1.service.PackFormat;
 import studio.core.v1.utils.io.FileUtils;
 import studio.driver.event.DevicePluggedListener;
 import studio.driver.event.DeviceUnpluggedListener;
-import studio.core.v1.model.TransferProgressListener;
-import studio.core.v1.model.TransferProgressListener.TransferStatus;
+import studio.core.v1.model.TransferListener.TransferProgressListener;
+import studio.core.v1.model.TransferListener.TransferStatus;
 import studio.driver.model.DeviceInfosDTO;
 import studio.driver.model.DeviceInfosDTO.StorageDTO;
 import studio.driver.model.MetaPackDTO;
@@ -84,17 +83,19 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     public RawStoryTellerAsyncDriver() {
         // Initialize libusb, handle and propagate hotplug events
         LOGGER.debug("Registering hotplug listener");
-        LibUsbDetectionHelper.initializeLibUsb(UsbDeviceVersion.DEVICE_VERSION_1, device2 -> {
-            // Update device reference
-            this.device = device2;
-            // Notify listeners
-            this.pluggedlisteners.forEach(l -> l.onDevicePlugged(device2));
-        }, device2 -> {
-            // Update device reference
-            this.device = null;
-            // Notify listeners
-            this.unpluggedlisteners.forEach(l -> l.onDeviceUnplugged(device2));
-        });
+        LibUsbDetectionHelper.initializeLibUsb(UsbDeviceVersion.DEVICE_VERSION_1, //
+            dev -> {
+                // Update device reference
+                this.device = dev;
+                // Notify listeners
+                this.pluggedlisteners.forEach(l -> l.onDevicePlugged(dev));
+            }, //
+            dev -> {
+                // Update device reference
+                this.device = null;
+                // Notify listeners
+                this.unpluggedlisteners.forEach(l -> l.onDeviceUnplugged(dev));
+            });
     }
 
     @Override
@@ -104,14 +105,14 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
 
     @Override
     public void registerDeviceListener(DevicePluggedListener pluggedlistener, DeviceUnpluggedListener unpluggedlistener) {
-        this.pluggedlisteners.add(pluggedlistener);
-        this.unpluggedlisteners.add(unpluggedlistener);
+        pluggedlisteners.add(pluggedlistener);
+        unpluggedlisteners.add(unpluggedlistener);
     }
 
     @Override
     public CompletionStage<DeviceInfosDTO> getDeviceInfos() {
         if (!hasDevice()) {
-            return CompletableFuture.failedStage(noDevicePluggedException());
+            return CompletableFuture.failedStage(new NoDevicePluggedException());
         }
         return LibUsbMassStorageHelper.executeOnDeviceHandle(device, this::readDeviceInfos);
     }
@@ -131,8 +132,14 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                 }));
     }
 
-    public static boolean checkUuidBytes(long lowBytes, long highBytes) {
+    static boolean checkUuidBytes(long lowBytes, long highBytes) {
         return Stream.of(0L, -1L, -4294967296L).allMatch(v -> lowBytes != v || highBytes != v);
+    }
+
+    static RawStoryPackInfos findPack(List<RawStoryPackInfos> packs, UUID uuid) {
+        return packs.stream() //
+            .filter(p-> p.getUuid().equals(uuid)).findFirst() //
+            .orElseThrow(() -> new StoryTellerException("Pack not found " + uuid));
     }
 
     protected DeviceInfosDTO readRawDeviceInfos(ByteBuffer spiSector, ByteBuffer sdSector) {
@@ -205,7 +212,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     @Override
     public CompletionStage<List<MetaPackDTO>> getPacksList() {
         if (!hasDevice()) {
-            return CompletableFuture.failedStage(noDevicePluggedException());
+            return CompletableFuture.failedStage(new NoDevicePluggedException());
         }
         // Read pack index
         return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, this::readPackIndex)
@@ -265,7 +272,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     @Override
     public CompletionStage<Boolean> reorderPacks(List<UUID> uuids) {
         if (!hasDevice()) {
-            return CompletableFuture.failedStage(noDevicePluggedException());
+            return CompletableFuture.failedStage(new NoDevicePluggedException());
         }
         return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, handle -> readPackIndex(handle) //
                 .thenCompose(packs -> {
@@ -284,14 +291,12 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     @Override
     public CompletionStage<Boolean> deletePack(UUID uuid) {
         if (!hasDevice()) {
-            return CompletableFuture.failedStage(noDevicePluggedException());
+            return CompletableFuture.failedStage(new NoDevicePluggedException());
         }
         return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, handle -> readPackIndex(handle) //
                 .thenCompose(packs -> {
                     // Look for UUID in packs index
-                    RawStoryPackInfos rspi = packs.stream() //
-                            .filter(p -> p.getUuid().equals(uuid)).findFirst() //
-                            .orElseThrow(() -> new StoryTellerException("Pack not found"));
+                    RawStoryPackInfos rspi = findPack(packs, uuid);
                     LOGGER.debug("Found pack with uuid {} (start={}, size={})", uuid, rspi.getStartSector(), rspi.getSizeInSectors());
                     // Remove from index
                     packs.remove(rspi);
@@ -313,67 +318,52 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         return LibUsbMassStorageHelper.asyncWriteSDSectors(handle, PACK_INDEX_SD_SECTOR, (short) 1, bb);
     }
 
-    private static void followProgress(TransferProgressListener listener, TransferStatus status, long startTime) {
-        long elapsed = System.currentTimeMillis() - startTime;
-        double speed = status.getTransferred() / (elapsed / 1000.0);
-        status.setSpeed(speed);
-        if(LOGGER.isTraceEnabled()) {
-            LOGGER.trace("Transferred {}bytes in {}ms, avg speed={}/s", status.getTransferred(), elapsed, FileUtils.readableByteSize((long)speed));
-        }
-        // Call (optional) listener with transfer status
-        if (listener != null) {
-            CompletableFuture.runAsync(() -> listener.onProgress(status));
-        }
-    }
-
     @Override
-    public CompletionStage<TransferStatus> downloadPack(UUID uuid, Path destFolder, TransferProgressListener listener) {
+    public CompletionStage<UUID> downloadPack(final UUID uuid, Path destFolder, TransferProgressListener listener) {
         if (!hasDevice()) {
-            return CompletableFuture.failedStage(noDevicePluggedException());
+            return CompletableFuture.failedStage(new NoDevicePluggedException());
         }
-        return LibUsbMassStorageHelper.executeOnDeviceHandle(device, handle -> readPackIndex(handle) //
-                .thenCompose(packs -> {
-                    // Look for UUID in packs index
-                    RawStoryPackInfos rspi = packs.stream() //
-                        .filter(p -> p.getUuid().equals(uuid)).findFirst() //
-                        .orElseThrow();
-                    LOGGER.debug("Found pack with uuid {} (starts={}, size={})", uuid, rspi.getStartSector(), rspi.getSizeInSectors());
-                    // Keep track of transferred bytes and elapsed time
-                    long startTime = System.currentTimeMillis();
-                    // Copy pack chunk by chunk into the output stream
-                    int rspiSize = rspi.getSizeInSectors();
-                    int totalSize = rspiSize * SECTOR_SIZE;
-                    var promise = CompletableFuture.completedStage(new TransferStatus(0, totalSize, 0.0));
-                    for (int offset = 0; offset < rspiSize; offset += PACK_TRANSFER_CHUNK_SECTOR_SIZE) {
-                        int sector = PACK_INDEX_SD_SECTOR + rspi.getStartSector() + offset;
-                        short sectorToRead = (short) Math.min(PACK_TRANSFER_CHUNK_SECTOR_SIZE, rspiSize - offset);
-                        promise = promise.thenCompose(status -> {
-                            LOGGER.trace("Reading {} bytes from device", sectorToRead * SECTOR_SIZE);
-                            return LibUsbMassStorageHelper.asyncReadSDSectors(handle, sector, sectorToRead)
-                                    .thenApply(bb -> {
-                                        byte[] bytes = bb.array();
-                                        LOGGER.trace("Writing {} bytes to output stream", bytes.length);
-                                        try {
-                                            Path destPath = destFolder.resolve(uuid.toString() + PackFormat.RAW.getExtension());
-                                            Files.write(destPath, bytes, CREATE, APPEND);
-                                        } catch (IOException e) {
-                                            throw new StoryTellerException("Failed to write to destination file", e);
-                                        }
-                                        // Compute progress
-                                        status.setTransferred(status.getTransferred() + bytes.length);
-                                        followProgress(listener, status, startTime);
-                                        return status;
-                                    });
+        Path destPath = destFolder.resolve(uuid.toString() + PackFormat.RAW.getExtension());
+        return LibUsbMassStorageHelper.executeOnDeviceHandle(device, handle -> //
+        readPackIndex(handle) //
+        .thenCompose(packs -> {
+            // Look for UUID in packs index
+            RawStoryPackInfos rspi = findPack(packs, uuid);
+            LOGGER.debug("Found pack with uuid {} (starts={}, size={})", uuid, rspi.getStartSector(), rspi.getSizeInSectors());
+            // Copy pack chunk by chunk into the output stream
+            int rspiSize = rspi.getSizeInSectors();
+            int totalSize = rspiSize * SECTOR_SIZE;
+            TransferStatus status = new TransferStatus(uuid, totalSize);
+            var promise = CompletableFuture.completedFuture((UUID)null);
+            for (int offset = 0; offset < rspiSize; offset += PACK_TRANSFER_CHUNK_SECTOR_SIZE) {
+                int sector = PACK_INDEX_SD_SECTOR + rspi.getStartSector() + offset;
+                short sectorToRead = (short) Math.min(PACK_TRANSFER_CHUNK_SECTOR_SIZE, rspiSize - offset);
+                promise = promise.thenCompose(i -> {
+                    LOGGER.trace("Reading {} bytes from device", sectorToRead * SECTOR_SIZE);
+                    return LibUsbMassStorageHelper.asyncReadSDSectors(handle, sector, sectorToRead)
+                        .thenApply(bb -> {
+                            byte[] bytes = bb.array();
+                            LOGGER.trace("Writing {} bytes to output stream", bytes.length);
+                            try {
+                                Files.write(destPath, bytes, CREATE, APPEND);
+                            } catch (IOException e) {
+                                throw new StoryTellerException("Failed to write to destination file", e);
+                            }
+                            // Compute progress
+                            status.update(bytes.length);
+                            listener.onProgress(status);
+                            return uuid;
                         });
-                    }
-                    return promise;
-                }));
+                });
+            }
+            return promise;
+        }));
     }
 
     @Override
-    public CompletionStage<TransferStatus> uploadPack(UUID uuid, Path srcPath, TransferProgressListener listener) {
+    public CompletionStage<UUID> uploadPack(final UUID uuid, Path srcPath, TransferProgressListener listener) {
         if (!hasDevice()) {
-            return CompletableFuture.failedStage(noDevicePluggedException());
+            return CompletableFuture.failedStage(new NoDevicePluggedException());
         }
         // file size and sectors
         long packSize = 0;
@@ -382,52 +372,49 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
         } catch (IOException e) {
             return CompletableFuture.failedStage(e);
         }
+        TransferStatus status = new TransferStatus(uuid, packSize);
         int packSizeInSectors = (int) (packSize / SECTOR_SIZE);
         if (LOGGER.isInfoEnabled()) {
             LOGGER.info("Transferring pack ({}) to device: {} ({} sectors)", uuid, FileUtils.readableByteSize(packSize),
                     packSizeInSectors);
         }
-        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, handle ->
+        return LibUsbMassStorageHelper.executeOnDeviceHandle(this.device, handle -> //
         // Find first large-enough free space
-        findFirstSuitableSector(handle, packSizeInSectors).thenCompose(startSector -> {
+        findFirstSuitableSector(handle, packSizeInSectors) //
+        .thenCompose(startSector -> {
             if (startSector.isEmpty()) {
                 throw new StoryTellerException("Not enough free space on the device");
             }
             LOGGER.debug("Adding pack at start sector: {}", startSector.get());
-
-            // Keep track of transferred bytes and elapsed time
-            long startTime = System.currentTimeMillis();
             // Copy pack chunk by chunk from the input stream
-            int totalSize = packSizeInSectors * SECTOR_SIZE;
-            var promise = CompletableFuture.completedStage(new TransferStatus(0, totalSize, 0.0));
+            var promise = CompletableFuture.completedFuture((Void)null);
             for (int offset = 0; offset < packSizeInSectors; offset += PACK_TRANSFER_CHUNK_SECTOR_SIZE) {
                 int sector = PACK_INDEX_SD_SECTOR + startSector.get() + offset;
                 short nbSectorsToWrite = (short) Math.min(PACK_TRANSFER_CHUNK_SECTOR_SIZE, packSizeInSectors - offset);
-                promise = promise.thenCompose(status -> {
+                int chunkSize = nbSectorsToWrite * SECTOR_SIZE;
+                promise = promise.thenCompose(i -> {
                     // Read next chunk from input stream
-                    int chunkSize = nbSectorsToWrite * SECTOR_SIZE;
                     try (InputStream is = dataInputStream(srcPath)) {
                         LOGGER.trace("Reading {} bytes from input stream", chunkSize);
                         ByteBuffer bb = ByteBuffer.wrap(is.readNBytes(chunkSize));
                         // write to SD
                         return LibUsbMassStorageHelper.asyncWriteSDSectors(handle, sector, nbSectorsToWrite, bb)
-                                .thenApply(written -> {
-                                    // Compute progress
-                                    status.setTransferred(status.getTransferred() + chunkSize);
-                                    followProgress(listener, status, startTime);
-                                    return status;
-                                });
+                            // Compute progress
+                            .thenAccept(b -> {
+                                status.update(chunkSize);
+                                listener.onProgress(status);
+                            });
                     } catch (IOException e) {
                         throw new StoryTellerException("Failed to read pack from file", e);
                     }
                 });
             }
-
             // Rewrite packs index with added pack
-            return promise.thenCompose(status -> readPackIndex(handle).thenCompose(packs -> {
+            return promise.thenCompose(i -> readPackIndex(handle) //
+              .thenCompose(packs -> {
                 RawStoryPackInfos spInfos = new RawStoryPackInfos();
-                spInfos.setUuid(null);
-                spInfos.setVersion((short) 0);
+                spInfos.setUuid(null); // useless for index
+                spInfos.setVersion((short) 0); // useless for index
                 spInfos.setStartSector(startSector.get());
                 spInfos.setSizeInSectors(packSizeInSectors);
                 spInfos.setStatsOffset((short) 0);
@@ -435,8 +422,8 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                 // Add pack to index list
                 packs.add(spInfos);
                 // Write pack index
-                return writePackIndex(handle, packs).thenApply(done -> status);
-            }));
+                return writePackIndex(handle, packs);
+            })).thenApply(d -> uuid);
         }));
     }
 
@@ -475,7 +462,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     @Override
     public CompletionStage<Void> dump(Path outputPath) {
         if (!hasDevice()) {
-            return CompletableFuture.failedStage(noDevicePluggedException());
+            return CompletableFuture.failedStage(new NoDevicePluggedException());
         }
         try {
             if (!Files.isDirectory(outputPath)) {
@@ -495,11 +482,11 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                             short nbPacks = sdPackIndexSector.getShort();
                             LOGGER.info("Number of packs to dump: {}", nbPacks);
 
-                            int packSector = PACK_INDEX_SD_SECTOR;
                             CompletionStage<Void> promise = CompletableFuture.completedStage(null);
                             for (short i = 0; i < nbPacks; i++) {
                                 int startSector = sdPackIndexSector.getInt();
                                 int sizeInSectors = sdPackIndexSector.getInt();
+                                int packSector = PACK_INDEX_SD_SECTOR + startSector;
                                 // statsOffset
                                 sdPackIndexSector.getShort();
                                 // samplingRate
@@ -507,10 +494,9 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                                 LOGGER.debug("Pack #{}: {} - {}", i + 1, startSector, sizeInSectors);
                                 // Dump first, second and last sector of each pack
                                 promise = promise //
-                                        .thenCompose(dd -> dumpSector(handle, packSector + startSector, outputPath)) //
-                                        .thenCompose(dd -> dumpSector(handle, packSector + startSector + 1, outputPath)) //
-                                        .thenCompose(dd -> dumpSector(handle,
-                                                packSector + startSector + sizeInSectors - 1, outputPath));
+                                        .thenCompose(dd -> dumpSector(handle, packSector, outputPath)) //
+                                        .thenCompose(dd -> dumpSector(handle, packSector + 1, outputPath)) //
+                                        .thenCompose(dd -> dumpSector(handle, packSector + sizeInSectors - 1, outputPath));
                             }
                             return promise;
                         })));
@@ -527,9 +513,5 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
                         throw new StoryTellerException("Failed to dump sector " + sector + " from SD card.", e);
                     }
                 });
-    }
-
-    private static StoryTellerException noDevicePluggedException() {
-        return new NoDevicePluggedException();
     }
 }

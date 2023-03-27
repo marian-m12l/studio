@@ -77,7 +77,7 @@ public interface FsStoryPackDTO {
         }
 
         public UUID getUuid() {
-            // Folder name is the uuid (minus the eventual timestamp suffix)
+            // Folder name is the uuid (minus the optional timestamp suffix)
             String s = fsPath.getFileName().toString().split("\\.", 2)[0];
             return (s == null) ? null : UUID.fromString(s);
         }

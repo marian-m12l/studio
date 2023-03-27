@@ -32,6 +32,7 @@ public interface DeviceDTOs {
     @Getter
     @AllArgsConstructor
     @NoArgsConstructor
+    @ToString
     final class OutputDTO {
         private Path outputPath;
     }
@@ -40,6 +41,6 @@ public interface DeviceDTOs {
     @AllArgsConstructor
     @NoArgsConstructor
     final class TransferDTO {
-        private String transferId;
+        private UUID transferId;
     }
 }

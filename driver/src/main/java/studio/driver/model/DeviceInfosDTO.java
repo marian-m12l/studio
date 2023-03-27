@@ -3,7 +3,6 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
 package studio.driver.model;
 
 import java.util.UUID;
@@ -12,9 +11,11 @@ import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
+import lombok.ToString;
 
 @Getter
 @Setter
+@ToString
 @NoArgsConstructor
 public final class DeviceInfosDTO {
     private UUID uuid; // driver v1 only
@@ -32,6 +33,7 @@ public final class DeviceInfosDTO {
 
     @Getter
     @Setter
+    @ToString
     @AllArgsConstructor
     public static final class StorageDTO {
         private long size;

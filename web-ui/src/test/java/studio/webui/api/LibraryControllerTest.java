@@ -23,6 +23,7 @@ import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
 import io.restassured.RestAssured;
 import io.restassured.http.ContentType;
+import io.restassured.specification.RequestSpecification;
 import studio.core.v1.service.PackFormat;
 import studio.core.v1.utils.io.FileUtils;
 import studio.junit.TestNameExtension;
@@ -56,6 +57,10 @@ class LibraryControllerTest {
         RestAssured.enableLoggingOfRequestAndResponseIfValidationFails();
     }
 
+    static RequestSpecification givenJson() {
+        return given().contentType(ContentType.JSON);
+    }
+
     static Path classpathResource(String relative) throws URISyntaxException {
         ClassLoader classLoader = Thread.currentThread().getContextClassLoader();
         return Path.of(classLoader.getResource(relative).toURI());
@@ -86,8 +91,7 @@ class LibraryControllerTest {
 
     static void removePack(String packName) {
         PathDTO pathDto = new PathDTO(packName);
-
-        given().contentType(ContentType.JSON).body(pathDto) //
+        givenJson().body(pathDto) //
                 .when().post("remove") //
                 .then().statusCode(200) //
                 .body("success", is(true));
@@ -134,8 +138,7 @@ class LibraryControllerTest {
     void testDownload() throws IOException {
         // download
         PathDTO pathDto = new PathDTO(TEST_PACK_NAME);
-
-        byte[] actualContent = given().contentType(ContentType.JSON).body(pathDto) //
+        byte[] actualContent = givenJson().body(pathDto) //
                 .when().post("download") //
                 .then().statusCode(200) //
                 .extract().asByteArray();
@@ -152,7 +155,7 @@ class LibraryControllerTest {
         packDTO.setFormat(PackFormat.RAW.getLabel());
         packDTO.setAllowEnriched(true);
 
-        SuccessPathDTO successPathDTO = given().contentType(ContentType.JSON).body(packDTO) //
+        SuccessPathDTO successPathDTO = givenJson().body(packDTO) //
                 .when().post("convert") //
                 .then().statusCode(200) //
                 .body("success", is(true)) //
