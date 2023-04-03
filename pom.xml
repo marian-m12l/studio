@@ -32,7 +32,7 @@
         <maven.compiler.parameters>true</maven.compiler.parameters>
         <!-- Maven plugins -->
         <mvn.compiler.version>3.11.0</mvn.compiler.version>
-        <mvn.resources.version>3.3.0</mvn.resources.version>
+        <mvn.resources.version>3.3.1</mvn.resources.version>
         <mvn.surefire.version>3.0.0</mvn.surefire.version>
         <mvn.assembly.version>3.4.2</mvn.assembly.version>
         <!-- Devops -->
