@@ -8,7 +8,7 @@
 
     <id>dist</id>
     <formats>
-        <format>jar</format>
+        <format>zip</format>
     </formats>
 
     <dependencySets>

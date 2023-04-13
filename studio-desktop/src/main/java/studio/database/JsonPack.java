@@ -58,7 +58,19 @@ public class JsonPack {
 	@SerializedName("localized_infos")
 	private Map<String, LocalizedInfos> localizedInfos;
 	
+	@SerializedName("size")
+	private long size;
 	
+	
+	
+	public long getSize() {
+		return size;
+	}
+
+	public void setSize(long size) {
+		this.size = size;
+	}
+
 	public String getSlug() {
 		return slug;
 	}

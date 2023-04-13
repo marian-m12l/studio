@@ -19,6 +19,8 @@ import javax.swing.UIManager;
 import javax.swing.border.Border;
 import javax.swing.plaf.UIResource;
 
+import org.apache.commons.io.FileUtils;
+
 import studio.database.JsonPack;
 import studio.database.LocalizedInfos;
 
@@ -42,7 +44,7 @@ class JsonPackCell implements ListCellRenderer<JsonPack>, UIResource {
 		private JPanel initialize() {
 			JPanel res = new JPanel();
 			GridBagLayout gridBagLayout = new GridBagLayout();
-			gridBagLayout.columnWeights = new double[]{0.0, 1.0};
+			gridBagLayout.columnWeights = new double[]{0.0, 1.0, 1.0};
 			res.setLayout(gridBagLayout);
 			
 			JLabel icon = new JLabel();
@@ -50,7 +52,7 @@ class JsonPackCell implements ListCellRenderer<JsonPack>, UIResource {
 			icon.setPreferredSize(new Dimension(64, 64));
 			GridBagConstraints gbc_icon = new GridBagConstraints();
 			gbc_icon.gridheight = 3;
-			gbc_icon.insets = new Insets(5, 5, 5, 5);
+			gbc_icon.insets = new Insets(5, 5, 0, 5);
 			gbc_icon.gridx = 0;
 			gbc_icon.gridy = 0;
 			res.add(icon, gbc_icon);
@@ -81,12 +83,22 @@ class JsonPackCell implements ListCellRenderer<JsonPack>, UIResource {
 			ageLabel.setName("age");
 			GridBagConstraints gbc_ageLabel = new GridBagConstraints();
 			gbc_ageLabel.anchor = GridBagConstraints.WEST;
-			gbc_ageLabel.insets = new Insets(0 , 5, 5, 5);
+			gbc_ageLabel.insets = new Insets(0, 5, 0, 5);
 			gbc_ageLabel.gridx = 1;
 			gbc_ageLabel.gridy = 2;
 			res.add(ageLabel, gbc_ageLabel);
 			
 			res.setPreferredSize(new Dimension(412, 64));
+			
+			JLabel sizeLabel = new JLabel();
+			sizeLabel.setText("size");
+			sizeLabel.setName("size");
+			GridBagConstraints gbc_sizeLabel = new GridBagConstraints();
+			gbc_sizeLabel.anchor = GridBagConstraints.EAST;
+			gbc_sizeLabel.gridx = 2;
+			gbc_sizeLabel.gridy = 2;
+			gbc_sizeLabel.insets = new Insets(0, 0, 0, 5);
+			res.add(sizeLabel, gbc_sizeLabel);
 			
 			return res;
 		}
@@ -176,6 +188,10 @@ class JsonPackCell implements ListCellRenderer<JsonPack>, UIResource {
 			
 			components.stream().filter( (c) -> "age".equals(c.getName())).findFirst().ifPresent( ( c) -> {
 				String strAge = value.getAgeMax() == -1 ? "From " + value.getAgeMin() + " years": "From " + value.getAgeMin() + " to " + value.getAgeMax() + " years";
+				((JLabel)c).setText(strAge);
+			});
+			components.stream().filter( (c) -> "size".equals(c.getName())).findFirst().ifPresent( ( c) -> {
+				String strAge = FileUtils.byteCountToDisplaySize(FileUtils.ONE_KB * value.getSize());
 				((JLabel)c).setText(strAge);
 			});
 			//subTitle.setText(strSubTitle);

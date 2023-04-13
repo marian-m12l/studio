@@ -80,6 +80,7 @@ import studio.driver.model.fs.FsDeviceInfos;
 import studio.driver.model.fs.FsStoryPackInfos;
 import studio.driver.model.raw.RawDeviceInfos;
 import studio.driver.model.raw.RawStoryPackInfos;
+import studio.driver.raw.LibUsbMassStorageHelper;
 import studio.driver.raw.RawStoryTellerAsyncDriver;
 import java.awt.Toolkit;
 
@@ -124,12 +125,17 @@ public class GUI {
 	private JButton btnRefreshLibrary;
 	private ResourceBundle localization;
 	private Label lblTransferingPack;
-	
+	private boolean mustCancel = false;
+	private GridBagLayout statusLayout;
+	private JPanel statusPanel;
+	private JButton btnCancel;
 	
 	/**
 	 * Launch the application.
 	 */
 	public static void main(String[] args) {
+		
+		
 		EventQueue.invokeLater(new Runnable() {
 			public void run() {
 				try {
@@ -275,8 +281,8 @@ public class GUI {
 					uUIDTextBox.setText(deviceInfos.getUuid().toString());
 					//uUIDTextBox.setText(deviceInfos.getUuid().toString());
 					firmwareTextBox.setText(deviceInfos.getFirmwareMajor() + "." + deviceInfos.getFirmwareMinor());
-					totalSizeTextBox.setText(FileUtils.byteCountToDisplaySize(deviceInfos.getSdCardSizeInSectors()));
-					usedSizeTextBox.setText(FileUtils.byteCountToDisplaySize(deviceInfos.getUsedSpaceInSectors()));
+					totalSizeTextBox.setText(FileUtils.byteCountToDisplaySize(deviceInfos.getSdCardSizeInSectors() * LibUsbMassStorageHelper.SECTOR_SIZE));
+					usedSizeTextBox.setText(FileUtils.byteCountToDisplaySize(deviceInfos.getUsedSpaceInSectors() * LibUsbMassStorageHelper.SECTOR_SIZE));
 					
 					btnDownloadPackages.setEnabled(false);
 					btnValidate.setEnabled(false);
@@ -317,6 +323,24 @@ public class GUI {
 //		});
 	}
 	
+	private void refreshFreeSpaceOnDevice() {
+		try {
+			if (fsDriverUsed) {
+				FsDeviceInfos deviceInfos;
+				deviceInfos = fsDriver.getDeviceInfos().get();
+
+				usedSizeTextBox.setText(FileUtils.byteCountToDisplaySize(deviceInfos.getUsedSpaceInBytes()));
+
+			} else if (rawDriverUsed) {
+				RawDeviceInfos deviceInfos = rawDriver.getDeviceInfos().get();
+				usedSizeTextBox.setText(FileUtils.byteCountToDisplaySize(deviceInfos.getUsedSpaceInSectors() * LibUsbMassStorageHelper.SECTOR_SIZE));
+
+			}
+		} catch (InterruptedException | ExecutionException e) {
+			// TODO Auto-generated catch block
+			e.printStackTrace();
+		}
+	}
 
 
 	/**
@@ -450,46 +474,44 @@ public class GUI {
 		panel_1.add(usedSizeTextBox, gbc_usedSizeTextBox);
 		usedSizeTextBox.setColumns(10);
 		
-		JPanel panel_3 = new JPanel();
-		panel.add(panel_3, BorderLayout.SOUTH);
-		GridBagLayout gbl_panel_3 = new GridBagLayout();
-		gbl_panel_3.columnWidths = new int[] {0, 0, 0, 0};
-		gbl_panel_3.rowHeights = new int[] {0};
-		gbl_panel_3.columnWeights = new double[]{0.0, 1.0, 0.0, 1.0};
-		gbl_panel_3.rowWeights = new double[]{0.0};
-		panel_3.setLayout(gbl_panel_3);
+		statusPanel = new JPanel();
+		panel.add(statusPanel, BorderLayout.SOUTH);
+		statusLayout = new GridBagLayout();
+		statusLayout.columnWeights = new double[]{0.0, 1.0, 0.0, 1.0};
+		statusPanel.setLayout(statusLayout);
 		
-		lblTransferingPack = new Label();//"Transfering pack {}");
+		lblTransferingPack = new Label("");
 		GridBagConstraints gbc_lblTransferingPack = new GridBagConstraints();
-		gbc_lblTransferingPack.anchor = GridBagConstraints.WEST;
-		gbc_lblTransferingPack.insets = new Insets(5, 5, 5, 5);
-		gbc_lblTransferingPack.gridx = 0;
+		gbc_lblTransferingPack.fill = GridBagConstraints.HORIZONTAL;
+		gbc_lblTransferingPack.insets = new Insets(0, 5, 0, 5);
 		gbc_lblTransferingPack.gridy = 0;
-		panel_3.add(lblTransferingPack, gbc_lblTransferingPack);
+		gbc_lblTransferingPack.gridx = 0;
+		statusPanel.add(lblTransferingPack, gbc_lblTransferingPack);
 		
 		installUninstallProgressBar = new JProgressBar();
 		GridBagConstraints gbc_installUninstallProgressBar = new GridBagConstraints();
 		gbc_installUninstallProgressBar.fill = GridBagConstraints.HORIZONTAL;
-		gbc_installUninstallProgressBar.insets = new Insets(5, 0, 5, 5);
+		gbc_installUninstallProgressBar.insets = new Insets(0, 0, 0, 5);
 		gbc_installUninstallProgressBar.gridx = 1;
 		gbc_installUninstallProgressBar.gridy = 0;
-		panel_3.add(installUninstallProgressBar, gbc_installUninstallProgressBar);
+		statusPanel.add(installUninstallProgressBar, gbc_installUninstallProgressBar);
 		
-		Label lblProgress = new Label(localization.getString("Transfer.globalProgress"));//"Progress");
+		Label lblProgress = new Label(localization.getString("Transfer.globalProgress"));
 		GridBagConstraints gbc_lblProgress = new GridBagConstraints();
-		gbc_lblProgress.anchor = GridBagConstraints.WEST;
-		gbc_lblProgress.insets = new Insets(5, 0, 5, 5);
+		gbc_lblProgress.fill = GridBagConstraints.HORIZONTAL;
+		gbc_lblProgress.insets = new Insets(0, 0, 0, 5);
 		gbc_lblProgress.gridx = 2;
 		gbc_lblProgress.gridy = 0;
-		panel_3.add(lblProgress, gbc_lblProgress);
+		statusPanel.add(lblProgress, gbc_lblProgress);
 		
 		globalProgressBar = new JProgressBar();
+		globalProgressBar.setStringPainted(false);
 		GridBagConstraints gbc_globalProgressBar = new GridBagConstraints();
 		gbc_globalProgressBar.fill = GridBagConstraints.HORIZONTAL;
-		gbc_globalProgressBar.insets = new Insets(5, 0, 5, 5);
+		gbc_globalProgressBar.insets = new Insets(0, 0, 0, 5);
 		gbc_globalProgressBar.gridx = 3;
 		gbc_globalProgressBar.gridy = 0;
-		panel_3.add(globalProgressBar, gbc_globalProgressBar);
+		statusPanel.add(globalProgressBar, gbc_globalProgressBar);
 		
 		devicePacksModel = new DefaultListModel<JsonPack>();
 
@@ -691,7 +713,7 @@ public class GUI {
 				JPanel panel_4 = new JPanel();
 				panel_2.add(panel_4, BorderLayout.SOUTH);
 				GridBagLayout gbl_panel_4 = new GridBagLayout();
-				gbl_panel_4.columnWeights = new double[]{0.0, 0.0, 0.0, 1.0};
+				gbl_panel_4.columnWeights = new double[]{0.0, 0.0, 0.0, 0.0, 1.0};
 				gbl_panel_4.rowWeights = new double[]{0.0};
 				panel_4.setLayout(gbl_panel_4);
 				
@@ -699,62 +721,106 @@ public class GUI {
 				btnDownloadPackages.setEnabled(false);
 				GridBagConstraints gbc_btnDownloadPackages = new GridBagConstraints();
 				gbc_btnDownloadPackages.anchor = GridBagConstraints.NORTHWEST;
-				gbc_btnDownloadPackages.insets = new Insets(0, 0, 0, 5);
+				gbc_btnDownloadPackages.insets = new Insets(0, 0, 5, 5);
 				gbc_btnDownloadPackages.gridx = 0;
 				gbc_btnDownloadPackages.gridy = 0;
 				panel_4.add(btnDownloadPackages, gbc_btnDownloadPackages);
 				btnDownloadPackages.addActionListener(new ActionListener() {
 					public void actionPerformed(ActionEvent e) {
-						int[] selected = devicePacksList.getSelectedIndices();
-						if ( selected.length == 0 ) {
-							selected = IntStream.range(0, devicePacksModel.getSize()).toArray();
-						}
-						Arrays.stream(selected).boxed().map( (i) -> devicePacksModel.get(i)).forEach( (pack) -> {
-							if ( fsDriverUsed ) {
-								fsDriver.downloadPack(pack.getUuid(), library.getLibraryPath(), new TransferProgressListener() {
-									
-									@Override
-									public void onProgress(TransferStatus status) {
-										installUninstallProgressBar.setMinimum(0);
-										installUninstallProgressBar.setMaximum(status.getTotal());
-										installUninstallProgressBar.setValue(status.getTransferred());
-										
-									}
-									
-									@Override
-									public void onComplete(TransferStatus status) {
-										installUninstallProgressBar.setValue(installUninstallProgressBar.getMaximum());
-										
-									}
-								});
-							} else if ( rawDriverUsed ) {
-								try {
-									rawDriver.downloadPack(pack.getUuid(), Files.newOutputStream(Paths.get(library.getLibraryPath(), pack.getUuid() + ".pack")), new TransferProgressListener() {
-										
-										@Override
-										public void onProgress(TransferStatus status) {
-											installUninstallProgressBar.setMinimum(0);
-											installUninstallProgressBar.setMaximum(status.getTotal());
-											installUninstallProgressBar.setValue(status.getTransferred());
-											
-										}
-										
-										@Override
-										public void onComplete(TransferStatus status) {
-											installUninstallProgressBar.setValue(installUninstallProgressBar.getMaximum());
-											
-										}
-									});
-								} catch (IOException e1) {
-									e1.printStackTrace();
-								}
+						
+						btnRefresh.setEnabled(false);
+						btnDownloadPackages.setEnabled(false);
+						btnValidate.setEnabled(false);
+						btnCancel.setEnabled(true);
+						
+						
+						CompletableFuture.runAsync( () -> {
+							int[] selected = devicePacksList.getSelectedIndices();
+							if ( selected.length == 0 ) {
+								selected = IntStream.range(0, devicePacksModel.getSize()).toArray();
 							}
+							globalProgressBar.setString("0/" + selected.length);
+							globalProgressBar.setStringPainted(true);
+							globalProgressBar.setMaximum(selected.length);
+							
+							Arrays.stream(selected).boxed().map( (i) -> devicePacksModel.get(i)).forEach( (pack) -> {
+								boolean mustCancelLocal = false;
+								synchronized(this) {
+									mustCancelLocal = mustCancel;
+								}
+								if ( fsDriverUsed && !mustCancelLocal) {
+									try {
+										
+										JsonPack jsonPack = library.getPackForUUID(pack.getUuid()).get();
+										String packTitle = jsonPack.getTitle();
+										if ( packTitle == null ) packTitle = jsonPack.getLocalizedInfos().values().iterator().next().getTitle();
+										lblTransferingPack.setText(localization.getString("Transfering.transferringpack").replace("{}", packTitle));
+										fsDriver.downloadPack(pack.getUuid(), library.getLibraryPath(), new TransferProgressListener() {
+											
+											@Override
+											public void onProgress(TransferStatus status) {
+												installUninstallProgressBar.setMinimum(0);
+												installUninstallProgressBar.setMaximum(status.getTotal());
+												installUninstallProgressBar.setValue(status.getTransferred());
+												
+											}
+											
+											@Override
+											public void onComplete(TransferStatus status) {
+											}
+										}).get();
+										
+									} catch (InterruptedException | ExecutionException e1) {
+										e1.printStackTrace();
+									} finally {
+										installUninstallProgressBar.setValue(installUninstallProgressBar.getMaximum());
+										globalProgressBar.setValue(globalProgressBar.getValue() + 1);
+										globalProgressBar.setString(globalProgressBar.getValue() + "/" + globalProgressBar.getMaximum());
+									}
+								} else if ( rawDriverUsed && !mustCancelLocal) {
+									try {
+										JsonPack jsonPack = library.getPackForUUID(pack.getUuid()).get();
+										String packTitle = jsonPack.getTitle();
+										if ( packTitle == null ) packTitle = jsonPack.getLocalizedInfos().values().iterator().next().getTitle();
+										lblTransferingPack.setText(localization.getString("Transfering.transferringpack").replace("{}", packTitle));
+										
+										rawDriver.downloadPack(pack.getUuid(), Files.newOutputStream(Paths.get(library.getLibraryPath(), pack.getUuid() + ".pack")), new TransferProgressListener() {
+											
+											@Override
+											public void onProgress(TransferStatus status) {
+												installUninstallProgressBar.setMinimum(0);
+												installUninstallProgressBar.setMaximum(status.getTotal());
+												installUninstallProgressBar.setValue(status.getTransferred());
+											}
+											
+											@Override
+											public void onComplete(TransferStatus status) {
+											}
+										}).get();
+									} catch (IOException | InterruptedException | ExecutionException e1) {
+										e1.printStackTrace();
+									} finally {
+										installUninstallProgressBar.setValue(installUninstallProgressBar.getMaximum());
+										globalProgressBar.setValue(globalProgressBar.getValue() + 1);
+										globalProgressBar.setString(globalProgressBar.getValue() + "/" + globalProgressBar.getMaximum());
+									}
+								}
+							});
+							
+							synchronized (this) {
+								mustCancel = false;
+							}
+							
+							lblTransferingPack.setText("");
+							installUninstallProgressBar.setValue(0);
+							globalProgressBar.setValue(0);
+							globalProgressBar.setStringPainted(false);
+							btnRefresh.setEnabled(true);
+							btnDownloadPackages.setEnabled(true);
+							btnValidate.setEnabled(true);
+							btnCancel.setEnabled(false);	
 						});
-//				for(int i : selected) {
-//					if ( fsDriverUsed ) {
-//						fsDriver.downloadPack(null, null, null)
-//					}
-//				}
+						
 					}
 				});
 				
@@ -762,12 +828,17 @@ public class GUI {
 				btnValidate.setEnabled(false);
 				GridBagConstraints gbc_btnValidate = new GridBagConstraints();
 				gbc_btnValidate.anchor = GridBagConstraints.NORTHWEST;
-				gbc_btnValidate.insets = new Insets(0, 0, 0, 5);
+				gbc_btnValidate.insets = new Insets(0, 0, 5, 5);
 				gbc_btnValidate.gridx = 1;
 				gbc_btnValidate.gridy = 0;
 				panel_4.add(btnValidate, gbc_btnValidate);
 				btnValidate.addActionListener(new ActionListener() {
 					public void actionPerformed(ActionEvent e) {
+						btnRefresh.setEnabled(false);
+						btnValidate.setEnabled(false);
+						btnDownloadPackages.setEnabled(false);
+						btnCancel.setEnabled(true);
+						
 						loadPacksFromDevice().thenAcceptAsync( (packs) -> {
 							try {
 							
@@ -783,33 +854,58 @@ public class GUI {
 							toInstall.removeAll(uuids);
 							
 							int nbSteps = toUninstall.size() + toInstall.size() + 1;
+							boolean mustCancelLocal = false;
 							
 							globalProgressBar.setMinimum(0);
 							globalProgressBar.setMaximum(nbSteps);
 							globalProgressBar.setValue(0);
-							if ( fsDriverUsed ) {
+							globalProgressBar.setString("0/" + nbSteps);
+							globalProgressBar.setStringPainted(true);
+							
+							synchronized(this) {											
+								mustCancelLocal = mustCancel;
+							}
+							if ( fsDriverUsed && !mustCancelLocal ) {
 								toUninstall.forEach( (pack) -> {
 									try {
-										String packTitle = library.getPackForUUID(pack).get().getTitle();
+										synchronized(this) {											
+											if ( mustCancel ) return;
+										}
+										JsonPack jsonPack = library.getPackForUUID(pack).get();
+										String packTitle = jsonPack.getTitle();
+										if ( packTitle == null ) packTitle = jsonPack.getLocalizedInfos().values().iterator().next().getTitle();
 										lblTransferingPack.setText(localization.getString("Transfering.deletingpack").replace("{}", packTitle));
+										statusPanel.updateUI();
 										fsDriver.deletePack(pack).get();
+										
+										refreshFreeSpaceOnDevice();
 									} catch (InterruptedException | ExecutionException e1) {
 										// TODO Auto-generated catch block
 										e1.printStackTrace();
 									} finally {
-										globalProgressBar.setValue(globalProgressBar.getValue() + 1);								
+										globalProgressBar.setValue(globalProgressBar.getValue() + 1);	
+										globalProgressBar.setString(globalProgressBar.getValue() + "/" + globalProgressBar.getMaximum());
 									}
 								});
-							} else if ( rawDriverUsed ) {
+							} else if ( rawDriverUsed && !mustCancelLocal ) {
 								toUninstall.forEach( (pack) -> {
 									try {
-										String packTitle = library.getPackForUUID(pack).get().getTitle();
+										synchronized(this) {											
+											if ( mustCancel ) return;
+										}
+										JsonPack jsonPack = library.getPackForUUID(pack).get();
+										String packTitle = jsonPack.getTitle();
+										if ( packTitle == null ) packTitle = jsonPack.getLocalizedInfos().values().iterator().next().getTitle();
 										lblTransferingPack.setText(localization.getString("Transfering.deletingpack").replace("{}", packTitle));
+										statusPanel.updateUI();
 										rawDriver.deletePack(pack).get();
+										
+										refreshFreeSpaceOnDevice();
 									} catch (InterruptedException | ExecutionException e1) {
 										e1.printStackTrace();
 									} finally {
-										globalProgressBar.setValue(globalProgressBar.getValue() + 1);								
+										globalProgressBar.setValue(globalProgressBar.getValue() + 1);
+										globalProgressBar.setString(globalProgressBar.getValue() + "/" + globalProgressBar.getMaximum());
 									}
 								});
 							}
@@ -831,42 +927,68 @@ public class GUI {
 								}
 							};
 							
-							if ( fsDriverUsed ) {
+							synchronized(this) {											
+								mustCancelLocal = mustCancel;
+							}
+							if ( fsDriverUsed && !mustCancelLocal ) {
 								toInstall.forEach( (pack) -> {
 									try {
-										String packTitle = library.getPackForUUID(pack).get().getTitle();
+										synchronized(this) {											
+											if ( mustCancel ) return;
+										}
+										JsonPack jsonPack = library.getPackForUUID(pack).get();
+										String packTitle = jsonPack.getTitle();
+										if ( packTitle == null ) packTitle = jsonPack.getLocalizedInfos().values().iterator().next().getTitle();
 										lblTransferingPack.setText(localization.getString("Transfering.transferringpack").replace("{}", packTitle));
+										statusPanel.updateUI();
 										fsDriver.uploadPack(pack, library.getFolderForUUID(pack), progressListener).get();
+										
+										refreshFreeSpaceOnDevice();
 									} catch (InterruptedException | ExecutionException e1) {
 										e1.printStackTrace();
 									} finally {
 										globalProgressBar.setValue(globalProgressBar.getValue() + 1);
+										globalProgressBar.setString(globalProgressBar.getValue() + "/" + globalProgressBar.getMaximum());
 									}
 								});
-							} else if ( rawDriverUsed ) {
+							} else if ( rawDriverUsed && !mustCancelLocal) {
 								toInstall.forEach( (pack) -> {
 									try {
-										// TODO : getAckInputStream
-										String packTitle = library.getPackForUUID(pack).get().getTitle();
+										synchronized(this) {											
+											if ( mustCancel ) return;
+										}
+										JsonPack jsonPack = library.getPackForUUID(pack).get();
+										String packTitle = jsonPack.getTitle();
+										if ( packTitle == null ) packTitle = jsonPack.getLocalizedInfos().values().iterator().next().getTitle();
 										lblTransferingPack.setText(localization.getString("Transfering.transferringpack").replace("{}", packTitle));
+										statusPanel.updateUI();
 										rawDriver.uploadPack(null, 0, progressListener).get();
+										
+										refreshFreeSpaceOnDevice();
 									} catch (InterruptedException | ExecutionException e1) {
 										e1.printStackTrace();
 									} finally {
-										globalProgressBar.setValue(globalProgressBar.getValue() + 1);								
+										globalProgressBar.setValue(globalProgressBar.getValue() + 1);	
+										globalProgressBar.setString(globalProgressBar.getValue() + "/" + globalProgressBar.getMaximum());
 									}
 								});
 							}
 							
 							// Reorder packs
-							if ( fsDriverUsed ) {
+							synchronized(this) {											
+								mustCancelLocal = mustCancel;
+							}
+							if ( fsDriverUsed && !mustCancelLocal) {
 								try {
 									lblTransferingPack.setText(localization.getString("Transfering.reordering"));
+									statusPanel.updateUI();
+									
 									fsDriver.reorderPacks(uuidsInList).get();
 								} catch (InterruptedException | ExecutionException e1) {
 									e1.printStackTrace();
 								} finally {
-									globalProgressBar.setValue(globalProgressBar.getValue() + 1);							
+									globalProgressBar.setValue(globalProgressBar.getValue() + 1);	
+									globalProgressBar.setString(globalProgressBar.getValue() + "/" + globalProgressBar.getMaximum());
 								}
 							} else {
 								try {
@@ -875,6 +997,7 @@ public class GUI {
 									e1.printStackTrace();
 								} finally {
 									globalProgressBar.setValue(globalProgressBar.getValue() + 1);
+									globalProgressBar.setString(globalProgressBar.getValue() + "/" + globalProgressBar.getMaximum());
 									
 								}
 							}
@@ -883,6 +1006,19 @@ public class GUI {
 								e2.printStackTrace();
 							}
 							
+							synchronized(this) {											
+								mustCancel = false;
+							}
+							btnRefresh.setEnabled(true);
+							btnValidate.setEnabled(true);
+							btnCancel.setEnabled(false);
+							btnDownloadPackages.setEnabled(true);
+							lblTransferingPack.setText(localization.getString("Transfering.done"));
+							
+							installUninstallProgressBar.setValue(0);
+							globalProgressBar.setValue(0);
+							globalProgressBar.setString(null);
+							statusPanel.updateUI();
 						});
 					}
 				});
@@ -891,7 +1027,7 @@ public class GUI {
 				btnRefresh.setEnabled(false);
 				GridBagConstraints gbc_btnRefersh = new GridBagConstraints();
 				gbc_btnRefersh.anchor = GridBagConstraints.NORTHWEST;
-				gbc_btnRefersh.insets = new Insets(0, 0, 0, 5);
+				gbc_btnRefersh.insets = new Insets(0, 0, 5, 5);
 				gbc_btnRefersh.gridx = 2;
 				gbc_btnRefersh.gridy = 0;
 				panel_4.add(btnRefresh, gbc_btnRefersh);
@@ -914,10 +1050,28 @@ public class GUI {
 					}
 				});
 				
+				btnCancel = new JButton(localization.getString("Device.cancel"));
+				
+				btnCancel.addActionListener(new ActionListener() {
+					public void actionPerformed(ActionEvent e) {
+						synchronized(this) {											
+							mustCancel = true;
+						}
+						btnCancel.setEnabled(false);
+					}
+				});
+				btnCancel.setEnabled(false);
+				GridBagConstraints gbc_btnCancel = new GridBagConstraints();
+				gbc_btnCancel.insets = new Insets(0, 0, 5, 5);
+				gbc_btnCancel.gridx = 3;
+				gbc_btnCancel.gridy = 0;
+				panel_4.add(btnCancel, gbc_btnCancel);
+				
 				devicePacksSummaryLabel = new JLabel("-/-");
 				GridBagConstraints gbc_devicePacksSummaryLabel = new GridBagConstraints();
+				gbc_devicePacksSummaryLabel.insets = new Insets(0, 0, 5, 0);
 				gbc_devicePacksSummaryLabel.anchor = GridBagConstraints.EAST;
-				gbc_devicePacksSummaryLabel.gridx = 3;
+				gbc_devicePacksSummaryLabel.gridx = 4;
 				gbc_devicePacksSummaryLabel.gridy = 0;
 				panel_4.add(devicePacksSummaryLabel, gbc_devicePacksSummaryLabel);
 				

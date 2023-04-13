@@ -37,14 +37,30 @@ public class Library {
 
 	public static final String TOKEN_URL			= "https://server-auth-prod.lunii.com/guest/create";
 	public static final String DATABASE_URL 		= "https://server-data-prod.lunii.com/v2/packs";
-	public  static final String RESOURCE_URL		= "https://storage.googleapis.com/lunii-data-prod";
+	public static final String RESOURCE_URL			= "https://storage.googleapis.com/lunii-data-prod";
 	
 	private JsonResponse officalPacksDatabase;
 		
 	private static volatile Library instance;
 	
+	private static Gson gson;
+	
 	private String libraryPath;
 	
+	static {
+		GsonBuilder builder = new GsonBuilder();
+		builder.registerTypeAdapter(Date.class, new JsonDeserializer<Date>() {
+
+			@Override
+			public Date deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
+					throws JsonParseException {
+				return new Date(json.getAsLong());
+			}
+			
+		});
+		
+		gson = builder.create();
+	}
 	public static Library getInstance(String path) {
         if (instance != null && instance.libraryPath.equals(path)) {
             return instance;
@@ -177,21 +193,9 @@ public class Library {
 				URLConnection connection = getDatabase.openConnection();
 				connection.addRequestProperty("X-AUTH-TOKEN", token);
 				
-				GsonBuilder builder = new GsonBuilder();
-				builder.registerTypeAdapter(Date.class, new JsonDeserializer<Date>() {
-
-					@Override
-					public Date deserialize(JsonElement json, Type typeOfT, JsonDeserializationContext context)
-							throws JsonParseException {
-						return new Date(json.getAsLong());
-					}
-					
-				});
-				
-				Gson gson = builder.create();
 				officalPacksDatabase = gson.fromJson(new InputStreamReader(connection.getInputStream()), JsonResponse.class);
 				
-				System.out.println(officalPacksDatabase.getPacks().stream().map( (p) -> p.getUuid()).toList());
+				//System.out.println(officalPacksDatabase.getPacks().stream().map( (p) -> p.getUuid()).toList());
 		} catch(NullPointerException e) {
 			e.printStackTrace();
 		} catch (MalformedURLException e) {
