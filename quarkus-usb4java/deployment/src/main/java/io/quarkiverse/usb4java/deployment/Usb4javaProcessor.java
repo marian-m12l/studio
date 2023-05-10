@@ -35,7 +35,7 @@ class Usb4javaProcessor {
             BuildProducer<RuntimeInitializedClassBuildItem> runtimeClasses) {
         // native binary path
         String src;
-        if (nativeConfig.isContainerBuild()) {
+        if (nativeConfig.isExplicitContainerBuild()) {
             src = Usb4javaLibraryUtil.extractLibrary("linux-x86-64", "libusb4java.so");
         } else {
             src = Usb4javaLibraryUtil.extractLibrary();

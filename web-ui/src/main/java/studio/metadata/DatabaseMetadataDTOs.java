@@ -3,16 +3,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
 package studio.metadata;
 
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
-import javax.ws.rs.GET;
-import javax.ws.rs.HeaderParam;
-import javax.ws.rs.Path;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.HeaderParam;
+import jakarta.ws.rs.Path;
 
 import org.eclipse.microprofile.rest.client.inject.RegisterRestClient;
 

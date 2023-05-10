@@ -41,8 +41,7 @@
         <!-- Dependencies -->
         <quarkus.version>3.0.2.Final</quarkus.version>
         <lombok.version>1.18.26</lombok.version>
-        <slf4j.version>1.7.36</slf4j.version>
-        <logback.version>1.2.11</logback.version>
+        <logback.version>1.4.7</logback.version>
         <junit.version>5.9.0</junit.version>
     </properties>
 
@@ -60,11 +59,6 @@
                 <artifactId>lombok</artifactId>
                 <version>${lombok.version}</version>
                 <scope>provided</scope>
-            </dependency>
-            <dependency>
-                <groupId>org.slf4j</groupId>
-                <artifactId>slf4j-api</artifactId>
-                <version>${slf4j.version}</version>
             </dependency>
             <dependency>
                 <groupId>ch.qos.logback</groupId>
@@ -101,5 +95,14 @@
          </plugins>
       </pluginManagement>
    </build>
+
+   <profiles>
+        <profile>
+             <id>native</id>
+             <properties>
+                <java.version>17</java.version>
+             </properties>
+        </profile>
+    </profiles>
 
 </project>

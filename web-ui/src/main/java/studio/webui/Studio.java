@@ -9,8 +9,8 @@ package studio.webui;
 import java.io.IOException;
 import java.net.URL;
 
-import javax.enterprise.context.ApplicationScoped;
-import javax.enterprise.event.Observes;
+import jakarta.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.event.Observes;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 

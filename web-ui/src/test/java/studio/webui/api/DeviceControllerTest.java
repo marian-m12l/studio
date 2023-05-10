@@ -6,6 +6,7 @@ import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.withSettings;
 
 import java.io.IOException;
 import java.net.URISyntaxException;
@@ -17,13 +18,14 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import javax.inject.Inject;
+import jakarta.inject.Inject;
 
 import org.eclipse.microprofile.config.inject.ConfigProperty;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.MockMakers;
 import org.mockito.Mockito;
 import org.usb4java.Device;
 
@@ -68,7 +70,7 @@ class DeviceControllerTest {
     static final UuidDTO testUuidDto = new UuidDTO(TEST_PACK_UUID, TEST_PACK_NAME, PackFormat.FS.getLabel());
     static final UuidDTO fakeUuidDto = new UuidDTO(UUID.randomUUID(), "fakePack", PackFormat.FS.getLabel());
 
-    Device fakeDevice = Mockito.mock(Device.class); // final class, mockito-inline needed
+    Device fakeDevice = Mockito.mock(Device.class, withSettings().mockMaker(MockMakers.INLINE)); // final class, with mockito-inline
     SdPartition fakePartition;
 
     @BeforeEach

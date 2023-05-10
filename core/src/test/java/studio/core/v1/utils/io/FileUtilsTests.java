@@ -129,11 +129,11 @@ class FileUtilsTests {
 
     /** Replace Runtime.exec with ProcessBuilder */
     private static List<Path> dfCommand() throws IOException {
-        final Process p = new ProcessBuilder("df", "-l").start();
+        final Process p = new ProcessBuilder("df", "-a").start();
         final Pattern dfPattern = Pattern.compile("^(\\/[^ ]+)[^/]+(/.*)$");
 
-        System.out.println("df -l");
-        try (BufferedReader br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
+        System.out.println("df -a");
+        try (var br = new BufferedReader(new InputStreamReader(p.getInputStream()))) {
             return br.lines() //
                     .peek(System.out::println) // Debug
                     .map(dfPattern::matcher) //

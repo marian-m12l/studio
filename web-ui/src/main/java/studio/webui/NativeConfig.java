@@ -1,6 +1,6 @@
 package studio.webui;
 
-import javax.enterprise.context.ApplicationScoped;
+import jakarta.enterprise.context.ApplicationScoped;
 import io.quarkus.runtime.annotations.RegisterForReflection;
 import studio.core.v1.model.ActionNode;
 import studio.core.v1.model.ControlSettings;

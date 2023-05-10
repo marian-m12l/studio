@@ -99,7 +99,7 @@ jobs:
           - runner: ubuntu-20.04
             os: Linux
             jdk-suffix: linux-amd64.tar.gz
-          - runner: macOS-12
+          - runner: macOS-latest
             os: MacOS
             jdk-suffix: macos-amd64.tar.gz
           - runner: windows-latest
@@ -116,7 +116,7 @@ jobs:
 
       - name: Download Liberica NIK
         env:
-          liberica-url: https://download.bell-sw.com/vm/22.3.0/bellsoft-liberica-vm-core-openjdk17.0.5+8-22.3.0+2-${{ matrix.jdk-suffix }}
+          liberica-url: https://download.bell-sw.com/vm/22.3.2/bellsoft-liberica-vm-core-openjdk17.0.7+7-22.3.2+1-${{ matrix.jdk-suffix }}
         run: curl -sLo ${{ runner.temp }}/${{ matrix.jdk-suffix }} ${{ env.liberica-url }}
         if: ${{ runner.os != 'Linux' }}
 

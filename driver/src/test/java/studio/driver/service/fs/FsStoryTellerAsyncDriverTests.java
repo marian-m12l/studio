@@ -41,7 +41,7 @@ class FsStoryTellerAsyncDriverTests {
     static Path devicePath = studioHome.resolve("device/");
     static Path libraryPath = studioHome.resolve("library/");
 
-    static Device fakeDevice = Mockito.mock(Device.class); // final class, mockito-inline needed
+    static Device fakeDevice = Mockito.mock(Device.class); // final class
     static SdPartition fakePartition = new SdPartition(devicePath);
     static String noDevice = new NoDevicePluggedException().getMessage();
 
