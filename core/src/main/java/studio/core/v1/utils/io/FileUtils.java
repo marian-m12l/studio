@@ -126,11 +126,11 @@ public class FileUtils {
     }
 
     public static String readablePercent(long ratio, long total) {
-        return readablePercent(100.0 * ratio / total);
+        return readablePercent(1d * ratio / total);
     }
 
     public static String readablePercent(double value) {
-        return "" + Math.round(100.0 * 100.0 * value) / 100.0 + "%";
+        return "" + Math.round(100d * 100d * value) / 100d + "%";
     }
 
     /**
