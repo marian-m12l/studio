@@ -40,7 +40,7 @@
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <!-- Dependencies -->
         <quarkus.version>3.0.3.Final</quarkus.version>
-        <lombok.version>1.18.26</lombok.version>
+        <lombok.version>1.18.28</lombok.version>
         <logback.version>1.4.7</logback.version>
         <junit.version>5.9.0</junit.version>
     </properties>
