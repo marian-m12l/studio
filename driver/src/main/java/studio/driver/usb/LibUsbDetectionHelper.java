@@ -70,11 +70,11 @@ public class LibUsbDetectionHelper {
         if (LibUsb.hasCapability(LibUsb.CAP_HAS_HOTPLUG)) {
             LOGGER.info("Hotplug is supported. Registering hotplug callback(s)...");
             if (deviceVersion.isV1()) {
-                registerCallback(context, UsbDeviceFirmware.FW1, callbackHandle, pluggedlistener, unpluggedlistener);
+                registerCallback(context, UsbDeviceFirmware.FW1, pluggedlistener, unpluggedlistener);
             }
             if (deviceVersion.isV2()) {
-                registerCallback(context, UsbDeviceFirmware.FW2, callbackHandle, pluggedlistener, unpluggedlistener);
-                registerCallback(context, UsbDeviceFirmware.V2, callbackHandle, pluggedlistener, unpluggedlistener);
+                registerCallback(context, UsbDeviceFirmware.FW2, pluggedlistener, unpluggedlistener);
+                registerCallback(context, UsbDeviceFirmware.V2, pluggedlistener, unpluggedlistener);
             }
         } else {
             LOGGER.info("Hotplug is NOT supported. Scheduling task to actively poll USB device...");
@@ -114,7 +114,7 @@ public class LibUsbDetectionHelper {
         }));
     }
 
-    private static void registerCallback(Context context, UsbDeviceFirmware df, HotplugCallbackHandle callbackHandle, //
+    private static void registerCallback(Context context, UsbDeviceFirmware df, //
             DevicePluggedListener pluggedlistener, DeviceUnpluggedListener unpluggedlistener) {
         LibUsb.hotplugRegisterCallback(context, LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED | LibUsb.HOTPLUG_EVENT_DEVICE_LEFT,
                 LibUsb.HOTPLUG_ENUMERATE, // Arm the callback and fire it for all matching currently attached devices
@@ -127,6 +127,6 @@ public class LibUsbDetectionHelper {
                         CompletableFuture.runAsync(() -> unpluggedlistener.onDeviceUnplugged(device));
                     }
                     return 0; // Do not deregister the callback
-                },  null, callbackHandle);
+                },  null, null);
     }
 }
