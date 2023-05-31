@@ -12,7 +12,6 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.usb4java.Context;
-import org.usb4java.HotplugCallbackHandle;
 import org.usb4java.LibUsb;
 import org.usb4java.LibUsbException;
 
@@ -66,7 +65,6 @@ public class LibUsbDetectionHelper {
         ScheduledFuture<?> pollTask = null;
 
         // Hotplug detection
-        var callbackHandle = new HotplugCallbackHandle();
         if (LibUsb.hasCapability(LibUsb.CAP_HAS_HOTPLUG)) {
             LOGGER.info("Hotplug is supported. Registering hotplug callback(s)...");
             if (deviceVersion.isV1()) {
@@ -85,7 +83,7 @@ public class LibUsbDetectionHelper {
             pollTask = scheduledExecutor.scheduleAtFixedRate(r, 0, POLL_DELAY, TimeUnit.SECONDS);
         }
         // Add shutdown hook
-        registerHook(context, asyncEvtWorker, callbackHandle, pollTask);
+        registerHook(context, asyncEvtWorker, pollTask);
     }
 
     /**
@@ -94,7 +92,7 @@ public class LibUsbDetectionHelper {
      * @param asyncEvtWorker
      * @param pollTask
      */
-    private static void registerHook(Context context, LibUsbAsyncEventsWorker asyncEvtWorker, HotplugCallbackHandle callbackHandle, ScheduledFuture<?> pollTask) {
+    private static void registerHook(Context context, LibUsbAsyncEventsWorker asyncEvtWorker, ScheduledFuture<?> pollTask) {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (pollTask != null && !pollTask.isDone()) {
                 LOGGER.info("Stopping active polling worker task");
@@ -108,7 +106,6 @@ public class LibUsbDetectionHelper {
                 LOGGER.info("Stopping async event handling worker thread");
                  asyncEvtWorker.abort();
             }
-            LibUsb.hotplugDeregisterCallback(context, callbackHandle);
             LOGGER.info("Exiting libusb...");
             LibUsb.exit(context);
         }));
