@@ -50,63 +50,72 @@ public class FsStoryTellerAsyncDriver {
     private List<DeviceHotplugEventListener> listeners = new ArrayList<>();
 
 
+    private boolean simulating = false;
+    public FsStoryTellerAsyncDriver(boolean simulating) {
+    	this();
+    	this.simulating = simulating;
+    }
+    
+    
+    private DeviceHotplugEventListener defaultListener = new DeviceHotplugEventListener() {
+        @Override
+        public void onDevicePlugged(Device device) {
+            // Wait for a partition to be mounted which contains the .md file
+            LOGGER.fine("Waiting for device partition...");
+            for (int i = 0; i < FS_MOUNTPOINT_RETRY && partitionMountPoint==null; i++) {
+                try {
+                    Thread.sleep(FS_MOUNTPOINT_POLL_DELAY);
+                    DeviceUtils.listMountPoints().forEach(path -> {
+                        LOGGER.finest("Looking for .md file on mount point / drive: " + path);
+                        File mdFile = new File(path, DEVICE_METADATA_FILENAME);
+                        if (mdFile.exists()) {
+                            partitionMountPoint = path;
+                            LOGGER.info("FS device partition located: " + partitionMountPoint);
+                        }
+                    });
+                } catch (InterruptedException e) {
+                    LOGGER.log(Level.SEVERE, "Failed to locate device partition", e);
+                }
+            }
+
+            if (partitionMountPoint == null) {
+                throw new StoryTellerException("Could not locate device partition");
+            }
+
+            // Update device reference
+            FsStoryTellerAsyncDriver.this.device = device;
+            // Notify listeners
+            FsStoryTellerAsyncDriver.this.listeners.forEach(listener -> listener.onDevicePlugged(device));
+        }
+
+        @Override
+        public void onDeviceUnplugged(Device device) {
+            // Update device reference
+            FsStoryTellerAsyncDriver.this.device = null;
+            FsStoryTellerAsyncDriver.this.partitionMountPoint = null;
+            // Notify listeners
+            FsStoryTellerAsyncDriver.this.listeners.forEach(listener -> listener.onDeviceUnplugged(device));
+        }
+    };
+    
     public FsStoryTellerAsyncDriver() {
         // Initialize libusb, handle and propagate hotplug events
         LOGGER.fine("Registering hotplug listener");
-        LibUsbDetectionHelper.initializeLibUsb(DeviceVersion.DEVICE_VERSION_2, new DeviceHotplugEventListener() {
-                    @Override
-                    public void onDevicePlugged(Device device) {
-                        // Wait for a partition to be mounted which contains the .md file
-                        LOGGER.fine("Waiting for device partition...");
-                        for (int i = 0; i < FS_MOUNTPOINT_RETRY && partitionMountPoint==null; i++) {
-                            try {
-                                Thread.sleep(FS_MOUNTPOINT_POLL_DELAY);
-                                DeviceUtils.listMountPoints().forEach(path -> {
-                                    LOGGER.finest("Looking for .md file on mount point / drive: " + path);
-                                    File mdFile = new File(path, DEVICE_METADATA_FILENAME);
-                                    if (mdFile.exists()) {
-                                        partitionMountPoint = path;
-                                        LOGGER.info("FS device partition located: " + partitionMountPoint);
-                                    }
-                                });
-                            } catch (InterruptedException e) {
-                                LOGGER.log(Level.SEVERE, "Failed to locate device partition", e);
-                            }
-                        }
-
-                        if (partitionMountPoint == null) {
-                            throw new StoryTellerException("Could not locate device partition");
-                        }
-
-                        // Update device reference
-                        FsStoryTellerAsyncDriver.this.device = device;
-                        // Notify listeners
-                        FsStoryTellerAsyncDriver.this.listeners.forEach(listener -> listener.onDevicePlugged(device));
-                    }
-
-                    @Override
-                    public void onDeviceUnplugged(Device device) {
-                        // Update device reference
-                        FsStoryTellerAsyncDriver.this.device = null;
-                        FsStoryTellerAsyncDriver.this.partitionMountPoint = null;
-                        // Notify listeners
-                        FsStoryTellerAsyncDriver.this.listeners.forEach(listener -> listener.onDeviceUnplugged(device));
-                    }
-                }
-        );
+        LibUsbDetectionHelper.initializeLibUsb(DeviceVersion.DEVICE_VERSION_2, defaultListener);
     }
 
 
     public void registerDeviceListener(DeviceHotplugEventListener listener) {
         this.listeners.add(listener);
-        if (this.device != null) {
+        if (this.device != null || this.simulating) {
+        	this.defaultListener.onDevicePlugged(null);
             listener.onDevicePlugged(this.device);
         }
     }
 
 
     public CompletableFuture<FsDeviceInfos> getDeviceInfos() {
-        if (this.device == null || this.partitionMountPoint == null) {
+        if (!simulating && (this.device == null || this.partitionMountPoint == null)) {
             return CompletableFuture.failedFuture(new StoryTellerException("No device plugged"));
         }
         FsDeviceInfos infos = new FsDeviceInfos();
@@ -182,7 +191,7 @@ public class FsStoryTellerAsyncDriver {
 
 
     public CompletableFuture<List<FsStoryPackInfos>> getPacksList() {
-        if (this.device == null || this.partitionMountPoint == null) {
+        if (!simulating && (this.device == null || this.partitionMountPoint == null)) {
             return CompletableFuture.failedFuture(new StoryTellerException("No device plugged"));
         }
 
@@ -255,7 +264,7 @@ public class FsStoryTellerAsyncDriver {
 
 
     public CompletableFuture<Boolean> reorderPacks(List<String> uuids) {
-        if (this.device == null || this.partitionMountPoint == null) {
+        if (!simulating && (this.device == null || this.partitionMountPoint == null)) {
             return CompletableFuture.failedFuture(new StoryTellerException("No device plugged"));
         }
 
@@ -278,7 +287,7 @@ public class FsStoryTellerAsyncDriver {
     }
 
     public CompletableFuture<Boolean> deletePack(String uuid) {
-        if (this.device == null || this.partitionMountPoint == null) {
+        if (!simulating && (this.device == null || this.partitionMountPoint == null)) {
             return CompletableFuture.failedFuture(new StoryTellerException("No device plugged"));
         }
 
@@ -343,7 +352,7 @@ public class FsStoryTellerAsyncDriver {
 
 
     public CompletableFuture<TransferStatus> downloadPack(String uuid, String outputPath, TransferProgressListener listener) {
-        if (this.device == null || this.partitionMountPoint == null) {
+        if (!simulating && (this.device == null || this.partitionMountPoint == null)) {
             return CompletableFuture.failedFuture(new StoryTellerException("No device plugged"));
         }
 
@@ -378,7 +387,7 @@ public class FsStoryTellerAsyncDriver {
     }
 
     public CompletableFuture<TransferStatus> uploadPack(String uuid, String inputPath, TransferProgressListener listener) {
-        if (this.device == null || this.partitionMountPoint == null) {
+        if (!simulating && (this.device == null || this.partitionMountPoint == null)) {
             return CompletableFuture.failedFuture(new StoryTellerException("No device plugged"));
         }
 

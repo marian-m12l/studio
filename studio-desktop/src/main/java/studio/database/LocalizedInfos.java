@@ -18,7 +18,7 @@ public class LocalizedInfos extends Thumbnailable {
 		}
 		
 	}
-	
+		
 	@SerializedName("description")
 	private String description;
 	

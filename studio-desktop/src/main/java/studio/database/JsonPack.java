@@ -2,12 +2,19 @@ package studio.database;
 
 import java.util.Collection;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 import com.google.gson.annotations.SerializedName;
 
 public class JsonPack {
+	
+	@Override
+	public boolean equals(Object obj) {
+		return obj instanceof JsonPack && uuid.equals(((JsonPack)obj).uuid);
+	}
 	
 	@SerializedName("uuid")
 	private String uuid;
@@ -20,7 +27,6 @@ public class JsonPack {
 	
 	@SerializedName("creation_date")
 	private Date creationDate;
-	
 	
 	@SerializedName("slug")
 	private String slug; 
@@ -56,11 +62,10 @@ public class JsonPack {
 	private Map<String, Person> tellers;
 
 	@SerializedName("localized_infos")
-	private Map<String, LocalizedInfos> localizedInfos;
+	private Map<String, LocalizedInfos> localizedInfos = new HashMap<>();
 	
 	@SerializedName("size")
 	private long size;
-	
 	
 	
 	public long getSize() {
@@ -133,5 +138,13 @@ public class JsonPack {
 	
 	public Map<String, LocalizedInfos> getLocalizedInfos() {
 		return localizedInfos;
+	}
+	
+	
+	public String getResolvedTitle(Locale l) {
+		String locale = l.toLanguageTag().replace("-", "_");
+		return getTitle() != null ? getTitle() : 
+			getLocalizedInfos().get(locale) != null ? localizedInfos.get(locale).getTitle() : 
+				localizedInfos.values().isEmpty() ? localizedInfos.values().iterator().next().getTitle() : "";
 	}
 }

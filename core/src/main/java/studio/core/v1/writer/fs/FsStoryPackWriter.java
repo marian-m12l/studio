@@ -45,7 +45,8 @@ public class FsStoryPackWriter {
 
     public Path write(StoryPack pack, Path outputFolder) throws Exception {
         // Create pack folder: last 8 digits of uuid
-        File packFolder = new File(outputFolder.toFile(), transformUuid(UUID.fromString(pack.getUuid())));
+//        File packFolder = new File(outputFolder.toFile(), transformUuid(UUID.fromString(pack.getUuid())));
+    	File packFolder = outputFolder.toFile();
         packFolder.mkdirs();
 
         // Write night mode

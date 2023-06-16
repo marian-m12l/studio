@@ -7,6 +7,7 @@ import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
 import java.util.List;
+import java.util.Locale;
 import java.util.concurrent.CompletableFuture;
 
 import javax.swing.DefaultListModel;
@@ -29,6 +30,7 @@ class JsonPackCell implements ListCellRenderer<JsonPack>, UIResource {
 	
 	private static final long serialVersionUID = -9095012373460466070L;
 	
+	private transient String locale = Locale.getDefault().toLanguageTag().replace("-", "_");
 	
 	private static final Border noBorder = UIManager.getBorder("List.cellNoFocusBorder");
 	private static final Border selectedAndFocusedBorder = UIManager.getBorder("List.focusSelectedCellHighlightBorder");
@@ -55,6 +57,7 @@ class JsonPackCell implements ListCellRenderer<JsonPack>, UIResource {
 			gbc_icon.insets = new Insets(5, 5, 0, 5);
 			gbc_icon.gridx = 0;
 			gbc_icon.gridy = 0;
+			icon.setMinimumSize(new Dimension(64,64));
 			res.add(icon, gbc_icon);
 			
 			JLabel title = new JLabel();
@@ -65,6 +68,7 @@ class JsonPackCell implements ListCellRenderer<JsonPack>, UIResource {
 			gbc_title.insets = new Insets(5, 5, 5, 5);
 			gbc_title.gridx = 1;
 			gbc_title.gridy = 0;
+			gbc_title.weightx = 0.5;
 			res.add(title, gbc_title);
 			
 			JLabel subTitle = new JLabel();
@@ -153,49 +157,57 @@ class JsonPackCell implements ListCellRenderer<JsonPack>, UIResource {
 	        
 	        
 			
-			LocalizedInfos defaultLocalizedInfos = value.getLocalizedInfos().values().iterator().next(); 
+			LocalizedInfos defaultLocalizedInfos = value.getLocalizedInfos().containsKey(locale) ? defaultLocalizedInfos = value.getLocalizedInfos().get(locale) : (!value.getLocalizedInfos().isEmpty() ? defaultLocalizedInfos = value.getLocalizedInfos().values().iterator().next() : null);
+
 			List<Component> components = List.of(res.getComponents());
 			
-			components.stream().filter( (c) -> "icon".equals(c.getName())).findFirst().ifPresent( ( c) -> {
-					if ( defaultLocalizedInfos.hasFetchImage() ) {
-						((JLabel)c).setIcon(new ImageIcon(defaultLocalizedInfos.getThumbnail()));
-					} else {
+//			if ( defaultLocalizedInfos != null ) {
+				
+				components.stream().filter( (c) -> "icon".equals(c.getName())).findFirst().ifPresent( ( c) -> {
+						if ( defaultLocalizedInfos != null && defaultLocalizedInfos.hasFetchImage() ) {
+							((JLabel)c).setIcon(new ImageIcon(defaultLocalizedInfos.getThumbnail()));
+						} else {
+							
+						CompletableFuture.runAsync(() -> {
+							if ( defaultLocalizedInfos == null ) return;
+							defaultLocalizedInfos.getThumbnail();
+							DefaultListModel<JsonPack> model = (DefaultListModel<JsonPack>) list.getModel();
+							model.setElementAt(value, index);
+						});
+						}
 						
-					CompletableFuture.runAsync(() -> {
-						defaultLocalizedInfos.getThumbnail();
-						DefaultListModel<JsonPack> model = (DefaultListModel<JsonPack>) list.getModel();
-						model.setElementAt(value, index);
-					});
-					}
-					
-			});
-			//icon.setData(defaultLocalizedInfos);
-		
-						
+				});
+			 
+//			}
 			
 			components.stream().filter( (c) -> "title".equals(c.getName())).findFirst().ifPresent( ( c) -> {
 				String strTitle = value.getTitle();
-				if ( strTitle == null ) strTitle = defaultLocalizedInfos.getTitle();
+				if ( strTitle == null && defaultLocalizedInfos != null ) strTitle = defaultLocalizedInfos.getTitle();
 				((JLabel)c).setText(strTitle);
 			});
-			//title.setText(strTitle);
 			
 			components.stream().filter( (c) -> "subtitle".equals(c.getName())).findFirst().ifPresent( ( c) -> {
 				String strSubTitle = value.getSubtitle();
-				if ( strSubTitle == null ) strSubTitle = defaultLocalizedInfos.getSubtitle();
+				if ( strSubTitle == null && defaultLocalizedInfos != null ) strSubTitle = defaultLocalizedInfos.getSubtitle();
 				((JLabel)c).setText(strSubTitle);
 			});
 			
 			components.stream().filter( (c) -> "age".equals(c.getName())).findFirst().ifPresent( ( c) -> {
-				String strAge = value.getAgeMax() == -1 ? "From " + value.getAgeMin() + " years": "From " + value.getAgeMin() + " to " + value.getAgeMax() + " years";
-				((JLabel)c).setText(strAge);
+				if ( !(value.getAgeMin() == 0 && value.getAgeMax() == 0) ) {					
+					String strAge = value.getAgeMax() == -1 ? "From " + value.getAgeMin() + " years": "From " + value.getAgeMin() + " to " + value.getAgeMax() + " years";
+					((JLabel)c).setText(strAge);
+				} else {
+					((JLabel)c).setText("");
+				}
 			});
 			components.stream().filter( (c) -> "size".equals(c.getName())).findFirst().ifPresent( ( c) -> {
-				String strAge = FileUtils.byteCountToDisplaySize(FileUtils.ONE_KB * value.getSize());
-				((JLabel)c).setText(strAge);
+				if ( value.getSize() != 0 ) {					
+					String strSize = FileUtils.byteCountToDisplaySize(FileUtils.ONE_KB * value.getSize());
+					((JLabel)c).setText(strSize);
+				} else {
+					((JLabel)c).setText("");
+				}
 			});
-			//subTitle.setText(strSubTitle);
-			 
 			
 			return res;
 		}
