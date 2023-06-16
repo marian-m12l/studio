@@ -200,9 +200,7 @@ public class GUI {
 		}
 	}
 	
-	private void initializeLunii() {
-		
-		Locale l = Locale.getDefault();
+	private void initializeLunii() {		
 		library = Library.getInstance(System.getProperty("user.home"));
 
 		libraryPathLabel.setText("Path: " + library.getLibraryPath());
@@ -551,7 +549,7 @@ public class GUI {
 		JSplitPane splitPane = new JSplitPane();
 		splitPane.setResizeWeight(0.5);
 		panel.add(splitPane, BorderLayout.CENTER);
-		// panel_7.add(splitPane, gbc_splitPane);
+
 
 		JPanel deviceListPanel = new JPanel();
 		splitPane.setLeftComponent(deviceListPanel);
@@ -1040,7 +1038,7 @@ public class GUI {
 			}
 		});
 
-		btnRefresh = new JButton(localization.getString("Device.refresh"));// "Refresh from device");
+		btnRefresh = new JButton(localization.getString("Device.refresh"));
 		btnRefresh.setEnabled(false);
 		GridBagConstraints gbc_btnRefersh = new GridBagConstraints();
 		gbc_btnRefersh.anchor = GridBagConstraints.NORTHWEST;
@@ -1152,7 +1150,6 @@ public class GUI {
 		ds.createDefaultDragGestureRecognizer(libraryPacksList, DnDConstants.ACTION_MOVE, dgl);
 
 		libraryPacksList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
-		// TransferHandler transferHandler = libraryPacksList.getTransferHandler();
 
 		JPanel panel_6 = new JPanel();
 		libraryListPanel.add(panel_6, BorderLayout.SOUTH);
@@ -1161,7 +1158,7 @@ public class GUI {
 		panel_6.setLayout(gbl_panel_6);
 		panel_6.setMinimumSize(new Dimension(100, 100));
 
-		btnRefreshLibrary = new JButton(localization.getString("Library.refresh"));// "Refresh library");
+		btnRefreshLibrary = new JButton(localization.getString("Library.refresh"));
 		btnRefreshLibrary.setEnabled(false);
 		GridBagConstraints gbc_btnRefreshLibrary = new GridBagConstraints();
 		gbc_btnRefreshLibrary.anchor = GridBagConstraints.NORTHWEST;
@@ -1246,16 +1243,6 @@ public class GUI {
 			}
 		});
 
-//				JPanel panel_7 = new JPanel();
-//				panel_7.setBorder(null);
-//				panel.add(panel_7, BorderLayout.CENTER);
-//				GridBagLayout gbl_panel_7 = new GridBagLayout();
-//				gbl_panel_7.columnWidths = new int[]{0, 0};
-//				gbl_panel_7.rowHeights = new int[]{0, 0};
-//				gbl_panel_7.columnWeights = new double[]{1.0, Double.MIN_VALUE};
-//				gbl_panel_7.rowWeights = new double[]{1.0, Double.MIN_VALUE};
-//				panel_7.setLayout(gbl_panel_7);
-
 		statusPanel = new JPanel();
 		panel.add(statusPanel, BorderLayout.SOUTH);
 		statusLayout = new GridBagLayout();
@@ -1316,15 +1303,14 @@ public class GUI {
 			}
 		});
 
-		JMenuItem changeLibraryPathMenuItem = new JMenuItem(localization.getString("Library.changePath"));// "Change
-																											// library
-																											// path...");
+		JMenuItem changeLibraryPathMenuItem = new JMenuItem(localization.getString("Library.changePath"));
+
 		changeLibraryPathMenuItem.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				JFileChooser chooser = new JFileChooser();
 				chooser.setCurrentDirectory(new java.io.File(library.getLibraryPath()));
-				chooser.setDialogTitle(localization.getString("Library.ChooseLibraryFolder"));// "Choose library
-																								// folder");
+				chooser.setDialogTitle(localization.getString("Library.ChooseLibraryFolder"));
+
 				chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 				chooser.setAcceptAllFileFilterUsed(false);
 				if (chooser.showOpenDialog(frmLuniiTransfer) == JFileChooser.APPROVE_OPTION) {
@@ -1362,7 +1348,6 @@ public class GUI {
 
 	}
 
-//
 
 	class MyListDropHandler<T> extends TransferHandler {
 		private static final long serialVersionUID = -6453689410470088604L;
@@ -1394,8 +1379,7 @@ public class GUI {
 				return false;
 			}
 
-			List<Integer> indices = Arrays.stream(indexString.toString().split(",")).mapToInt(Integer::parseInt).boxed()
-					.toList();// .sorted(Collections.reverseOrder()).toList();
+			List<Integer> indices = Arrays.stream(indexString.toString().split(",")).mapToInt(Integer::parseInt).boxed().toList();
 			JList.DropLocation dl = (JList.DropLocation) support.getDropLocation();
 			final Integer dropTargetIndex = dl.getIndex();
 
