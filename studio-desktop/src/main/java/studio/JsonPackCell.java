@@ -157,7 +157,7 @@ class JsonPackCell implements ListCellRenderer<JsonPack>, UIResource {
 	        
 	        
 			
-			LocalizedInfos defaultLocalizedInfos = value.getLocalizedInfos().containsKey(locale) ? defaultLocalizedInfos = value.getLocalizedInfos().get(locale) : (!value.getLocalizedInfos().isEmpty() ? defaultLocalizedInfos = value.getLocalizedInfos().values().iterator().next() : null);
+			final LocalizedInfos defaultLocalizedInfos = value.getLocalizedInfos().containsKey(locale) ? value.getLocalizedInfos().get(locale) : (!value.getLocalizedInfos().isEmpty() ? value.getLocalizedInfos().values().iterator().next() : null);
 
 			List<Component> components = List.of(res.getComponents());
 			

@@ -209,7 +209,7 @@ public class GUI {
 			btnRefreshLibrary.setEnabled(true);
 		});
 
-		fsDriver = new FsStoryTellerAsyncDriver(true);
+		fsDriver = new FsStoryTellerAsyncDriver(false);
 		rawDriver = new RawStoryTellerAsyncDriver();
 
 		fsDriver.registerDeviceListener(new DeviceHotplugEventListener() {
@@ -481,21 +481,24 @@ public class GUI {
 
 		devicePacksModel = new DefaultListModel<JsonPack>();
 
-		DragSource ds = new DragSource();
+		
 		DragGestureListener dgl = new DragGestureListener() {
 
 			@Override
 			public void dragGestureRecognized(DragGestureEvent dge) {
 				String source = dge.getComponent().getName();
+				System.out.println("Recognized");
 				if (source.equals("devices") || source.equals("library")) {
 					String selectedIndices = ((JList<JsonPack>) dge.getComponent()).getSelectedValuesList().stream()
 							.map(JsonPack::getUuid).collect(Collectors.joining(","));
 					StringSelection transferable = new StringSelection(source + ": " + selectedIndices);
-					ds.startDrag(dge, DragSource.DefaultCopyDrop, transferable, null);
+					System.out.println("start drag");
+					dge.getDragSource().startDrag(dge, DragSource.DefaultMoveDrop, transferable, null);
 				}
 			}
 		};
 
+		DragSource.getDefaultDragSource().createDefaultDragGestureRecognizer(libraryPacksList, DnDConstants.ACTION_MOVE, dgl);
 		libraryPacksModel = new DefaultListModel<JsonPack>();
 		devicePacksModel.addListDataListener(new ListDataListener() {
 
@@ -605,7 +608,7 @@ public class GUI {
 		devicePacksList.setCellRenderer(new JsonPackCell());
 		devicePacksList.setName("devices");
 		devicePacksScrollPane.setViewportView(devicePacksList);
-		devicePacksList.setDragEnabled(true);
+		//devicePacksList.setDragEnabled(true);
 		devicePacksList.setDropMode(DropMode.INSERT);
 		devicePacksList.getSelectionModel().addListSelectionListener(new ListSelectionListener() {
 
@@ -617,87 +620,8 @@ public class GUI {
 			}
 
 		});
-		ds.createDefaultDragGestureRecognizer(devicePacksList, DnDConstants.ACTION_MOVE, dgl);
-		devicePacksList.setTransferHandler(new TransferHandler() {
-
-			private static final long serialVersionUID = -6050701764610620507L;
-
-			public boolean canImport(TransferHandler.TransferSupport support) {
-				if (!support.isDataFlavorSupported(DataFlavor.stringFlavor)) {
-					return false;
-				}
-				if (!support.getComponent().getName().equals("devices")) {
-					return false;
-				}
-
-				JList.DropLocation dl = (JList.DropLocation) support.getDropLocation();
-				return dl.getIndex() != -1;
-			}
-
-			public boolean importData(TransferHandler.TransferSupport support) {
-				if (!canImport(support)) {
-					return false;
-				}
-
-				Transferable transferable = support.getTransferable();
-				String transferMe;
-				try {
-					transferMe = (String) transferable.getTransferData(DataFlavor.stringFlavor);
-				} catch (UnsupportedFlavorException | IOException e) {
-					e.printStackTrace();
-					return false;
-				}
-
-				String source = transferMe.substring(0, transferMe.indexOf(": "));
-				List<String> uuids = List.of(transferMe.substring(transferMe.indexOf(": ") + 2).split(","));
-
-				JList<JsonPack> list = source.equals("library") ? libraryPacksList
-						: source.equals("devices") ? devicePacksList : null;
-				if (list == null)
-					return false;
-
-				final DefaultListModel<JsonPack> model = ((DefaultListModel<JsonPack>) list.getModel());
-
-				List<Integer> indices = new ArrayList<Integer>();
-				for (String uuid : uuids) {
-					indices.add(IntStream.range(0, model.getSize()).filter(i -> uuid.equals(model.get(i).getUuid()))
-							.findFirst().getAsInt());
-				}
-
-				JList.DropLocation dl = (JList.DropLocation) support.getDropLocation();
-				final Integer dropTargetIndex = dl.getIndex();
-
-				if (source.equals("devices")) {
-					int nbBeforeDropIndex = (int) indices.stream().filter((v) -> v < dropTargetIndex.intValue())
-							.count();
-					List<JsonPack> objects = new ArrayList<JsonPack>();
-					for (int index = indices.size() - 1; index >= 0; index--) {
-						objects.add(model.remove(indices.get(index)));
-					}
-
-					int insertIndex = dropTargetIndex - nbBeforeDropIndex;
-
-					for (int i = objects.size() - 1; i >= 0; i--) {
-						model.add(insertIndex++, objects.get(i));
-
-					}
-				} else {
-					List<Object> existingPacks = List
-							.of(((DefaultListModel<JsonPack>) ((JList<JsonPack>) support.getComponent()).getModel())
-									.toArray());
-					List<String> existingUUIDs = existingPacks.stream().map(p -> ((JsonPack) p).getUuid()).toList();
-
-					List<JsonPack> toAdd = indices.stream().map(i -> model.get(i))
-							.filter(pack -> existingUUIDs.stream().allMatch(s -> !s.equalsIgnoreCase(pack.getUuid())))
-							.toList();
-					devicePacksModel.addAll(dropTargetIndex, toAdd);
-				}
-
-				return true;
-			}
-
-		});
-
+		DragSource.getDefaultDragSource().createDefaultDragGestureRecognizer(devicePacksList, DnDConstants.ACTION_MOVE, dgl);
+		
 		JPanel panel_4 = new JPanel();
 		deviceListPanel.add(panel_4, BorderLayout.SOUTH);
 		GridBagLayout gbl_panel_4 = new GridBagLayout();
@@ -1100,10 +1024,12 @@ public class GUI {
 		JScrollPane libraryPacksScrollPane = new JScrollPane();
 		libraryListPanel.add(libraryPacksScrollPane);
 		libraryPacksList = new JList<JsonPack>(libraryPacksModel);
+		devicePacksList.setTransferHandler(new DeviceListTransferHandler(libraryPacksList, devicePacksList));
+
 		libraryPacksScrollPane.setViewportView(libraryPacksList);
 		libraryPacksList.setName("library");
 		libraryPacksList.setCellRenderer(new JsonPackCell());
-		libraryPacksList.setDragEnabled(true);
+		//libraryPacksList.setDragEnabled(true);
 		libraryPacksList.addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent evt) {
 				JList<JsonPack> list = (JList<JsonPack>) evt.getSource();
@@ -1147,7 +1073,7 @@ public class GUI {
 			}
 		});
 
-		ds.createDefaultDragGestureRecognizer(libraryPacksList, DnDConstants.ACTION_MOVE, dgl);
+		DragSource.getDefaultDragSource().createDefaultDragGestureRecognizer(libraryPacksList, DnDConstants.ACTION_MOVE, dgl);
 
 		libraryPacksList.setSelectionMode(ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
 
