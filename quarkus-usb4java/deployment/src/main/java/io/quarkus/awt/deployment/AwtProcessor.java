@@ -83,7 +83,7 @@ class AwtProcessor {
                 "javax.imageio.plugins.tiff.FaxTIFFTagSet",
                 "javax.imageio.plugins.tiff.GeoTIFFTagSet",
                 "javax.imageio.plugins.tiff.TIFFTagSet" //
-            ).fields(false).methods(true).build();
+        ).fields(false).methods(true).build();
     }
 
     @BuildStep

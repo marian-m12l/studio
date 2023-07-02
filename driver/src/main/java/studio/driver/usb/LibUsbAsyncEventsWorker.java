@@ -32,7 +32,7 @@ public class LibUsbAsyncEventsWorker extends Thread {
         LOGGER.debug("Starting worker thread to handle libusb async events...");
         while (!abort) {
             int result = LibUsb.handleEventsTimeout(context, 250_000);
-            if (result != LibUsb.SUCCESS) {
+            if (!abort && result != LibUsb.SUCCESS) {
                 throw new LibUsbException("Unable to handle libusb async events", result);
             }
         }

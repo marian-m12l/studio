@@ -49,7 +49,7 @@ class FsStoryTellerAsyncDriverTests {
 
     static TransferProgressListener progressListener = status -> {
         double p = status.getPercent();
-        if (log.isInfoEnabled()) {
+        if (log.isInfoEnabled() && p%2 == 0) {
             log.info("Transferring {} ({} / {})", //
                     FileUtils.readablePercent(p), //
                     FileUtils.readableByteSize(status.getTransferred()), //
