@@ -3,7 +3,7 @@
 # and commit this file to your remote git repository to share the goodness with others.
 
 tasks:
-  - init: mvn install -DskipTests=false
+  - init: mvn install -DskipTests=true
 
 gitConfig:
-  user.email: fake@gmail.com
+  user.email: 3878594+kairoh@users.noreply.github.com
