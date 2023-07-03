@@ -83,7 +83,7 @@ public class RawStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     public RawStoryTellerAsyncDriver() {
         // Initialize libusb, handle and propagate hotplug events
         LOGGER.debug("Registering hotplug listener");
-        LibUsbDetectionHelper.INSTANCE.initializeLibUsb( //
+        LibUsbDetectionHelper.getInstance().initializeLibUsb( //
             UsbDeviceVersion.DEVICE_VERSION_1, //
             dev -> {
                 // Update device reference

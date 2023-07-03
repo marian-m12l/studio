@@ -3,6 +3,7 @@ package studio.webui.model;
 import java.util.List;
 import java.util.concurrent.CompletionStage;
 
+import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.ws.rs.GET;
 import jakarta.ws.rs.Path;
 import jakarta.ws.rs.QueryParam;
@@ -23,6 +24,7 @@ public interface EvergreenDTOs {
     String DEFAULT_ANNOUNCE_CONTENT = ANNOUNCE_EN + "\n\n-----\n\n" + ANNOUNCE_FR;
     String DEFAULT_ANNOUNCE_DATE = "2020-05-12T00:00:00.000Z";
 
+    @ApplicationScoped
     @RegisterRestClient(baseUri = "https://api.github.com/repos/kairoh/studio")
     interface GithubClient {
         @GET
@@ -34,6 +36,7 @@ public interface EvergreenDTOs {
         CompletionStage<List<CommitDto>> commits(@QueryParam("path") String path);
     }
 
+    @ApplicationScoped
     @RegisterRestClient(baseUri = "https://raw.githubusercontent.com/kairoh/studio")
     interface GithubRawClient {
         @GET

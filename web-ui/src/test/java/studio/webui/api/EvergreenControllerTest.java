@@ -14,7 +14,7 @@ import org.mockito.Mockito;
 
 import io.quarkus.test.common.http.TestHTTPEndpoint;
 import io.quarkus.test.junit.QuarkusTest;
-import io.quarkus.test.junit.mockito.InjectMock;
+import io.quarkus.test.InjectMock;
 import studio.junit.TestNameExtension;
 import studio.webui.model.EvergreenDTOs;
 import studio.webui.model.EvergreenDTOs.CommitDto;

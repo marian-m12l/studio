@@ -23,11 +23,12 @@ import studio.driver.event.DeviceUnpluggedListener;
 import studio.driver.model.UsbDeviceFirmware;
 import studio.driver.model.UsbDeviceVersion;
 
-public enum LibUsbDetectionHelper {
+public class LibUsbDetectionHelper {
 
-    INSTANCE;
+    // singleton
+    private static LibUsbDetectionHelper INSTANCE = null;
 
-    private final Logger LOGGER = LoggerFactory.getLogger(LibUsbDetectionHelper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(LibUsbDetectionHelper.class);
 
     private static final long POLL_DELAY = 5L;
 
@@ -37,6 +38,14 @@ public enum LibUsbDetectionHelper {
 
     // LibUsb context
     private Context context;
+
+    /** Singleton. */
+    public static LibUsbDetectionHelper getInstance() {
+        if(INSTANCE == null) {
+            INSTANCE = new LibUsbDetectionHelper();
+        }
+        return INSTANCE;
+    }
 
     /**
      * Initialize libusb context, start async event handling worker thread, register
