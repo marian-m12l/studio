@@ -43,11 +43,11 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Set up JDK 20
+      - name: Set up JDK 17
         uses: actions/setup-java@v3
         with:
           distribution: temurin
-          java-version: 20
+          java-version: 17
           cache: maven
 
       - name: Download JS front
@@ -116,14 +116,13 @@ jobs:
 
       - name: Download Liberica NIK
         env:
-          #liberica-url: https://download.bell-sw.com/vm/22.3.2/bellsoft-liberica-vm-core-openjdk17.0.7+7-22.3.2+1-${{ matrix.jdk-suffix }}
-          liberica-url: https://download.bell-sw.com/vm/23.0.0/bellsoft-liberica-vm-core-openjdk20.0.1+10-23.0.0+1-${{ matrix.jdk-suffix }}
+          liberica-url: https://download.bell-sw.com/vm/22.3.2/bellsoft-liberica-vm-core-openjdk17.0.7+7-22.3.2+1-${{ matrix.jdk-suffix }}
         run: curl -sLo ${{ runner.temp }}/${{ matrix.jdk-suffix }} ${{ env.liberica-url }}
         #if: ${{ runner.os != 'Linux' }}
 
       - uses: actions/setup-java@v3
         with:
-          java-version: 20
+          java-version: 17
           distribution: jdkfile
           jdkFile: ${{ runner.temp }}/${{ matrix.jdk-suffix }}
           cache: maven
