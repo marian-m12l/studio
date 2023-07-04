@@ -53,7 +53,7 @@
         <dependency>
             <groupId>io.quarkiverse.usb4java</groupId>
             <artifactId>quarkus-usb4java</artifactId>
-            <version>999-SNAPSHOT</version>
+            <version>${quarkus.version}</version>
         </dependency>
 
         <dependency>
