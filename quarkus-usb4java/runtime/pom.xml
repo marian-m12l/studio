@@ -4,17 +4,24 @@
     <parent>
         <groupId>io.quarkiverse.usb4java</groupId>
         <artifactId>quarkus-usb4java-parent</artifactId>
-        <!--<version>999-SNAPSHOT</version>-->
         <version>3.2.0.Final</version>
     </parent>
+
     <artifactId>quarkus-usb4java</artifactId>
     <name>Quarkus - Usb4java - Runtime</name>
     <description>Usb for Java</description>
+
     <dependencies>
         <dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc</artifactId>
         </dependency>
+        <dependency>
+            <groupId>org.graalvm.nativeimage</groupId>
+            <artifactId>svm</artifactId>
+            <scope>provided</scope>
+        </dependency>
+        <!-- custom -->
         <dependency>
             <groupId>org.usb4java</groupId>
             <artifactId>usb4java</artifactId>
@@ -23,31 +30,13 @@
             <groupId>io.github.dsheirer</groupId>
             <artifactId>libusb4java-darwin-aarch64</artifactId>
         </dependency>
-        <!-- AWT -->
-        <dependency>
-            <groupId>org.graalvm.nativeimage</groupId>
-            <artifactId>svm</artifactId>
-            <scope>provided</scope>
-        </dependency>
     </dependencies>
+
     <build>
         <plugins>
             <plugin>
                 <groupId>io.quarkus</groupId>
-                <!-- bootstrap -->
                 <artifactId>quarkus-extension-maven-plugin</artifactId>
-                <version>${quarkus.version}</version>
-                <executions>
-                    <execution>
-                        <phase>compile</phase>
-                        <goals>
-                            <goal>extension-descriptor</goal>
-                        </goals>
-                        <configuration>
-                            <deployment>${project.groupId}:${project.artifactId}-deployment:${project.version}</deployment>
-                        </configuration>
-                    </execution>
-                </executions>
             </plugin>
             <plugin>
                 <artifactId>maven-compiler-plugin</artifactId>
@@ -56,11 +45,12 @@
                         <path>
                             <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${quarkus.version}</version>
+                            <version>${project.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
             </plugin>
         </plugins>
     </build>
+
 </project>
