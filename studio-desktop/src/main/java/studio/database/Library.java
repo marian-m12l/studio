@@ -287,6 +287,11 @@ public class Library {
 		return packsDatabase.getPacks().stream().filter( (pack) -> pack.getUuid().equalsIgnoreCase(uuid)).findAny();
 	}
 	
+	
+	public CompletableFuture<List<JsonPack>> getAllLuniiPacks() {
+		return loadDatabase().thenComposeAsync( (Void v) -> CompletableFuture.supplyAsync( () -> packsDatabase.getPacks().stream().toList()));
+	}
+	
 	public CompletableFuture<List<JsonPack>> getPacks() {
 		return loadDatabase().thenComposeAsync( (Void v) -> {
 			return CompletableFuture.supplyAsync(() -> {

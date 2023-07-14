@@ -13,7 +13,6 @@ import java.awt.Toolkit;
 import java.awt.datatransfer.DataFlavor;
 import java.awt.datatransfer.StringSelection;
 import java.awt.datatransfer.Transferable;
-import java.awt.datatransfer.UnsupportedFlavorException;
 import java.awt.dnd.DnDConstants;
 import java.awt.dnd.DragGestureEvent;
 import java.awt.dnd.DragGestureListener;
@@ -27,6 +26,8 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -34,6 +35,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
@@ -73,6 +75,17 @@ import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.poi.common.usermodel.HyperlinkType;
+import org.apache.poi.ss.usermodel.CellStyle;
+import org.apache.poi.ss.usermodel.FillPatternType;
+import org.apache.poi.ss.usermodel.IndexedColors;
+import org.apache.poi.ss.util.CellRangeAddress;
+import org.apache.poi.xssf.usermodel.XSSFCell;
+import org.apache.poi.xssf.usermodel.XSSFFont;
+import org.apache.poi.xssf.usermodel.XSSFHyperlink;
+import org.apache.poi.xssf.usermodel.XSSFRow;
+import org.apache.poi.xssf.usermodel.XSSFSheet;
+import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.usb4java.Device;
 
 import studio.database.JsonPack;
@@ -1269,6 +1282,167 @@ public class GUI {
 			}
 		});
 		mnNewMenu.add(importMenuItem);
+		
+		JMenuItem exportMenuItem = new JMenuItem(localization.getString("File.export"));
+		exportMenuItem.addActionListener(new ActionListener() {
+
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				JFileChooser chooser = new JFileChooser();
+				chooser.setDialogTitle(localization.getString("Export.SaveFile"));
+				chooser.setMultiSelectionEnabled(true);
+				chooser.setAcceptAllFileFilterUsed(false);
+				
+				if (chooser.showSaveDialog(frmLuniiTransfer) == JFileChooser.APPROVE_OPTION) {
+					int response = JOptionPane.showConfirmDialog(frmLuniiTransfer, "Export entire library ?", "Export library", JOptionPane.YES_NO_CANCEL_OPTION, JOptionPane.QUESTION_MESSAGE);
+					if ( response == JOptionPane.CANCEL_OPTION ) {
+						return;
+					}
+					
+					List<JsonPack> data = new ArrayList<>();
+					List<String> downloadedLibrary = Collections.list(libraryPacksModel.elements()).stream().map( (JsonPack pack) -> pack.getUuid()).toList();
+					List<String> downloadedOnDevice = Collections.list(devicePacksModel.elements()).stream().map( (JsonPack pack) -> pack.getUuid()).toList();
+					
+					if ( response == JOptionPane.YES_OPTION ) {
+						try {
+							data = library.getAllLuniiPacks().get();
+						} catch (InterruptedException | ExecutionException e1) {
+							e1.printStackTrace();
+							return;
+						}
+					} else if ( response == JOptionPane.NO_OPTION ) {
+						data = Collections.list(libraryPacksModel.elements());
+						
+					}
+					
+					XSSFWorkbook workbook = new XSSFWorkbook();
+					XSSFSheet sheet = workbook.createSheet("Library");
+//					sheet.setColumnWidth(0, 6000);
+//					sheet.setColumnWidth(1, 4000);
+
+					XSSFRow header = sheet.createRow(0);
+
+					CellStyle headerStyle = workbook.createCellStyle();
+					headerStyle.setFillForegroundColor(IndexedColors.LIGHT_BLUE.getIndex());
+					headerStyle.setFillPattern(FillPatternType.SOLID_FOREGROUND);
+
+					XSSFFont font = ((XSSFWorkbook) workbook).createFont();
+					font.setFontName("Arial");
+					font.setFontHeightInPoints((short) 16);
+					font.setBold(true);
+					headerStyle.setFont(font);
+
+					XSSFCell headerCell = header.createCell(0);
+					headerCell.setCellValue("Ref");
+					headerCell.setCellStyle(headerStyle);
+					
+					headerCell = header.createCell(1);
+					headerCell.setCellValue("Title");
+					headerCell.setCellStyle(headerStyle);
+
+					headerCell = header.createCell(2);
+					headerCell.setCellValue("Age - From");
+					headerCell.setCellStyle(headerStyle);
+										
+					headerCell = header.createCell(3);
+					headerCell.setCellValue("Age - To");
+					headerCell.setCellStyle(headerStyle);
+					
+					headerCell = header.createCell(4);
+					headerCell.setCellValue("Link");
+					headerCell.setCellStyle(headerStyle);
+					
+					headerCell = header.createCell(5);
+					headerCell.setCellValue("Downloaded");
+					headerCell.setCellStyle(headerStyle);
+					
+					headerCell = header.createCell(6);
+					headerCell.setCellValue("Present on the device");
+					headerCell.setCellStyle(headerStyle);
+					
+					headerCell = header.createCell(7);
+					headerCell.setCellValue("Locale");
+					headerCell.setCellStyle(headerStyle);
+
+					sheet.setAutoFilter(new CellRangeAddress(0,0,0,7));
+
+					Locale locale = Locale.getDefault();
+					data.forEach( (JsonPack pack) -> {
+						XSSFRow dataRow = sheet.createRow(sheet.getLastRowNum() + 1);
+						XSSFCell dataCell = dataRow.createCell(0);
+						dataCell.setCellValue(pack.getUuid());
+						String usedLocale = locale.getDisplayLanguage();
+						
+						dataCell = dataRow.createCell(1);
+						String title = pack.getTitle();
+						if ( title == null || title.length() == 0 ) {
+							title = pack.getResolvedTitle(locale);
+							if ( title == null || title.length() == 0 ) {
+								usedLocale = pack.getLocalizedInfos().keySet().iterator().next().replace("_", "-");								
+								title = pack.getResolvedTitle(Locale.forLanguageTag(usedLocale));
+								usedLocale = Locale.forLanguageTag(usedLocale).getDisplayLanguage();
+								
+							}
+						}
+						dataCell.setCellValue(title);
+						
+						dataCell = dataRow.createCell(2);
+						if ( pack.getAgeMin() != -1 ) {
+							dataCell.setCellValue(pack.getAgeMin());
+						}
+						
+						dataCell = dataRow.createCell(3);
+						if ( pack.getAgeMax() != -1 ) {
+							dataCell.setCellValue(pack.getAgeMax());
+						}
+						
+						dataCell = dataRow.createCell(4);
+						String url = "https://lunii.com/" + locale.getCountry().toLowerCase() + "-" + locale.getLanguage() + "/luniistore-catalogue/" + pack.getSlug();
+						XSSFHyperlink link = (XSSFHyperlink)workbook.getCreationHelper().createHyperlink(HyperlinkType.URL);
+					    link.setAddress(url);
+					    dataCell.setCellValue(url);
+					    dataCell.setHyperlink((XSSFHyperlink) link);
+
+						
+						dataCell = dataRow.createCell(5);
+						dataCell.setCellValue(downloadedLibrary.contains(pack.getUuid()));
+						
+						dataCell = dataRow.createCell(6);
+						dataCell.setCellValue(downloadedOnDevice.contains(pack.getUuid()));
+						
+						dataCell = dataRow.createCell(7);
+						dataCell.setCellValue(usedLocale);
+						
+					});
+					
+					for(int i = 0; i < sheet.getRow(0).getLastCellNum(); i++) {
+						sheet.autoSizeColumn(i);
+					}
+					
+					FileOutputStream fos;
+					try {
+						fos = new FileOutputStream(chooser.getSelectedFile());
+						workbook.write(fos);
+						fos.close();
+					} catch (FileNotFoundException e1) {
+						e1.printStackTrace();
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					} finally {
+						try {
+							workbook.close();
+						} catch (IOException e1) {
+							e1.printStackTrace();
+						}
+					}
+					
+
+				}
+				
+			}
+			
+		});
+		mnNewMenu.add(exportMenuItem);
 		mntmNewMenuItem.setAccelerator(KeyStroke.getKeyStroke(KeyEvent.VK_Q, InputEvent.META_DOWN_MASK));
 		mnNewMenu.add(mntmNewMenuItem);
 
