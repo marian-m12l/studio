@@ -21,7 +21,7 @@ import lombok.Setter;
 @NoArgsConstructor
 @AllArgsConstructor
 @EqualsAndHashCode(exclude = "actionNode")
-@JsonInclude(Include.NON_DEFAULT)
+@JsonInclude(Include.NON_NULL)
 public class Transition {
 
     @JsonIdentityReference(alwaysAsId = true)
