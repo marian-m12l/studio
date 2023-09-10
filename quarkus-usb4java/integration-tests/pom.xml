@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.quarkiverse.usb4java</groupId>
         <artifactId>quarkus-usb4java-parent</artifactId>
-        <version>3.2.0.Final</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>quarkus-usb4java-integration-tests</artifactId>

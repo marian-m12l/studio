@@ -17,7 +17,7 @@ public class DarwinAwtFeature implements Feature {
                     //
                     "sun.lwawt", "com.apple.eawt", "sun.swing",
                     "com.apple.laf", "javax.swing", "com.sun.java.swing.plaf"
-            //
+                   //
             );
         }
     }

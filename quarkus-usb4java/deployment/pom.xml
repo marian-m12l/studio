@@ -4,7 +4,7 @@
     <parent>
         <groupId>io.quarkiverse.usb4java</groupId>
         <artifactId>quarkus-usb4java-parent</artifactId>
-        <version>3.2.0.Final</version>
+        <version>1.0.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>quarkus-usb4java-deployment</artifactId>
@@ -15,10 +15,10 @@
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-arc-deployment</artifactId>
         </dependency>
-        <dependency>
+        <!--dependency>
             <groupId>io.quarkus</groupId>
             <artifactId>quarkus-core-deployment</artifactId>
-        </dependency>
+        </dependency-->
         <dependency>
             <groupId>io.quarkiverse.usb4java</groupId>
             <artifactId>quarkus-usb4java</artifactId>
@@ -40,7 +40,7 @@
                         <path>
                             <groupId>io.quarkus</groupId>
                             <artifactId>quarkus-extension-processor</artifactId>
-                            <version>${project.version}</version>
+                            <version>${quarkus.version}</version>
                         </path>
                     </annotationProcessorPaths>
                 </configuration>
