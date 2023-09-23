@@ -203,7 +203,7 @@ class AwtProcessor {
                 "sun.java2d.SunGraphics2D",
                 "sun.java2d.SurfaceData",
                 // Java 20 :test
-                // "javax.imageio.ImageIO",
+                "javax.imageio.ImageIO",
                 "javax.imageio.spi.ImageReaderSpi",
                 "javax.imageio.spi.ImageWriterSpi",
                 "javax.imageio.stream.FileImageInputStream",
