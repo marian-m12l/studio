@@ -31,7 +31,7 @@ final class TargetSunFontType1Font {
 }
 
 @TargetClass(className = "sun.awt.FontConfiguration")
-final class Target_sun_awt_FontConfiguration {
+final class TargetSunAwtFontConfiguration {
     @Alias
     protected static String osVersion;
     @Alias
@@ -47,7 +47,7 @@ final class Target_sun_awt_FontConfiguration {
      * substitution.
      */
     @Substitute
-    protected void setOsNameAndVersion() {
+    protected static void setOsNameAndVersion() {
         final Path javaHome = Path.of(System.getProperty("java.io.tmpdir"), "quarkus-awt-tmp-fonts");
         try {
             Files.createDirectories(Path.of(javaHome.toString(), "conf", "fonts"));
