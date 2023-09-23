@@ -205,6 +205,10 @@ class AwtProcessor {
                 // Java 20 :test
                 "javax.imageio.stream.FileImageOutputStream",
                 "com.sun.imageio.spi.FileImageOutputStreamSpi",
+                "com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi",
+                "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi",
+                "javax.imageio.spi.ImageReaderSpi",
+                "javax.imageio.spi.ImageWriterSpi",
                 "javax.imageio.ImageIO"
                 //
                 );
