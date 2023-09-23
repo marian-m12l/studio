@@ -201,6 +201,12 @@ class AwtProcessor {
                 "sun.java2d.pipe.SpanClipRenderer",
                 "sun.java2d.pipe.ValidatePipe",
                 "sun.java2d.SunGraphics2D",
-                "sun.java2d.SurfaceData");
+                "sun.java2d.SurfaceData",
+                // Java 20 :test
+                "javax.imageio.stream.FileImageOutputStream",
+                "com.sun.imageio.spi.FileImageOutputStreamSpi",
+                "javax.imageio.ImageIO"
+                //
+                );
     }
 }
