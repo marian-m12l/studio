@@ -127,15 +127,17 @@ jobs:
           distribution: jdkfile
           jdkFile: ${{ runner.temp }}/${{ matrix.jdk-suffix }}
           cache: maven
-        #if: ${{ runner.os != 'Linux' }}
+        if: ${{ runner.os == 'MacOS' }}
 
-      #- uses: graalvm/setup-graalvm@v1
-      #  with:
-      #    version: mandrel-latest
-      #    java-version: 17
-      #    cache: maven
-      #    github-token: ${{ secrets.GITHUB_TOKEN }}
-      #  if: ${{ runner.os == 'Linux' }}
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          version: mandrel-latest
+          java-version: 20
+          distribution: mandrel
+          cache: maven
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: true
+        if: ${{ runner.os != 'MacOS' }}
 
       - name: (Windows) Set up compiler
         uses: ilammy/msvc-dev-cmd@v1
