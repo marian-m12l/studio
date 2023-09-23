@@ -1,5 +1,7 @@
 package io.quarkus.awt.runtime;
 
+import static com.oracle.svm.core.annotate.RecomputeFieldValue.Kind.FromAlias;
+
 import java.awt.FontFormatException;
 import java.io.IOException;
 import java.io.UncheckedIOException;
@@ -8,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import com.oracle.svm.core.annotate.Alias;
+import com.oracle.svm.core.annotate.RecomputeFieldValue;
 import com.oracle.svm.core.annotate.Substitute;
 import com.oracle.svm.core.annotate.TargetClass;
 
@@ -33,14 +36,12 @@ final class TargetSunFontType1Font {
 @TargetClass(className = "sun.awt.FontConfiguration")
 final class TargetSunAwtFontConfiguration {
     @Alias
-    protected static String osVersion;
-    @Alias
-    protected static String osName;
+    @RecomputeFieldValue(kind=FromAlias)
+    protected static String osVersion = System.getProperty("os.version");
 
-    private static void doSetOsNameAndVersion() {
-        osVersion = System.getProperty("os.version");
-        osName = System.getProperty("os.name");
-    }
+    @Alias
+    @RecomputeFieldValue(kind=FromAlias)
+    protected static String osName = System.getProperty("os.name");
 
     /**
      * AWT source code does not take into account a situation where "java.home" does not
@@ -61,7 +62,6 @@ final class TargetSunAwtFontConfiguration {
             throw new UncheckedIOException("Unable to set tmp java.home for FontConfig Quarkus AWT usage in " + javaHome, e);
         }
         System.setProperty("java.home", javaHome.toString());
-        doSetOsNameAndVersion();
     }
 }
 
