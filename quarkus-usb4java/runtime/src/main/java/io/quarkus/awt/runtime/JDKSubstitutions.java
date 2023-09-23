@@ -33,9 +33,14 @@ final class TargetSunFontType1Font {
 @TargetClass(className = "sun.awt.FontConfiguration")
 final class TargetSunAwtFontConfiguration {
     @Alias
-    protected static String osVersion = System.getProperty("os.version");
+    protected static String osVersion;
     @Alias
-    protected static String osName = System.getProperty("os.name");
+    protected static String osName;
+
+    private static void doSetOsNameAndVersion() {
+        osVersion = System.getProperty("os.version");
+        osName = System.getProperty("os.name");
+    }
 
     /**
      * AWT source code does not take into account a situation where "java.home" does not
@@ -56,6 +61,7 @@ final class TargetSunAwtFontConfiguration {
             throw new UncheckedIOException("Unable to set tmp java.home for FontConfig Quarkus AWT usage in " + javaHome, e);
         }
         System.setProperty("java.home", javaHome.toString());
+        doSetOsNameAndVersion();
     }
 }
 

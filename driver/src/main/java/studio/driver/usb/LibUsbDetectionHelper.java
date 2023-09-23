@@ -26,7 +26,7 @@ import studio.driver.model.UsbDeviceVersion;
 public class LibUsbDetectionHelper {
 
     // singleton
-    private static LibUsbDetectionHelper INSTANCE = null;
+    private static LibUsbDetectionHelper instance = null;
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LibUsbDetectionHelper.class);
 
@@ -41,10 +41,10 @@ public class LibUsbDetectionHelper {
 
     /** Singleton. */
     public static LibUsbDetectionHelper getInstance() {
-        if(INSTANCE == null) {
-            INSTANCE = new LibUsbDetectionHelper();
+        if(instance == null) {
+            instance = new LibUsbDetectionHelper();
         }
-        return INSTANCE;
+        return instance;
     }
 
     /**

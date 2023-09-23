@@ -7,7 +7,8 @@
 package studio.webui;
 
 import java.io.IOException;
-import java.net.URL;
+import java.net.URI;
+import java.net.URISyntaxException;
 
 import jakarta.enterprise.context.ApplicationScoped;
 import jakarta.enterprise.event.Observes;
@@ -50,7 +51,7 @@ public class Studio {
             String os = System.getProperty("os.name");
             ProcessBuilder pb = new ProcessBuilder();
             try {
-                String url = new URL("http", host, port, "/").toString();
+                String url = new URI("http", null, host, port, "/", null, null).toString();
                 LOGGER.info("Opening URL {} in default browser...", url);
                 if (os.startsWith("Mac OS")) {
                     pb.command("open", url);
@@ -60,7 +61,7 @@ public class Studio {
                     pb.command("xdg-open", url);
                 }
                 pb.start();
-            } catch (IOException e) {
+            } catch (IOException | URISyntaxException e) {
                 LOGGER.error("Failed to open URL in default browser", e);
             }
         }
