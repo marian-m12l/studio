@@ -16,7 +16,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionStage;
@@ -58,8 +60,8 @@ public class FsStoryTellerAsyncDriver implements StoryTellerAsyncDriver {
     @Setter
     private SdPartition sdPartition = null;
 
-    private List<DevicePluggedListener> pluggedlisteners = new ArrayList<>();
-    private List<DeviceUnpluggedListener> unpluggedlisteners = new ArrayList<>();
+    private Set<DevicePluggedListener> pluggedlisteners = new HashSet<>();
+    private Set<DeviceUnpluggedListener> unpluggedlisteners = new HashSet<>();
 
     public FsStoryTellerAsyncDriver() {
         // Initialize libusb, handle and propagate hotplug events
