@@ -94,11 +94,11 @@ class AwtProcessor {
                 "sun.java2d.loops.SetDrawRectANY",
                 "sun.java2d.loops.SetFillPathANY",
                 "sun.java2d.loops.SetFillRectANY",
-                "sun.java2d.loops.SetFillSpansANY", //
+                "sun.java2d.loops.SetFillSpansANY" //
                 // k: test
                 //"javax.imageio.ImageIO",
-                "javax.imageio.stream.FileImageInputStream",
-                "javax.imageio.stream.FileImageOututStream",
+                //"javax.imageio.stream.FileImageInputStream",
+                //"javax.imageio.stream.FileImageOututStream"
                 //"javax.imageio.ImageIO$ImageWriterIterator"
                 // k: end
         ).methods().build();
