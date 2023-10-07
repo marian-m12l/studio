@@ -32,7 +32,6 @@ class AwtProcessor {
     // k: win & awt
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     void nativeImageFeatures(BuildProducer<NativeImageFeatureBuildItem> nativeImageFeatures) {
-        // k: nativeImageFeatures.produce(new NativeImageFeatureBuildItem(AwtFeature.class));
         nativeImageFeatures.produce(new NativeImageFeatureBuildItem(DarwinAwtFeature.class));
         nativeImageFeatures.produce(new NativeImageFeatureBuildItem(WindowsAwtFeature.class));
     }
@@ -95,7 +94,12 @@ class AwtProcessor {
                 "sun.java2d.loops.SetDrawRectANY",
                 "sun.java2d.loops.SetFillPathANY",
                 "sun.java2d.loops.SetFillRectANY",
-                "sun.java2d.loops.SetFillSpansANY" //
+                "sun.java2d.loops.SetFillSpansANY", //
+                // k: test
+                "javax.imageio.ImageIO",
+                "javax.imageio.stream.FileImageInputStream",
+                "javax.imageio.stream.FileImageOututStream"
+                // k: end
         ).methods().build();
     }
 
@@ -128,11 +132,8 @@ class AwtProcessor {
     JniRuntimeAccessBuildItem setupJava2DClasses() {
         return new JniRuntimeAccessBuildItem(true, true, tru
                 // Java 20 :test
-                "javax.imageio.ImageIO",
                 "javax.imageio.spi.ImageReaderSpi",
                 "javax.imageio.spi.ImageWriterSpi",
-                "javax.imageio.stream.FileImageInputStream",
-                "javax.imageio.stream.FileImageOutputStream",
                 "com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi",
                 "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi",
                 "com.sun.imageio.spi.RAFImageInputStreamSpi",
@@ -282,6 +283,11 @@ class AwtProcessor {
         // Added for JDK 19+ due to: https://github.com/openjdk/jdk20/commit/9bc023220 calling FontUtilities
         if (v.jdkVersionGreaterOrEqualTo(19, 0)) {
             classes.add("sun.font.FontUtilities");
+            // k: test
+            //classes.add("javax.imageio.ImageIO");
+            //classes.add("javax.imageio.stream.FileImageInputStream");
+            //classes.add("javax.imageio.stream.FileImageOutputStream");
+            // k: end
         }
 
         return new JniRuntimeAccessBuildItem(true, true, true, classes.toArray(new String[0]));
