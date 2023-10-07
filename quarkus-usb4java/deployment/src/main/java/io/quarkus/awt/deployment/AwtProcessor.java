@@ -98,7 +98,8 @@ class AwtProcessor {
                 // k: test
                 "javax.imageio.ImageIO",
                 "javax.imageio.stream.FileImageInputStream",
-                "javax.imageio.stream.FileImageOututStream"
+                "javax.imageio.stream.FileImageOututStream",
+                "javax.imageio.ImageIO$ImageWriterIterator"
                 // k: end
         ).methods().build();
     }
@@ -112,36 +113,22 @@ class AwtProcessor {
         // Dynamically loading shared objects instead
         // of baking in static libs: https://github.com/oracle/graal/issues/4921
         if (v.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
-            jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.System", "load", "java.lang.String"));
-            jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.System", "setProperty", "java.lang.String", "java.lang.String"));
-            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtLock"));
-            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtLockNotify"));
-            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtLockNotifyAll"));
-            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtLockWait", "long"));
-            jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.SunToolkit", "awtUnlock"));
-            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.SunToolkit", "AWT_LOCK"));
-            jf.produce(new JniRuntimeAccessFieldBuildItem("sun.awt.SunToolkit", "AWT_LOCK_COND"));
+            String string = "java.lang.String";
+            String sunToolkit  = "sun.awt.SunToolkit";
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.System", "load", string));
+            jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.System", "setProperty", string, string));
+            jm.produce(new JniRuntimeAccessMethodBuildItem(sunToolkit, "awtLock"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem(sunToolkit, "awtLockNotify"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem(sunToolkit, "awtLockNotifyAll"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem(sunToolkit, "awtLockWait", "long"));
+            jm.produce(new JniRuntimeAccessMethodBuildItem(sunToolkit, "awtUnlock"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem(sunToolkit, "AWT_LOCK"));
+            jf.produce(new JniRuntimeAccessFieldBuildItem(sunToolkit, "AWT_LOCK_COND"));
             jm.produce(new JniRuntimeAccessMethodBuildItem("sun.awt.X11.XErrorHandlerUtil", "init", "long"));
             jc.produce(new JniRuntimeAccessBuildItem(false, false, true, "sun.awt.X11.XToolkit"));
             jm.produce(new JniRuntimeAccessMethodBuildItem("java.lang.Thread", "yield"));
         }
     }
-
-    /* 
-    @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
-    JniRuntimeAccessBuildItem setupJava2DClasses() {
-        return new JniRuntimeAccessBuildItem(true, true, tru
-                // Java 20 :test
-                "javax.imageio.spi.ImageReaderSpi",
-                "javax.imageio.spi.ImageWriterSpi",
-                "com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi",
-                "com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi",
-                "com.sun.imageio.spi.RAFImageInputStreamSpi",
-                "com.sun.imageio.spi.FileImageOutputStreamSpi"
-                //
-                );
-    }
-    */
 
     @BuildStep(onlyIf = NativeOrNativeSourcesBuild.class)
     JniRuntimeAccessBuildItem setupJava2DClasses(NativeImageRunnerBuildItem nativeImageRunnerBuildItem) {
@@ -284,7 +271,8 @@ class AwtProcessor {
         if (v.jdkVersionGreaterOrEqualTo(19, 0)) {
             classes.add("sun.font.FontUtilities");
             // k: test
-            //classes.add("javax.imageio.ImageIO");
+            classes.add("javax.imageio.ImageIO");
+            classes.add("javax.imageio.ImageIO$ImageWriterIterator");
             //classes.add("javax.imageio.stream.FileImageInputStream");
             //classes.add("javax.imageio.stream.FileImageOutputStream");
             // k: end

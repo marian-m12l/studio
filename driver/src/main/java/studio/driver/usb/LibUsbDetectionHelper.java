@@ -111,8 +111,6 @@ public class LibUsbDetectionHelper {
                 LOGGER.info("Stopping async event handling worker thread");
                 asyncEvtWorker.abort();
             }
-            LOGGER.info("Exiting libusb...");
-            // TODO: LibUsb.exit(context);
         }));
     }
 
