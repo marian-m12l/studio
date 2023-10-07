@@ -95,12 +95,6 @@ class AwtProcessor {
                 "sun.java2d.loops.SetFillPathANY",
                 "sun.java2d.loops.SetFillRectANY",
                 "sun.java2d.loops.SetFillSpansANY" //
-                // k: test
-                //"javax.imageio.ImageIO",
-                //"javax.imageio.stream.FileImageInputStream",
-                //"javax.imageio.stream.FileImageOututStream"
-                //"javax.imageio.ImageIO$ImageWriterIterator"
-                // k: end
         ).methods().build();
     }
 
@@ -272,6 +266,7 @@ class AwtProcessor {
             classes.add("sun.font.FontUtilities");
             // k: test
             classes.add("sun.font.FontManager");
+            classes.add("sun.font.StrikeCache");
             classes.add("javax.imageio.ImageIO");
             classes.add("javax.imageio.ImageIO$ImageWriterIterator");
             //classes.add("javax.imageio.stream.FileImageInputStream");
