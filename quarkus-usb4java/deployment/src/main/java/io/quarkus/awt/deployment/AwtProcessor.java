@@ -95,7 +95,7 @@ class AwtProcessor {
                 "sun.java2d.loops.SetFillPathANY",
                 "sun.java2d.loops.SetFillRectANY",
                 "sun.java2d.loops.SetFillSpansANY", 
-                // k : addition see https://github.com/AlexanderScherbatiy/graal/blob/7b1b5c9f785abc4b2d345bdd313d46abf821ccea/substratevm/src/com.oracle.svm.hosted/src/com/oracle/svm/hosted/jdk/JNIRegistrationAwt.java
+                // k: addition see https://github.com/AlexanderScherbatiy/graal/blob/7b1b5c9f785abc4b2d345bdd313d46abf821ccea/substratevm/src/com.oracle.svm.hosted/src/com/oracle/svm/hosted/jdk/JNIRegistrationAwt.java
                 "sun.java2d.loops.XorCopyArgbToAny",
                 "sun.java2d.loops.XorFillRectANY",
                 "sun.java2d.loops.XorFillPathANY",
@@ -279,12 +279,14 @@ class AwtProcessor {
         }
         
         // k: test
-        classes.add("sun.font.FontManager");
-        classes.add("sun.font.StrikeCache");
-        classes.add("sun.awt.image.JPEGImageDecoder");
-        classes.add("sun.java2d.xr.XRBackendNative");
+        classes.add("com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi");
+        classes.add("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
         classes.add("javax.imageio.ImageIO");
         classes.add("javax.imageio.ImageIO$ImageWriterIterator");
+        classes.add("sun.awt.image.JPEGImageDecoder");
+        classes.add("sun.font.FontManager");
+        classes.add("sun.font.StrikeCache");
+        classes.add("sun.java2d.xr.XRBackendNative");
         // k: end
 
         return new JniRuntimeAccessBuildItem(true, true, true, classes.toArray(new String[0]));
