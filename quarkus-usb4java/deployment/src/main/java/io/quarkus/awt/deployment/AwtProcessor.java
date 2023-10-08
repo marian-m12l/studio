@@ -281,6 +281,7 @@ class AwtProcessor {
         // k: test
         classes.add("com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi");
         classes.add("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
+        classes.add("com.sun.imageio.spi.RAFImageInputStreamSpi");
         classes.add("javax.imageio.ImageIO");
         classes.add("javax.imageio.ImageIO$ImageWriterIterator");
         classes.add("sun.awt.image.JPEGImageDecoder");
