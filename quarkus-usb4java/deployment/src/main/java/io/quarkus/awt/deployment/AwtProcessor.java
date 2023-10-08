@@ -94,7 +94,19 @@ class AwtProcessor {
                 "sun.java2d.loops.SetDrawRectANY",
                 "sun.java2d.loops.SetFillPathANY",
                 "sun.java2d.loops.SetFillRectANY",
-                "sun.java2d.loops.SetFillSpansANY" //
+                "sun.java2d.loops.SetFillSpansANY", 
+                // k : addition see https://github.com/AlexanderScherbatiy/graal/blob/7b1b5c9f785abc4b2d345bdd313d46abf821ccea/substratevm/src/com.oracle.svm.hosted/src/com/oracle/svm/hosted/jdk/JNIRegistrationAwt.java
+                "sun.java2d.loops.XorCopyArgbToAny",
+                "sun.java2d.loops.XorFillRectANY",
+                "sun.java2d.loops.XorFillPathANY",
+                "sun.java2d.loops.XorFillSpansANY",
+                "sun.java2d.loops.XorDrawLineANY",
+                "sun.java2d.loops.XorDrawPolygonsANY",
+                "sun.java2d.loops.XorDrawPathANY",
+                "sun.java2d.loops.XorDrawRectANY",
+                "sun.java2d.loops.XorDrawGlyphListANY",
+                "sun.java2d.loops.XorDrawGlyphListAAANY"
+                //
         ).methods().build();
     }
 
@@ -264,15 +276,16 @@ class AwtProcessor {
         // Added for JDK 19+ due to: https://github.com/openjdk/jdk20/commit/9bc023220 calling FontUtilities
         if (v.jdkVersionGreaterOrEqualTo(19, 0)) {
             classes.add("sun.font.FontUtilities");
-            // k: test
-            classes.add("sun.font.FontManager");
-            classes.add("sun.font.StrikeCache");
-            classes.add("javax.imageio.ImageIO");
-            classes.add("javax.imageio.ImageIO$ImageWriterIterator");
-            //classes.add("javax.imageio.stream.FileImageInputStream");
-            //classes.add("javax.imageio.stream.FileImageOutputStream");
-            // k: end
         }
+        
+        // k: test
+        classes.add("sun.font.FontManager");
+        classes.add("sun.font.StrikeCache");
+        classes.add("sun.awt.image.JPEGImageDecoder");
+        classes.add("sun.java2d.xr.XRBackendNative");
+        classes.add("javax.imageio.ImageIO");
+        classes.add("javax.imageio.ImageIO$ImageWriterIterator");
+        // k: end
 
         return new JniRuntimeAccessBuildItem(true, true, true, classes.toArray(new String[0]));
     }
