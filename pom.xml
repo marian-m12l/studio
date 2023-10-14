@@ -39,7 +39,7 @@
         <sonar.organization>kairoh</sonar.organization>
         <sonar.host.url>https://sonarcloud.io</sonar.host.url>
         <!-- Dependencies -->
-        <quarkus.version>3.4.2</quarkus.version>
+        <quarkus.version>3.4.3</quarkus.version>
         <lombok.version>1.18.30</lombok.version>
         <logback.version>1.4.7</logback.version>
         <junit.version>5.9.0</junit.version>
