@@ -160,7 +160,7 @@ jobs:
           mvn verify -B -Pnative -Pide -DskipTests
           cp web-ui/src/main/scripts/native/*.sh web-ui/target/
         env:
-          GRAALVM_HOME: ${{env.JAVA_VERSION}}
+          GRAALVM_HOME: ${{env.JAVA_HOME}}
         if: ${{ runner.os != 'Windows' }}
 
       - name: (Windows) Build native
@@ -173,7 +173,7 @@ jobs:
           cp web-ui/target/*native-image-source-jar/*.dll web-ui/target/
           cp web-ui/src/main/scripts/native/*.bat web-ui/target/
         env:
-          GRAALVM_HOME: ${{env.JAVA_VERSION}}
+          GRAALVM_HOME: ${{env.JAVA_HOME}}
         if: ${{ runner.os == 'Windows' }}
 
       - name: Compress exec
