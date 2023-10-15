@@ -151,9 +151,9 @@ jobs:
 
       - name: (*nix) Build native
         run: |
+          echo "GRAALVM_HOME: $GRAALVM_HOME"
           echo "JAVA_HOME: $JAVA_HOME"
           java --version
-          java --version | grep "GraalVM" || exit 34
           native-image --version
           mvn verify -B -Pnative -Pide -DskipTests
           cp web-ui/src/main/scripts/native/*.sh web-ui/target/
@@ -168,6 +168,8 @@ jobs:
           mvn verify -B -Pnative -Pide -DskipTests
           cp web-ui/target/*native-image-source-jar/*.dll web-ui/target/
           cp web-ui/src/main/scripts/native/*.bat web-ui/target/
+        env:
+          GRAALVM_HOME: "$env::JAVA_HOME"
         if: ${{ runner.os == 'Windows' }}
 
       - name: Compress exec
