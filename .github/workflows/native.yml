@@ -128,7 +128,7 @@ jobs:
           distribution: jdkfile
           jdkFile: ${{ runner.temp }}/${{ matrix.jdk-suffix }}
           cache: maven
-        #if: ${{ runner.os != 'Linux' }}
+        if: ${{ runner.os != 'Linux' }}
 
       - uses: graalvm/setup-graalvm@v1
         with:
