@@ -45,11 +45,11 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up JDK $JAVA_VERSION
+      - name: Set up JDK ${{env.JAVA_VERSION}}
         uses: actions/setup-java@v3
         with:
           distribution: temurin
-          java-version: $JAVA_VERSION
+          java-version: ${{env.JAVA_VERSION}}
           cache: maven
 
       - name: Download JS front
@@ -126,7 +126,7 @@ jobs:
 
       - uses: actions/setup-java@v3
         with:
-          java-version: $JAVA_VERSION
+          java-version: ${{env.JAVA_VERSION}}
           distribution: jdkfile
           jdkFile: ${{ runner.temp }}/${{ matrix.jdk-suffix }}
           cache: maven
@@ -134,7 +134,7 @@ jobs:
 
       - uses: graalvm/setup-graalvm@v1
         with:
-          java-version: $JAVA_VERSION
+          java-version: ${{env.JAVA_VERSION}}
           version: mandrel-latest
           cache: maven
           github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -160,7 +160,7 @@ jobs:
           mvn verify -B -Pnative -Pide -DskipTests
           cp web-ui/src/main/scripts/native/*.sh web-ui/target/
         env:
-          GRAALVM_HOME: $JAVA_HOME
+          GRAALVM_HOME: ${{env.JAVA_VERSION}}
         if: ${{ runner.os != 'Windows' }}
 
       - name: (Windows) Build native
@@ -173,7 +173,7 @@ jobs:
           cp web-ui/target/*native-image-source-jar/*.dll web-ui/target/
           cp web-ui/src/main/scripts/native/*.bat web-ui/target/
         env:
-          GRAALVM_HOME: $JAVA_HOME
+          GRAALVM_HOME: ${{env.JAVA_VERSION}}
         if: ${{ runner.os == 'Windows' }}
 
       - name: Compress exec
