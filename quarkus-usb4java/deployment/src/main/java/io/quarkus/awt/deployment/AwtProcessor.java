@@ -288,6 +288,7 @@ class AwtProcessor {
         classes.add("sun.awt.image.JPEGImageDecoder");
         classes.add("sun.font.FontManagerFactory");
         classes.add("sun.font.StrikeCache");
+        classes.add("sun.font.StrikeCache$WeakDisposerRef");
         classes.add("sun.font.SunFontManager");
         classes.add("sun.java2d.xr.XRBackendNative");
         // k: end
