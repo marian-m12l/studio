@@ -136,7 +136,7 @@ jobs:
           java-version: 21
           cache: maven
           github-token: ${{ secrets.GITHUB_TOKEN }}
-        if: ${{ runner.os == 'Test-Linux' }}
+        if: ${{ runner.os == 'Linux' }}
 
       - name: (Windows) Set up compiler
         uses: ilammy/msvc-dev-cmd@v1
