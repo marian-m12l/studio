@@ -133,7 +133,7 @@ jobs:
       - uses: graalvm/setup-graalvm@v1
         with:
           java-version: 21
-          distribution: mandrel
+          version: mandrel-latest
           cache: maven
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: true
@@ -151,6 +151,9 @@ jobs:
 
       - name: (*nix) Build native
         run: |
+          echo "JAVA_HOME: $JAVA_HOME"
+          java --version
+          java --version | grep "GraalVM" || exit 34
           native-image --version
           mvn verify -B -Pnative -Pide -DskipTests
           cp web-ui/src/main/scripts/native/*.sh web-ui/target/
@@ -158,6 +161,9 @@ jobs:
 
       - name: (Windows) Build native
         run: |
+          echo "GRAALVM_HOME: $env:GRAALVM_HOME"
+          echo "JAVA_HOME: $env:JAVA_HOME"
+          java --version
           native-image --version
           mvn verify -B -Pnative -Pide -DskipTests
           cp web-ui/target/*native-image-source-jar/*.dll web-ui/target/
