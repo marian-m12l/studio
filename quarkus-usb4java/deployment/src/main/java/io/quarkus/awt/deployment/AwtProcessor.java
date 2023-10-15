@@ -285,6 +285,7 @@ class AwtProcessor {
         classes.add("javax.imageio.ImageIO");
         classes.add("javax.imageio.ImageIO$ImageWriterIterator");
         classes.add("javax.imageio.stream.ImageInputStream");
+        classes.add("javax.imageio.stream.FileImageInputStream");
         classes.add("sun.awt.image.JPEGImageDecoder");
         classes.add("sun.font.FontManagerFactory");
         classes.add("sun.font.StrikeCache");
