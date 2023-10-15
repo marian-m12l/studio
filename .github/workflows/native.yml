@@ -132,10 +132,11 @@ jobs:
 
       - uses: graalvm/setup-graalvm@v1
         with:
-          version: mandrel-latest
           java-version: 21
+          distribution: mandrel
           cache: maven
           github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: true
         if: ${{ runner.os == 'Linux' }}
 
       - name: (Windows) Set up compiler
@@ -150,12 +151,14 @@ jobs:
 
       - name: (*nix) Build native
         run: |
+          native-image --version
           mvn verify -B -Pnative -Pide -DskipTests
           cp web-ui/src/main/scripts/native/*.sh web-ui/target/
         if: ${{ runner.os != 'Windows' }}
 
       - name: (Windows) Build native
         run: |
+          native-image --version
           mvn verify -B -Pnative -Pide -DskipTests
           cp web-ui/target/*native-image-source-jar/*.dll web-ui/target/
           cp web-ui/src/main/scripts/native/*.bat web-ui/target/
