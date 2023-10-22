@@ -1,0 +1,3 @@
+# Prevents auto-converting to CRLF on Win
+# and convert to LF on checkin
+* text=auto eol=lf

@@ -1,0 +1,303 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+package studio.core.v1.service.raw;
+
+import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT;
+import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT_PADDING;
+import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE;
+import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE;
+import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING;
+import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING;
+import static studio.core.v1.service.raw.RawStoryPackDTO.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE;
+import static studio.core.v1.service.raw.RawStoryPackDTO.SECTOR_SIZE;
+import static studio.core.v1.utils.io.FileUtils.dataInputStream;
+
+import java.io.DataInputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.Set;
+import java.util.TreeMap;
+import java.util.TreeSet;
+import java.util.UUID;
+import java.util.stream.Stream;
+
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import studio.core.v1.model.ActionNode;
+import studio.core.v1.model.ControlSettings;
+import studio.core.v1.model.StageNode;
+import studio.core.v1.model.StoryPack;
+import studio.core.v1.model.Transition;
+import studio.core.v1.model.asset.MediaAsset;
+import studio.core.v1.model.asset.MediaAssetType;
+import studio.core.v1.model.enriched.EnrichedNodeMetadata;
+import studio.core.v1.model.enriched.EnrichedNodePosition;
+import studio.core.v1.model.enriched.EnrichedNodeType;
+import studio.core.v1.model.enriched.EnrichedPackMetadata;
+import studio.core.v1.model.metadata.StoryPackMetadata;
+import studio.core.v1.service.PackFormat;
+import studio.core.v1.service.StoryPackReader;
+import studio.core.v1.service.raw.RawStoryPackDTO.AssetAddr;
+import studio.core.v1.service.raw.RawStoryPackDTO.AssetType;
+import studio.core.v1.service.raw.RawStoryPackDTO.SectorAddr;
+
+public class RawStoryPackReader implements StoryPackReader {
+
+    private static final Logger LOGGER = LoggerFactory.getLogger(RawStoryPackReader.class);
+
+    @Override
+    public StoryPackMetadata readMetadata(Path path) throws IOException {
+        try(DataInputStream dis = dataInputStream(path)) {
+            // Pack metadata model
+            StoryPackMetadata metadata = new StoryPackMetadata(PackFormat.RAW);
+
+            // Read sector 1
+            dis.skipBytes(3); // Skip to version
+            metadata.setVersion(dis.readShort());
+
+            // Read (optional) enriched pack metadata
+            dis.skipBytes(BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING);
+            Optional<String> maybeTitle = readString(dis, BINARY_ENRICHED_METADATA_TITLE_TRUNCATE);
+            metadata.setTitle(maybeTitle.orElse(null));
+            Optional<String> maybeDescription = readString(dis, BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE);
+            metadata.setDescription(maybeDescription.orElse(null));
+            // TODO Thumbnail?
+
+            // Skip to end of sector
+            dis.skipBytes(SECTOR_SIZE - 5 //
+                    - BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING //
+                    - BINARY_ENRICHED_METADATA_TITLE_TRUNCATE * 2 //
+                    - BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE * 2);
+
+            // Read main stage node UUID
+            metadata.setUuid(readUuid(dis.readLong(), dis.readLong()));
+            return metadata;
+        }
+    }
+
+    @Override
+    public StoryPack read(Path path) throws IOException {
+        try (DataInputStream dis = dataInputStream(path)) {
+            StoryPack sp = new StoryPack();
+
+            // Read sector 1 : stageNode number
+            short stages = dis.readShort();
+            sp.setFactoryDisabled(dis.readByte() == 1);
+            sp.setVersion(dis.readShort());
+
+            // Read (optional) enriched pack metadata
+            dis.skipBytes(BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING);
+            Optional<String> maybeTitle = readString(dis, BINARY_ENRICHED_METADATA_TITLE_TRUNCATE);
+            Optional<String> maybeDescription = readString(dis, BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE);
+            // TODO Thumbnail?
+            maybeTitle.or(() -> maybeDescription).ifPresent(s -> sp.setEnriched( //
+                    new EnrichedPackMetadata(maybeTitle.orElse(null), maybeDescription.orElse(null))));
+
+            // Skip to end of sector
+            dis.skipBytes(SECTOR_SIZE - 5 //
+                    - BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING //
+                    - BINARY_ENRICHED_METADATA_TITLE_TRUNCATE * 2 //
+                    - BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE * 2);
+
+            // Read stage nodes (`stages` sectors, starting from sector 2)
+            var stageNodes = new TreeMap<SectorAddr,StageNode>();
+            // StageNodes must be updated with the actual ImageAsset
+            var stagesWithImage = new TreeMap<AssetAddr,List<StageNode>>();
+            // StageNodes must be updated with the actual AudioAsset
+            var stagesWithAudio = new TreeMap<AssetAddr,List<StageNode>>();
+            // Transitions must be updated with the actual ActionNode
+            var transitionsWithAction = new TreeMap<SectorAddr,List<Transition>>();
+            // Stage nodes / transitions reference action nodes, which are read after
+            var actionNodes = new TreeSet<SectorAddr>();
+            // Stage nodes reference assets, which are read after all nodes
+            var assetAddrs = new TreeSet<AssetAddr>();
+
+            for (int i = 0; i < stages; i++) {
+                // Build stage node
+                StageNode stageNode = new StageNode();
+                stageNodes.put(new SectorAddr(i), stageNode);
+
+                // Reading sector i+2 : StageNode UUID
+                stageNode.setUuid(readUuid(dis.readLong(), dis.readLong()));
+
+                // Keep Asset addresses
+                readAssetAddr(AssetType.IMAGE, dis.readInt(), dis.readInt(), assetAddrs, stagesWithImage, stageNode);
+                readAssetAddr(AssetType.AUDIO, dis.readInt(), dis.readInt(), assetAddrs, stagesWithAudio, stageNode);
+
+                // Transitions
+                stageNode.setOkTransition(readTransition(dis.readShort(), dis.readShort(), dis.readShort(),
+                        transitionsWithAction, actionNodes));
+                stageNode.setHomeTransition(readTransition(dis.readShort(), dis.readShort(), dis.readShort(),
+                        transitionsWithAction, actionNodes));
+
+                // Control settings
+                ControlSettings ctrl = new ControlSettings();
+                ctrl.setWheelEnabled(dis.readShort() == 1);
+                ctrl.setOkEnabled(dis.readShort() == 1);
+                ctrl.setHomeEnabled(dis.readShort() == 1);
+                ctrl.setPauseEnabled(dis.readShort() == 1);
+                ctrl.setAutoJumpEnabled(dis.readShort() == 1);
+                stageNode.setControlSettings(ctrl);
+
+                // Read (optional) enriched node metadata
+                dis.skipBytes(BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING);
+                stageNode.setEnriched(readEnrichedNodeMetadata(dis));
+
+                // Skip to end of sector
+                dis.skipBytes(SECTOR_SIZE - 54 - BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING
+                        - BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE * 2 - 16 - 1 - 4);
+            }
+
+            // Read action nodes
+            // We are positioned at the end of sector stages+1
+            int currentOffset = stages;
+            for (SectorAddr actionNodeAddr : actionNodes) {
+                // Skip to the beginning of the sector, if needed
+                while (actionNodeAddr.getOffset() > currentOffset) {
+                    dis.skipBytes(SECTOR_SIZE);
+                    currentOffset++;
+                }
+
+                List<StageNode> options = new ArrayList<>();
+                short optionAddr = dis.readShort();
+                while (optionAddr != 0) {
+                    options.add(stageNodes.get(new SectorAddr(optionAddr)));
+                    optionAddr = dis.readShort();
+                }
+
+                // Read (optional) enriched node metadata
+                int alignmentOverflow = 2 * options.size() % BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT;
+                int alignmentPadding = BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT_PADDING
+                        + (alignmentOverflow > 0 ? BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT - alignmentOverflow
+                                : 0);
+                // No need to skip the last 2 bytes that were read in the previous loop
+                dis.skipBytes(alignmentPadding - 2);
+                EnrichedNodeMetadata enrichedNodeMetadata = readEnrichedNodeMetadata(dis);
+
+                // Update action on transitions referencing this sector
+                UUID id = UUID.randomUUID();
+                ActionNode actionNode = new ActionNode(id, enrichedNodeMetadata, options);
+                transitionsWithAction.get(actionNodeAddr).forEach(transition -> transition.setActionNode(actionNode));
+
+                // Skip to end of sector
+                dis.skipBytes(SECTOR_SIZE - (2 * (options.size() + 1)) - (alignmentPadding - 2)
+                        - BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE * 2 - 16 - 1 - 4);
+                currentOffset++;
+            }
+
+            // Read assets
+            for (AssetAddr assetAddr : assetAddrs) {
+                // Skip to the beginning of the sector, if needed
+                while (assetAddr.getOffset() > currentOffset) {
+                    dis.skipBytes(SECTOR_SIZE);
+                    currentOffset++;
+                }
+                // Read all bytes
+                byte[] assetBytes = new byte[SECTOR_SIZE * assetAddr.getSize()];
+                dis.read(assetBytes, 0, assetBytes.length);
+
+                // Update asset on stage nodes referencing this sector
+                if (assetAddr.getType() == AssetType.AUDIO) {
+                    MediaAsset audioAsset = new MediaAsset(MediaAssetType.WAV, assetBytes);
+                    stagesWithAudio.get(assetAddr).forEach(stageNode -> stageNode.setAudio(audioAsset));
+                }
+                if (assetAddr.getType() == AssetType.IMAGE) {
+                    MediaAsset imageAsset = new MediaAsset(MediaAssetType.BMP, assetBytes);
+                    stagesWithImage.get(assetAddr).forEach(stageNode -> stageNode.setImage(imageAsset));
+                }
+                currentOffset += assetAddr.getSize();
+            }
+            sp.setStageNodes(List.copyOf(stageNodes.values()));
+            // night mode is not available on this firmware
+            sp.setNightModeAvailable(false);
+            // copy first node uuid
+            sp.setUuid(stageNodes.get(new SectorAddr(0)).getUuid());
+
+            // cleanup
+            Stream.of(stageNodes, stagesWithImage, stagesWithAudio, transitionsWithAction).forEach(Map::clear);
+            Stream.of(actionNodes, assetAddrs).forEach(Set::clear);
+            return sp;
+        }
+    }
+
+    /** Read UTF16 String from stream. */
+    private static Optional<String> readString(InputStream dis, int maxChars) throws IOException {
+        byte[] bytes = dis.readNBytes(maxChars * 2);
+        String str = new String(bytes, StandardCharsets.UTF_16);
+        int firstNullChar = str.indexOf("\u0000");
+        if (firstNullChar == 0) {
+            return Optional.empty();
+        }
+        if (firstNullChar == -1) {
+            return Optional.of(str);
+        }
+        return Optional.of(str.substring(0, firstNullChar));
+    }
+
+    private static void readAssetAddr(AssetType type, int offset, int size, Set<AssetAddr> assetAddrs,
+            Map<AssetAddr, List<StageNode>> stagesWithMedia, StageNode stageNode) {
+        if (offset != -1) {
+            // Asset must be visited
+            AssetAddr assetAddr = new AssetAddr(type, offset, size);
+            assetAddrs.add(assetAddr);
+            // flag stageNode
+            List<StageNode> sw = stagesWithMedia.getOrDefault(assetAddr, new ArrayList<>());
+            sw.add(stageNode);
+            stagesWithMedia.put(assetAddr, sw);
+        }
+    }
+
+    private static Transition readTransition(short offset, short count, short index,
+            Map<SectorAddr, List<Transition>> transitionsWithAction, Set<SectorAddr> actionNodes) {
+        LOGGER.trace("Read {} transition", count);
+        Transition transition = null;
+        if (offset != -1) {
+            // Action node must be visited
+            SectorAddr actionNodeAddr = new SectorAddr(offset);
+            actionNodes.add(actionNodeAddr);
+            transition = new Transition(null, index);
+            List<Transition> twa = transitionsWithAction.getOrDefault(actionNodeAddr, new ArrayList<>());
+            twa.add(transition);
+            transitionsWithAction.put(actionNodeAddr, twa);
+        }
+        return transition;
+    }
+
+    private static EnrichedNodeMetadata readEnrichedNodeMetadata(DataInputStream dis) throws IOException {
+        Optional<String> maybeName = readString(dis, BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE);
+        Optional<UUID> maybeGroupId = Optional.ofNullable(readUuid(dis.readLong(), dis.readLong()));
+        Optional<EnrichedNodeType> maybeType = Optional.empty();
+        byte nodeTypeByte = dis.readByte();
+        if (nodeTypeByte != 0x00) {
+            maybeType = Optional.ofNullable(EnrichedNodeType.fromCode(nodeTypeByte));
+        }
+        Optional<EnrichedNodePosition> maybePosition = Optional.empty();
+        short positionX = dis.readShort();
+        short positionY = dis.readShort();
+        if (positionX != 0 || positionY != 0) {
+            maybePosition = Optional.of(new EnrichedNodePosition(positionX, positionY));
+        }
+        if (maybeName.isPresent() || maybeType.isPresent() || maybeGroupId.isPresent() || maybePosition.isPresent()) {
+            return new EnrichedNodeMetadata(maybeName.orElse(null), maybeType.orElse(null), maybeGroupId.orElse(null),
+                    maybePosition.orElse(null));
+        }
+        return null;
+    }
+
+    private static UUID readUuid(long low, long high) {
+        if (low != 0 || high != 0) {
+            return new UUID(low, high);
+        }
+        return null;
+    }
+}

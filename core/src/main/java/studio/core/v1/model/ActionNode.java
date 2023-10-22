@@ -6,31 +6,28 @@
 
 package studio.core.v1.model;
 
+import java.util.List;
+import java.util.UUID;
+
+import com.fasterxml.jackson.annotation.JsonIdentityReference;
+
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 
-import java.util.List;
-
+@Getter
+@Setter
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true, exclude = "options")
 public class ActionNode extends Node {
 
+    @JsonIdentityReference(alwaysAsId = true)
     private List<StageNode> options;
 
-    public ActionNode() {
-    }
-
-    public ActionNode(EnrichedNodeMetadata enriched) {
-        super(enriched);
-    }
-
-    public ActionNode(List<StageNode> options, EnrichedNodeMetadata enriched) {
-        super(enriched);
-        this.options = options;
-    }
-
-    public List<StageNode> getOptions() {
-        return options;
-    }
-
-    public void setOptions(List<StageNode> options) {
+    public ActionNode(UUID uuid, EnrichedNodeMetadata enriched, List<StageNode> options) {
+        super(uuid, enriched);
         this.options = options;
     }
 }

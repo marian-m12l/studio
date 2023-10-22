@@ -6,52 +6,21 @@
 
 package studio.core.v1.model.enriched;
 
+import java.util.UUID;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class EnrichedNodeMetadata {
 
     private String name;
     private EnrichedNodeType type;
-    private String groupId;
+    private UUID groupId;
     private EnrichedNodePosition position;
-
-    public EnrichedNodeMetadata() {
-    }
-
-    public EnrichedNodeMetadata(String name, EnrichedNodeType type, String groupId, EnrichedNodePosition position) {
-        this.name = name;
-        this.type = type;
-        this.groupId = groupId;
-        this.position = position;
-    }
-
-    public String getName() {
-        return name;
-    }
-
-    public void setName(String name) {
-        this.name = name;
-    }
-
-    public EnrichedNodeType getType() {
-        return type;
-    }
-
-    public void setType(EnrichedNodeType type) {
-        this.type = type;
-    }
-
-    public String getGroupId() {
-        return groupId;
-    }
-
-    public void setGroupId(String groupId) {
-        this.groupId = groupId;
-    }
-
-    public EnrichedNodePosition getPosition() {
-        return position;
-    }
-
-    public void setPosition(EnrichedNodePosition position) {
-        this.position = position;
-    }
 }

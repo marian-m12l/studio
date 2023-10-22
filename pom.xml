@@ -12,50 +12,97 @@
 
     <groupId>studio</groupId>
     <artifactId>studio-parent</artifactId>
-    <version>0.3.2-SNAPSHOT</version>
+    <version>1.0.3-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
     <modules>
-        <module>agent</module>
+        <module>quarkus-usb4java</module>
         <module>core</module>
         <module>driver</module>
-        <module>metadata</module>
         <module>web-ui</module>
     </modules>
 
-    <build>
-        <pluginManagement>
-            <plugins>
-                <plugin>
-                    <artifactId>maven-compiler-plugin</artifactId>
-                    <configuration>
-                        <source>11</source>
-                        <target>11</target>
-                    </configuration>
-                </plugin>
-            </plugins>
-        </pluginManagement>
-    </build>
+    <properties>
+        <!-- General -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
+        <java.version>11</java.version>
+        <maven.compiler.release>${java.version}</maven.compiler.release>
+        <maven.compiler.parameters>true</maven.compiler.parameters>
+        <!-- Maven plugins -->
+        <mvn.compiler.version>3.11.0</mvn.compiler.version>
+        <mvn.resources.version>3.3.1</mvn.resources.version>
+        <mvn.surefire.version>3.1.2</mvn.surefire.version>
+        <mvn.assembly.version>3.4.2</mvn.assembly.version>
+        <!-- Devops -->
+        <sonar.organization>kairoh</sonar.organization>
+        <sonar.host.url>https://sonarcloud.io</sonar.host.url>
+        <!-- Dependencies -->
+        <quarkus.version>3.4.3</quarkus.version>
+        <lombok.version>1.18.30</lombok.version>
+        <logback.version>1.4.7</logback.version>
+        <junit.version>5.9.0</junit.version>
+    </properties>
 
     <dependencyManagement>
         <dependencies>
             <dependency>
-                <groupId>com.google.code.gson</groupId>
-                <artifactId>gson</artifactId>
-                <version>2.8.5</version>
+                <groupId>io.quarkus</groupId>
+                <artifactId>quarkus-bom</artifactId>
+                <version>${quarkus.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
             </dependency>
             <dependency>
-                <groupId>commons-io</groupId>
-                <artifactId>commons-io</artifactId>
-                <version>2.6</version>
+                <groupId>org.projectlombok</groupId>
+                <artifactId>lombok</artifactId>
+                <version>${lombok.version}</version>
+                <scope>provided</scope>
             </dependency>
             <dependency>
-                <groupId>commons-codec</groupId>
-                <artifactId>commons-codec</artifactId>
-                <version>1.12</version>
+                <groupId>ch.qos.logback</groupId>
+                <artifactId>logback-classic</artifactId>
+                <version>${logback.version}</version>
+                <scope>test</scope>
             </dependency>
         </dependencies>
-    </dependencyManagement>
+   </dependencyManagement>
+
+   <build>
+      <pluginManagement>
+         <plugins>
+            <plugin>
+               <artifactId>maven-compiler-plugin</artifactId>
+               <version>${mvn.compiler.version}</version>
+            </plugin>
+            <plugin>
+               <artifactId>maven-resources-plugin</artifactId>
+               <version>${mvn.resources.version}</version>
+               <configuration>
+                   <propertiesEncoding>ISO-8859-1</propertiesEncoding>
+                   <nonFilteredFileExtensions>
+                      <nonFilteredFileExtension>zip</nonFilteredFileExtension>
+                      <nonFilteredFileExtension>pack</nonFilteredFileExtension>
+                      <nonFilteredFileExtension>mp3</nonFilteredFileExtension>
+                  </nonFilteredFileExtensions>
+               </configuration>
+            </plugin>
+            <plugin>
+               <artifactId>maven-surefire-plugin</artifactId>
+               <version>${mvn.surefire.version}</version>
+            </plugin>
+         </plugins>
+      </pluginManagement>
+   </build>
+
+   <profiles>
+        <profile>
+             <id>native</id>
+             <properties>
+                <java.version>21</java.version>
+             </properties>
+        </profile>
+    </profiles>
 
 </project>

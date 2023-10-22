@@ -7,7 +7,7 @@
 import React from 'react';
 import { connect } from 'react-redux';
 import { ToastContainer, toast } from 'react-toastify';
-import EventBus from 'vertx3-eventbus-client';
+import EventBus from '@vertx/eventbus-bridge-client.js';
 import { withTranslation } from 'react-i18next';
 import marked from 'marked';
 import 'react-toastify/dist/ReactToastify.css';
@@ -56,7 +56,7 @@ class App extends React.Component {
         const { t } = this.props;
         // Set up vert.x eventbus
         console.log("Setting up vert.x event bus...");
-        let eventBus = new EventBus('http://localhost:8080/eventbus');
+        let eventBus = new EventBus('/eventbus');
         this.setState({eventBus}, () => {
             // eslint-disable-next-line
             this.state.eventBus.onopen = () => {

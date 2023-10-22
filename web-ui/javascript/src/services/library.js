@@ -7,17 +7,17 @@
 import {handleJsonOrError} from "../utils/fetch";
 
 export const fetchLibraryInfos = () => {
-    return fetch('http://localhost:8080/api/library/infos')
+    return fetch('/api/library/infos')
         .then(handleJsonOrError);
 };
 
 export const fetchLibraryPacks = () => {
-    return fetch('http://localhost:8080/api/library/packs')
+    return fetch('/api/library/packs')
         .then(handleJsonOrError);
 };
 
 export const downloadFromLibrary = async (uuid, path) => {
-    return await fetch('http://localhost:8080/api/library/download', {
+    return await fetch('/api/library/download', {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({uuid, path})
@@ -34,7 +34,7 @@ export const uploadToLibrary = async (uuid, path, packData, progressHandler) => 
             console.log('xhr upload complete: ' + JSON.parse(xhr.responseText));
             resolve(JSON.parse(xhr.responseText));
         };
-        xhr.open('post', 'http://localhost:8080/api/library/upload', true);
+        xhr.open('post', '/api/library/upload', true);
         let formData = new FormData();
         formData.append("uuid", uuid);
         formData.append("path", path);
@@ -44,7 +44,7 @@ export const uploadToLibrary = async (uuid, path, packData, progressHandler) => 
 };
 
 export const convertInLibrary = async (uuid, path, format, allowEnriched) => {
-    return await fetch('http://localhost:8080/api/library/convert', {
+    return await fetch('/api/library/convert', {
         method: "POST",
         headers: {"Content-Type": "application/json"},
         body: JSON.stringify({uuid, path, format, allowEnriched})
@@ -53,7 +53,7 @@ export const convertInLibrary = async (uuid, path, format, allowEnriched) => {
 };
 
 export const removeFromLibrary = (path) => {
-    return fetch('http://localhost:8080/api/library/remove', {
+    return fetch('/api/library/remove', {
         method: "POST",
         headers: { "Content-Type" : "application/json" },
         body: JSON.stringify({path})

@@ -6,62 +6,43 @@
 
 package studio.webui.api;
 
-import io.vertx.core.Vertx;
-import io.vertx.core.json.Json;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.web.Router;
+import java.util.concurrent.CompletionStage;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.Path;
+
+import io.smallrye.common.annotation.NonBlocking;
+import studio.webui.model.EvergreenDTOs.AnnounceDTO;
+import studio.webui.model.EvergreenDTOs.LatestVersionDTO;
+import studio.webui.model.EvergreenDTOs.VersionDTO;
 import studio.webui.service.EvergreenService;
 
+@Path("/api/evergreen")
 public class EvergreenController {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(EvergreenController.class);
-    
-    public static Router apiRouter(Vertx vertx, EvergreenService evergreenService) {
-        Router router = Router.router(vertx);
+    @Inject
+    EvergreenService evergreenService;
 
-        // Current version
-        router.get("/infos").blockingHandler(ctx -> {
-            evergreenService.infos().onComplete(maybeJson -> {
-                if (maybeJson.succeeded()) {
-                    ctx.response()
-                            .putHeader("content-type", "application/json")
-                            .end(Json.encode(maybeJson.result()));
-                } else {
-                    LOGGER.error("Failed to get current version infos");
-                    ctx.fail(500, maybeJson.cause());
-                }
-            });
-        });
+    /** Installed version */
+    @GET
+    @Path("infos")
+    @NonBlocking
+    public VersionDTO infos() {
+        return evergreenService.infos();
+    }
 
-        // Latest release
-        router.get("/latest").blockingHandler(ctx -> {
-            evergreenService.latest().onComplete(maybeJson -> {
-                if (maybeJson.succeeded()) {
-                    ctx.response()
-                            .putHeader("content-type", "application/json")
-                            .end(Json.encode(maybeJson.result()));
-                } else {
-                    LOGGER.error("Failed to get latest release");
-                    ctx.fail(500, maybeJson.cause());
-                }
-            });
-        });
+    /** Latest available release (from github) */
+    @GET
+    @Path("latest")
+    public CompletionStage<LatestVersionDTO> latest() {
+        return evergreenService.latest();
+    }
 
-        // Announce
-        router.get("/announce").blockingHandler(ctx -> {
-            evergreenService.announce().setHandler(maybeJson -> {
-                if (maybeJson.succeeded()) {
-                    ctx.response()
-                            .putHeader("content-type", "application/json")
-                            .end(Json.encode(maybeJson.result()));
-                } else {
-                    LOGGER.error("Failed to get announce");
-                    ctx.fail(500, maybeJson.cause());
-                }
-            });
-        });
-
-        return router;
+    /** Latest announce (from github). */
+    @GET
+    @Path("announce")
+    public CompletionStage<AnnounceDTO> announce() {
+        return evergreenService.announce();
     }
 }

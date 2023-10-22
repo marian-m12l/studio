@@ -6,32 +6,17 @@
 
 package studio.core.v1.model.enriched;
 
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
 public class EnrichedNodePosition {
 
     private short x;
     private short y;
-
-    public EnrichedNodePosition() {
-    }
-
-    public EnrichedNodePosition(short x, short y) {
-        this.x = x;
-        this.y = y;
-    }
-
-    public short getX() {
-        return x;
-    }
-
-    public void setX(short x) {
-        this.x = x;
-    }
-
-    public short getY() {
-        return y;
-    }
-
-    public void setY(short y) {
-        this.y = y;
-    }
 }

@@ -16,8 +16,8 @@ limitations under the License.
 
 package com.jhlabs.image;
 
-import java.util.*;
 import java.awt.Color;
+import java.security.SecureRandom;
 
 /**
  * Some more useful math functions for image processing.
@@ -25,29 +25,13 @@ import java.awt.Color;
  */
 public class PixelUtils {
 
-    public final static int REPLACE = 0;
-    public final static int NORMAL = 1;
-    public final static int MIN = 2;
-    public final static int MAX = 3;
-    public final static int ADD = 4;
-    public final static int SUBTRACT = 5;
-    public final static int DIFFERENCE = 6;
-    public final static int MULTIPLY = 7;
-    public final static int HUE = 8;
-    public final static int SATURATION = 9;
-    public final static int VALUE = 10;
-    public final static int COLOR = 11;
-    public final static int SCREEN = 12;
-    public final static int AVERAGE = 13;
-    public final static int OVERLAY = 14;
-    public final static int CLEAR = 15;
-    public final static int EXCHANGE = 16;
-    public final static int DISSOLVE = 17;
-    public final static int DST_IN = 18;
-    public final static int ALPHA = 19;
-    public final static int ALPHA_TO_GRAY = 20;
+    private enum Operation {
+        REPLACE, NORMAL, MIN, MAX, ADD, SUBTRACT, DIFFERENCE, MULTIPLY, HUE, SATURATION, VALUE, COLOR, SCREEN, AVERAGE,
+        OVERLAY, CLEAR, EXCHANGE, DISSOLVE, DST_IN, ALPHA, ALPHA_TO_GRAY;
+    }
 
-    private static Random randomGenerator = new Random();
+    // Sonar Fix : SecureRandom
+    private static SecureRandom prng = new SecureRandom();
 
     /**
      * Clamp a value to the range 0..255
@@ -81,9 +65,6 @@ public class PixelUtils {
         return Math.abs(r1-r2) <= tolerance && Math.abs(g1-g2) <= tolerance && Math.abs(b1-b2) <= tolerance;
     }
 
-    private final static float hsb1[] = new float[3];//FIXME-not thread safe
-    private final static float hsb2[] = new float[3];//FIXME-not thread safe
-
     // Return rgb1 painted onto rgb2
     public static int combinePixels(int rgb1, int rgb2, int op) {
         return combinePixels(rgb1, rgb2, op, 0xff);
@@ -93,8 +74,9 @@ public class PixelUtils {
         return (rgb2 & ~channelMask) | combinePixels(rgb1 & channelMask, rgb2, op, extraAlpha);
     }
 
-    public static int combinePixels(int rgb1, int rgb2, int op, int extraAlpha) {
-        if (op == REPLACE)
+    public static int combinePixels(int rgb1, int rgb2, int ope, int extraAlpha) {
+        Operation op = Operation.values()[ope];
+        if (op == Operation.REPLACE)
             return rgb1;
         int a1 = (rgb1 >> 24) & 0xff;
         int r1 = (rgb1 >> 16) & 0xff;
@@ -139,7 +121,7 @@ public class PixelUtils {
                 b1 = clamp(b1*b2/255);
                 break;
             case DISSOLVE:
-                if ((randomGenerator.nextInt() & 0xff) <= a1) {
+                if ((prng.nextInt() & 0xff) <= a1) {
                     r1 = r2;
                     g1 = g2;
                     b1 = b2;
@@ -154,6 +136,8 @@ public class PixelUtils {
             case SATURATION:
             case VALUE:
             case COLOR:
+                float[] hsb1 = new float[3];
+                float[] hsb2 = new float[3];
                 Color.RGBtoHSB(r1, g1, b1, hsb1);
                 Color.RGBtoHSB(r2, g2, b2, hsb2);
                 switch (op) {
@@ -170,6 +154,8 @@ public class PixelUtils {
                         hsb2[0] = hsb1[0];
                         hsb2[1] = hsb1[1];
                         break;
+                    default:
+                        break;
                 }
                 rgb1 = Color.HSBtoRGB(hsb2[0], hsb2[1], hsb2[2]);
                 r1 = (rgb1 >> 16) & 0xff;
@@ -182,7 +168,8 @@ public class PixelUtils {
                 b1 = 255 - ((255 - b1) * (255 - b2)) / 255;
                 break;
             case OVERLAY:
-                int m, s;
+                int m;
+                int s;
                 s = 255 - ((255 - r1) * (255 - r2)) / 255;
                 m = r1 * r2 / 255;
                 r1 = (s * r1 + m * (255 - r1)) / 255;
@@ -208,6 +195,8 @@ public class PixelUtils {
             case ALPHA_TO_GRAY:
                 int na = 255-a1;
                 return (a1 << 24) | (na << 16) | (na << 8) | na;
+            default:
+                break;
         }
         if (extraAlpha != 0xff || a1 != 0xff) {
             a1 = a1*extraAlpha/255;

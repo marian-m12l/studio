@@ -6,62 +6,36 @@
 
 package studio.core.v1.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
+import lombok.AllArgsConstructor;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@JsonInclude(Include.NON_DEFAULT)
+@JsonIgnoreProperties(ignoreUnknown = true)
 public class ControlSettings {
 
+    @JsonProperty("wheel")
     private boolean wheelEnabled;
+
+    @JsonProperty("ok")
     private boolean okEnabled;
+
+    @JsonProperty("home")
     private boolean homeEnabled;
+
+    @JsonProperty("pause")
     private boolean pauseEnabled;
+
+    @JsonProperty("autoplay")
     private boolean autoJumpEnabled;
-
-    public ControlSettings() {
-    }
-
-    public ControlSettings(boolean wheelEnabled, boolean okEnabled, boolean homeEnabled, boolean pauseEnabled, boolean autoJumpEnabled) {
-        this.wheelEnabled = wheelEnabled;
-        this.okEnabled = okEnabled;
-        this.homeEnabled = homeEnabled;
-        this.pauseEnabled = pauseEnabled;
-        this.autoJumpEnabled = autoJumpEnabled;
-    }
-
-    public boolean isWheelEnabled() {
-        return wheelEnabled;
-    }
-
-    public void setWheelEnabled(boolean wheelEnabled) {
-        this.wheelEnabled = wheelEnabled;
-    }
-
-    public boolean isOkEnabled() {
-        return okEnabled;
-    }
-
-    public void setOkEnabled(boolean okEnabled) {
-        this.okEnabled = okEnabled;
-    }
-
-    public boolean isHomeEnabled() {
-        return homeEnabled;
-    }
-
-    public void setHomeEnabled(boolean homeEnabled) {
-        this.homeEnabled = homeEnabled;
-    }
-
-    public boolean isPauseEnabled() {
-        return pauseEnabled;
-    }
-
-    public void setPauseEnabled(boolean pauseEnabled) {
-        this.pauseEnabled = pauseEnabled;
-    }
-
-    public boolean isAutoJumpEnabled() {
-        return autoJumpEnabled;
-    }
-
-    public void setAutoJumpEnabled(boolean autoJumpEnabled) {
-        this.autoJumpEnabled = autoJumpEnabled;
-    }
 }

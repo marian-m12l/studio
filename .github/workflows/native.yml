@@ -1,0 +1,216 @@
+name: Native
+on:
+  push:
+    paths-ignore: [ '*.md' ]
+    branches: [ '*' ]
+    tags: [ '*.*.*' ]
+permissions:
+  checks: write
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+env:
+  JAVA_VERSION: 21
+jobs:
+  build-front:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v3
+        with:
+          node-version: 12
+
+      - uses: actions/cache@v3
+        with:
+          path: web-ui/javascript/
+          key: studio-js-${{ hashFiles('**/yarn.lock') }}
+
+      - name: Run yarn
+        working-directory: web-ui/javascript/
+        run: |
+            yarn install --frozen-lockfile
+            yarn build
+
+      - uses: actions/upload-artifact@v3
+        with:
+          name: studio-front
+          path: web-ui/javascript/build/
+
+  build-jar:
+    needs: build-front
+    runs-on: ubuntu-latest
+    env:
+      zip-name: studio-${{github.ref_name}}-Java.zip
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up JDK ${{env.JAVA_VERSION}}
+        uses: actions/setup-java@v3
+        with:
+          distribution: temurin
+          java-version: ${{env.JAVA_VERSION}}
+          cache: maven
+
+      - name: Download JS front
+        uses: actions/download-artifact@v3
+        with:
+          name: studio-front
+          path: web-ui/javascript/build/
+
+      - name: Build Maven Jar
+        run: |
+          mvn install -B -Pide
+          cp web-ui/src/main/scripts/java/* web-ui/target/quarkus-app/
+
+      - name: Create zip
+        uses: thedoctor0/zip-release@main
+        with:
+          filename: ${{env.zip-name}}
+          directory: web-ui/target/quarkus-app
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{env.zip-name}}
+          path: web-ui/target/quarkus-app/${{env.zip-name}}
+
+      - name: Upload release artifact
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          generate_release_notes: true
+          discussion_category_name: Announcements
+          files: web-ui/target/quarkus-app/${{env.zip-name}}
+
+  build-native:
+    needs: build-front
+    runs-on: ${{ matrix.runner }}
+    continue-on-error: true
+    env:
+      zip-name: studio-${{github.ref_name}}-${{matrix.os}}.zip
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          # GraalVM: Oracle, Mandrel or Liberica
+          # Mandrel (mac): no support
+          # Upx support (win): only<22, see https://github.com/oracle/graal/issues/4340
+          # AWT support (win & mac): only Liberica>22 see https://bell-sw.com/announcements/2022/08/05/liberica-native-image-kit-22-2-0-and-21-3-3-builds-are-out/#create-a-native-image-for-swingset2-app-linux-and-macos
+          # Runner: no latest for better compatibility
+          - runner: ubuntu-20.04
+            os: Linux
+            jdk-suffix: linux-amd64.tar.gz
+          - runner: macOS-latest
+            os: MacOS
+            jdk-suffix: macos-amd64.tar.gz
+          - runner: windows-latest
+            os: Windows
+            jdk-suffix: windows-amd64.zip
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Use GNU tar
+        run: |
+          "$env:ProgramFiles/Git/usr/bin" >> $env:GITHUB_PATH
+        if: ${{ runner.os == 'Windows' }}
+
+      - name: Download Liberica NIK
+        env:
+          #liberica-url: https://download.bell-sw.com/vm/22.3.2/bellsoft-liberica-vm-core-openjdk17.0.7+7-22.3.2+1-${{ matrix.jdk-suffix }}
+          #liberica-url: https://download.bell-sw.com/vm/23.0.1/bellsoft-liberica-vm-core-openjdk20.0.2+10-23.0.1+1-${{ matrix.jdk-suffix }}
+          liberica-url: https://download.bell-sw.com/vm/23.1.0/bellsoft-liberica-vm-core-openjdk21+37-23.1.0+1-${{ matrix.jdk-suffix }}
+        run: curl -sLo ${{ runner.temp }}/${{ matrix.jdk-suffix }} ${{ env.liberica-url }}
+        if: ${{ runner.os != 'Linux' }}
+
+      - uses: actions/setup-java@v3
+        with:
+          java-version: ${{env.JAVA_VERSION}}
+          distribution: jdkfile
+          jdkFile: ${{ runner.temp }}/${{ matrix.jdk-suffix }}
+          cache: maven
+        if: ${{ runner.os != 'Linux' }}
+
+      - uses: graalvm/setup-graalvm@v1
+        with:
+          java-version: ${{env.JAVA_VERSION}}
+          version: mandrel-latest
+          cache: maven
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          native-image-job-reports: true
+        if: ${{ runner.os == 'Linux' }}
+
+      - name: (Windows) Set up compiler
+        uses: ilammy/msvc-dev-cmd@v1
+        if: ${{ runner.os == 'Windows' }}
+
+      - name: Download JS front
+        uses: actions/download-artifact@v3
+        with:
+          name: studio-front
+          path: web-ui/javascript/build/
+
+      - name: (*nix) Build native
+        run: |
+          echo "GRAALVM_HOME: $GRAALVM_HOME"
+          echo "JAVA_HOME: $JAVA_HOME"
+          java --version
+          native-image --version
+          mvn verify -B -Pnative -Pide -DskipTests
+          cp web-ui/src/main/scripts/native/*.sh web-ui/target/
+        env:
+          GRAALVM_HOME: ${{env.JAVA_HOME}}
+        if: ${{ runner.os != 'Windows' }}
+
+      - name: (Windows) Build native
+        run: |
+          echo "GRAALVM_HOME: $env:GRAALVM_HOME"
+          echo "JAVA_HOME: $env:JAVA_HOME"
+          java --version
+          native-image --version
+          mvn verify -B -Pnative -Pide -DskipTests
+          cp web-ui/target/*native-image-source-jar/*.dll web-ui/target/
+          cp web-ui/src/main/scripts/native/*.bat web-ui/target/
+        env:
+          GRAALVM_HOME: ${{env.JAVA_HOME}}
+        if: ${{ runner.os == 'Windows' }}
+
+      - name: Compress exec
+        uses: svenstaro/upx-action@v2
+        with:
+          args: '-7'
+          strip: false
+          files: |
+            web-ui/target/*runner
+            web-ui/target/*.exe
+        if: ${{ runner.os != 'Windows' }}
+
+      - name: Create zip
+        uses: thedoctor0/zip-release@main
+        with:
+          filename: ${{env.zip-name}}
+          directory: web-ui/target
+          path: '*runner *.exe *.dll *.sh *.bat'
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v3
+        with:
+          name: ${{env.zip-name}}
+          path: web-ui/target/${{env.zip-name}}
+
+      - name: Test native
+        run: mvn test-compile failsafe:integration-test -B -Pnative -Pide -DskipITs=false
+
+      - name: Publish Test Report
+        uses: mikepenz/action-junit-report@v4
+        with:
+          report_paths: '**/failsafe-reports/TEST-*.xml'
+          check_name: IT (${{ matrix.runner }})
+        if: always()
+
+      - name: Upload release artifact
+        uses: softprops/action-gh-release@v1
+        if: startsWith(github.ref, 'refs/tags/')
+        with:
+          files: web-ui/target/${{env.zip-name}}

@@ -1,0 +1,63 @@
+name: Sonar
+on:
+  push:
+    paths-ignore: [ '*.md' ]
+    branches: [ '*' ]
+permissions:
+  checks: write
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+jobs:
+  build:
+    runs-on: ${{ matrix.os }}
+    continue-on-error: true
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [windows-latest, macOS-latest]
+        include:
+          - os: ubuntu-latest
+            mode: deploy
+
+    steps:
+    - name: Checkout
+      uses: actions/checkout@v4
+      with:
+        fetch-depth: 0  # Shallow clone
+
+    - name: Set up JDK 21
+      uses: actions/setup-java@v3
+      with:
+        distribution: temurin
+        java-version: 21
+        cache: maven
+
+    - name: Test with Maven
+      run: mvn test -B -Pide '-Dmaven.test.failure.ignore=true'
+      if: matrix.mode != 'deploy'
+
+    - name: Cache SonarCloud packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.sonar/cache
+        key: ${{ runner.os }}-sonar
+      if: matrix.mode == 'deploy'
+
+    - name: Sonar analyze
+      env:
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}  # Needed to get PR information, if any
+        SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        MVN_SONAR: ${{ 'org.sonarsource.scanner.maven:sonar-maven-plugin' }}
+        MVN_JACOCO: ${{ 'org.jacoco:jacoco-maven-plugin:0.8.8' }}
+        MVN_PARAMS: '-Pide -Dmaven.test.failure.ignore=true -Dsonar.projectKey=kairoh_studio'
+      # Profile "ide" to skip javascript 
+      run: mvn -B ${MVN_JACOCO}:prepare-agent verify ${MVN_JACOCO}:report ${MVN_SONAR}:sonar ${MVN_PARAMS}
+      if: matrix.mode == 'deploy'
+
+    - name: Publish Test Report
+      uses: mikepenz/action-junit-report@v4
+      with:
+        report_paths: '**/surefire-reports/TEST-*.xml'
+        check_name: test (${{ matrix.os }}, ${{ matrix.java }})
+      if: always()

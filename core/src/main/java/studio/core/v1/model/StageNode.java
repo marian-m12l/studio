@@ -6,23 +6,33 @@
 
 package studio.core.v1.model;
 
+import java.util.Objects;
+import java.util.UUID;
+import java.util.stream.Stream;
+
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import studio.core.v1.model.asset.MediaAsset;
 import studio.core.v1.model.enriched.EnrichedNodeMetadata;
 
+@Getter
+@Setter
+@NoArgsConstructor
+@EqualsAndHashCode(callSuper = true, exclude = { "okTransition", "homeTransition" })
 public class StageNode extends Node {
 
-    private String uuid;
-    private ImageAsset image;
-    private AudioAsset audio;
+    private Boolean squareOne; // first node only
+    private MediaAsset image;
+    private MediaAsset audio;
     private Transition okTransition;
     private Transition homeTransition;
     private ControlSettings controlSettings;
 
-    public StageNode() {
-    }
-
-    public StageNode(String uuid, ImageAsset image, AudioAsset audio, Transition okTransition, Transition homeTransition, ControlSettings controlSettings, EnrichedNodeMetadata enriched) {
-        super(enriched);
-        this.uuid = uuid;
+    public StageNode(UUID uuid, MediaAsset image, MediaAsset audio, Transition okTransition,
+            Transition homeTransition, ControlSettings controlSettings, EnrichedNodeMetadata enriched) {
+        super(uuid, enriched);
         this.image = image;
         this.audio = audio;
         this.okTransition = okTransition;
@@ -30,51 +40,7 @@ public class StageNode extends Node {
         this.controlSettings = controlSettings;
     }
 
-    public String getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(String uuid) {
-        this.uuid = uuid;
-    }
-
-    public ImageAsset getImage() {
-        return image;
-    }
-
-    public void setImage(ImageAsset image) {
-        this.image = image;
-    }
-
-    public AudioAsset getAudio() {
-        return audio;
-    }
-
-    public void setAudio(AudioAsset audio) {
-        this.audio = audio;
-    }
-
-    public Transition getOkTransition() {
-        return okTransition;
-    }
-
-    public void setOkTransition(Transition okTransition) {
-        this.okTransition = okTransition;
-    }
-
-    public Transition getHomeTransition() {
-        return homeTransition;
-    }
-
-    public void setHomeTransition(Transition homeTransition) {
-        this.homeTransition = homeTransition;
-    }
-
-    public ControlSettings getControlSettings() {
-        return controlSettings;
-    }
-
-    public void setControlSettings(ControlSettings controlSettings) {
-        this.controlSettings = controlSettings;
+    public Stream<MediaAsset> assets() {
+        return Stream.of(getImage(), getAudio()).filter(Objects::nonNull);
     }
 }

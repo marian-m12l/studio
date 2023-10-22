@@ -6,76 +6,59 @@
 
 package studio.core.v1.model;
 
+import java.util.ArrayList;
+import java.util.List;
+import java.util.UUID;
+
+import com.fasterxml.jackson.annotation.JsonUnwrapped;
+
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import studio.core.v1.model.asset.MediaAsset;
 import studio.core.v1.model.enriched.EnrichedPackMetadata;
 
-import java.util.List;
-
+@Getter
+@Setter
+@NoArgsConstructor
 public class StoryPack {
 
-    private String uuid;
+    private String format = "v1";
+    private UUID uuid;
+
+    @JsonUnwrapped
+    private EnrichedPackMetadata enriched;
+
     private boolean factoryDisabled;
     private short version;
+    private boolean nightModeAvailable;
+
     private List<StageNode> stageNodes;
-    private EnrichedPackMetadata enriched;
-    private boolean nightModeAvailable = false;
+    private List<ActionNode> actionNodes;
 
-    public StoryPack() {
+    public List<Transition> transitions() {
+        List<Transition> res = new ArrayList<>();
+        for (StageNode node : stageNodes) {
+            if (node.getOkTransition() != null) {
+                res.add(node.getOkTransition());
+            }
+            if (node.getHomeTransition() != null) {
+                res.add(node.getHomeTransition());
+            }
+        }
+        return res;
     }
 
-    public StoryPack(String uuid, boolean factoryDisabled, short version, List<StageNode> stageNodes, EnrichedPackMetadata enriched, boolean nightModeAvailable) {
-        this.uuid = uuid;
-        this.factoryDisabled = factoryDisabled;
-        this.version = version;
-        this.stageNodes = stageNodes;
-        this.enriched = enriched;
-        this.nightModeAvailable = nightModeAvailable;
-    }
-
-    public String getUuid() {
-        return uuid;
-    }
-
-    public void setUuid(String uuid) {
-        this.uuid = uuid;
-    }
-
-    public boolean isFactoryDisabled() {
-        return factoryDisabled;
-    }
-
-    public void setFactoryDisabled(boolean factoryDisabled) {
-        this.factoryDisabled = factoryDisabled;
-    }
-
-    public short getVersion() {
-        return version;
-    }
-
-    public void setVersion(short version) {
-        this.version = version;
-    }
-
-    public List<StageNode> getStageNodes() {
-        return stageNodes;
-    }
-
-    public void setStageNodes(List<StageNode> stageNodes) {
-        this.stageNodes = stageNodes;
-    }
-
-    public EnrichedPackMetadata getEnriched() {
-        return enriched;
-    }
-
-    public void setEnriched(EnrichedPackMetadata enriched) {
-        this.enriched = enriched;
-    }
-
-    public boolean isNightModeAvailable() {
-        return nightModeAvailable;
-    }
-
-    public void setNightModeAvailable(boolean nightModeAvailable) {
-        this.nightModeAvailable = nightModeAvailable;
+    public List<MediaAsset> assets(boolean image) {
+        List<MediaAsset> res = new ArrayList<>();
+        for (StageNode node : stageNodes) {
+            if (image && node.getImage() != null) {
+                res.add(node.getImage());
+            }
+            if (!image && node.getAudio() != null) {
+                res.add(node.getAudio());
+            }
+        }
+        return res;
     }
 }

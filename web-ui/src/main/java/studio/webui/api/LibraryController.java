@@ -3,155 +3,101 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-
 package studio.webui.api;
 
-import io.vertx.core.Future;
-import io.vertx.core.Vertx;
-import io.vertx.core.json.Json;
-import io.vertx.core.json.JsonArray;
-import io.vertx.core.json.JsonObject;
-import io.vertx.core.logging.Logger;
-import io.vertx.core.logging.LoggerFactory;
-import io.vertx.ext.web.Router;
-import studio.core.v1.Constants;
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionStage;
+
+import jakarta.inject.Inject;
+import jakarta.ws.rs.GET;
+import jakarta.ws.rs.POST;
+import jakarta.ws.rs.Path;
+
+import org.jboss.resteasy.reactive.RestForm;
+import org.jboss.resteasy.reactive.multipart.FileUpload;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import io.smallrye.mutiny.infrastructure.Infrastructure;
+import io.smallrye.common.annotation.NonBlocking;
+import studio.core.v1.service.PackFormat;
+import studio.webui.model.LibraryDTOs.PackDTO;
+import studio.webui.model.LibraryDTOs.PathDTO;
+import studio.webui.model.LibraryDTOs.SuccessDTO;
+import studio.webui.model.LibraryDTOs.SuccessPathDTO;
+import studio.webui.model.LibraryDTOs.UuidPacksDTO;
 import studio.webui.service.LibraryService;
 
-import java.nio.file.Path;
-import java.util.Timer;
-import java.util.TimerTask;
-
+@Path("/api/library")
 public class LibraryController {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(LibraryController.class);
-    
-    public static Router apiRouter(Vertx vertx, LibraryService libraryService) {
-        Router router = Router.router(vertx);
 
-        // Local library device metadata
-        router.get("/infos").blockingHandler(ctx -> {
-            ctx.response()
-                    .putHeader("content-type", "application/json")
-                    .end(Json.encode(libraryService.libraryInfos()));
-        });
+    @Inject
+    LibraryService libraryService;
 
-        // Local library packs list
-        router.get("/packs").blockingHandler(ctx -> {
-            JsonArray libraryPacks = libraryService.packs();
-            ctx.response()
-                    .putHeader("content-type", "application/json")
-                    .end(Json.encode(libraryPacks));
-        });
+    /** Get library metadata. */
+    @GET
+    @Path("infos")
+    @NonBlocking
+    public PathDTO infos() {
+        return libraryService.infos();
+    }
 
-        // Local library pack download
-        router.post("/download").blockingHandler(ctx -> {
-            String uuid = ctx.getBodyAsJson().getString("uuid");
-            String packPath = ctx.getBodyAsJson().getString("path");
-            libraryService.getRawPackFile(packPath)
-                    .ifPresentOrElse(
-                            file -> ctx.response()
-                                    .putHeader("Content-Length", "" + file.length())
-                                    .sendFile(file.getAbsolutePath()),
-                            () -> {
-                                LOGGER.error("Failed to download pack from library");
-                                ctx.fail(500);
-                            }
-                    );
-        });
+    /** List library packs. */
+    @GET
+    @Path("packs")
+    public CompletionStage<List<UuidPacksDTO>> packs() {
+        return CompletableFuture.supplyAsync(() -> {
+            long t1 = System.currentTimeMillis();
+            var libraryPacks = libraryService.packs();
+            long t2 = System.currentTimeMillis();
+            LOGGER.info("Library packs scanned in {}ms", t2 - t1);
+            return libraryPacks;
+        }, Infrastructure.getDefaultWorkerPool() );
+    }
 
-        // Local library pack upload
-        router.post("/upload").blockingHandler(ctx -> {
-            String uuid = ctx.request().getFormAttribute("uuid");
-            String packPath = ctx.request().getFormAttribute("path");
-            boolean added = libraryService.addPackFile(packPath, ctx.fileUploads().iterator().next().uploadedFileName());
-            if (added) {
-                ctx.response()
-                        .putHeader("content-type", "application/json")
-                        .end(Json.encode(new JsonObject().put("success", true)));
-            } else {
-                LOGGER.error("Pack was not added to library");
-                ctx.fail(500);
-            }
-        });
+    /** Download existing library pack. */
+    @POST
+    @Path("download")
+    @NonBlocking
+    public java.nio.file.Path downloadZip(PathDTO pathData) {
+        LOGGER.info("Download pack '{}'", pathData.getPath());
+        return libraryService.getPackFile(pathData.getPath());
+    }
 
-        // Local library pack conversion
-        router.post("/convert").blockingHandler(ctx -> {
-            String uuid = ctx.getBodyAsJson().getString("uuid");
-            String packPath = ctx.getBodyAsJson().getString("path");
-            Boolean allowEnriched = ctx.getBodyAsJson().getBoolean("allowEnriched", false);
-            String format = ctx.getBodyAsJson().getString("format");
-            // Perform conversion/uncompression asynchronously
-            Future<Path> futureConvertedPack = Future.future();
-            if (Constants.PACK_FORMAT_RAW.equalsIgnoreCase(format)) {
-                Timer timer = new Timer();
-                timer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        libraryService.addConvertedRawPackFile(packPath, allowEnriched)
-                                .ifPresentOrElse(
-                                        packPath -> futureConvertedPack.tryComplete(packPath),
-                                        () -> futureConvertedPack.tryFail("Failed to read or convert pack to raw format"));
-                        futureConvertedPack.tryComplete();
-                    }
-                }, 1000);
-            } else if (Constants.PACK_FORMAT_FS.equalsIgnoreCase(format)) {
-                Timer timer = new Timer();
-                timer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        libraryService.addConvertedFsPackFile(packPath, allowEnriched)
-                                .ifPresentOrElse(
-                                        packPath -> futureConvertedPack.tryComplete(packPath),
-                                        () -> futureConvertedPack.tryFail("Failed to read or convert pack to folder format"));
-                        futureConvertedPack.tryComplete();
-                    }
-                }, 1000);
-            } else if (Constants.PACK_FORMAT_ARCHIVE.equalsIgnoreCase(format)) {
-                Timer timer = new Timer();
-                timer.schedule(new TimerTask() {
-                    @Override
-                    public void run() {
-                        libraryService.addConvertedArchivePackFile(packPath)
-                                .ifPresentOrElse(
-                                        packPath -> futureConvertedPack.tryComplete(packPath),
-                                        () -> futureConvertedPack.tryFail("Failed to read or convert pack to folder format"));
-                        futureConvertedPack.tryComplete();
-                    }
-                }, 1000);
-            } else {
-                ctx.fail(400);
-                return;
-            }
-            futureConvertedPack.onComplete(maybeConvertedPack -> {
-                if (maybeConvertedPack.succeeded()) {
-                    // Return path to converted file within library
-                    ctx.response()
-                            .putHeader("content-type", "application/json")
-                            .end(Json.encode(new JsonObject()
-                                    .put("success", true)
-                                    .put("path", maybeConvertedPack.result().toString())
-                            ));
-                } else {
-                    LOGGER.error("Failed to read or convert pack");
-                    ctx.fail(500, maybeConvertedPack.cause());
-                }
-            });
-        });
+    /** Upload new library pack. */
+    @POST
+    @Path("upload")
+    @NonBlocking
+    public SuccessDTO uploadZip(@RestForm("pack") FileUpload pack, @RestForm("path") String destName) {
+        LOGGER.info("Upload pack '{}'", destName);
+        String uploadedName = pack.uploadedFile().toString();
+        boolean status = libraryService.addPackFile(destName, uploadedName);
+        return new SuccessDTO(status);
+    }
 
-        // Remove pack from device
-        router.post("/remove").blockingHandler(ctx -> {
-            String packPath = ctx.getBodyAsJson().getString("path");
-            boolean removed = libraryService.deletePack(packPath);
-            if (removed) {
-                ctx.response()
-                        .putHeader("content-type", "application/json")
-                        .end(Json.encode(new JsonObject().put("success", true)));
-            } else {
-                LOGGER.error("Pack was not removed from library");
-                ctx.fail(500);
-            }
-        });
+    /** Convert library pack. */
+    @POST
+    @Path("convert")
+    public CompletionStage<SuccessPathDTO> convert(PackDTO pack) {
+        return CompletableFuture.supplyAsync(() -> {
+            PackFormat packFormat = PackFormat.valueOf(pack.getFormat().toUpperCase());
+            long t1 = System.currentTimeMillis();
+            var newPackPath = libraryService.convertPack(pack.getPath(), packFormat, pack.isAllowEnriched());
+            long t2 = System.currentTimeMillis();
+            LOGGER.info("Pack converted in {}ms", t2 - t1);
+            return new SuccessPathDTO(true, newPackPath.toString());
+        }, Infrastructure.getDefaultWorkerPool());
+    }
 
-        return router;
+    /** Remove library pack. */
+    @POST
+    @Path("remove")
+    @NonBlocking
+    public SuccessDTO remove(PathDTO pathData) {
+        LOGGER.info("Remove pack '{}'", pathData.getPath());
+        boolean removed = libraryService.deletePack(pathData.getPath());
+        return new SuccessDTO(removed);
     }
 }

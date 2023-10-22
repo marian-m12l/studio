@@ -6,32 +6,26 @@
 
 package studio.core.v1.model;
 
+import com.fasterxml.jackson.annotation.JsonIdentityReference;
+import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonInclude.Include;
+
+import lombok.AllArgsConstructor;
+import lombok.EqualsAndHashCode;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@EqualsAndHashCode(exclude = "actionNode")
+@JsonInclude(Include.NON_NULL)
 public class Transition {
 
+    @JsonIdentityReference(alwaysAsId = true)
     private ActionNode actionNode;
-    private short optionIndex;
 
-    public Transition() {
-    }
-
-    public Transition(ActionNode actionNode, short optionIndex) {
-        this.actionNode = actionNode;
-        this.optionIndex = optionIndex;
-    }
-
-    public ActionNode getActionNode() {
-        return actionNode;
-    }
-
-    public void setActionNode(ActionNode actionNode) {
-        this.actionNode = actionNode;
-    }
-
-    public short getOptionIndex() {
-        return optionIndex;
-    }
-
-    public void setOptionIndex(short optionIndex) {
-        this.optionIndex = optionIndex;
-    }
+    private short optionIndex = 0;
 }
