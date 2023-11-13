@@ -33,7 +33,7 @@
         <!-- Maven plugins -->
         <mvn.compiler.version>3.11.0</mvn.compiler.version>
         <mvn.resources.version>3.3.1</mvn.resources.version>
-        <mvn.surefire.version>3.1.2</mvn.surefire.version>
+        <mvn.surefire.version>3.2.2</mvn.surefire.version>
         <mvn.assembly.version>3.4.2</mvn.assembly.version>
         <!-- Devops -->
         <sonar.organization>kairoh</sonar.organization>
