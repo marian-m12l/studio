@@ -23,7 +23,7 @@
         <surefire-plugin.version>3.0.0</surefire-plugin.version>
         <failsafe-plugin.version>3.2.5</failsafe-plugin.version>
         
-        <quarkus.version>3.4.3</quarkus.version>
+        <quarkus.version>3.5.2</quarkus.version>
         <usb4java.version>1.3.0</usb4java.version>
     </properties>
 
