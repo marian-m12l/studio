@@ -46,7 +46,7 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Set up JDK ${{env.JAVA_VERSION}}
-        uses: actions/setup-java@v3
+        uses: actions/setup-java@v4
         with:
           distribution: temurin
           java-version: ${{env.JAVA_VERSION}}
@@ -124,7 +124,7 @@ jobs:
         run: curl -sLo ${{ runner.temp }}/${{ matrix.jdk-suffix }} ${{ env.liberica-url }}
         if: ${{ runner.os != 'Linux' }}
 
-      - uses: actions/setup-java@v3
+      - uses: actions/setup-java@v4
         with:
           java-version: ${{env.JAVA_VERSION}}
           distribution: jdkfile
