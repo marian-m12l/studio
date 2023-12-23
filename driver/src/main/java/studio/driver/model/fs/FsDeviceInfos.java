@@ -15,6 +15,7 @@ public class FsDeviceInfos {
     private String serialNumber;
     private long sdCardSizeInBytes;
     private long usedSpaceInBytes;
+    private byte[] deviceKeyV3;
 
     public FsDeviceInfos() {
     }
@@ -58,6 +59,14 @@ public class FsDeviceInfos {
 
     public void setSerialNumber(String serialNumber) {
         this.serialNumber = serialNumber;
+    }
+
+    public byte[] getDeviceKeyV3() {
+        return deviceKeyV3;
+    }
+
+    public void setDeviceKeyV3(byte[] deviceKeyV3) {
+        this.deviceKeyV3 = deviceKeyV3;
     }
 
     public long getSdCardSizeInBytes() {
