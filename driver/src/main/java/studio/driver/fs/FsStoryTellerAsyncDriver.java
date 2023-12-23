@@ -8,7 +8,6 @@ package studio.driver.fs;
 
 import org.apache.commons.codec.binary.Hex;
 import org.usb4java.Device;
-import studio.core.v1.writer.fs.FsStoryPackWriter;
 import studio.driver.DeviceVersion;
 import studio.driver.LibUsbDetectionHelper;
 import studio.driver.model.fs.FsDeviceInfos;
@@ -21,6 +20,7 @@ import studio.driver.model.TransferStatus;
 import java.io.*;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -118,34 +118,13 @@ public class FsStoryTellerAsyncDriver {
             // MD file format version
             short mdVersion = readLittleEndianShort(deviceMetadataFis);
             LOGGER.finest("Device metadata format version: " + mdVersion);
-            if (mdVersion < 1 || mdVersion > 3) {
+            if (mdVersion >= 1 && mdVersion <= 3) {
+                this.parseDeviceInfosMeta1to3(infos, deviceMetadataFis);
+            } else if (mdVersion == 6) {
+                this.parseDeviceInfosMeta6(infos, deviceMetadataFis);
+            } else {
                 return CompletableFuture.failedFuture(new StoryTellerException("Unsupported device metadata format version: " + mdVersion));
             }
-
-            // Firmware version
-            deviceMetadataFis.skip(4);
-            short major = readLittleEndianShort(deviceMetadataFis);
-            short minor = readLittleEndianShort(deviceMetadataFis);
-            infos.setFirmwareMajor(major);
-            infos.setFirmwareMinor(minor);
-            LOGGER.fine("Firmware version: " + major + "." + minor);
-
-            // Serial number
-            String serialNumber = null;
-            long sn = readBigEndianLong(deviceMetadataFis);
-            if (sn != 0L && sn != -1L && sn != -4294967296L) {
-                serialNumber = String.format("%014d", sn);
-                LOGGER.fine("Serial Number: " + serialNumber);
-            } else {
-                LOGGER.warning("No serial number in SPI");
-            }
-            infos.setSerialNumber(serialNumber);
-
-            // UUID
-            deviceMetadataFis.skip(238);
-            byte[] uuid = deviceMetadataFis.readNBytes(256);
-            infos.setUuid(uuid);
-            LOGGER.fine("UUID: " + Hex.encodeHexString(uuid));
 
             deviceMetadataFis.close();
 
@@ -164,6 +143,60 @@ public class FsStoryTellerAsyncDriver {
         return CompletableFuture.completedFuture(infos);
     }
 
+    private void parseDeviceInfosMeta1to3(FsDeviceInfos infos, FileInputStream deviceMetadataFis) throws IOException {
+        // Firmware version
+        deviceMetadataFis.skip(4);
+        short major = readLittleEndianShort(deviceMetadataFis);
+        short minor = readLittleEndianShort(deviceMetadataFis);
+        infos.setFirmwareMajor(major);
+        infos.setFirmwareMinor(minor);
+        LOGGER.fine("Firmware version: " + major + "." + minor);
+
+        // Serial number
+        String serialNumber = null;
+        long sn = readBigEndianLong(deviceMetadataFis);
+        if (sn != 0L && sn != -1L && sn != -4294967296L) {
+            serialNumber = String.format("%014d", sn);
+            LOGGER.fine("Serial Number: " + serialNumber);
+        } else {
+            LOGGER.warning("No serial number in SPI");
+        }
+        infos.setSerialNumber(serialNumber);
+
+        // UUID
+        deviceMetadataFis.skip(238);
+        byte[] uuid = deviceMetadataFis.readNBytes(256);
+        infos.setUuid(uuid);
+        LOGGER.fine("UUID: " + Hex.encodeHexString(uuid));
+    }
+
+    private void parseDeviceInfosMeta6(FsDeviceInfos infos, FileInputStream deviceMetadataFis) throws IOException {
+        // Firmware version
+        short major = readAsciiToShort(deviceMetadataFis, 1);
+        deviceMetadataFis.skip(1);
+        short minor = readAsciiToShort(deviceMetadataFis, 1);
+        infos.setFirmwareMajor(major);
+        infos.setFirmwareMinor(minor);
+        LOGGER.fine("Firmware version: " + major + "." + minor);
+
+        // Serial number
+        deviceMetadataFis.skip(21);
+        long sn = readAsciiToLong(deviceMetadataFis, 14);
+        String serialNumber = String.format("%014d", sn);
+        LOGGER.info("Serial Number: " + serialNumber);
+        infos.setSerialNumber(serialNumber);
+
+        // Device key
+        byte[] snb = String.valueOf(sn).getBytes(StandardCharsets.UTF_8);
+        deviceMetadataFis.skip(24);
+        byte[] key = deviceMetadataFis.readNBytes(32);
+        byte[] deviceKey = new byte[64];
+        System.arraycopy(snb, 0, deviceKey, 0 , 14);
+        System.arraycopy(snb, 0, deviceKey, 24 , 8);
+        System.arraycopy(key, 0, deviceKey, 32 , 32);
+        infos.setDeviceKeyV3(deviceKey);
+    }
+
     private short readLittleEndianShort(FileInputStream fis) throws IOException {
         byte[] buffer = new byte[2];
         fis.read(buffer);
@@ -178,6 +211,14 @@ public class FsStoryTellerAsyncDriver {
         ByteBuffer bb = ByteBuffer.wrap(buffer);
         bb.order(ByteOrder.BIG_ENDIAN);
         return bb.getLong();
+    }
+
+    private short readAsciiToShort(FileInputStream fis, int numberBytes) throws IOException {
+        return Short.parseShort(new String(fis.readNBytes(numberBytes), StandardCharsets.UTF_8));
+    }
+
+    private long readAsciiToLong(FileInputStream fis, int numberBytes) throws IOException {
+        return Long.parseLong(new String(fis.readNBytes(numberBytes), StandardCharsets.UTF_8));
     }
 
 
@@ -348,7 +389,8 @@ public class FsStoryTellerAsyncDriver {
         }
 
         return readPackIndex()
-                .thenCompose(packUUIDs -> CompletableFuture.supplyAsync(() -> {
+                .thenCompose(packUUIDs -> getDeviceInfos()
+                        .thenCompose(deviceInfos -> CompletableFuture.supplyAsync(() -> {
                     // Look for UUID in packs index
                     Optional<UUID> matched = packUUIDs.stream().filter(p -> p.equals(UUID.fromString(uuid))).findFirst();
                     if (matched.isPresent()) {
@@ -364,7 +406,7 @@ public class FsStoryTellerAsyncDriver {
                                 File destFolder = new File(outputPath + File.separator + uuid);
                                 destFolder.mkdirs();
                                 // Copy folder with progress tracking
-                                return copyPackFolder(sourceFolder, destFolder, listener);
+                                return copyPackFolder(sourceFolder, destFolder, deviceInfos, false, listener);
                             } catch (IOException e) {
                                 throw new StoryTellerException("Failed to copy pack from device", e);
                             }
@@ -374,7 +416,7 @@ public class FsStoryTellerAsyncDriver {
                     } else {
                         throw new StoryTellerException("Pack not found");
                     }
-                }));
+                })));
     }
 
     public CompletableFuture<TransferStatus> uploadPack(String uuid, String inputPath, TransferProgressListener listener) {
@@ -400,66 +442,65 @@ public class FsStoryTellerAsyncDriver {
             File destFolder = new File(folderName);
             destFolder.mkdirs();
             // Copy folder with progress tracking
-            return CompletableFuture.supplyAsync(() -> {
-                try {
-                    return copyPackFolder(inputPath, destFolder, new TransferProgressListener() {
-                        @Override
-                        public void onProgress(TransferStatus status) {
-                            if (listener != null) {
-                                listener.onProgress(status);
-                            }
+            return getDeviceInfos().thenCompose(deviceInfos ->
+                    CompletableFuture.supplyAsync(() -> {
+                        try {
+                            return copyPackFolder(inputPath, destFolder, deviceInfos, true, new TransferProgressListener() {
+                                @Override
+                                public void onProgress(TransferStatus status) {
+                                    if (listener != null) {
+                                        listener.onProgress(status);
+                                    }
+                                }
+
+                                @Override
+                                public void onComplete(TransferStatus status) {
+                                    // Not calling listener because the pack must be added to the index
+                                }
+                            });
+                        } catch (IOException e) {
+                            throw new StoryTellerException("Failed to copy pack from device", e);
                         }
-                        @Override
-                        public void onComplete(TransferStatus status) {
-                            // Not calling listener because the pack must be added to the index
-                        }
+                    })).thenCompose(status -> {
+                        // Finally, add pack UUID to index
+                        return readPackIndex()
+                                .thenCompose(packUUIDs -> {
+                                    try {
+                                        // Add UUID in packs index
+                                        packUUIDs.add(UUID.fromString(uuid));
+                                        // Write pack index
+                                        return writePackIndex(packUUIDs)
+                                                .thenApply(ok -> {
+                                                    if (listener != null) {
+                                                        listener.onComplete(status);
+                                                    }
+                                                    return status;
+                                                });
+                                    } catch (Exception e) {
+                                        throw new StoryTellerException("Failed to write pack metadata on device partition", e);
+                                    }
+                                });
                     });
-                } catch (IOException e) {
-                    throw new StoryTellerException("Failed to copy pack from device", e);
-                }
-            }).thenCompose(status -> {
-                // When transfer is complete, generate device-specific boot file from device UUID
-                LOGGER.fine("Generating device-specific boot file");
-                return getDeviceInfos().thenApply(deviceInfos -> {
-                    try {
-                        FsStoryPackWriter writer = new FsStoryPackWriter();
-                        writer.addBootFile(destFolder.toPath(), deviceInfos.getUuid());
-                        return status;
-                    } catch (IOException e) {
-                        throw new StoryTellerException("Failed to generate device-specific boot file", e);
-                    }
-                });
-            }).thenCompose(status -> {
-                // Finally, add pack UUID to index
-                return readPackIndex()
-                        .thenCompose(packUUIDs -> {
-                            try {
-                                // Add UUID in packs index
-                                packUUIDs.add(UUID.fromString(uuid));
-                                // Write pack index
-                                return writePackIndex(packUUIDs)
-                                        .thenApply(ok -> {
-                                            if (listener != null) {
-                                                listener.onComplete(status);
-                                            }
-                                            return status;
-                                        });
-                            } catch (Exception e) {
-                                throw new StoryTellerException("Failed to write pack metadata on device partition", e);
-                            }
-                        });
-            });
         } catch (IOException e) {
             throw new StoryTellerException("Failed to copy pack to device", e);
         }
     }
 
-    private TransferStatus copyPackFolder(String sourceFolder, File destFolder, TransferProgressListener listener) throws IOException {
+    private TransferStatus copyPackFolder(String sourceFolder, File destFolder, FsDeviceInfos deviceInfos, boolean isUpload, TransferProgressListener listener) throws IOException {
         // Keep track of transferred bytes and elapsed time
         final long startTime = System.currentTimeMillis();
         AtomicInteger transferred = new AtomicInteger(0);
         int folderSize = (int) FileUtils.getFolderSize(sourceFolder);
         LOGGER.finest("Pack folder size: " + folderSize);
+
+        // Fail for unsupported firmware versions
+        if (deviceInfos.getFirmwareMajor() != 2 && deviceInfos.getFirmwareMajor() != 3) {
+            throw new StoryTellerException("Failed to copy pack folder: unsupported firmware version " + deviceInfos.getFirmwareMajor());
+        }
+
+        // Assets are cleartext if file '.cleartext' exists
+        boolean isCleartext = new File(sourceFolder, CipherUtils.CLEARTEXT_FILENAME).exists();
+
         // Copy folders and files
         Files.walk(Paths.get(sourceFolder))
                 .forEach(s -> {
@@ -471,9 +512,44 @@ public class FsStoryTellerAsyncDriver {
                                 Files.createDirectory(d);
                             }
                         } else {
+                            // DO NOT COPY .cleartext file
+                            if (!CipherUtils.shouldBeCopied(s)) {
+                                LOGGER.finer("NOT copying file " + s.toString());
+                                return;
+                            }
+
                             int fileSize = (int) FileUtils.getFileSize(s.toAbsolutePath().toString());
                             LOGGER.finer("Copying file " + s.toString() + " to " + d.toString() + " (" + fileSize + " bytes)");
-                            Files.copy(s, d);
+
+                            if (CipherUtils.shouldBeCiphered(s)) {
+                                if (deviceInfos.getFirmwareMajor() == 2) {
+                                    if (isUpload) {
+                                        if (isCleartext) {
+                                            byte[] ciphered = CipherUtils.cipherFirstBlockCommonKey(Files.readAllBytes(s));
+                                            Files.write(d, ciphered);
+                                        } else {
+                                            Files.copy(s, d);
+                                        }
+                                    } else {    // Download
+                                        byte[] deciphered = CipherUtils.decipherFirstBlockCommonKey(Files.readAllBytes(s));
+                                        Files.write(d, deciphered);
+                                    }
+                                } else {    // V3
+                                    if (isUpload) {
+                                        byte[] data = Files.readAllBytes(s);
+                                        if (!isCleartext) {
+                                            data = CipherUtils.decipherFirstBlockCommonKey(data);
+                                        }
+                                        byte[] ciphered = CipherUtils.cipherFirstBlockSpecificKeyV3(data, deviceInfos.getDeviceKeyV3());
+                                        Files.write(d, ciphered);
+                                    } else {    // Download
+                                        byte[] deciphered = CipherUtils.decipherFirstBlockSpecificKeyV3(Files.readAllBytes(s), deviceInfos.getDeviceKeyV3());
+                                        Files.write(d, deciphered);
+                                    }
+                                }
+                            } else {
+                                Files.copy(s, d);
+                            }
 
                             // Compute progress and speed
                             int xferred = transferred.addAndGet(fileSize);
@@ -495,6 +571,17 @@ public class FsStoryTellerAsyncDriver {
                         throw new StoryTellerException("Failed to copy pack folder", e);
                     }
                 });
+        // When transfer is complete, generate device-specific boot file
+        LOGGER.fine("Generating device-specific boot file");
+        try {
+            if (deviceInfos.getFirmwareMajor() == 2) {
+                CipherUtils.addBootFileV2(destFolder.toPath(), deviceInfos.getUuid());
+            } else {
+                CipherUtils.addBootFileV3(destFolder.toPath(), deviceInfos.getDeviceKeyV3());
+            }
+        } catch (IOException e) {
+            throw new StoryTellerException("Failed to generate device-specific boot file", e);
+        }
         return new TransferStatus(transferred.get() == folderSize, transferred.get(), folderSize, 0.0);
     }
 
