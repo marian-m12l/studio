@@ -9,6 +9,7 @@ package studio.core.v1.reader.fs;
 import studio.core.v1.Constants;
 import studio.core.v1.model.*;
 import studio.core.v1.model.metadata.StoryPackMetadata;
+import studio.core.v1.utils.BytesUtils;
 import studio.core.v1.utils.XXTEACipher;
 
 import java.io.DataInputStream;
@@ -207,9 +208,9 @@ public class FsStoryPackReader {
 
     private byte[] decipherFirstBlockCommonKey(byte[] data) {
         byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
-        int[] dataInt = XXTEACipher.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
-        int[] decryptedInt = XXTEACipher.btea(dataInt, -(Math.min(128, data.length/4)), XXTEACipher.toIntArray(XXTEACipher.COMMON_KEY, ByteOrder.BIG_ENDIAN));
-        byte[] decryptedBlock = XXTEACipher.toByteArray(decryptedInt, ByteOrder.LITTLE_ENDIAN);
+        int[] dataInt = BytesUtils.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
+        int[] decryptedInt = XXTEACipher.btea(dataInt, -(Math.min(128, data.length/4)), BytesUtils.toIntArray(XXTEACipher.COMMON_KEY, ByteOrder.BIG_ENDIAN));
+        byte[] decryptedBlock = BytesUtils.toByteArray(decryptedInt, ByteOrder.LITTLE_ENDIAN);
         ByteBuffer bb = ByteBuffer.allocate(data.length);
         bb.put(decryptedBlock);
         if (data.length > 512) {

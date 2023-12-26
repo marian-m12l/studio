@@ -6,35 +6,11 @@
 
 package studio.core.v1.utils;
 
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-import java.util.ArrayList;
-import java.util.List;
-
 public class XXTEACipher {
 
     public static final byte[] COMMON_KEY = new byte[] { (byte)0x91, (byte)0xbd, (byte)0x7a, (byte)0x0a, (byte)0xa7, (byte)0x54, (byte)0x40, (byte)0xa9, (byte)0xbb, (byte)0xd4, (byte)0x9d, (byte)0x6c, (byte)0xe0, (byte)0xdc, (byte)0xc0, (byte)0xe3};
 
     private static final int DELTA = 0x9e3779b9;
-
-    public static int[] toIntArray(byte[] data, ByteOrder endianness) {
-        ByteBuffer bb = ByteBuffer.wrap(data);
-        bb.order(endianness);
-        List<Integer> ints = new ArrayList<>();
-        for (int i=0; i<data.length/4; i++) {
-            ints.add(bb.getInt());
-        }
-        return ints.stream().mapToInt(i->i).toArray();
-    }
-
-    public static byte[] toByteArray(int[] data, ByteOrder endianness) {
-        ByteBuffer bb = ByteBuffer.allocate(data.length*4);
-        bb.order(endianness);
-        for (int i : data) {
-            bb.putInt(i);
-        }
-        return bb.array();
-    }
 
     public static int[] btea(int[] v, int n, int[] k) {
         int y, z, sum;

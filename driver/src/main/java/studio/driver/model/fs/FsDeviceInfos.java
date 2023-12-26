@@ -15,7 +15,7 @@ public class FsDeviceInfos {
     private String serialNumber;
     private long sdCardSizeInBytes;
     private long usedSpaceInBytes;
-    private byte[] deviceKeyV3;
+    private FsDeviceKeyV3 deviceKeyV3;
 
     public FsDeviceInfos() {
     }
@@ -61,11 +61,11 @@ public class FsDeviceInfos {
         this.serialNumber = serialNumber;
     }
 
-    public byte[] getDeviceKeyV3() {
+    public FsDeviceKeyV3 getDeviceKeyV3() {
         return deviceKeyV3;
     }
 
-    public void setDeviceKeyV3(byte[] deviceKeyV3) {
+    public void setDeviceKeyV3(FsDeviceKeyV3 deviceKeyV3) {
         this.deviceKeyV3 = deviceKeyV3;
     }
 
@@ -94,6 +94,7 @@ public class FsDeviceInfos {
                 ", serialNumber='" + serialNumber + '\'' +
                 ", sdCardSizeInBytes=" + sdCardSizeInBytes +
                 ", usedSpaceInBytes=" + usedSpaceInBytes +
+                ", deviceKeyV3=" + deviceKeyV3.toString() +
                 '}';
     }
 }
