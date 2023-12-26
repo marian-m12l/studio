@@ -6,7 +6,9 @@
 
 package studio.driver.fs;
 
+import studio.core.v1.utils.BytesUtils;
 import studio.core.v1.utils.XXTEACipher;
+import studio.driver.model.fs.FsDeviceKeyV3;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -14,6 +16,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.ByteOrder;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
@@ -64,21 +67,16 @@ public class CipherUtils {
         btFos.close();
     }
 
-    static void addBootFileV3(Path packFolder, byte[] deviceKeyV3) throws IOException {
+    static void addBootFileV3(Path packFolder, FsDeviceKeyV3 deviceKeyV3) throws IOException {
         // Add boot file: bt
-        FileOutputStream btFos = new FileOutputStream(new File(packFolder.toFile(), BOOT_FILENAME));
-        // Copy second half of device key
-        byte[] btContent = new byte[32];
-        System.arraycopy(deviceKeyV3, 32, btContent, 0, 32);
-        btFos.write(btContent);
-        btFos.close();
+        Files.write(new File(packFolder.toFile(), BOOT_FILENAME).toPath(), deviceKeyV3.getBt());
     }
 
     static byte[] cipherFirstBlockCommonKey(byte[] data) {
         byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
-        int[] dataInt = XXTEACipher.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
-        int[] encryptedInt = XXTEACipher.btea(dataInt, Math.min(128, data.length/4), XXTEACipher.toIntArray(XXTEACipher.COMMON_KEY, ByteOrder.BIG_ENDIAN));
-        byte[] encryptedBlock = XXTEACipher.toByteArray(encryptedInt, ByteOrder.LITTLE_ENDIAN);
+        int[] dataInt = BytesUtils.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
+        int[] encryptedInt = XXTEACipher.btea(dataInt, Math.min(128, data.length/4), BytesUtils.toIntArray(XXTEACipher.COMMON_KEY, ByteOrder.BIG_ENDIAN));
+        byte[] encryptedBlock = BytesUtils.toByteArray(encryptedInt, ByteOrder.LITTLE_ENDIAN);
         ByteBuffer bb = ByteBuffer.allocate(data.length);
         bb.put(encryptedBlock);
         if (data.length > 512) {
@@ -88,9 +86,9 @@ public class CipherUtils {
     }
     static byte[] decipherFirstBlockCommonKey(byte[] data) {
         byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
-        int[] dataInt = XXTEACipher.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
-        int[] decryptedInt = XXTEACipher.btea(dataInt, -(Math.min(128, data.length/4)), XXTEACipher.toIntArray(XXTEACipher.COMMON_KEY, ByteOrder.BIG_ENDIAN));
-        byte[] decryptedBlock = XXTEACipher.toByteArray(decryptedInt, ByteOrder.LITTLE_ENDIAN);
+        int[] dataInt = BytesUtils.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
+        int[] decryptedInt = XXTEACipher.btea(dataInt, -(Math.min(128, data.length/4)), BytesUtils.toIntArray(XXTEACipher.COMMON_KEY, ByteOrder.BIG_ENDIAN));
+        byte[] decryptedBlock = BytesUtils.toByteArray(decryptedInt, ByteOrder.LITTLE_ENDIAN);
         ByteBuffer bb = ByteBuffer.allocate(data.length);
         bb.put(decryptedBlock);
         if (data.length > 512) {
@@ -110,31 +108,30 @@ public class CipherUtils {
     }
     static byte[] cipherFirstBlockSpecificKeyV2(byte[] data, byte[] specificKey) {
         byte[] block = Arrays.copyOfRange(data, 0, Math.min(64, data.length));
-        int[] dataInt = XXTEACipher.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
-        int[] encryptedInt = XXTEACipher.btea(dataInt, Math.min(128, data.length/4), XXTEACipher.toIntArray(specificKey, ByteOrder.BIG_ENDIAN));
-        return XXTEACipher.toByteArray(encryptedInt, ByteOrder.LITTLE_ENDIAN);
+        int[] dataInt = BytesUtils.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
+        int[] encryptedInt = XXTEACipher.btea(dataInt, Math.min(128, data.length/4), BytesUtils.toIntArray(specificKey, ByteOrder.BIG_ENDIAN));
+        return BytesUtils.toByteArray(encryptedInt, ByteOrder.LITTLE_ENDIAN);
     }
-    static byte[] cipherFirstBlockSpecificKeyV3(byte[] data, byte[] deviceKeyV3) {
-        /*byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
+
+    static byte[] cipherFirstBlockSpecificKeyV3(byte[] data, FsDeviceKeyV3 deviceKeyV3) {
+        byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
         byte[] encryptedBlock = AESCBCCipher.cipher(block, deviceKeyV3);
         ByteBuffer bb = ByteBuffer.allocate(data.length);
         bb.put(encryptedBlock);
         if (data.length > 512) {
             bb.put(Arrays.copyOfRange(data, 512, data.length));
         }
-        return bb.array();*/
-        return AESCBCCipher.cipher(data, deviceKeyV3);
+        return bb.array();
     }
-    static byte[] decipherFirstBlockSpecificKeyV3(byte[] data, byte[] deviceKeyV3) {
-        /*byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
+    static byte[] decipherFirstBlockSpecificKeyV3(byte[] data, FsDeviceKeyV3 deviceKeyV3) {
+        byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
         byte[] decryptedBlock = AESCBCCipher.decipher(block, deviceKeyV3);
         ByteBuffer bb = ByteBuffer.allocate(data.length);
         bb.put(decryptedBlock);
         if (data.length > 512) {
             bb.put(Arrays.copyOfRange(data, 512, data.length));
         }
-        return bb.array();*/
-        return AESCBCCipher.decipher(data, deviceKeyV3);
+        return bb.array();
     }
 
 }

@@ -11,6 +11,7 @@ import org.usb4java.Device;
 import studio.driver.DeviceVersion;
 import studio.driver.LibUsbDetectionHelper;
 import studio.driver.model.fs.FsDeviceInfos;
+import studio.driver.model.fs.FsDeviceKeyV3;
 import studio.driver.model.fs.FsStoryPackInfos;
 import studio.driver.StoryTellerException;
 import studio.driver.event.DeviceHotplugEventListener;
@@ -181,20 +182,23 @@ public class FsStoryTellerAsyncDriver {
 
         // Serial number
         deviceMetadataFis.skip(21);
-        long sn = readAsciiToLong(deviceMetadataFis, 14);
-        String serialNumber = String.format("%014d", sn);
+        byte[] snBytes = deviceMetadataFis.readNBytes(24);
+        String serialNumber = new String(snBytes);
         LOGGER.info("Serial Number: " + serialNumber);
         infos.setSerialNumber(serialNumber);
 
-        // Device key
-        byte[] snb = String.valueOf(sn).getBytes(StandardCharsets.UTF_8);
-        deviceMetadataFis.skip(24);
-        byte[] key = deviceMetadataFis.readNBytes(32);
-        byte[] deviceKey = new byte[64];
-        System.arraycopy(snb, 0, deviceKey, 0 , 14);
-        System.arraycopy(snb, 0, deviceKey, 24 , 8);
-        System.arraycopy(key, 0, deviceKey, 32 , 32);
-        infos.setDeviceKeyV3(deviceKey);
+        // Construct AES key and IV from serial number
+        byte[] aesKey = new byte[16];
+        System.arraycopy(snBytes, 0, aesKey, 0 , 16);
+        byte[] aesIv = new byte[16];
+        System.arraycopy(snBytes, 16, aesIv, 0 , 8);
+        System.arraycopy(snBytes, 0, aesIv, 8 , 8);
+
+        // BT file content
+        deviceMetadataFis.skip(14);
+        byte[] btFile = deviceMetadataFis.readNBytes(32);
+
+        infos.setDeviceKeyV3(new FsDeviceKeyV3(aesKey, aesIv, btFile));
     }
 
     private short readLittleEndianShort(FileInputStream fis) throws IOException {
