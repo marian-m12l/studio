@@ -199,6 +199,14 @@ public class FsStoryTellerAsyncDriver {
         byte[] btFile = deviceMetadataFis.readNBytes(32);
 
         infos.setDeviceKeyV3(new FsDeviceKeyV3(aesKey, aesIv, btFile));
+
+        // Dummy UUID
+        byte[] uuid = new byte[64];
+        System.arraycopy(aesKey, 0, uuid, 0 , 16);
+        System.arraycopy(aesIv, 0, uuid, 16 , 16);
+        System.arraycopy(btFile, 0, uuid, 32 , 32);
+        infos.setUuid(uuid);
+        LOGGER.fine("UUID: " + Hex.encodeHexString(uuid));
     }
 
     private short readLittleEndianShort(FileInputStream fis) throws IOException {
