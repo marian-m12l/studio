@@ -31,6 +31,10 @@ On firmware V3:
  */
 public class CipherUtils {
 
+    private static final int CIPHER_BLOCK_SIZE_BOOT_V2 = 64;
+    private static final int CIPHER_BLOCK_SIZE_ASSETS_V2 = 512;
+    private static final int CIPHER_BLOCK_SIZE_ASSETS_V3 = 512;
+
     private static final String NODE_INDEX_FILENAME = "ni";
     private static final String LIST_INDEX_FILENAME = "li";
     private static final String IMAGE_INDEX_FILENAME = "ri";
@@ -57,7 +61,7 @@ public class CipherUtils {
         byte[] specificKey = computeSpecificKeyV2FromUUID(deviceUuid);
         // Read ciphered block of ri file
         FileInputStream riFis = new FileInputStream(new File(packFolder.toFile(), IMAGE_INDEX_FILENAME));
-        byte[] riCipheredBlock = riFis.readNBytes(64);
+        byte[] riCipheredBlock = riFis.readNBytes(CIPHER_BLOCK_SIZE_BOOT_V2);
         riFis.close();
         // Add boot file: bt
         FileOutputStream btFos = new FileOutputStream(new File(packFolder.toFile(), BOOT_FILENAME));
@@ -73,26 +77,26 @@ public class CipherUtils {
     }
 
     static byte[] cipherFirstBlockCommonKey(byte[] data) {
-        byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
+        byte[] block = Arrays.copyOfRange(data, 0, Math.min(CIPHER_BLOCK_SIZE_ASSETS_V2, data.length));
         int[] dataInt = BytesUtils.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
-        int[] encryptedInt = XXTEACipher.btea(dataInt, Math.min(128, data.length/4), BytesUtils.toIntArray(XXTEACipher.COMMON_KEY, ByteOrder.BIG_ENDIAN));
+        int[] encryptedInt = XXTEACipher.btea(dataInt, Math.min(CIPHER_BLOCK_SIZE_ASSETS_V2/4, data.length/4), BytesUtils.toIntArray(XXTEACipher.COMMON_KEY, ByteOrder.BIG_ENDIAN));
         byte[] encryptedBlock = BytesUtils.toByteArray(encryptedInt, ByteOrder.LITTLE_ENDIAN);
         ByteBuffer bb = ByteBuffer.allocate(data.length);
         bb.put(encryptedBlock);
-        if (data.length > 512) {
-            bb.put(Arrays.copyOfRange(data, 512, data.length));
+        if (data.length > CIPHER_BLOCK_SIZE_ASSETS_V2) {
+            bb.put(Arrays.copyOfRange(data, CIPHER_BLOCK_SIZE_ASSETS_V2, data.length));
         }
         return bb.array();
     }
     static byte[] decipherFirstBlockCommonKey(byte[] data) {
-        byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
+        byte[] block = Arrays.copyOfRange(data, 0, Math.min(CIPHER_BLOCK_SIZE_ASSETS_V2, data.length));
         int[] dataInt = BytesUtils.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
-        int[] decryptedInt = XXTEACipher.btea(dataInt, -(Math.min(128, data.length/4)), BytesUtils.toIntArray(XXTEACipher.COMMON_KEY, ByteOrder.BIG_ENDIAN));
+        int[] decryptedInt = XXTEACipher.btea(dataInt, -(Math.min(CIPHER_BLOCK_SIZE_ASSETS_V2/4, data.length/4)), BytesUtils.toIntArray(XXTEACipher.COMMON_KEY, ByteOrder.BIG_ENDIAN));
         byte[] decryptedBlock = BytesUtils.toByteArray(decryptedInt, ByteOrder.LITTLE_ENDIAN);
         ByteBuffer bb = ByteBuffer.allocate(data.length);
         bb.put(decryptedBlock);
-        if (data.length > 512) {
-            bb.put(Arrays.copyOfRange(data, 512, data.length));
+        if (data.length > CIPHER_BLOCK_SIZE_ASSETS_V2) {
+            bb.put(Arrays.copyOfRange(data, CIPHER_BLOCK_SIZE_ASSETS_V2, data.length));
         }
         return bb.array();
     }
@@ -107,29 +111,36 @@ public class CipherUtils {
         return reorderedBtKey;
     }
     static byte[] cipherFirstBlockSpecificKeyV2(byte[] data, byte[] specificKey) {
-        byte[] block = Arrays.copyOfRange(data, 0, Math.min(64, data.length));
+        byte[] block = Arrays.copyOfRange(data, 0, Math.min(CIPHER_BLOCK_SIZE_BOOT_V2, data.length));
         int[] dataInt = BytesUtils.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
-        int[] encryptedInt = XXTEACipher.btea(dataInt, Math.min(128, data.length/4), BytesUtils.toIntArray(specificKey, ByteOrder.BIG_ENDIAN));
-        return BytesUtils.toByteArray(encryptedInt, ByteOrder.LITTLE_ENDIAN);
+        int[] encryptedInt = XXTEACipher.btea(dataInt, Math.min(CIPHER_BLOCK_SIZE_BOOT_V2/4, data.length/4), BytesUtils.toIntArray(specificKey, ByteOrder.BIG_ENDIAN));
+        byte[] encryptedBlock = BytesUtils.toByteArray(encryptedInt, ByteOrder.LITTLE_ENDIAN);
+        ByteBuffer bb = ByteBuffer.allocate(data.length);
+        bb.put(encryptedBlock);
+        if (data.length > CIPHER_BLOCK_SIZE_BOOT_V2) {
+            bb.put(Arrays.copyOfRange(data, CIPHER_BLOCK_SIZE_BOOT_V2, data.length));
+        }
+        return bb.array();
     }
 
     static byte[] cipherFirstBlockSpecificKeyV3(byte[] data, FsDeviceKeyV3 deviceKeyV3) {
-        byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
+        byte[] block = Arrays.copyOfRange(data, 0, Math.min(CIPHER_BLOCK_SIZE_ASSETS_V3, data.length));
         byte[] encryptedBlock = AESCBCCipher.cipher(block, deviceKeyV3);
-        ByteBuffer bb = ByteBuffer.allocate(data.length);
+        int outputLength = encryptedBlock.length + Math.max(0, data.length - CIPHER_BLOCK_SIZE_ASSETS_V3);
+        ByteBuffer bb = ByteBuffer.allocate(outputLength);
         bb.put(encryptedBlock);
-        if (data.length > 512) {
-            bb.put(Arrays.copyOfRange(data, 512, data.length));
+        if (data.length > CIPHER_BLOCK_SIZE_ASSETS_V3) {
+            bb.put(Arrays.copyOfRange(data, CIPHER_BLOCK_SIZE_ASSETS_V3, data.length));
         }
         return bb.array();
     }
     static byte[] decipherFirstBlockSpecificKeyV3(byte[] data, FsDeviceKeyV3 deviceKeyV3) {
-        byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
+        byte[] block = Arrays.copyOfRange(data, 0, Math.min(CIPHER_BLOCK_SIZE_ASSETS_V3, data.length));
         byte[] decryptedBlock = AESCBCCipher.decipher(block, deviceKeyV3);
         ByteBuffer bb = ByteBuffer.allocate(data.length);
         bb.put(decryptedBlock);
-        if (data.length > 512) {
-            bb.put(Arrays.copyOfRange(data, 512, data.length));
+        if (data.length > CIPHER_BLOCK_SIZE_ASSETS_V3) {
+            bb.put(Arrays.copyOfRange(data, CIPHER_BLOCK_SIZE_ASSETS_V3, data.length));
         }
         return bb.array();
     }

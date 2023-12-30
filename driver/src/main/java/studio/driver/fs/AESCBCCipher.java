@@ -33,7 +33,7 @@ public class AESCBCCipher {
     }
 
     private static byte[] cbc(byte[] bytes, FsDeviceKeyV3 deviceKeyV3, int mode) {
-        // Zero-bytes padding
+        // Zero-bytes padding (keeping the padding when deciphering should be OK if that's what the firmware expects anyway)
         int incompleteBlockLength = bytes.length % AES_CBC_BLOCK_SIZE;
         if (incompleteBlockLength > 0) {
             int paddingLength = AES_CBC_BLOCK_SIZE - incompleteBlockLength;
