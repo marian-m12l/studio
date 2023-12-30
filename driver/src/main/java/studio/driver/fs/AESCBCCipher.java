@@ -22,6 +22,8 @@ import java.util.Arrays;
 
 public class AESCBCCipher {
 
+    private static final int AES_CBC_BLOCK_SIZE = 16;
+
     public static byte[] cipher(byte[] bytes, FsDeviceKeyV3 deviceKeyV3) {
         return cbc(bytes, deviceKeyV3, Cipher.ENCRYPT_MODE);
     }
@@ -32,9 +34,10 @@ public class AESCBCCipher {
 
     private static byte[] cbc(byte[] bytes, FsDeviceKeyV3 deviceKeyV3, int mode) {
         // Zero-bytes padding
-        int padding = bytes.length % 16;
-        if (padding > 0) {
-            bytes = Arrays.copyOf(bytes, bytes.length + padding);
+        int incompleteBlockLength = bytes.length % AES_CBC_BLOCK_SIZE;
+        if (incompleteBlockLength > 0) {
+            int paddingLength = AES_CBC_BLOCK_SIZE - incompleteBlockLength;
+            bytes = Arrays.copyOf(bytes, bytes.length + paddingLength);
         }
         try {
             IvParameterSpec iv = new IvParameterSpec(BytesUtils.reverseEndianness(deviceKeyV3.getAesIv()));
