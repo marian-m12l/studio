@@ -9,6 +9,7 @@ package studio.core.v1.reader.fs;
 import studio.core.v1.Constants;
 import studio.core.v1.model.*;
 import studio.core.v1.model.metadata.StoryPackMetadata;
+import studio.core.v1.utils.BytesUtils;
 import studio.core.v1.utils.XXTEACipher;
 
 import java.io.DataInputStream;
@@ -31,6 +32,7 @@ public class FsStoryPackReader {
     private static final String SOUND_INDEX_FILENAME = "si";
     private static final String SOUND_FOLDER = "sf" + File.separator;
     private static final String NIGHT_MODE_FILENAME = "nm";
+    private static final String CLEARTEXT_FILENAME = ".cleartext";
 
     public StoryPackMetadata readMetadata(Path inputFolder) throws IOException {
         // Pack metadata model
@@ -68,10 +70,16 @@ public class FsStoryPackReader {
         // Night mode is available if file 'nm' exists
         boolean nightModeAvailable = new File(packFolder, NIGHT_MODE_FILENAME).exists();
 
+        // Pack files should be kept as cleartext in the library, with cipher operations happening during transfer to/from device
+        // We keep a backward-compatibility with packs in library ciphered for v2
+
+        // Assets are cleartext if file '.cleartext' exists
+        boolean isCleartext = new File(packFolder, CLEARTEXT_FILENAME).exists();
+
         // Load ri, si and li files
-        byte[] riContent = readCipheredFile(new File(packFolder, IMAGE_INDEX_FILENAME).toPath());
-        byte[] siContent = readCipheredFile(new File(packFolder, SOUND_INDEX_FILENAME).toPath());
-        byte[] liContent = readCipheredFile(new File(packFolder, LIST_INDEX_FILENAME).toPath());
+        byte[] riContent = readCipheredFile(new File(packFolder, IMAGE_INDEX_FILENAME).toPath(), isCleartext);
+        byte[] siContent = readCipheredFile(new File(packFolder, SOUND_INDEX_FILENAME).toPath(), isCleartext);
+        byte[] liContent = readCipheredFile(new File(packFolder, LIST_INDEX_FILENAME).toPath(), isCleartext);
 
         // Open 'ni' file
         FileInputStream niFis = new FileInputStream(new File(packFolder, NODE_INDEX_FILENAME));
@@ -140,7 +148,7 @@ public class FsStoryPackReader {
                 byte[] imagePath = Arrays.copyOfRange(riContent, imageAssetIndexInRI*12, imageAssetIndexInRI*12+12);   // Each entry takes 12 bytes
                 String path = new String(imagePath, StandardCharsets.UTF_8);
                 // Read image file
-                byte[] rfContent = readCipheredFile(new File(packFolder, IMAGE_FOLDER+path.replaceAll("\\\\", "/")).toPath());
+                byte[] rfContent = readCipheredFile(new File(packFolder, IMAGE_FOLDER+path.replaceAll("\\\\", "/")).toPath(), isCleartext);
                 image = new ImageAsset("image/bmp", rfContent);
             }
             AudioAsset audio = null;
@@ -149,7 +157,7 @@ public class FsStoryPackReader {
                 byte[] audioPath = Arrays.copyOfRange(siContent, soundAssetIndexInSI*12, soundAssetIndexInSI*12+12);    // Each entry takes 12 bytes
                 String path = new String(audioPath, StandardCharsets.UTF_8);
                 // Read audio file
-                byte[] sfContent = readCipheredFile(new File(packFolder, SOUND_FOLDER+path.replaceAll("\\\\", "/")).toPath());
+                byte[] sfContent = readCipheredFile(new File(packFolder, SOUND_FOLDER+path.replaceAll("\\\\", "/")).toPath(), isCleartext);
                 audio = new AudioAsset("audio/mpeg", sfContent);
             }
 
@@ -193,16 +201,16 @@ public class FsStoryPackReader {
         return new StoryPack(uuid, factoryDisabled, version, List.copyOf(stageNodes.values()), null, nightModeAvailable);
     }
 
-    private byte[] readCipheredFile(Path path) throws IOException {
+    private byte[] readCipheredFile(Path path, boolean isCleartext) throws IOException {
         byte[] content = Files.readAllBytes(path);
-        return decipherFirstBlockCommonKey(content);
+        return isCleartext ? content : decipherFirstBlockCommonKey(content);
     }
 
     private byte[] decipherFirstBlockCommonKey(byte[] data) {
         byte[] block = Arrays.copyOfRange(data, 0, Math.min(512, data.length));
-        int[] dataInt = XXTEACipher.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
-        int[] decryptedInt = XXTEACipher.btea(dataInt, -(Math.min(128, data.length/4)), XXTEACipher.toIntArray(XXTEACipher.COMMON_KEY, ByteOrder.BIG_ENDIAN));
-        byte[] decryptedBlock = XXTEACipher.toByteArray(decryptedInt, ByteOrder.LITTLE_ENDIAN);
+        int[] dataInt = BytesUtils.toIntArray(block, ByteOrder.LITTLE_ENDIAN);
+        int[] decryptedInt = XXTEACipher.btea(dataInt, -(Math.min(128, data.length/4)), BytesUtils.toIntArray(XXTEACipher.COMMON_KEY, ByteOrder.BIG_ENDIAN));
+        byte[] decryptedBlock = BytesUtils.toByteArray(decryptedInt, ByteOrder.LITTLE_ENDIAN);
         ByteBuffer bb = ByteBuffer.allocate(data.length);
         bb.put(decryptedBlock);
         if (data.length > 512) {
