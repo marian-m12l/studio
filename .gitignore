@@ -2,3 +2,7 @@
 *.iml
 *node_modules
 *target
+.project
+.settings
+.classpath
+*.log
