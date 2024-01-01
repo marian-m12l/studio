@@ -33,6 +33,7 @@
                         <source>11</source>
                         <target>11</target>
                     </configuration>
+                    <version>3.1</version>
                 </plugin>
             </plugins>
         </pluginManagement>

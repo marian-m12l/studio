@@ -21,6 +21,7 @@
     "lodash": "^4.17.15",
     "marked": "^1.0.0",
     "mathjs": "^6.2.5",
+    "npx": "^10.2.2",
     "pathfinding": "^0.4.18",
     "paths-js": "^0.4.10",
     "prop-types": "^15.7.2",
@@ -42,7 +43,8 @@
     "start": "react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
-    "eject": "react-scripts eject"
+    "eject": "react-scripts eject",
+    "update-browserslist": "npx browserslist@latest --update-db"
   },
   "eslintConfig": {
     "extends": "react-app"
