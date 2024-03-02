@@ -6,11 +6,12 @@
 
 package studio.webui.service;
 
+import com.github.benmanes.caffeine.cache.Cache;
+import com.github.benmanes.caffeine.cache.Caffeine;
 import io.vertx.core.json.JsonArray;
 import io.vertx.core.json.JsonObject;
 import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
-import org.apache.commons.codec.binary.Hex;
 import org.apache.commons.io.FileUtils;
 import studio.core.v1.model.StoryPack;
 import studio.core.v1.model.metadata.StoryPackMetadata;
@@ -32,6 +33,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.time.Duration;
 import java.util.Base64;
 import java.util.List;
 import java.util.Map;
@@ -40,7 +42,6 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class LibraryService {
-
     public static final String LOCAL_LIBRARY_PROP = "studio.library";
     public static final String LOCAL_LIBRARY_PATH = "/.studio/library/";
     public static final String TMP_DIR_PROP = "studio.tmpdir";
@@ -49,6 +50,9 @@ public class LibraryService {
     private final Logger LOGGER = LoggerFactory.getLogger(LibraryService.class);
 
     private final DatabaseMetadataService databaseMetadataService;
+
+    private final Cache<Path, Optional<LibraryPack>> cachedPacks = Caffeine.newBuilder()
+            .expireAfterWrite(Duration.ofMinutes(5)).build();
 
     public LibraryService(DatabaseMetadataService databaseMetadataService) {
         this.databaseMetadataService = databaseMetadataService;
@@ -92,7 +96,7 @@ public class LibraryService {
                 paths
                         .filter(Files::isRegularFile)
                         .filter(path -> path.toString().endsWith(".zip"))
-                        .map(this::readPackFile)
+                        .map(p -> cachedPacks.get(p, this::readPackFile))
                         .filter(Optional::isPresent)
                         .map(Optional::get)
                         // Group packs by UUID
@@ -124,7 +128,7 @@ public class LibraryService {
                 return new JsonArray(
                         paths
                                 .filter(path -> !path.equals(Paths.get(libraryPath())))
-                                .map(this::readPackFile)
+                                .map(p -> cachedPacks.get(p, this::readPackFile))
                                 .filter(Optional::isPresent)
                                 .map(Optional::get)
                                 // Group packs by UUID
