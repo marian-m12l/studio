@@ -119,10 +119,10 @@ jobs:
       - name: Download Liberica NIK
         env:
           #liberica-url: https://download.bell-sw.com/vm/22.3.2/bellsoft-liberica-vm-core-openjdk17.0.7+7-22.3.2+1-${{ matrix.jdk-suffix }}
-          #liberica-url: https://download.bell-sw.com/vm/23.0.1/bellsoft-liberica-vm-core-openjdk20.0.2+10-23.0.1+1-${{ matrix.jdk-suffix }}
-          liberica-url: https://download.bell-sw.com/vm/23.1.0/bellsoft-liberica-vm-core-openjdk21+37-23.1.0+1-${{ matrix.jdk-suffix }}
+          #liberica-url: https://download.bell-sw.com/vm/23.1.0/bellsoft-liberica-vm-core-openjdk21+37-23.1.0+1-${{ matrix.jdk-suffix }}
+          liberica-url:  https://github.com/bell-sw/LibericaNIK/releases/download/23.1.2+1-21.0.2+14/bellsoft-liberica-vm-core-openjdk21.0.2+14-23.1.2+1-${{ matrix.jdk-suffix }}
         run: curl -sLo ${{ runner.temp }}/${{ matrix.jdk-suffix }} ${{ env.liberica-url }}
-        if: ${{ runner.os != 'Linux' }}
+        #if: ${{ runner.os != 'Linux' }}
 
       - uses: actions/setup-java@v4
         with:
@@ -130,7 +130,7 @@ jobs:
           distribution: jdkfile
           jdkFile: ${{ runner.temp }}/${{ matrix.jdk-suffix }}
           cache: maven
-        if: ${{ runner.os != 'Linux' }}
+        #if: ${{ runner.os != 'Linux' }}
 
       - uses: graalvm/setup-graalvm@v1
         with:
@@ -139,7 +139,7 @@ jobs:
           cache: maven
           github-token: ${{ secrets.GITHUB_TOKEN }}
           native-image-job-reports: true
-        if: ${{ runner.os == 'Linux' }}
+        if: ${{ runner.os == 'DEPRECATED_Linux' }}
 
       - name: (Windows) Set up compiler
         uses: ilammy/msvc-dev-cmd@v1
