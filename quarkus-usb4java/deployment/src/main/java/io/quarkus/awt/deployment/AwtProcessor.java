@@ -30,7 +30,7 @@ import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabled;
 import io.quarkus.deployment.pkg.builditem.ProcessInheritIODisabledBuildItem;
 import io.quarkus.deployment.pkg.steps.GraalVM;
 import io.quarkus.deployment.pkg.steps.NativeOrNativeSourcesBuild;
-import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner
+import io.quarkus.deployment.pkg.steps.NoopNativeImageBuildRunner;
 
 class AwtProcessor {
 
