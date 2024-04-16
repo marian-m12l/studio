@@ -299,7 +299,7 @@ class AwtProcessor {
         // of baking in static libs: https://github.com/oracle/graal/issues/4921
         if (v.compareTo(GraalVM.Version.VERSION_23_0_0) >= 0) {
             classes.add("sun.awt.X11FontManager");
-            if (v.javaFeatureVersion != 19) {
+            if (v.javaVersion.feature() != 19) {
                 classes.add("java.awt.GraphicsEnvironment");
                 classes.add("sun.awt.X11GraphicsConfig");
                 classes.add("sun.awt.X11GraphicsDevice");
@@ -309,7 +309,7 @@ class AwtProcessor {
         }
 
         // Added for JDK 19+ due to: https://github.com/openjdk/jdk20/commit/9bc023220 calling FontUtilities
-        if (v.jdkVersionGreaterOrEqualTo(19, 0)) {
+        if (v.jdkVersionGreaterOrEqualTo("19")) {
             classes.add("sun.font.FontUtilities");
         }
         
