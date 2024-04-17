@@ -21,7 +21,7 @@ jobs:
         with:
           node-version: 12
 
-      - uses: actions/cache@v3
+      - uses: actions/cache@v4
         with:
           path: web-ui/javascript/
           key: studio-js-${{ hashFiles('**/yarn.lock') }}
