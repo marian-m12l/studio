@@ -16,11 +16,11 @@
     </modules>
 
     <properties>
-        <compiler-plugin.version>3.11.0</compiler-plugin.version>
-        <maven.compiler.release>11</maven.compiler.release>
+        <compiler-plugin.version>3.12.1</compiler-plugin.version>
+        <maven.compiler.release>17</maven.compiler.release>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
-        <surefire-plugin.version>3.0.0</surefire-plugin.version>
+        <surefire-plugin.version>3.2.5</surefire-plugin.version>
         <failsafe-plugin.version>3.2.5</failsafe-plugin.version>
         
         <quarkus.version>3.9.3</quarkus.version>
@@ -57,11 +57,11 @@
                 <plugin>
                     <artifactId>maven-compiler-plugin</artifactId>
                     <version>${compiler-plugin.version}</version>
-                    <configuration>
+                    <!-- <configuration>
                         <compilerArgs>
                         <arg>-parameters</arg>
                         </compilerArgs>
-                    </configuration>
+                    </configuration> -->
                 </plugin>
 
                 <plugin>
