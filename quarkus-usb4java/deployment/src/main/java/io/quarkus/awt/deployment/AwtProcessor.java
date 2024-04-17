@@ -314,19 +314,19 @@ class AwtProcessor {
         }
         
         // k: test
-        classes.add("com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi");
-        classes.add("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
-        classes.add("com.sun.imageio.spi.RAFImageInputStreamSpi");
-        classes.add("javax.imageio.ImageIO");
-        classes.add("javax.imageio.ImageIO$ImageWriterIterator");
-        classes.add("javax.imageio.stream.ImageInputStream");
-        classes.add("javax.imageio.stream.FileImageInputStream");
-        classes.add("sun.awt.image.JPEGImageDecoder");
-        classes.add("sun.font.FontManagerFactory");
-        classes.add("sun.font.StrikeCache");
-        classes.add("sun.font.StrikeCache$WeakDisposerRef");
-        classes.add("sun.font.SunFontManager");
-        classes.add("sun.java2d.xr.XRBackendNative");
+        //classes.add("com.sun.imageio.plugins.jpeg.JPEGImageWriterSpi");
+        //classes.add("com.sun.imageio.plugins.jpeg.JPEGImageReaderSpi");
+        //classes.add("com.sun.imageio.spi.RAFImageInputStreamSpi");
+        //classes.add("javax.imageio.ImageIO");
+        //classes.add("javax.imageio.ImageIO$ImageWriterIterator");
+        //classes.add("javax.imageio.stream.ImageInputStream");
+        //classes.add("javax.imageio.stream.FileImageInputStream");
+        //classes.add("sun.awt.image.JPEGImageDecoder");
+        //classes.add("sun.font.FontManagerFactory");
+        //classes.add("sun.font.StrikeCache");
+        //classes.add("sun.font.StrikeCache$WeakDisposerRef");
+        //classes.add("sun.font.SunFontManager");
+        //classes.add("sun.java2d.xr.XRBackendNative");
         // k: end
 
         return new JniRuntimeAccessBuildItem(true, true, true, classes.toArray(new String[0]));
