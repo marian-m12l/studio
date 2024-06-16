@@ -373,14 +373,15 @@ public class FsStoryTellerAsyncDriver {
             String newPiFile = piFile + ".new";
             LOGGER.finest("Writing pack index to temporary file: " + newPiFile);
 
-            FileOutputStream packIndexFos = new FileOutputStream(newPiFile);
-            DataOutputStream packIndexDos = new DataOutputStream(packIndexFos);
-            for (UUID packUUID : packUUIDs) {
-                packIndexDos.writeLong(packUUID.getMostSignificantBits());
-                packIndexDos.writeLong(packUUID.getLeastSignificantBits());
+            try(
+                    FileOutputStream packIndexFos = new FileOutputStream(newPiFile);
+                    DataOutputStream packIndexDos = new DataOutputStream(packIndexFos);
+            ) {
+                for (UUID packUUID : packUUIDs) {
+                    packIndexDos.writeLong(packUUID.getMostSignificantBits());
+                    packIndexDos.writeLong(packUUID.getLeastSignificantBits());
+                }
             }
-            packIndexDos.close();
-            packIndexFos.close();
 
             // Then replace file
             LOGGER.finest("Replacing pack index file");
