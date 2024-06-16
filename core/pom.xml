@@ -54,7 +54,7 @@
             <artifactId>vorbis-java</artifactId>
             <version>1.0.0-beta</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/../libs/vorbis-java-1.0.0-beta.jar</systemPath>
+            <systemPath>${pom.basedir}/../libs/vorbis-java-1.0.0-beta.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>de.sciss</groupId>
