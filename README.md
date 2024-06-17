@@ -3,7 +3,7 @@
 > [!WARNING]
 > Support for V3 devices has been added thanks to the community effort! :partying_face:
 > 
-> :warning: Implementation is this repository remains mostly untested! Make backups and be prepared to reinitialize your device, should issues arise. :warning:
+> :warning: Implementation in this repository remains mostly untested! Make backups and be prepared to reinitialize your device, should issues arise. :warning:
 
 STUdio - Story Teller Unleashed
 ===============================
