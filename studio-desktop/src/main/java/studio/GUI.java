@@ -618,7 +618,7 @@ public class GUI {
 				}
 			}
 		});
-		devicePacksList.setCellRenderer(new JsonPackCell());
+		devicePacksList.setCellRenderer(new JsonPackCell(localization));
 		devicePacksList.setName("devices");
 		devicePacksScrollPane.setViewportView(devicePacksList);
 		//devicePacksList.setDragEnabled(true);
@@ -1041,7 +1041,7 @@ public class GUI {
 
 		libraryPacksScrollPane.setViewportView(libraryPacksList);
 		libraryPacksList.setName("library");
-		libraryPacksList.setCellRenderer(new JsonPackCell());
+		libraryPacksList.setCellRenderer(new JsonPackCell(localization));
 		//libraryPacksList.setDragEnabled(true);
 		libraryPacksList.addMouseListener(new MouseAdapter() {
 			public void mouseClicked(MouseEvent evt) {

@@ -6,8 +6,10 @@ import java.awt.Dimension;
 import java.awt.GridBagConstraints;
 import java.awt.GridBagLayout;
 import java.awt.Insets;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Locale;
+import java.util.ResourceBundle;
 import java.util.concurrent.CompletableFuture;
 
 import javax.swing.DefaultListModel;
@@ -35,10 +37,13 @@ class JsonPackCell implements ListCellRenderer<JsonPack>, UIResource {
 	private static final Border noBorder = UIManager.getBorder("List.cellNoFocusBorder");
 	private static final Border selectedAndFocusedBorder = UIManager.getBorder("List.focusSelectedCellHighlightBorder");
 	private static final Border focusBorder = UIManager.getBorder("List.focusCellHighlightBorder");
-		
-		JsonPackCell() {
+	
+	private ResourceBundle localization;
+
+		JsonPackCell(ResourceBundle bundle) {
 			super();
 			initialize();
+			localization = bundle;
 			
 		}
 		
@@ -194,7 +199,7 @@ class JsonPackCell implements ListCellRenderer<JsonPack>, UIResource {
 			
 			components.stream().filter( (c) -> "age".equals(c.getName())).findFirst().ifPresent( ( c) -> {
 				if ( !(value.getAgeMin() == 0 && value.getAgeMax() == 0) ) {					
-					String strAge = value.getAgeMax() == -1 ? "From " + value.getAgeMin() + " years": "From " + value.getAgeMin() + " to " + value.getAgeMax() + " years";
+					String strAge = value.getAgeMax() == -1 ? substituteParameters(localization.getString("JsonPackCell.age1"), value.getAgeMin()) : substituteParameters(localization.getString("JsonPackCell.age3"), value.getAgeMin(), value.getAgeMax());
 					((JLabel)c).setText(strAge);
 				} else {
 					((JLabel)c).setText("");
@@ -210,6 +215,14 @@ class JsonPackCell implements ListCellRenderer<JsonPack>, UIResource {
 			});
 			
 			return res;
+		}
+
+		private static String substituteParameters(String message, Object ... params) {
+			while(message.indexOf("{}") > -1 && params.length > 0 ) {
+				message = message.replaceFirst("\\{\\}", (params[0] != null ? params[0].toString() : ""));
+				params = Arrays.copyOfRange(params, 1, params.length);
+			}
+			return message;
 		}
 		
 	}
