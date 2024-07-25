@@ -8,3 +8,5 @@
 *.log
 web-ui/javascript/build
 web-ui/javascript/report.*.json
+
+**/.DS_Store
