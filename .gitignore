@@ -6,3 +6,5 @@
 .settings
 .classpath
 *.log
+web-ui/javascript/build
+web-ui/javascript/report.*.json

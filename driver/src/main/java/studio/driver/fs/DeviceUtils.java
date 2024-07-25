@@ -32,10 +32,9 @@ public class DeviceUtils {
                     .map(root -> root.toPath().toString())
                     .collect(Collectors.toList());
         } else {
-        	final String[] CMD_DF = 
-                SystemUtils.IS_OS_MAC ? new String[] {"/bin/sh", "-c", "df | tail -n +2"} : new String[] {"df", "-l"};
-            final Pattern dfPattern = Pattern.compile("^([a-zA-Z:-]*\\/[^ ]+)[^/]+(\\/.*)$");
-            
+            final String CMD_DF = SystemUtils.IS_OS_MAC ? "df" : "df -l";
+            final Pattern dfPattern = Pattern.compile("^([^ ]+)[^/]+(/.*)$");
+
             List<String> mountPoints = new ArrayList<>();
 
             Process dfProcess = null;

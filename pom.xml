@@ -12,7 +12,7 @@
 
     <groupId>studio</groupId>
     <artifactId>studio-parent</artifactId>
-    <version>0.3.2-SNAPSHOT</version>
+    <version>0.4.1-SNAPSHOT</version>
 
     <packaging>pom</packaging>
 
@@ -34,6 +34,7 @@
                         <source>11</source>
                         <target>11</target>
                     </configuration>
+                    <version>3.1</version>
                 </plugin>
             </plugins>
         </pluginManagement>

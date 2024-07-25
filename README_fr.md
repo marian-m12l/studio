@@ -1,5 +1,9 @@
 [![Release](https://img.shields.io/github/v/release/marian-m12l/studio)](https://github.com/marian-m12l/studio/releases/latest)
-[![Gitter](https://badges.gitter.im/STUdio-Story-Teller-Unleashed/general.svg)](https://gitter.im/STUdio-Story-Teller-Unleashed/general?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge)
+
+> [!WARNING]
+> Le support pour les appareils V3 a été ajouté grâce à la communauté ! :partying_face:
+> 
+> :warning: L'implémentation dans ce dépôt reste très peu testée à ce jour ! Conservez des copies de sauvegarde et soyez prêt à devoir réinitialiser la boîte à histoires en cas de soucis. :warning:
 
 STUdio - Story Teller Unleashed
 ===============================
@@ -124,10 +128,10 @@ APPLICATIONS TIERCES
 --------------------
 
 Si vous avez aimé STUdio, vous aimerez aussi :
-* [mhios (Mes Histoires Interactives Open Stories)](https://www.mhios.com) est une bibliothèque ouverte, en ligne,
-d'histoires interactives (développé par [@sebbelese](https://github.com/sebbelese))
 * [Moiki](https://moiki.fr/) est un outil en ligne de création d'histoires interactives, qui peuvent être exportées
 vers STUdio (développé par [@kaelhem](https://github.com/kaelhem))
+* [mhios (Mes Histoires Interactives Open Stories)](https://github.com/sebbelese/mhios)) était une bibliothèque ouverte, en ligne,
+d'histoires interactives (développé par [@sebbelese](https://github.com/sebbelese))
 
 
 LICENCE

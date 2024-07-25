@@ -13,7 +13,7 @@
     <parent>
         <artifactId>studio-parent</artifactId>
         <groupId>studio</groupId>
-        <version>0.3.2-SNAPSHOT</version>
+        <version>0.4.1-SNAPSHOT</version>
     </parent>
 
     <artifactId>studio-core</artifactId>
@@ -54,7 +54,7 @@
             <artifactId>vorbis-java</artifactId>
             <version>1.0.0-beta</version>
             <scope>system</scope>
-            <systemPath>${project.basedir}/../libs/vorbis-java-1.0.0-beta.jar</systemPath>
+            <systemPath>${pom.basedir}/../libs/vorbis-java-1.0.0-beta.jar</systemPath>
         </dependency>
         <dependency>
             <groupId>de.sciss</groupId>
