@@ -99,6 +99,7 @@ import org.apache.poi.xssf.usermodel.XSSFSheet;
 import org.apache.poi.xssf.usermodel.XSSFWorkbook;
 import org.usb4java.Device;
 
+import net.harawata.appdirs.AppDirsFactory;
 import studio.database.JsonPack;
 import studio.database.Library;
 import studio.driver.event.DeviceHotplugEventListener;
@@ -113,17 +114,6 @@ import studio.driver.raw.LibUsbMassStorageHelper;
 import studio.driver.raw.RawStoryTellerAsyncDriver;
 
 public class GUI {
-
-//	public class StoryPackInfosAndMetadata {
-//		protected FsStoryPackInfos pack;
-//		protected StoryPackMetadata metadata;
-//		
-//		protected StoryPackInfosAndMetadata(FsStoryPackInfos pack, StoryPackMetadata metadata) {
-//			this.pack = pack;
-//			this.metadata = metadata;
-//		}
-//		
-//	}
 
 	private JFrame frmLuniiTransfer;
 	private JTextField serialNumberTextBox;
@@ -233,10 +223,11 @@ public class GUI {
 	
 	private void initializeLunii() {		
 		String libraryFolder = System.getProperty("user.home");
-		if ( new File("./prefs.ini").exists()) {
+		File prefsFile = new File(AppDirsFactory.getInstance().getUserConfigDir("Lunii-Transfert", "0.4.1", "horfee") + "/prefs.ini");
+		if ( prefsFile.exists()) {
 			Properties prop = new java.util.Properties();
 			try {
-				prop.load(new FileInputStream(new File("./prefs.ini")));
+				prop.load(new FileInputStream(prefsFile));
 			} catch (IOException e) {
 			}
 			libraryFolder = prop.getProperty("libraryPath");
@@ -1398,6 +1389,7 @@ public class GUI {
 
 			}
 		});
+		
 
 		JMenuItem changeLibraryPathMenuItem = new JMenuItem(localization.getString("Library.changePath"));
 
@@ -1413,7 +1405,12 @@ public class GUI {
 					String path = chooser.getSelectedFile().getAbsolutePath();
 					Properties prop = new java.util.Properties();
 					prop.setProperty("libraryPath", path);
-					try(FileOutputStream fos = new FileOutputStream(new File("./prefs.ini"))) {
+					File file = new File(AppDirsFactory.getInstance().getUserConfigDir("Lunii-Transfert", "0.4.1", "horfee"));
+					if ( !file.exists()) {
+						file.mkdirs();
+					}
+					file = new File(file.getAbsolutePath() + "/prefs.ini");
+					try(FileOutputStream fos = new FileOutputStream( file )) {
 						prop.store(fos, "auto-generated");
 					} catch (IOException e1) {
 						e1.printStackTrace();
