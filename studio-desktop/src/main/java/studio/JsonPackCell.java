@@ -198,8 +198,16 @@ class JsonPackCell implements ListCellRenderer<JsonPack>, UIResource {
 			});
 			
 			components.stream().filter( (c) -> "age".equals(c.getName())).findFirst().ifPresent( ( c) -> {
-				if ( !(value.getAgeMin() == 0 && value.getAgeMax() == 0) ) {					
-					String strAge = value.getAgeMax() == -1 ? substituteParameters(localization.getString("JsonPackCell.age1"), value.getAgeMin()) : substituteParameters(localization.getString("JsonPackCell.age3"), value.getAgeMin(), value.getAgeMax());
+				if ( !(value.getAgeMin() == 0 && value.getAgeMax() == 0) ) {
+					String strAge = "";
+					if ( value.getAgeMin() == -1 && value.getAgeMax() != -1 ) {
+						strAge = substituteParameters(localization.getString("JsonPackCell.age2"), value.getAgeMax());
+					} else if ( value.getAgeMin() != -1 && value.getAgeMax() == -1 ) {
+						strAge = substituteParameters(localization.getString("JsonPackCell.age1"), value.getAgeMin());
+					} else if ( value.getAgeMin() != -1 && value.getAgeMax() != -1 ) {
+						strAge = substituteParameters(localization.getString("JsonPackCell.age3"), value.getAgeMin(), value.getAgeMax()); 
+						
+					}
 					((JLabel)c).setText(strAge);
 				} else {
 					((JLabel)c).setText("");
