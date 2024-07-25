@@ -40,17 +40,22 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.ResourceBundle;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import javax.swing.BoxLayout;
+import javax.swing.ComboBoxModel;
+import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;
 import javax.swing.DropMode;
 import javax.swing.JButton;
 import javax.swing.JCheckBox;
+import javax.swing.JComboBox;
 import javax.swing.JFileChooser;
 import javax.swing.JFrame;
 import javax.swing.JLabel;
@@ -62,13 +67,18 @@ import javax.swing.JOptionPane;
 import javax.swing.JPanel;
 import javax.swing.JProgressBar;
 import javax.swing.JScrollPane;
+import javax.swing.JSpinner;
 import javax.swing.JSplitPane;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
+import javax.swing.SpinnerModel;
+import javax.swing.SpinnerNumberModel;
 import javax.swing.TransferHandler;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
+import javax.swing.event.ChangeEvent;
+import javax.swing.event.ChangeListener;
 import javax.swing.event.ListDataEvent;
 import javax.swing.event.ListDataListener;
 import javax.swing.event.ListSelectionEvent;
@@ -100,6 +110,7 @@ import studio.driver.model.raw.RawDeviceInfos;
 import studio.driver.model.raw.RawStoryPackInfos;
 import studio.driver.raw.LibUsbMassStorageHelper;
 import studio.driver.raw.RawStoryTellerAsyncDriver;
+import javax.swing.SwingConstants;
 
 public class GUI {
 
@@ -149,6 +160,13 @@ public class GUI {
 	private PlaceholderTextField librarySearchTextField;
 	private PlaceholderTextField deviceSearchTextField;
 	private JCheckBox displayOnlyNotOnDeviceCheckBox;
+	private JPanel panel_1;
+	private JComboBox languageFilterComboBox;
+	private JLabel lblNewLabel;
+	private JSpinner spinner;
+	private JLabel lblNewLabel_1;
+	private JSpinner spinner_1;
+	private DefaultComboBoxModel<String> availableLanguagesModel;
 
 	/**
 	 * Launch the application.
@@ -220,6 +238,9 @@ public class GUI {
 		library.getPacks().thenAcceptAsync((List<JsonPack> packs) -> {
 			libraryPacksModel.addAll(packs);
 			btnRefreshLibrary.setEnabled(true);
+			Set<String> languages = packs.stream().map( (JsonPack p) -> p.getLocalizedInfos().keySet().iterator().next()).collect(Collectors.toSet());
+			availableLanguagesModel.removeAllElements();
+			availableLanguagesModel.addAll(languages);
 		});
 
 		fsDriver = new FsStoryTellerAsyncDriver(false);
@@ -351,6 +372,34 @@ public class GUI {
 		}
 	}
 
+	
+	private void filterLibrary() {
+		String language = (String)languageFilterComboBox.getSelectedItem();
+		int from = (int)spinner.getValue();
+		int to = (int)spinner_1.getValue();
+		
+		library.getPacks().thenAcceptAsync( (List<JsonPack> packs) -> {
+			Stream<JsonPack> stream = packs.stream();
+			if ( language != null ) {
+				stream = stream.filter( (JsonPack pack) -> {
+					return pack.getLocalizedInfos().keySet().contains(language);
+				});
+			}
+			if ( from > 0 ) {
+				stream = stream.filter( (JsonPack pack) -> pack.getAgeMin() >= from);
+			}
+			if ( to > 0 ) {
+				stream = stream.filter( (JsonPack pack) -> pack.getAgeMax() == -1 ? pack.getAgeMin() <= to : pack.getAgeMax() <= to);
+			}
+			libraryPacksModel.clear();
+			libraryPacksModel.addAll(stream.collect(Collectors.toList()));
+			
+			
+		});
+		
+		
+	}
+	
 	/**
 	 * Initialize the contents of the frame.
 	 */
@@ -1111,6 +1160,14 @@ public class GUI {
 				libraryPacksModel.clear();
 				library.refreshDatabase().thenRunAsync(() -> {
 					library.getPacks().thenAcceptAsync((List<JsonPack> packs) -> {
+						Set<String> languages = packs.stream().map( (JsonPack p) -> {
+							return p.getLocalizedInfos() == null || p.getLocalizedInfos().isEmpty() ? null : p.getLocalizedInfos().keySet().iterator().next();
+						}).collect(Collectors.toSet());
+						if ( !languages.contains(null) ) {
+							languages.add(null);
+						}
+						availableLanguagesModel.removeAllElements();
+						availableLanguagesModel.addAll(languages);
 						libraryPacksModel.addAll(packs);
 						btnRefreshLibrary.setEnabled(true);
 
@@ -1154,9 +1211,46 @@ public class GUI {
 		gbc_libraryPacksSummaryLabel.gridy = 0;
 		panel_6.add(libraryPacksSummaryLabel, gbc_libraryPacksSummaryLabel);
 		
+		panel_1 = new JPanel();
+		libraryListPanel.add(panel_1, BorderLayout.NORTH);
+		GridBagLayout gbl_panel_1 = new GridBagLayout();
+		//gbl_panel_1.columnWidths = new int[] {51, 52, 60, 60, 60, 60, 30};
+		//gbl_panel_1.rowHeights = new int[]{27, 0};
+		gbl_panel_1.columnWeights = new double[]{0.0, 1.0, 0.0, 0.0, 0.0, 0.0};
+		gbl_panel_1.rowWeights = new double[]{0.0};
+		panel_1.setLayout(gbl_panel_1);
+		
+		
+		availableLanguagesModel = new DefaultComboBoxModel<String>(); 
+		languageFilterComboBox = new JComboBox<String>(availableLanguagesModel);
+		languageFilterComboBox.setRenderer(new LanguagesCellRenderer());
+		languageFilterComboBox.setMinimumSize(new Dimension(70, 20));
+		languageFilterComboBox.setPreferredSize(new Dimension(70, 20));
+		GridBagConstraints gbc_comboBox = new GridBagConstraints();
+		gbc_comboBox.anchor = GridBagConstraints.WEST;
+		gbc_comboBox.insets = new Insets(0, 0, 0, 5);
+		gbc_comboBox.gridx = 0;
+		gbc_comboBox.gridy = 0;
+		panel_1.add(languageFilterComboBox, gbc_comboBox);
+		languageFilterComboBox.addActionListener(new ActionListener() {
+			
+			@Override
+			public void actionPerformed(ActionEvent e) {
+				filterLibrary();
+
+			}
+		});
+
 		librarySearchTextField = new PlaceholderTextField();
+		GridBagConstraints gbc_librarySearchTextField = new GridBagConstraints();
+		gbc_librarySearchTextField.weightx = 10.0;
+		gbc_librarySearchTextField.fill = GridBagConstraints.HORIZONTAL;
+		gbc_librarySearchTextField.anchor = GridBagConstraints.NORTH;
+		gbc_librarySearchTextField.insets = new Insets(0, 0, 0, 5);
+		gbc_librarySearchTextField.gridx = 1;
+		gbc_librarySearchTextField.gridy = 0;
+		panel_1.add(librarySearchTextField, gbc_librarySearchTextField);
 		librarySearchTextField.setPlaceHolder(localization.getString("Library.search"));
-		libraryListPanel.add(librarySearchTextField, BorderLayout.NORTH);
 		librarySearchTextField.addKeyListener(new KeyAdapter() {
 			@Override
 			public void keyTyped(KeyEvent e) {
@@ -1179,6 +1273,56 @@ public class GUI {
 				} else if ( e.getKeyChar() == KeyEvent.VK_ESCAPE ) {
 					librarySearchTextField.setText("");
 				}
+			}
+		});
+		
+		lblNewLabel = new JLabel(localization.getString("Library.searchFrom"));
+		lblNewLabel.setHorizontalAlignment(SwingConstants.TRAILING);
+		GridBagConstraints gbc_lblNewLabel = new GridBagConstraints();
+		gbc_lblNewLabel.anchor = GridBagConstraints.EAST;
+		//gbc_lblNewLabel.anchor = GridBagConstraints.WEST;
+		gbc_lblNewLabel.insets = new Insets(0, 0, 0, 5);
+		gbc_lblNewLabel.gridx = 2;
+		gbc_lblNewLabel.gridy = 0;
+		panel_1.add(lblNewLabel, gbc_lblNewLabel);
+		
+		spinner = new JSpinner(new SpinnerNumberModel(0, 0, 13, 1));
+		GridBagConstraints gbc_spinner = new GridBagConstraints();
+		gbc_spinner.anchor = GridBagConstraints.NORTHEAST;
+		gbc_spinner.insets = new Insets(0, 0, 0, 5);
+		gbc_spinner.gridx = 3;
+		gbc_spinner.gridy = 0;
+		panel_1.add(spinner, gbc_spinner);
+		spinner.addChangeListener(new ChangeListener() {
+			
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				filterLibrary();
+				
+			}
+		});
+		
+		lblNewLabel_1 = new JLabel(localization.getString("Library.searchTo"));
+		GridBagConstraints gbc_lblNewLabel_1 = new GridBagConstraints();
+		gbc_lblNewLabel_1.anchor = GridBagConstraints.EAST;
+		gbc_lblNewLabel_1.insets = new Insets(0, 0, 0, 5);
+		gbc_lblNewLabel_1.gridx = 4;
+		gbc_lblNewLabel_1.gridy = 0;
+		panel_1.add(lblNewLabel_1, gbc_lblNewLabel_1);
+		
+		spinner_1 = new JSpinner(new SpinnerNumberModel(0, 0, 13, 1));
+		GridBagConstraints gbc_spinner_1 = new GridBagConstraints();
+		gbc_spinner_1.insets = new Insets(0, 0, 0, 5);
+		gbc_spinner_1.anchor = GridBagConstraints.NORTHEAST;
+		gbc_spinner_1.gridx = 5;
+		gbc_spinner_1.gridy = 0;
+		panel_1.add(spinner_1, gbc_spinner_1);
+		spinner_1.addChangeListener(new ChangeListener() {
+			
+			@Override
+			public void stateChanged(ChangeEvent e) {
+				filterLibrary();
+				
 			}
 		});
 
