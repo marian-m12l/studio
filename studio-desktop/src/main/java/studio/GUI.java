@@ -26,6 +26,7 @@ import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.WindowEvent;
 import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -39,6 +40,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Properties;
 import java.util.ResourceBundle;
 import java.util.Set;
 import java.util.UUID;
@@ -49,7 +51,6 @@ import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import javax.swing.BoxLayout;
-import javax.swing.ComboBoxModel;
 import javax.swing.DefaultComboBoxModel;
 import javax.swing.DefaultListModel;
 import javax.swing.DropMode;
@@ -72,8 +73,8 @@ import javax.swing.JSplitPane;
 import javax.swing.JTextField;
 import javax.swing.KeyStroke;
 import javax.swing.ListSelectionModel;
-import javax.swing.SpinnerModel;
 import javax.swing.SpinnerNumberModel;
+import javax.swing.SwingConstants;
 import javax.swing.TransferHandler;
 import javax.swing.UIManager;
 import javax.swing.border.TitledBorder;
@@ -110,7 +111,6 @@ import studio.driver.model.raw.RawDeviceInfos;
 import studio.driver.model.raw.RawStoryPackInfos;
 import studio.driver.raw.LibUsbMassStorageHelper;
 import studio.driver.raw.RawStoryTellerAsyncDriver;
-import javax.swing.SwingConstants;
 
 public class GUI {
 
@@ -232,7 +232,20 @@ public class GUI {
 	}
 	
 	private void initializeLunii() {		
-		library = Library.getInstance(System.getProperty("user.home"));
+		String libraryFolder = System.getProperty("user.home");
+		if ( new File("./prefs.ini").exists()) {
+			Properties prop = new java.util.Properties();
+			try {
+				prop.load(new FileInputStream(new File("./prefs.ini")));
+			} catch (IOException e) {
+			}
+			libraryFolder = prop.getProperty("libraryPath");
+			if ( libraryFolder == null ) {
+				libraryFolder = System.getProperty("user.home");
+			}
+			
+		}
+		library = Library.getInstance(libraryFolder);
 
 		libraryPathLabel.setText("Path: " + library.getLibraryPath());
 		library.getPacks().thenAcceptAsync((List<JsonPack> packs) -> {
@@ -1397,9 +1410,18 @@ public class GUI {
 				chooser.setFileSelectionMode(JFileChooser.DIRECTORIES_ONLY);
 				chooser.setAcceptAllFileFilterUsed(false);
 				if (chooser.showOpenDialog(frmLuniiTransfer) == JFileChooser.APPROVE_OPTION) {
-					library = Library.getInstance(chooser.getSelectedFile().getAbsolutePath());
+					String path = chooser.getSelectedFile().getAbsolutePath();
+					Properties prop = new java.util.Properties();
+					prop.setProperty("libraryPath", path);
+					try(FileOutputStream fos = new FileOutputStream(new File("./prefs.ini"))) {
+						prop.store(fos, "auto-generated");
+					} catch (IOException e1) {
+						e1.printStackTrace();
+					}
+					
+					library = Library.getInstance(path);
 					btnRefreshLibrary.doClick();
-					libraryPathLabel.setText("Path : " + library.getLibraryPath());
+					libraryPathLabel.setText(localization.getString("Library.infoPath").replace("{}", library.getLibraryPath()));
 				}
 			}
 		});
