@@ -242,7 +242,14 @@ public class GUI {
 		library.getPacks().thenAcceptAsync((List<JsonPack> packs) -> {
 			libraryPacksModel.addAll(packs);
 			btnRefreshLibrary.setEnabled(true);
-			Set<String> languages = packs.stream().map( (JsonPack p) -> p.getLocalizedInfos().keySet().iterator().next()).collect(Collectors.toSet());
+			
+			Set<String> languages = packs.stream().map( (JsonPack p) -> {
+				return p.getLocalizedInfos() == null || p.getLocalizedInfos().isEmpty() ? null : p.getLocalizedInfos().keySet().iterator().next();
+			}).collect(Collectors.toSet());
+			if ( !languages.contains(null) ) {
+				languages.add(null);
+			}
+			
 			availableLanguagesModel.removeAllElements();
 			availableLanguagesModel.addAll(languages);
 		});
