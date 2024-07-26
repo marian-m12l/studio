@@ -98,7 +98,11 @@ public class LibUsbDetectionHelper {
                         }
                     }
                     LOGGER.info("Exiting libusb...");
-                    LibUsb.exit(context);
+                    
+                    try {
+                    	LibUsb.exit(context);
+                    } catch(IllegalStateException e) {
+                    }
                 })
         );
     }
