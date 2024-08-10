@@ -9,6 +9,8 @@ package studio.core.v1.reader.archive;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
+import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
+import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
 import org.apache.commons.io.IOUtils;
 import studio.core.v1.Constants;
 import studio.core.v1.model.*;
@@ -22,14 +24,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.*;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipInputStream;
 
 public class ArchiveStoryPackReader {
 
     public StoryPackMetadata readMetadata(InputStream inputStream) throws IOException {
         // Zip archive contains a json file and separate assets
-        ZipInputStream zis = new ZipInputStream(inputStream);
+        ZipArchiveInputStream zis = new ZipArchiveInputStream(inputStream);
 
         // Pack metadata model
         StoryPackMetadata metadata = new StoryPackMetadata(Constants.PACK_FORMAT_ARCHIVE);
@@ -37,7 +37,7 @@ public class ArchiveStoryPackReader {
         boolean hasStoryJsonEntry = false;
 
 
-        ZipEntry entry;
+        ZipArchiveEntry entry;
         while((entry = zis.getNextEntry()) != null) {
             // Story descriptor file: story.json
             if (!entry.isDirectory() && entry.getName().equalsIgnoreCase("story.json")) {
@@ -81,7 +81,7 @@ public class ArchiveStoryPackReader {
     public StoryPack read(InputStream inputStream) throws IOException {
 
         // Zip archive contains a json file and separate assets
-        ZipInputStream zis = new ZipInputStream(inputStream);
+        ZipArchiveInputStream zis = new ZipArchiveInputStream(inputStream);
 
         // Store assets bytes
         TreeMap<String, byte[]> assets = new TreeMap<>();
@@ -100,7 +100,7 @@ public class ArchiveStoryPackReader {
         boolean nightModeAvailable = false;
 
 
-                ZipEntry entry;
+        ZipArchiveEntry entry;
         while((entry = zis.getNextEntry()) != null) {
             // Story descriptor file: story.json
             if (!entry.isDirectory() && entry.getName().equalsIgnoreCase("story.json")) {

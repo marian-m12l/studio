@@ -441,8 +441,9 @@ public class LibraryService {
                 if (meta != null) {
                     return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
                 }
+                LOGGER.warn("Failed to read metadata for story pack: " + path.toString());
                 return Optional.empty();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 LOGGER.error("Failed to read archive-format pack " + path.toString() + " from local library", e);
                 return Optional.empty();
             }
@@ -456,8 +457,9 @@ public class LibraryService {
                     meta.setSectorSize(packSectorSize);
                     return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
                 }
+                LOGGER.warn("Failed to read metadata for story pack: " + path.toString());
                 return Optional.empty();
-            } catch (IOException e) {
+            } catch (Exception e) {
                 LOGGER.error("Failed to read raw format pack " + path.toString() + " from local library", e);
                 return Optional.empty();
             }
@@ -471,6 +473,7 @@ public class LibraryService {
                     meta.setSectorSize(packSectorSize);
                     return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
                 }
+                LOGGER.warn("Failed to read metadata for story pack: " + path.toString());
                 return Optional.empty();
             } catch (Exception e) {
                 LOGGER.error("Failed to read FS format pack " + path.toString() + " from local library", e);
