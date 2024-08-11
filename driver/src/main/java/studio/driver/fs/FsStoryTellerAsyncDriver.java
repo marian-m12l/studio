@@ -513,6 +513,12 @@ public class FsStoryTellerAsyncDriver {
 
         // Assets are cleartext if file '.cleartext' exists
         boolean isCleartext = new File(sourceFolder, CipherUtils.CLEARTEXT_FILENAME).exists();
+        
+        // Always add .cleartext file when downloading
+        if (!isUpload) {
+            // Indicate that files are cleartext
+            new File(destFolder, CipherUtils.CLEARTEXT_FILENAME).createNewFile();
+        }
 
         // Copy folders and files
         Files.walk(Paths.get(sourceFolder))
