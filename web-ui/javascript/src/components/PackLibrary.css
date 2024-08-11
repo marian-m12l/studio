@@ -289,3 +289,8 @@
     height: calc(100vh - 160px - 48px);
     overflow-y: scroll;
 }
+
+.highlighted-dropzone {
+    outline: 3px dashed #282c34;
+    outline-offset: -4px;
+}

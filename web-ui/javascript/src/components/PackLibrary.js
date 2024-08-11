@@ -49,6 +49,7 @@ class PackLibrary extends React.Component {
             removingFromLibrary: null,
             showRemoveFromDeviceConfirmDialog: false,
             removingFromDevice: null,
+            dragging: null,
             reordering: null,
             beforeReordering: null,
             allowEnrichedDialog: {
@@ -233,12 +234,9 @@ class PackLibrary extends React.Component {
             return;
         }
         var data = JSON.parse(packData);
-        // Ignore official packs from device (draggable only for device reordering)
-        var droppedPack = this.state.device.packs.find(p => p.uuid === data.uuid);
-        if (this.isPackDraggable(droppedPack)) {
-            // Transfer pack and show progress
-            this.props.addToLibrary(data.uuid, this.state.device.metadata.driver, this.context);
-        }
+        
+        // Transfer pack and show progress
+        this.props.addToLibrary(data.uuid, this.state.device.metadata.driver, this.context);
     };
 
     showAddFileSelector = () => {
@@ -401,7 +399,7 @@ class PackLibrary extends React.Component {
                             <div className={`progress-bar ${storageStatus}`} role="progressbar" style={{width: storagePercentage}} aria-valuenow={this.state.device.metadata.storage.taken} aria-valuemin="0" aria-valuemax={this.state.device.metadata.storage.size}>{storagePercentage}</div>
                         </div>
                     </div>
-                    <div className="device-dropzone"
+                    <div className={`device-dropzone ${this.state.dragging !== null ? 'highlighted-dropzone' : ''}`}
                          onDrop={this.onDropPackIntoDevice}
                          onDragOver={event => { event.preventDefault(); }}
                          onDragLeave={event => {
@@ -423,10 +421,10 @@ class PackLibrary extends React.Component {
                             {this.state.device.packs.map((pack,idx) =>
                                 <div key={pack.uuid}
                                      draggable={true}
-                                     className={`pack-tile pack-${pack.format} ${this.isPackDraggable(pack) ? 'pack-draggable' : 'pack-not-draggable'} ${pack.nightModeAvailable && 'pack-night-mode'}`}
+                                     className={`pack-tile pack-${pack.format} pack-draggable ${pack.nightModeAvailable && 'pack-night-mode'}`}
                                      onDragStart={event => {
                                          event.dataTransfer.setData("device-pack", JSON.stringify(pack));
-                                         this.setState({reordering: pack, beforeReordering: [...this.state.device.packs]});
+                                         this.setState({dragging: "device-pack", reordering: pack, beforeReordering: [...this.state.device.packs]});
                                      }}
                                      onDragEnter={event => {
                                          let data = this.state.reordering;
@@ -458,7 +456,7 @@ class PackLibrary extends React.Component {
                                              let uuids = this.state.device.packs.map(p => p.uuid);
                                              this.props.reorderOnDevice(uuids);
                                          }
-                                         this.setState({reordering: null});
+                                         this.setState({dragging: null,  reordering: null});
                                      }}>
                                     <div className="pack-format">
                                         <span>{t(`library.format.${pack.format}`)}</span>
@@ -494,7 +492,7 @@ class PackLibrary extends React.Component {
                             <p><button className="library-action" onClick={this.onCreateNewPackInEditor}>{t('library.local.empty.link1')}</button> <button className="library-action" onClick={this.onOpenSamplePackInEditor}>{t('library.local.empty.link2')}</button> {t('library.local.empty.suffix')}</p>
                         </div>
                     </div>
-                    <div className="library-dropzone"
+                    <div className={`library-dropzone ${this.state.dragging === 'device-pack' ? 'highlighted-dropzone' : ''}`}
                          onDrop={this.onDropPackIntoLibrary}
                          onDragOver={event => { event.preventDefault(); }}>
                         {this.state.library.packs.length === 0 && <div className="empty">
@@ -510,6 +508,10 @@ class PackLibrary extends React.Component {
                                          // Drag first pack
                                          event.dataTransfer.setDragImage(event.target.querySelector('.pack-entry'), 0, 0);
                                          event.dataTransfer.setData("local-library-pack", JSON.stringify(group));
+                                         this.setState({dragging: "local-library-pack"});
+                                     }}
+                                     onDragEnd={event => {
+                                         this.setState({dragging: null});
                                      }}>
                                     <div className="pack-left">
                                         <div className="pack-title">
