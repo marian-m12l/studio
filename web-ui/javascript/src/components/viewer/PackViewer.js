@@ -114,8 +114,10 @@ class PackViewer extends React.Component {
                           d="M46,2 h930 a44,44 0 0 1 44,44 v465 a44,44 0 0 1 -44,44 h-930 a44,44 0 0 1 -44,-44 v-465 a44,44 0 0 1 44,-44 z" />
 
                     {/* Screen with asset displayed */}
+                    {this.props.image &&
                     <image id="asset" x="415" y="153" width="340" height="255" filter={this.props.options.overlay ? 'url(#blurryOverlay)' : ''}
                            xlinkHref={this.props.image}/>
+                   }
 
                     {/* (Optional) Translucent casing in front of screen */}
                     {this.props.options.overlay &&
@@ -141,9 +143,11 @@ class PackViewer extends React.Component {
                     </a>
 
                     {/* Audio controls */}
+                    {this.props.audio &&
                     <foreignObject x="415" y="90" width="340" height="55">
                         {this.props.audio && <audio ref={this.audioRef} src={this.props.audio} autoPlay controls preload="metadata" onEnded={this.audioEnded} />}
                     </foreignObject>
+                    }
 
                     {/* Close button */}
                     {/* eslint-disable-next-line */}
