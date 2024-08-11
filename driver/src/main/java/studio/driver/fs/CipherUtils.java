@@ -6,6 +6,7 @@
 
 package studio.driver.fs;
 
+import studio.core.v1.reader.fs.FsStoryPackReader;
 import studio.core.v1.utils.BytesUtils;
 import studio.core.v1.utils.XXTEACipher;
 import studio.driver.model.fs.FsDeviceKeyV3;
@@ -35,18 +36,10 @@ public class CipherUtils {
     private static final int CIPHER_BLOCK_SIZE_ASSETS_V2 = 512;
     private static final int CIPHER_BLOCK_SIZE_ASSETS_V3 = 512;
 
-    private static final String NODE_INDEX_FILENAME = "ni";
-    private static final String LIST_INDEX_FILENAME = "li";
-    private static final String IMAGE_INDEX_FILENAME = "ri";
-    private static final String IMAGE_FOLDER = "rf" + File.separator;
-    private static final String SOUND_INDEX_FILENAME = "si";
-    private static final String SOUND_FOLDER = "sf" + File.separator;
     private static final String BOOT_FILENAME = "bt";
-    private static final String NIGHT_MODE_FILENAME = "nm";
-    static final String CLEARTEXT_FILENAME = ".cleartext";
 
-    private static final List<String> CLEAR_FILES = List.of(NODE_INDEX_FILENAME, NIGHT_MODE_FILENAME, CLEARTEXT_FILENAME);
-    private static final List<String> NO_COPY_FILES = List.of(CLEARTEXT_FILENAME);
+    private static final List<String> CLEAR_FILES = List.of(FsStoryPackReader.NODE_INDEX_FILENAME, FsStoryPackReader.NIGHT_MODE_FILENAME, FsStoryPackReader.CLEARTEXT_FILENAME);
+    private static final List<String> NO_COPY_FILES = List.of(FsStoryPackReader.CLEARTEXT_FILENAME);
 
     static boolean shouldBeCopied(Path filePath) {
         return !NO_COPY_FILES.contains(filePath.getFileName().toString());
@@ -60,7 +53,7 @@ public class CipherUtils {
         // Compute specific key
         byte[] specificKey = computeSpecificKeyV2FromUUID(deviceUuid);
         // Read ciphered block of ri file
-        FileInputStream riFis = new FileInputStream(new File(packFolder.toFile(), IMAGE_INDEX_FILENAME));
+        FileInputStream riFis = new FileInputStream(new File(packFolder.toFile(), FsStoryPackReader.IMAGE_INDEX_FILENAME));
         byte[] riCipheredBlock = riFis.readNBytes(CIPHER_BLOCK_SIZE_BOOT_V2);
         riFis.close();
         // Add boot file: bt

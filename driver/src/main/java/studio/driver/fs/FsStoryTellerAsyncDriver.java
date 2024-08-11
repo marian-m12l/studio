@@ -8,6 +8,7 @@ package studio.driver.fs;
 
 import org.apache.commons.codec.binary.Hex;
 import org.usb4java.Device;
+import studio.core.v1.reader.fs.FsStoryPackReader;
 import studio.driver.DeviceVersion;
 import studio.driver.LibUsbDetectionHelper;
 import studio.driver.model.fs.FsDeviceInfos;
@@ -512,12 +513,12 @@ public class FsStoryTellerAsyncDriver {
         }
 
         // Assets are cleartext if file '.cleartext' exists
-        boolean isCleartext = new File(sourceFolder, CipherUtils.CLEARTEXT_FILENAME).exists();
+        boolean isCleartext = (new FsStoryPackReader()).isCleartext(Paths.get(sourceFolder), isUpload);
         
         // Always add .cleartext file when downloading
         if (!isUpload) {
             // Indicate that files are cleartext
-            new File(destFolder, CipherUtils.CLEARTEXT_FILENAME).createNewFile();
+            new File(destFolder, FsStoryPackReader.CLEARTEXT_FILENAME).createNewFile();
         }
 
         // Copy folders and files
