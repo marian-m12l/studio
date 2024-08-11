@@ -22,17 +22,21 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.*;
+import java.util.logging.Logger;
 
 public class FsStoryPackReader {
 
-    private static final String NODE_INDEX_FILENAME = "ni";
-    private static final String LIST_INDEX_FILENAME = "li";
-    private static final String IMAGE_INDEX_FILENAME = "ri";
-    private static final String IMAGE_FOLDER = "rf" + File.separator;
-    private static final String SOUND_INDEX_FILENAME = "si";
-    private static final String SOUND_FOLDER = "sf" + File.separator;
-    private static final String NIGHT_MODE_FILENAME = "nm";
-    private static final String CLEARTEXT_FILENAME = ".cleartext";
+    private static final Logger LOGGER = Logger.getLogger(FsStoryPackReader.class.getName());
+
+    public static final String NODE_INDEX_FILENAME = "ni";
+    public static final String LIST_INDEX_FILENAME = "li";
+    public static final String IMAGE_INDEX_FILENAME = "ri";
+    public static final String IMAGE_FOLDER = "rf" + File.separator;
+    public static final String SOUND_INDEX_FILENAME = "si";
+    public static final String SOUND_FOLDER = "sf" + File.separator;
+    public static final String NIGHT_MODE_FILENAME = "nm";
+    public static final String CLEARTEXT_FILENAME = ".cleartext";
+    public static final byte[] CLEARTEXT_RI_BEGINNING = "000\\".getBytes(StandardCharsets.UTF_8);
 
     public StoryPackMetadata readMetadata(Path inputFolder) throws IOException {
         // Pack metadata model
@@ -74,7 +78,7 @@ public class FsStoryPackReader {
         // We keep a backward-compatibility with packs in library ciphered for v2
 
         // Assets are cleartext if file '.cleartext' exists
-        boolean isCleartext = new File(packFolder, CLEARTEXT_FILENAME).exists();
+        boolean isCleartext = isCleartext(inputFolder, true);
 
         // Load ri, si and li files
         byte[] riContent = readCipheredFile(new File(packFolder, IMAGE_INDEX_FILENAME).toPath(), isCleartext);
@@ -199,6 +203,28 @@ public class FsStoryPackReader {
         }
 
         return new StoryPack(uuid, factoryDisabled, version, List.copyOf(stageNodes.values()), null, nightModeAvailable);
+    }
+    
+    public boolean isCleartext(Path inputFolder, boolean fixBrokenCleartext) throws IOException {
+        File packFolder = inputFolder.toFile();
+
+        // Assets are cleartext if file '.cleartext' exists
+        boolean isCleartext = new File(packFolder, CLEARTEXT_FILENAME).exists();
+
+        if (fixBrokenCleartext) {
+            // Fix broken story packs with missing .cleartext file
+            byte[] riRawContent = Files.readAllBytes(new File(packFolder, IMAGE_INDEX_FILENAME).toPath());
+            if (!isCleartext && Arrays.equals(riRawContent, 0, CLEARTEXT_RI_BEGINNING.length, CLEARTEXT_RI_BEGINNING, 0, CLEARTEXT_RI_BEGINNING.length)) {
+                LOGGER.warning("Story pack contains cleartext data but is missing .cleartext file: fixing...");
+
+                // Indicate that files are cleartext
+                new File(packFolder, CLEARTEXT_FILENAME).createNewFile();
+
+                isCleartext = true;
+            }
+        }
+        
+        return isCleartext;
     }
 
     private byte[] readCipheredFile(Path path, boolean isCleartext) throws IOException {
