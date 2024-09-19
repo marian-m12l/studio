@@ -136,7 +136,7 @@ public class FsStoryPackWriter {
             AudioAsset audio = node.getAudio();
             // If audio is missing, add a blank audio to satisfy the device
             if (audio == null) {
-                audio = new AudioAsset("audio/mp3", Hex.decodeHex(BLANK_MP3_FILE));
+                audio = new AudioAsset("audio/mp3", Hex.decodeHex(BLANK_MP3_FILE), "blank_audio_placeholder");
             }
             byte[] audioData = audio.getRawData();
             String audioHash = DigestUtils.sha1Hex(audioData);

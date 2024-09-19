@@ -153,7 +153,7 @@ public class FsStoryPackReader {
                 String path = new String(imagePath, StandardCharsets.UTF_8);
                 // Read image file
                 byte[] rfContent = readCipheredFile(new File(packFolder, IMAGE_FOLDER+path.replaceAll("\\\\", "/")).toPath(), isCleartext);
-                image = new ImageAsset("image/bmp", rfContent);
+                image = new ImageAsset("image/bmp", rfContent, path);
             }
             AudioAsset audio = null;
             if (soundAssetIndexInSI != -1) {
@@ -162,7 +162,7 @@ public class FsStoryPackReader {
                 String path = new String(audioPath, StandardCharsets.UTF_8);
                 // Read audio file
                 byte[] sfContent = readCipheredFile(new File(packFolder, SOUND_FOLDER+path.replaceAll("\\\\", "/")).toPath(), isCleartext);
-                audio = new AudioAsset("audio/mpeg", sfContent);
+                audio = new AudioAsset("audio/mpeg", sfContent, path);
             }
 
             StageNode stageNode = new StageNode(
