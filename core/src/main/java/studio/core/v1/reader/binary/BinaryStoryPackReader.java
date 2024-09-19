@@ -243,11 +243,11 @@ public class BinaryStoryPackReader {
             // Update asset on stage nodes referencing this sector
             switch (assetAddr.getType()) {
                 case AUDIO:
-                    AudioAsset audioAsset = new AudioAsset("audio/x-wav", assetBytes);
+                    AudioAsset audioAsset = new AudioAsset("audio/x-wav", assetBytes, "0x" + Integer.toHexString(assetAddr.getOffset()));
                     stagesWithAudio.get(assetAddr).forEach(stageNode -> stageNode.setAudio(audioAsset));
                     break;
                 case IMAGE:
-                    ImageAsset imageAsset = new ImageAsset("image/bmp", assetBytes);
+                    ImageAsset imageAsset = new ImageAsset("image/bmp", assetBytes, "0x" + Integer.toHexString(assetAddr.getOffset()));
                     stagesWithImage.get(assetAddr).forEach(stageNode -> stageNode.setImage(imageAsset));
                     break;
             }

@@ -10,13 +10,15 @@ public class AudioAsset implements Asset {
 
     private String mimeType;
     private byte[] rawData;
+    private String name;
 
     public AudioAsset() {
     }
 
-    public AudioAsset(String mimeType, byte[] rawData) {
+    public AudioAsset(String mimeType, byte[] rawData, String name) {
         this.mimeType = mimeType;
         this.rawData = rawData;
+        this.name = name;
     }
 
     public String getMimeType() {
@@ -33,5 +35,13 @@ public class AudioAsset implements Asset {
 
     public void setRawData(byte[] rawData) {
         this.rawData = rawData;
+    }
+
+    public String getName() {
+        return name;
+    }
+
+    public void setName(String name) {
+        this.name = name;
     }
 }

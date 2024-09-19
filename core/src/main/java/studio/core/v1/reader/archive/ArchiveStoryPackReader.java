@@ -221,24 +221,24 @@ public class ArchiveStoryPackReader {
                 for (StageNode stageNode : stageNodesReferencingAsset) {
                     switch (extension.toLowerCase()) {
                         case ".bmp":
-                            stageNode.setImage(new ImageAsset("image/bmp", assetEntry.getValue()));
+                            stageNode.setImage(new ImageAsset("image/bmp", assetEntry.getValue(), assetName));
                             break;
                         case ".png":
-                            stageNode.setImage(new ImageAsset("image/png", assetEntry.getValue()));
+                            stageNode.setImage(new ImageAsset("image/png", assetEntry.getValue(), assetName));
                             break;
                         case ".jpg":
                         case ".jpeg":
-                            stageNode.setImage(new ImageAsset("image/jpeg", assetEntry.getValue()));
+                            stageNode.setImage(new ImageAsset("image/jpeg", assetEntry.getValue(), assetName));
                             break;
                         case ".wav":
-                            stageNode.setAudio(new AudioAsset("audio/x-wav", assetEntry.getValue()));
+                            stageNode.setAudio(new AudioAsset("audio/x-wav", assetEntry.getValue(), assetName));
                             break;
                         case ".mp3":
-                            stageNode.setAudio(new AudioAsset("audio/mpeg", assetEntry.getValue()));
+                            stageNode.setAudio(new AudioAsset("audio/mpeg", assetEntry.getValue(), assetName));
                             break;
                         case ".ogg":
                         case ".oga":
-                            stageNode.setAudio(new AudioAsset("audio/ogg", assetEntry.getValue()));
+                            stageNode.setAudio(new AudioAsset("audio/ogg", assetEntry.getValue(), assetName));
                             break;
                         default:
                             // Unsupported asset
