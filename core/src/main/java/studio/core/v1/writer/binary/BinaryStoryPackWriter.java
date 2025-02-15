@@ -36,20 +36,26 @@ public class BinaryStoryPackWriter {
         if (enrichedBinaryFormat && pack.getEnriched() != null) {
             writePadding(dos, Constants.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING);
             writeTruncatedString(dos, pack.getEnriched().getTitle(), Constants.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE);
-            writeTruncatedString(dos, pack.getEnriched().getDescription(), Constants.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE);
+            writeTruncatedString(dos, pack.getEnriched().getDescription(),
+                    Constants.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE);
             // TODO Thumbnail?
-            enrichedPackMetadataSize = Constants.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING + Constants.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE*2 + Constants.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE*2;
+            enrichedPackMetadataSize = Constants.BINARY_ENRICHED_METADATA_SECTOR_1_ALIGNMENT_PADDING
+                    + Constants.BINARY_ENRICHED_METADATA_TITLE_TRUNCATE * 2
+                    + Constants.BINARY_ENRICHED_METADATA_DESCRIPTION_TRUNCATE * 2;
         }
-        writePadding(dos, Constants.SECTOR_SIZE - 5 - enrichedPackMetadataSize);   // Skip to end of sector
+        writePadding(dos, Constants.SECTOR_SIZE - 5 - enrichedPackMetadataSize); // Skip to end of sector
 
-        // Count action nodes and assets (with sizes) and attribute a sector address (offset) to each
+        // Count action nodes and assets (with sizes) and attribute a sector address
+        // (offset) to each
         TreeMap<SectorAddr, ActionNode> actionNodesMap = new TreeMap<>();
         int nextFreeOffset = pack.getStageNodes().size();
         for (StageNode stageNode : pack.getStageNodes()) {
-            if (stageNode.getOkTransition() != null && !actionNodesMap.containsValue(stageNode.getOkTransition().getActionNode())) {
+            if (stageNode.getOkTransition() != null
+                    && !actionNodesMap.containsValue(stageNode.getOkTransition().getActionNode())) {
                 actionNodesMap.put(new SectorAddr(nextFreeOffset++), stageNode.getOkTransition().getActionNode());
             }
-            if (stageNode.getHomeTransition() != null && !actionNodesMap.containsValue(stageNode.getHomeTransition().getActionNode())) {
+            if (stageNode.getHomeTransition() != null
+                    && !actionNodesMap.containsValue(stageNode.getHomeTransition().getActionNode())) {
                 actionNodesMap.put(new SectorAddr(nextFreeOffset++), stageNode.getHomeTransition().getActionNode());
             }
         }
@@ -62,7 +68,8 @@ public class BinaryStoryPackWriter {
                 String assetHash = DigestUtils.sha1Hex(imageData);
                 if (!assetsHashes.containsKey(assetHash)) {
                     if (!"image/bmp".equals(image.getMimeType())) {
-                        throw new IllegalArgumentException("Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
+                        throw new IllegalArgumentException(
+                                "Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
                     }
                     int imageSize = imageData.length;
                     int imageSectors = (imageSize / Constants.SECTOR_SIZE);
@@ -83,7 +90,8 @@ public class BinaryStoryPackWriter {
                 String assetHash = DigestUtils.sha1Hex(audioData);
                 if (!assetsHashes.containsKey(assetHash)) {
                     if (!"audio/x-wav".equals(audio.getMimeType())) {
-                        throw new IllegalArgumentException("Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
+                        throw new IllegalArgumentException(
+                                "Cannot write binary pack file from a compressed story pack. Uncompress the pack assets first.");
                     }
                     int audioSize = audioData.length;
                     int audioSectors = (audioSize / Constants.SECTOR_SIZE);
@@ -164,7 +172,8 @@ public class BinaryStoryPackWriter {
             int enrichedNodeMetadataSize = 0;
             if (enrichedBinaryFormat && stageNode.getEnriched() != null) {
                 writePadding(dos, Constants.BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING);
-                enrichedNodeMetadataSize = Constants.BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING + writeEnrichedNodeMetadata(dos, stageNode);
+                enrichedNodeMetadataSize = Constants.BINARY_ENRICHED_METADATA_STAGE_NODE_ALIGNMENT_PADDING
+                        + writeEnrichedNodeMetadata(dos, stageNode);
             }
 
             // Skip to end of sector
@@ -192,19 +201,23 @@ public class BinaryStoryPackWriter {
             // Write (optional) enriched node metadata
             int enrichedNodeMetadataSize = 0;
             if (enrichedBinaryFormat && actionNode.getEnriched() != null) {
-                int alignmentOverflow = 2*(actionNode.getOptions().size()) % Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT;
-                int alignmentPadding = Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT_PADDING + (alignmentOverflow > 0 ? Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT - alignmentOverflow : 0);
+                int alignmentOverflow = 2 * (actionNode.getOptions().size())
+                        % Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT;
+                int alignmentPadding = Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT_PADDING
+                        + (alignmentOverflow > 0
+                                ? Constants.BINARY_ENRICHED_METADATA_ACTION_NODE_ALIGNMENT - alignmentOverflow
+                                : 0);
                 writePadding(dos, alignmentPadding);
                 enrichedNodeMetadataSize = alignmentPadding + writeEnrichedNodeMetadata(dos, actionNode);
             }
 
             // Skip to end of sector
-            writePadding(dos, Constants.SECTOR_SIZE - 2*(actionNode.getOptions().size()) - enrichedNodeMetadataSize);
+            writePadding(dos, Constants.SECTOR_SIZE - 2 * (actionNode.getOptions().size()) - enrichedNodeMetadataSize);
             currentOffset++;
         }
 
         // Write assets (images / audio)
-        for (Map.Entry<AssetAddr, byte[]> assetEntry: assetsData.entrySet()) {
+        for (Map.Entry<AssetAddr, byte[]> assetEntry : assetsData.entrySet()) {
             // First sector to write
             AssetAddr assetAddr = assetEntry.getKey();
             // Skip to the beginning of the sector, if needed
@@ -228,7 +241,8 @@ public class BinaryStoryPackWriter {
             currentOffset += assetAddr.getSize();
         }
 
-        // The Luniistore's error-checker bug is no more! No need to pad the story pack to 100000 sectors after the last action node
+        // The Luniistore's error-checker bug is no more! No need to pad the story pack
+        // to 100000 sectors after the last action node
 
         // Write check bytes
         dos.write(Constants.CHECK_BYTES, 0, Constants.CHECK_BYTES.length);
@@ -257,19 +271,19 @@ public class BinaryStoryPackWriter {
         } else {
             writePadding(dos, 4);
         }
-        return Constants.BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE*2 + 16 + 1 + 4;
+        return Constants.BINARY_ENRICHED_METADATA_NODE_NAME_TRUNCATE * 2 + 16 + 1 + 4;
     }
 
     private void writeTruncatedString(DataOutputStream dos, String str, int maxChars) throws IOException {
         if (str != null) {
             int strLength = Math.min(str.length(), maxChars);
             dos.writeChars(str.substring(0, strLength));
-            int remaining =  maxChars - strLength;
+            int remaining = maxChars - strLength;
             if (remaining > 0) {
-                writePadding(dos, remaining*2);
+                writePadding(dos, remaining * 2);
             }
         } else {
-            writePadding(dos, maxChars*2);
+            writePadding(dos, maxChars * 2);
         }
     }
 
