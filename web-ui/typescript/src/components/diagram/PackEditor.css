@@ -1,0 +1,1127 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+
+/* General diagram styling */
+
+.storm-diagrams-canvas {
+    flex-grow: 1;
+    background-color: #3c3c3c !important;
+    background-image: linear-gradient(0deg, transparent 24%, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 0.05) 75%, rgba(255, 255, 255, 0.05) 76%, transparent 77%, transparent), linear-gradient(90deg, transparent 24%, rgba(255, 255, 255, 0.05) 25%, rgba(255, 255, 255, 0.05) 26%, transparent 27%, transparent 74%, rgba(255, 255, 255, 0.05) 75%, rgba(255, 255, 255, 0.05) 76%, transparent 77%, transparent);
+    background-size: 50px 50px;
+}
+
+.storm-diagrams-canvas .pointui {
+    fill: rgba(255, 255, 255, 0.5);
+}
+
+.storm-diagrams-canvas {
+    position: relative;
+    flex-grow: 1;
+    display: flex;
+    cursor: move;
+    overflow: hidden;
+}
+.storm-diagrams-canvas .point {
+    fill: rgba(255, 255, 255, 0.5);
+}
+.storm-diagrams-canvas .point.selected {
+    fill: #00c0ff;
+}
+.storm-diagrams-canvas .selector {
+    position: absolute;
+    background-color: rgba(0, 192, 255, 0.2);
+    border: solid 2px #00c0ff;
+}
+.storm-diagrams-canvas svg {
+    position: absolute;
+    height: 100%;
+    width: 100%;
+    transform-origin: 0 0;
+    overflow: visible;
+}
+.storm-diagrams-canvas .node-view {
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    position: absolute;
+    pointer-events: none;
+    transform-origin: 0 0;
+}
+.storm-diagrams-canvas .node {
+    position: absolute;
+    -webkit-touch-callout: none;
+    /* iOS Safari */
+    -webkit-user-select: none;
+    /* Chrome/Safari/Opera */
+    user-select: none;
+    cursor: move;
+    pointer-events: all;
+}
+.storm-diagrams-canvas .node .studio-node.selected {
+    border-color: #00c0ff !important;
+}
+.storm-diagrams-canvas .node .studio-node.playing {
+    border-color: #00ff00 !important;
+}
+.storm-diagrams-canvas .node .studio-node.error {
+    border-color: #ff0000 !important;
+}
+@keyframes dash {
+    from {
+        stroke-dashoffset: 24;
+    }
+    to {
+        stroke-dashoffset: 0;
+    }
+}
+.storm-diagrams-canvas .studio-link path {
+    stroke: #a0a0a0 !important;
+    fill: none;
+    pointer-events: all;
+}
+.storm-diagrams-canvas .studio-link path.selected {
+    stroke: #00c0ff !important;
+    stroke-dasharray: 10,2;
+    animation: dash 1s linear infinite;
+}
+.storm-diagrams-canvas .studio-link.returning-workflow path {
+    stroke: #606060 !important;
+    stroke-dasharray: 10, 10;
+}
+.storm-diagrams-canvas .studio-link.returning-workflow path.selected {
+    stroke: #00c0ff !important;
+    stroke-dasharray: 10, 10;
+    animation: dash 1s linear infinite;
+}
+.storm-diagrams-canvas.hide-forward-workflow .studio-link:not(.returning-workflow),
+.storm-diagrams-canvas.hide-returning-workflow .studio-link.returning-workflow {
+    display: none;
+}
+.storm-diagrams-canvas .arrowhead {
+    fill: #808080;
+}
+
+/* Delete button */
+
+.storm-diagrams-canvas .node .delete {
+    position: absolute;
+    left: 1px;
+    top: 1px;
+    width: 14px;
+    height: 14px;
+    line-height: 14px;
+    background: rgba(128, 128, 128, 0.5);
+    border-radius: 7px;
+    transition: transform .2s;
+    cursor: pointer;
+    visibility: hidden;
+}
+
+.storm-diagrams-canvas .node .delete.disabled {
+    cursor: not-allowed;
+}
+
+.storm-diagrams-canvas .node .delete::before {
+    position: relative;
+    content: '\00d7';
+}
+
+.storm-diagrams-canvas .node .delete.disabled::before {
+    color: #999999;
+}
+
+.storm-diagrams-canvas .node .delete:not(.disabled):hover {
+    background: #333333;
+    transform: scale(1.2);
+}
+
+
+/* Ports */
+
+.storm-diagrams-canvas .port.custom-port {
+    width: 20px;
+    height: 20px;
+    background: rgba(128, 128, 128, 0.5);
+    border-radius: 10px;
+    transition: transform .2s;
+}
+.storm-diagrams-canvas .port.custom-port:hover, .storm-diagrams-canvas .port.custom-port.selected {
+    background: #333333;
+    transform: scale(1.2);
+}
+.storm-diagrams-canvas .port.custom-port.error {
+    border-color: #ff0000 !important;
+}
+
+.storm-diagrams-canvas .port.custom-port.stage-port {
+    background: rgba(177, 222, 93, 0.8);
+    border: 2px solid #b1de5d;
+}
+.storm-diagrams-canvas .port.custom-port.stage-port:hover, .storm-diagrams-canvas .port.custom-port.stage-port.selected {
+    background: #b1de5d;
+}
+.storm-diagrams-canvas .port.custom-port.action-port {
+    background: rgba(222, 154, 84, 0.8);
+    border: 2px solid #de9a54;
+}
+.storm-diagrams-canvas .port.custom-port.action-port:hover, .storm-diagrams-canvas .port.custom-port.action-port.selected {
+    background: #de9a54;
+}
+.storm-diagrams-canvas .port.custom-port .pad {
+    width: 100%;
+    height: 100%;
+}
+
+
+/* User-friendly and basic nodes */
+
+.storm-diagrams-canvas .studio-node .editable-text {
+    cursor: text;
+}
+
+.storm-diagrams-canvas .studio-node .editable-text-input {
+    color: #333333;
+}
+
+.storm-diagrams-canvas .studio-node {
+    position: relative;
+    border-radius: 5px;
+}
+
+.storm-diagrams-canvas .studio-node .node-header {
+    width: 80px;
+    height: 25px;
+    position: absolute;
+    left: calc(50% - 40px);
+    top: -25px;
+    border-top-left-radius: 25px;
+    border-top-right-radius: 25px;
+}
+
+.storm-diagrams-canvas .studio-node.selected .node-header {
+    border-color: #00c0ff !important;
+}
+.storm-diagrams-canvas .studio-node.playing .node-header {
+    border-color: #00ff00 !important;
+}
+.storm-diagrams-canvas .studio-node.error .node-header {
+    border-color: #ff0000 !important;
+}
+
+.storm-diagrams-canvas .studio-node .node-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.storm-diagrams-canvas .studio-node .node-title {
+    position: relative;
+    padding-bottom: 10px;
+}
+
+.storm-diagrams-canvas .studio-node .node-title .ellipsis {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.storm-diagrams-canvas .studio-node .node-title input {
+    max-width: 140px;
+    height: 16px;
+    border: 0px;
+}
+
+.storm-diagrams-canvas .studio-node .node-title .preview {
+    position: absolute;
+    width: 26px;
+    height: 26px;
+    left: calc(50% - 13px);
+    bottom: -18px;
+    text-align: center;
+    line-height: 26px;
+    border-radius: 13px;
+    cursor: pointer;
+    transition: transform .2s;
+}
+
+.storm-diagrams-canvas .studio-node .node-title .preview.disabled {
+    cursor: not-allowed;
+}
+
+.storm-diagrams-canvas .studio-node .node-title .preview:not(.disabled):hover {
+    transform: scale(1.2);
+}
+
+.storm-diagrams-canvas .studio-node .btn.active {
+    -webkit-box-shadow: inset 0 3px 5px rgba(0,0,0,.5);
+    box-shadow: inset 0 3px 5px rgba(0,0,0,.5);
+}
+
+
+/* Stage nodes */
+
+.storm-diagrams-canvas .basic-node.stage-node {
+    width: 185px;
+    background-color: #656e2b;
+    border: 3px solid #919e3d;
+    color: lightgrey;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node.square-one {
+    border: solid 5px #56d3ca;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-title {
+    border-bottom: 2px solid #919e3d;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-title input {
+    max-width: 170px;
+    width: 170px;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-title .preview {
+    background-color: #656e2b;
+    border: 2px solid #919e3d;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-title .preview.disabled {
+    color: #999999;
+}
+
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .assets-and-options {
+    flex-grow: 1;
+    padding-top: 20px;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .assets-and-options .assets {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .assets-and-options .assets .asset {
+    flex-basis: 50%;
+    flex-grow: 0;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 5px;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .assets-and-options .assets .asset.asset-left {
+    border-right: 2px dotted #919e3d;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .assets-and-options .assets .asset input {
+    visibility: hidden;
+    position: absolute;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .assets-and-options .assets .asset .dropzone-asset {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 3px dotted #333333;
+    transition: transform .2s;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .assets-and-options .assets .asset .dropzone-asset:hover {
+    transform: scale(1.1);
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .assets-and-options .assets .asset .dropzone-asset:hover>.delete {
+    visibility: visible;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .assets-and-options .assets .asset .image-asset {
+    min-height: 45px;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .assets-and-options .assets .asset .image-asset .glyphicon {
+    font-size: 150%;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .assets-and-options .assets .asset .image-asset img {
+    max-height: 38px;
+    object-fit: contain;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .assets-and-options .assets .asset .audio-asset {
+    min-height: 45px;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .assets-and-options .assets .asset .audio-asset .glyphicon {
+    font-size: 150%;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .assets-and-options .options {
+    border-top: 2px solid #919e3d;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .assets-and-options .options .square-one-toggle {
+    width: 24px;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .ports {
+    display: flex;
+    flex-direction: column;
+    flex-basis: 20px;
+    flex-grow: 0;
+    flex-shrink: 0;
+    position: relative;
+    border-left: 2px solid #919e3d;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .node-content .node-row .ports .output-port {
+    height: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: right;
+    position: relative;
+    padding-left: 5px;
+    padding-right: 10px;
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .port.custom-port.from-port {
+    position: absolute;
+    left: -13px;
+    top: calc(50% - 10px);
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .port.custom-port.ok-port {
+    position: absolute;
+    right: -13px;
+    top: calc(50% - 10px);
+}
+
+.storm-diagrams-canvas .basic-node.stage-node .port.custom-port.home-port {
+    position: absolute;
+    right: -13px;
+    top: calc(50% - 10px);
+}
+
+
+/* Action nodes */
+
+.storm-diagrams-canvas .basic-node.action-node {
+    width: 150px;
+    background-color: #6e5524;
+    border: 3px solid #9e7a34;
+    color: lightgrey;
+}
+
+.storm-diagrams-canvas .basic-node.action-node .node-title {
+    border-bottom: 2px solid #9e7a34;
+    padding-bottom: 0px;
+}
+
+.storm-diagrams-canvas .basic-node.action-node .node-title input {
+    max-width: 140px;
+    width: 140px;
+}
+
+.storm-diagrams-canvas .basic-node.action-node .node-content .options {
+    display: flex;
+    flex-direction: column;
+    padding-bottom: 5px;
+}
+
+.storm-diagrams-canvas .basic-node.action-node .options span.disabled {
+    color: #999999;
+}
+
+.storm-diagrams-canvas .basic-node.action-node .options .option {
+    position: relative;
+    background-color: #9e7a34;
+    border: 1px solid #9e7a34;
+    border-radius: 5px;
+    margin-top: 2px;
+    margin-left: 10px;
+    margin-right: 10px;
+}
+
+.storm-diagrams-canvas .basic-node.action-node .options .option.playing {
+    border-color: #00ff00 !important;
+}
+
+.storm-diagrams-canvas .basic-node.action-node .options .option:hover>.delete {
+    visibility: visible;
+}
+
+.storm-diagrams-canvas .basic-node.action-node .options .option .port.custom-port.option-port-in {
+    position: absolute;
+    left: -23px;
+    top: calc(50% - 10px);
+}
+
+.storm-diagrams-canvas .basic-node.action-node .options .option .port.custom-port.option-port-random {
+    border: 2px solid #feda94;
+}
+
+.storm-diagrams-canvas .basic-node.action-node .options .option .port.custom-port.option-port-out {
+    position: absolute;
+    right: -23px;
+    top: calc(50% - 10px);
+}
+
+
+/* Cover nodes */
+
+.storm-diagrams-canvas .user-friendly-node.cover-node {
+    width: 150px;
+    background-color: #26807a;
+    border: 5px solid #56d3ca;
+    color: lightgrey;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-header {
+    color: #333333;
+    background-color: #36b3aa;
+    border: 5px solid #56d3ca;
+    border-bottom: none;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-title {
+    border-bottom: 2px solid #36b3aa;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-title .preview {
+    background-color: #26807a;
+    border: 2px solid #36b3aa;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-title .preview.disabled {
+    color: #999999;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+    padding-top: 20px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset {
+    flex-basis: 50%;
+    flex-grow: 0;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 5px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset.asset-left {
+    border-right: 2px dotted #36b3aa;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset input {
+    visibility: hidden;
+    position: absolute;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .dropzone-asset {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 3px dotted #333333;
+    transition: transform .2s;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .dropzone-asset:hover {
+    transform: scale(1.1);
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .dropzone-asset:hover>.delete {
+    visibility: visible;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .image-asset {
+    min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .image-asset .glyphicon {
+    font-size: 150%;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .image-asset img {
+    max-height: 38px;
+    object-fit: contain;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .audio-asset {
+    min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .node-content .assets .asset .audio-asset .glyphicon {
+    font-size: 150%;
+}
+
+.storm-diagrams-canvas .user-friendly-node.cover-node .port.custom-port.ok-port {
+    position: absolute;
+    right: -13px;
+    top: calc(50% - 10px);
+}
+
+
+/* Menu nodes */
+
+.storm-diagrams-canvas .user-friendly-node.menu-node {
+    width: 250px;
+    background-color: #824178;
+    border: 3px solid #b55ba8;
+    color: lightgrey;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-header {
+    color: #333333;
+    background-color: #b55ba8;
+    border: 3px solid #b55ba8;
+    border-bottom: none;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-title {
+    border-bottom: 2px solid #b55ba8;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-title input {
+    max-width: 240px;
+    width: 240px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-title .preview {
+    background-color: #824178;
+    border: 2px solid #b55ba8;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-title .preview.disabled {
+    color: #999999;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 1;
+    padding-top: 20px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question {
+    flex-basis: 33%;
+    flex-grow: 0;
+    display: flex;
+    flex-direction: column;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 5px;
+    border-right: 2px dotted #b55ba8;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question p {
+    font-weight: bold;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question.playing p {
+    color: #00ff00;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question .question-asset .dropzone-asset {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 3px dotted #333333;
+    transition: transform .2s;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question .question-asset .dropzone-asset:hover {
+    transform: scale(1.1);
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question .question-asset .dropzone-asset:hover>.delete {
+    visibility: visible;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question .question-asset input {
+    visibility: hidden;
+    position: absolute;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question .question-asset .audio-asset {
+    min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .question .question-asset .audio-asset .glyphicon {
+    font-size: 150%;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options {
+    flex-basis: 67%;
+    flex-grow: 0;
+    display: flex;
+    flex-direction: column;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 5px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options p {
+    font-weight: bold;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options.playing p {
+    color: #00ff00;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options span.disabled {
+    color: #999999;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option {
+    display: flex;
+    flex-direction: row;
+    position: relative;
+    background-color: #b55ba8;
+    border: 1px solid #b55ba8;
+    border-radius: 5px;
+    margin-top: 2px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option.playing {
+    border-color: #00ff00 !important;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option.error {
+    border-color: #ff0000 !important;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option:hover>.delete {
+    visibility: visible;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .policy {
+    flex-basis: 20px;
+    flex-grow: 0;
+    display: flex;
+    align-items: center;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: column;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-name {
+    flex-basis: 20px;
+    flex-grow: 0;
+    max-width: 130px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-name input {
+    max-width: 130px;
+    height: 16px;
+    border: 0px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets {
+    flex-grow: 1;
+    display: flex;
+    flex-direction: row;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset {
+    flex-basis: 50%;
+    flex-grow: 0;
+    padding-left: 5px;
+    padding-right: 5px;
+    padding-bottom: 5px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset input {
+    visibility: hidden;
+    position: absolute;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .dropzone-asset {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 3px dotted #333333;
+    transition: transform .2s;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .dropzone-asset:hover {
+    transform: scale(1.1);
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .dropzone-asset:hover>.delete {
+    visibility: visible;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .image-asset {
+    min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .image-asset .glyphicon {
+    font-size: 150%;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .image-asset img {
+    max-height: 38px;
+    object-fit: contain;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .audio-asset {
+    min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .name-and-assets .option-assets .asset .audio-asset .glyphicon {
+    font-size: 150%;
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .node-content .question-and-options .options .option .port.custom-port.option-port {
+    position: absolute;
+    right: -18px;
+    top: calc(50% - 10px);
+}
+
+.storm-diagrams-canvas .user-friendly-node.menu-node .port.custom-port.from-port {
+    position: absolute;
+    left: -13px;
+    top: calc(50% - 10px);
+}
+
+
+/* Story nodes */
+
+.storm-diagrams-canvas .user-friendly-node.story-node {
+    width: 150px;
+    background-color: #b89f33;
+    border: 3px solid #ebcb42;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-header {
+    color: #333333;
+    background-color: #ebcb42;
+    border: 3px solid #ebcb42;
+    border-bottom: none;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-title {
+    border-bottom: 2px solid #ebcb42;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-title .preview {
+    background-color: #b89f33;
+    border: 2px solid #ebcb42;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-title .preview.disabled {
+    color: #666666;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row {
+    display: flex;
+    flex-direction: row;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options {
+    flex-grow: 1;
+    padding-top: 20px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .asset {
+    padding: 0px 5px 5px;
+    min-height: 50px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .asset input {
+    visibility: hidden;
+    position: absolute;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .asset .dropzone-asset {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    border: 3px dotted #333333;
+    transition: transform .2s;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .asset .dropzone-asset:hover {
+    transform: scaleX(1.05) scaleY(1.1);
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .asset .dropzone-asset:hover>.delete {
+    visibility: visible;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .asset .audio-asset {
+    min-height: 45px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .asset .audio-asset .glyphicon {
+    font-size: 150%;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .assets-and-options .options {
+    border-top: 2px solid #ebcb42;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .ports {
+    display: flex;
+    flex-direction: column;
+    flex-basis: 20px;
+    flex-grow: 0;
+    flex-shrink: 0;
+    position: relative;
+    border-left: 2px solid #ebcb42;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .node-content .node-row .ports .output-port {
+    height: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: right;
+    position: relative;
+    padding-left: 5px;
+    padding-right: 10px;
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .port.custom-port.from-port {
+    position: absolute;
+    left: -13px;
+    top: calc(50% - 10px);
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .port.custom-port.ok-port {
+    position: absolute;
+    right: -13px;
+    top: calc(50% - 10px);
+}
+
+.storm-diagrams-canvas .user-friendly-node.story-node .port.custom-port.home-port {
+    position: absolute;
+    right: -13px;
+    top: calc(50% - 10px);
+}
+
+
+
+/* Diagram, tray and tools */
+
+.pack-diagram-widget .content {
+    display: flex;
+    flex-grow: 1;
+}
+
+.pack-diagram-widget .content .diagram-drop-zone {
+    display: flex;
+    position: relative;
+    flex-grow: 1;
+}
+
+.pack-diagram-widget .content .diagram-drop-zone .toolbelt {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    text-align: right;
+}
+
+.pack-diagram-widget .content .diagram-drop-zone .toolbelt .tool {
+    margin-bottom: 2px;
+}
+
+.pack-diagram-widget .content .diagram-drop-zone .toolbelt .tool.layers {
+    background-color: grey;
+    width: auto;
+    max-width: 40px;
+    height: auto;
+    max-height: 34px;
+    overflow: hidden;
+    transition: max-width 300ms, max-height 300ms;
+}
+
+.pack-diagram-widget .content .diagram-drop-zone .toolbelt .tool.layers:hover {
+    max-width: 240px;
+    max-height: 200px;
+}
+
+.pack-diagram-widget .content .diagram-drop-zone .toolbelt .tool.layers .glyphicon-filter {
+    width: 100%;
+}
+
+.pack-diagram-widget .content .diagram-drop-zone .toolbelt .tool.layers ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+.pack-diagram-widget .content .tray {
+    min-width: 200px;
+    background: rgb(20, 20, 20);
+    color: white;
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+
+.pack-diagram-widget .content .tray>.help {
+    background: none;
+    border: none;
+    text-decoration: none;
+    color: white;
+    margin-top: 30px;
+    font-size: 200%;
+    cursor: pointer;
+}
+
+.pack-diagram-widget .content .tray .tray-item {
+    position: relative;
+    font-family: Helvetica, Arial;
+    padding: 5px;
+    margin: 10px 10px;
+    border: solid 1px;
+    border-radius: 5px;
+    margin-bottom: 2px;
+    cursor: pointer;
+}
+
+.pack-diagram-widget .content .tray .tray-item .help {
+    visibility: hidden;
+    position: absolute;
+    left: 5px;
+    top: 7px;
+    text-decoration: none;
+    color: white;
+    background: none;
+    border: none;
+    padding: 0;
+}
+
+.pack-diagram-widget .content .tray .tray-item:hover .help {
+    visibility: visible;
+}
+
+.pack-diagram-widget .content .tray .tray-item.dragging .help {
+    visibility: hidden;
+}
+
+.pack-diagram-widget .content .tray .tray-item.tray-item-cover {
+    border-color: #36b3aa;
+    background-color: #26807a;
+}
+
+.pack-diagram-widget .content .tray .tray-item.tray-item-menu {
+    border-color: #b55ba8;
+    background-color: #824178;
+}
+
+.pack-diagram-widget .content .tray .tray-item.tray-item-story {
+    border-color: #ebcb42;
+    background-color: #b89f33;
+}
+
+.pack-diagram-widget .content .tray .tray-item.tray-item-stage {
+    border-color: #919e3d;
+    background-color: #656e2b;
+}
+
+.pack-diagram-widget .content .tray .tray-item.tray-item-action {
+    border-color: #9e7a34;
+    background-color: #6e5524;
+}
+
+
+/* Help dialogs */
+
+.pack-diagram-widget .help-dialog .modal-body {
+    text-align: justify;
+}
+
+
+/* Layout and metadata */
+
+.custom-pack-editor {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    background-color: #aaaaaa;
+}
+
+.custom-pack-editor .controls {
+    flex-grow: 0;
+    flex-shrink: 0;
+}
+
+.custom-pack-editor .pack-diagram-widget {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+}
+
+.custom-pack-editor .pack-diagram-widget .metadata {
+    display: flex;
+    flex-direction: row;
+    flex-grow: 0;
+    flex-shrink: 0;
+    align-items: center;
+    padding-top: 5px;
+}
+
+.custom-pack-editor .pack-diagram-widget .metadata .metadata-section {
+    flex: 1;
+    height: 121px;
+}
+
+.custom-pack-editor .pack-diagram-widget .metadata .metadata-section.vertical {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-end;
+}
+
+.custom-pack-editor .pack-diagram-widget .metadata .metadata-section.right {
+    text-align: left;
+}
+
+.custom-pack-editor .pack-diagram-widget .metadata .metadata-section div {
+    flex: 1;
+}
+
+.custom-pack-editor .pack-diagram-widget .metadata label {
+    padding-right: 3px;
+}
+
+.custom-pack-editor .pack-diagram-widget .metadata input, .custom-pack-editor .metadata span {
+    width: 280px;
+    vertical-align: top;
+    display: inline-block;
+}
+
+.custom-pack-editor .pack-diagram-widget .metadata textarea {
+    width: 350px;
+    height: 75px;
+    vertical-align: top;
+}
+
+.custom-pack-editor .pack-diagram-widget .metadata .metadata-night-mode {
+    width: 350px;
+    margin-top: 5px;
+}
+
+.custom-pack-editor .pack-diagram-widget .metadata img {
+    vertical-align: top;
+}

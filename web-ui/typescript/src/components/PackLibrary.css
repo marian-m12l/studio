@@ -1,0 +1,314 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+ .pack-library {
+    display: flex;
+    flex-grow: 1;
+}
+
+.pack-library .plugged-device {
+    width: 20vw;
+    min-width: 175px;
+    background-color: #f7d296;
+}
+
+.pack-library .local-library {
+    width: 80vw;
+    min-width: 175px;
+    background-color: #cccccc;
+    flex-grow: 1;
+}
+
+.header {
+    height: 230px;
+    padding: 10px;
+}
+
+.header .header-uuid {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pack-library .plugged-device .header {
+    background-color: #f6b54d;
+}
+
+.pack-library .local-library .header {
+    background-color: #aaaaaa;
+}
+
+.progress {
+    margin-top: 5px;
+}
+
+.progress-bar {
+    background-color: #30acaa;
+}
+
+.progress-bar.warning { 
+    background-color: #aca430;
+}
+
+.progress-bar.critical {
+    background-color: #ac3430;
+}
+.pack-grid {
+    display: grid;
+    padding: 10px;
+}
+.plugged-device .pack-grid {
+    grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+}
+.local-library .pack-grid {
+    grid-template-columns: repeat(auto-fit, minmax(365px, 1fr));
+}
+
+.editor-actions {
+    padding: 10px;
+}
+
+.empty p:first-child {
+    text-align: center;
+    font-weight: bold;
+    font-size: 150%;
+    padding: 10px;
+}
+
+.pack-grid .pack-tile {
+    display: flex;
+    width: min-content;
+    height: auto;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+    margin: 2px;
+    border-radius: 5px;
+    background-color: #aaaaaa;
+    border: 3px solid #282c34;
+}
+.plugged-device .pack-grid .pack-tile {
+    flex-direction: column;
+}
+.local-library .pack-grid .pack-tile {
+    flex-direction: row;
+}
+
+.local-library .pack-grid .pack-tile .pack-left {
+    display: flex;
+    flex-direction: column;
+    margin-right: 5px;
+    flex: 1;
+    flex-grow: 0;
+}
+
+.local-library .pack-grid .pack-tile .pack-right {
+    display: flex;
+    flex-direction: column;
+    padding-left: 5px;
+    border-left: solid 1px #282c34;
+    width: 200px;
+}
+
+.local-library .pack-grid .pack-tile .pack-right .pack-entry {
+    border-radius: 5px;
+    padding: 1px;
+    position: relative;
+    filter: brightness(70%);
+}
+
+.local-library .pack-grid .pack-tile .pack-right .pack-entry.latest {
+    border: solid 3px #282c34 !important;
+    filter: brightness(100%) !important;
+}
+
+.pack-grid .pack-tile.pack-archive,
+.pack-grid .pack-tile .pack-right .pack-entry.pack-archive {
+    background-color: #ebcb42;
+    border: 3px solid #b89f33;
+}
+.pack-grid .pack-tile.pack-raw,
+.pack-grid .pack-tile .pack-right .pack-entry.pack-raw {
+    background-color: #56d3ca;
+    border: 3px solid #26807a;
+}
+.pack-grid .pack-tile.pack-fs,
+.pack-grid .pack-tile .pack-right .pack-entry.pack-fs {
+    background-color: #b55ba8;
+    border: 3px solid #824178;
+}
+
+.pack-grid .pack-draggable {
+    cursor: move;
+    cursor: grab;
+}
+
+.pack-grid .pack-draggable:active {
+    cursor: grabbing;
+}
+
+.pack-grid .pack-not-draggable {
+    cursor: not-allowed;
+}
+
+.pack-grid .pack-tile .pack-format {
+    flex-grow: 0;
+}
+
+.pack-grid .pack-tile .pack-thumb {
+    position: relative;
+    flex-grow: 0;
+    margin: auto;
+    width: 128px;
+    height: 128px;
+}
+.pack-grid .pack-tile.pack-night-mode .pack-thumb:after {
+    content: "\1F319";
+    display: block;
+    position: absolute;
+    top: 0;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    border-bottom: 0;
+    background: linear-gradient(135deg, rgba(0,0,0,0) 50%, rgba(42,42,187,0.5) 50%, rgba(42,42,187,0.15));
+    -webkit-background-origin: border-box;
+    -moz-background-origin: border;
+    background-origin: border-box;
+    padding-top: 40%;
+    padding-left: 40%;
+    font-size: 300%;
+}
+
+.pack-grid .pack-tile .pack-version {
+    position: absolute;
+    left: 2px; bottom: 2px;
+    z-index: 1;
+    overflow: hidden;
+    width: 20px; height: 20px;
+    text-align: right;
+    border-radius: 10px;
+}
+.pack-grid .pack-tile .pack-version span {
+    font-size: 10px;
+    color: #fff;
+    text-align: center;
+    font-weight: bold; line-height: 20px;
+    width: 20px; display: block;
+    background: radial-gradient(closest-side, rgba(41, 137, 216, .8) 0%, rgba(30, 87, 153, .6) 100%);
+}
+
+.pack-grid .pack-tile .pack-age {
+    position: absolute;
+    right: 2px; bottom: 2px;
+    z-index: 1;
+    overflow: hidden;
+    width: 20px; height: 20px;
+    text-align: right;
+    border-radius: 10px;
+}
+.pack-grid .pack-tile .pack-age span {
+    font-size: 10px;
+    color: #fff;
+    text-align: center;
+    font-weight: bold; line-height: 20px;
+    width: 20px; display: block;
+    background: radial-gradient(closest-side, rgba(91, 216, 41, 0.8) 0%, rgba(91, 153, 30, 0.6) 100%);
+}
+
+.pack-grid .pack-tile .pack-ribbon {
+    position: absolute;
+    right: -5px; top: -5px;
+    z-index: 1;
+    overflow: hidden;
+    width: 75px; height: 75px;
+    text-align: right;
+}
+.pack-grid .pack-tile .pack-ribbon span {
+    font-size: 10px;
+    color: #fff;
+    text-transform: uppercase;
+    text-align: center;
+    font-weight: bold; line-height: 20px;
+    transform: rotate(45deg);
+    width: 100px; display: block;
+    background: #79A70A;
+    background: linear-gradient(#9BC90D 0%, #79A70A 100%);
+    box-shadow: 0 3px 10px -5px rgba(0, 0, 0, 1);
+    position: absolute;
+    top: 19px; right: -21px;
+}
+.pack-grid .pack-tile .pack-ribbon span::before {
+    content: '';
+    position: absolute;
+    left: 0px; top: 100%;
+    z-index: -1;
+    border-left: 3px solid #79A70A;
+    border-right: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+    border-top: 3px solid #79A70A;
+}
+.pack-grid .pack-tile .pack-ribbon span::after {
+    content: '';
+    position: absolute;
+    right: 0%; top: 100%;
+    z-index: -1;
+    border-right: 3px solid #79A70A;
+    border-left: 3px solid transparent;
+    border-bottom: 3px solid transparent;
+    border-top: 3px solid #79A70A;
+}
+.pack-grid .pack-tile .pack-ribbon.red span {background: linear-gradient(#F70505 0%, #8F0808 100%);}
+.pack-grid .pack-tile .pack-ribbon.red span::before {border-left-color: #8F0808; border-top-color: #8F0808;}
+.pack-grid .pack-tile .pack-ribbon.red span::after {border-right-color: #8F0808; border-top-color: #8F0808;}
+
+.pack-grid .pack-tile .pack-ribbon.blue span {background: linear-gradient(#2989d8 0%, #1e5799 100%);}
+.pack-grid .pack-tile .pack-ribbon.blue span::before {border-left-color: #1e5799; border-top-color: #1e5799;}
+.pack-grid .pack-tile .pack-ribbon.blue span::after {border-right-color: #1e5799; border-top-color: #1e5799;}
+
+.pack-grid .pack-tile .pack-title {
+    flex-grow: 0;
+    overflow-wrap: anywhere;
+}
+
+.pack-grid .pack-tile .pack-entry .pack-filename {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.pack-grid .pack-tile .pack-actions {
+    flex-grow: 0;
+    text-align: right;
+}
+
+.pack-grid .pack-tile button.pack-action,button.library-action {
+    background: rgba(255,255,255,.75);
+    border: none;
+    border-radius: 5px;
+    padding: 1px 4px;
+    margin: 1px;
+    color: #337ab7;
+}
+.pack-grid .pack-tile button.pack-action:hover,button.library-action:hover {
+    color: #23527c;
+}
+
+.device-dropzone {
+    height: calc(100vh - 160px - 48px);
+    overflow-y: scroll;
+}
+
+.library-dropzone {
+    height: calc(100vh - 160px - 48px);
+    overflow-y: scroll;
+}
+
+.highlighted-dropzone {
+    outline: 3px dashed #282c34;
+    outline-offset: -4px;
+}

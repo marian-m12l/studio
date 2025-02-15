@@ -1,0 +1,21 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+.editor-viewer-content {
+    margin-left: auto;
+    margin-top: auto;
+    width: 50%;
+    left: 50%;
+    display: block;
+    position: fixed;
+    top: 50%;
+    transform: translate(-50%, -55%);
+    z-index: 5001;
+}
+
+.editor-viewer-content.translucent {
+    opacity: 0.75;
+}

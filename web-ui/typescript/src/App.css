@@ -1,0 +1,65 @@
+/*
+ * This Source Code Form is subject to the terms of the Mozilla Public
+ * License, v. 2.0. If a copy of the MPL was not distributed with this
+ * file, You can obtain one at https://mozilla.org/MPL/2.0/.
+ */
+
+.App {
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+    text-align: center;
+}
+
+.App .Toastify__toast-container--top-right {
+    top: 4em;
+}
+
+.App-header {
+    background-color: #282c34;
+    display: flex;
+    flex-direction: row;
+    flex-grow: 0;
+    flex-shrink: 0;
+    align-items: center;
+    justify-content: center;
+    font-size: calc(10px + 2vmin);
+    color: white;
+    height: 48px;
+}
+
+.App-header .flags {
+}
+
+.App-header .flags span {
+    cursor: pointer;
+}
+
+.App-header .welcome {
+    flex-grow: 1;
+}
+
+.App-header .welcome .version {
+    font-size: 50%;
+    font-weight: lighter;
+}
+
+.App-header .btn {
+    font-size: 100%;
+}
+
+.App-header .controls .btn.active {
+    color: #919e3d;
+}
+
+.App-header .btn.focus, .App-header .btn:focus, .App-header .btn:hover {
+    color: #919e3d;
+}
+
+/* Announce dialog */
+
+.App .announce-dialog .modal-body>div {
+    text-align: justify;
+    max-height: 500px;
+    overflow-y: auto;
+}
