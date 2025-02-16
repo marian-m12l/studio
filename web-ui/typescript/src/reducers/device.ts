@@ -4,12 +4,15 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+import { FsDeviceInfos } from "../../@types/device";
+import { Pack } from "../../@types/pack";
+
 const initialState = {
     metadata: null,
     packs: []
 };
 
-const device = (state = initialState, action) => {
+const device = (state = initialState, action: { type: string; metadata: FsDeviceInfos; packs: Pack[]; }) => {
     switch (action.type) {
         case 'DEVICE_PLUGGED':
             return { ...state, metadata: action.metadata };

@@ -5,12 +5,12 @@
  */
 
 import React from 'react';
-import {connect} from "react-redux";
+import { connect } from "react-redux";
 import { toast } from 'react-toastify';
-import {withTranslation} from "react-i18next";
+import { withTranslation } from "react-i18next";
 
 import PackViewer from './PackViewer';
-import {hideViewer, setViewerAction, setViewerStage, setViewerOptions} from "../../actions";
+import { hideViewer } from "../../actions";
 
 import './EditorPackViewer.css';
 
@@ -115,18 +115,16 @@ class EditorPackViewer extends React.Component {
     };
 
     onOptionToggled = (optionName) => {
-        let options = this.props.viewer.options;
+        const options = this.props.viewer.options;
         options[optionName] = !options[optionName];
         this.props.setViewerOptions(options);
     };
 
     render() {
         return (
-            <>
-                <div className={`editor-viewer-content editor-viewer-center ${this.props.viewer.options.translucent && 'translucent'}`}>
-                    {this.state.viewer}
-                </div>
-            </>
+            <div className={`editor-viewer-content editor-viewer-center ${this.props.viewer.options.translucent && 'translucent'}`}>
+                {this.state.viewer}
+            </div>
         );
     }
 }

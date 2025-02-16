@@ -5,20 +5,29 @@
  */
 
 import { NodeModel } from '@projectstorm/react-diagrams';
-import uuidv4 from 'uuid/v4';
+import {v4 as uuidv4} from 'uuid';
 
 import Stage from "./core/Stage";
 import StagePortModel from "./StagePortModel";
 
+interface Options{
+    type?: string;
+    uuid?: string;
+    name?: string;
+}
 
 class StageNodeModel extends NodeModel {
-
-    constructor(options = {}) {
+    uuid: string;
+    squareOne: boolean;
+    stage: Stage;
+    fromPort: any;
+    
+    constructor(options:Options = {}) {
         super({
             ...options,
             type: options.type || 'stage'
         });
-        this.uuid = options.uuid || uuidv4();
+        this.uuid = options.uuid || uuidv4();
         this.squareOne = false;
         this.stage = new Stage(options.name || 'Stage title');
 
@@ -45,7 +54,7 @@ class StageNodeModel extends NodeModel {
         return this.stage.name;
     }
 
-    setName(name) {
+    setName(name: string) {
         this.stage.name = name;
     }
 
@@ -157,21 +166,21 @@ class StageNodeModel extends NodeModel {
     }
 
     onOk(diagram) {
-        let okLinks = Object.values(this.okPort.getLinks());
+        const okLinks = Object.values(this.okPort.getLinks());
         if (okLinks.length !== 1) {
             return [];
         } else {
-            let okTargetPort = okLinks[0].getForwardTargetPort();
-            let okTargetNode = okTargetPort.getParent();
+            const okTargetPort = okLinks[0].getForwardTargetPort();
+            const okTargetNode = okTargetPort.getParent();
             return okTargetNode.onEnter(okTargetPort, diagram);
         }
     }
 
     onHome(diagram) {
-        let homeLinks = Object.values(this.homePort.getLinks());
+        const homeLinks = Object.values(this.homePort.getLinks());
         if (homeLinks.length !== 1) {
             // Back to main (pack selection) stage node
-            let mainNode = diagram.getEntryPoint();
+            const mainNode = diagram.getEntryPoint();
             return [
                 mainNode,
                 {
@@ -180,8 +189,8 @@ class StageNodeModel extends NodeModel {
                 }
             ];
         } else {
-            let homeTargetPort = homeLinks[0].getForwardTargetPort();
-            let homeTargetNode = homeTargetPort.getParent();
+            const homeTargetPort = homeLinks[0].getForwardTargetPort();
+            const homeTargetNode = homeTargetPort.getParent();
             return homeTargetNode.onEnter(homeTargetPort, diagram);
         }
     }

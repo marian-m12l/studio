@@ -5,21 +5,32 @@
  */
 
 import { NodeModel } from '@projectstorm/react-diagrams';
-import uuidv4 from "uuid/v4";
+import {v4 as uuidv4} from "uuid";
 
 import Stage from "./core/Stage";
 import ActionPortModel from "./ActionPortModel";
 import StagePortModel from "./StagePortModel";
 
+interface Options{
+    uuid?: string;
+    name?: string;
+}
 
-class MenuNodeModel extends NodeModel {
+export default class MenuNodeModel extends NodeModel {
+    uuid: string;
+    name: string;
+    questionStage: Stage;
+    optionsStages: never[];
+    optionsOut: never[];
+    defaultOption: number;
+    fromPort: any;
 
-    constructor(options = {}) {
+    constructor(options:Options = {}) {
         super({
             ...options,
             type: 'menu'
         });
-        this.uuid = options.uuid || uuidv4();
+        this.uuid = options.uuid || uuidv4();
         this.name = options.name || 'Menu title';
         this.fromPort = this.addPort(new ActionPortModel("from", true));
         // Question stage
@@ -44,13 +55,13 @@ class MenuNodeModel extends NodeModel {
         return this.name;
     }
 
-    setName(name) {
+    setName(name :string) {
         this.name = name;
         this.questionStage.name = name+".questionstage";
     }
 
     addOption() {
-        let index = this.optionsStages.length;
+        const index = this.optionsStages.length;
 
         this.optionsStages[index] = new Stage(`Option #${index+1}`);
         this.optionsStages[index].controls['wheel'] = true;
@@ -65,7 +76,7 @@ class MenuNodeModel extends NodeModel {
         if (this.optionsStages.length > 1) {
             // Remove stages and ports from list
             this.optionsStages.splice(idx, 1);
-            let optionOutPort = this.optionsOut.splice(idx, 1)[0];
+            const optionOutPort = this.optionsOut.splice(idx, 1)[0];
             // Remove any attached link
             Object.values(optionOutPort.getLinks())
                 .map(link => link.remove());
@@ -122,8 +133,7 @@ class MenuNodeModel extends NodeModel {
 
 
     onEnter(port, diagram) {
-        let targetIndex = (this.defaultOption === -1) ? Math.floor(Math.random() * this.optionsStages.length) : this.defaultOption;
-        let that = this;
+        const targetIndex = (this.defaultOption === -1) ? Math.floor(Math.random() * this.optionsStages.length) : this.defaultOption;
         return [
             {
                 stage: this.questionStage,
@@ -133,14 +143,14 @@ class MenuNodeModel extends NodeModel {
                 onOk: (d) => {
                     // Move to default option
                     return [
-                        that.wrapOptionStage(that.optionsStages[targetIndex], targetIndex, d),
+                        this.wrapOptionStage(this.optionsStages[targetIndex], targetIndex, d),
                         {
-                            node: that,
+                            node: this,
                             index: targetIndex
                         }
                     ]
                 },
-                parentNode: that
+                parentNode: this
             },
             {
                 node: null,
@@ -150,8 +160,8 @@ class MenuNodeModel extends NodeModel {
     }
 
     onWheelLeft(index, diagram) {
-        let nextIndex = index === 0 ? (this.optionsStages.length - 1) : (index - 1);
-        let nextOption = this.optionsStages[nextIndex];
+        const nextIndex = index === 0 ? (this.optionsStages.length - 1) : (index - 1);
+        const nextOption = this.optionsStages[nextIndex];
 
         return [
             this.wrapOptionStage(nextOption, nextIndex, diagram),
@@ -163,8 +173,8 @@ class MenuNodeModel extends NodeModel {
     }
 
     onWheelRight(index, diagram) {
-        let nextIndex = (index + 1) % this.optionsOut.length;
-        let nextOption = this.optionsStages[nextIndex];
+        const nextIndex = (index + 1) % this.optionsOut.length;
+        const nextOption = this.optionsStages[nextIndex];
 
         return [
             this.wrapOptionStage(nextOption, nextIndex, diagram),
@@ -176,7 +186,7 @@ class MenuNodeModel extends NodeModel {
     }
 
     wrapOptionStage(stage, index, diagram) {
-        let that = this;
+        const that = this;
         return {
             stage: stage,
             getImage: () => stage.image,
@@ -184,20 +194,20 @@ class MenuNodeModel extends NodeModel {
             getControls: () => stage.controls,
             onOk: (d) => {
                 // Transition to selected option
-                let optionOutLinks = Object.values(that.optionsOut[index].getLinks());
+                const optionOutLinks = Object.values(that.optionsOut[index].getLinks());
                 if (optionOutLinks.length !== 1) {
                     return [];
                 } else {
-                    let optionOutTargetPort = optionOutLinks[0].getForwardTargetPort();
-                    let optionOutTargetNode = optionOutTargetPort.getParent();
+                    const optionOutTargetPort = optionOutLinks[0].getForwardTargetPort();
+                    const optionOutTargetNode = optionOutTargetPort.getParent();
                     return optionOutTargetNode.onEnter(optionOutTargetPort, d);
                 }
             },
             onHome: (d) => {
                 // Go back to previous node, or to pack cover
-                let fromLinks = Object.values(that.fromPort.getLinks());
+                const fromLinks = Object.values(that.fromPort.getLinks());
                 if (fromLinks.length !== 1) {
-                    let coverNode = d.getEntryPoint();
+                    const coverNode = d.getEntryPoint();
                     return [
                         coverNode,
                         {
@@ -206,7 +216,7 @@ class MenuNodeModel extends NodeModel {
                         }
                     ]
                 } else {
-                    let previousNode = fromLinks[0].getForwardSourcePort().getParent();
+                    const previousNode = fromLinks[0].getForwardSourcePort().getParent();
                     return previousNode.onEnter(null, d);
                 }
             },
@@ -247,5 +257,3 @@ class MenuNodeModel extends NodeModel {
     }
 
 }
-
-export default MenuNodeModel;

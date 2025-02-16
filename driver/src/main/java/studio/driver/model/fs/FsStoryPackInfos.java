@@ -28,7 +28,7 @@ public class FsStoryPackInfos {
         this.sizeInBytes = sizeInBytes;
         this.nightModeAvailable = nightModeAvailable;
         this.ageMin = ageMin;
-        this.ageMax = ageMax;        
+        this.ageMax = ageMax;
     }
 
     public UUID getUuid() {

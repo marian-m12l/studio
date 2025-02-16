@@ -19,7 +19,7 @@ const initialState = {
     }
 };
 
-const viewer = (state = initialState, action) => {
+const viewer = (state = initialState, action: { type: string; diagram: any; stage: any; action: any; options: any; }) => {
     switch (action.type) {
         case 'SHOW_VIEWER':
             return { ...state, show: true };

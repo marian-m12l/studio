@@ -5,5 +5,5 @@
  */
 
 export const LOCAL_STORAGE_ANNOUNCE_OPTOUT = 'announceOptOut';
-export const LOCAL_STORAGE_ANNOUNCE_LAST_SHOWN = 'lastAnnounceShown';
+export const LOCAL_STORAGE_ANNOUNCE_LAST_SHOWN = 0;
 export const LOCAL_STORAGE_ALLOW_ENRICHED_BINARY_FORMAT = 'allowEnrichedBinaryFormat';

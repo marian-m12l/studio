@@ -3,9 +3,9 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
-import { Packs } from '../../@types/pack'
+import { LibraryPack } from '../../@types/pack'
 
-export function sortPacks(packs: Packs[]) {
+export function sortPacks(packs: LibraryPack[]) {
     return packs.sort((a,b) => {
         // Official packs last, alphabetic order except for missing titles (uuids, last)
         const titleA = (a.packs[0].title && a.packs[0].title.toUpperCase()) || '__'+a.uuid.toUpperCase();

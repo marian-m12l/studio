@@ -4,12 +4,14 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
+import { Pack } from "../../@types/pack";
+
 const initialState = {
     metadata: null,
     packs: []
 };
 
-const library = (state = initialState, action) => {
+const library = (state = initialState, action: { type: string; metadata: any; packs: Pack[]; }) => {
     switch (action.type) {
         case 'SET_LIBRARY':
             return { ...state, metadata: action.metadata, packs: action.packs };

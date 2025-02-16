@@ -14,7 +14,8 @@ import { DiagramEngine } from '@projectstorm/react-diagrams';
 import StageNodeModel from "../models/StageNodeModel";
 import EditableText from "./composites/EditableText";
 import StudioPortWidget from "./StudioPortWidget";
-import {showViewer, setViewerDiagram, setViewerStage, setViewerAction} from "../../../actions";
+import {showViewer} from "../../../actions";
+import { setViewerDiagram, setViewerStage, setViewerAction } from '../../../actions/viewer.actions';
 
 
 class StageNodeWidget extends React.Component {

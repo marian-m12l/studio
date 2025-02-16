@@ -6,48 +6,48 @@
 
 import {handleJsonOrError} from "../utils/fetch";
 
-export const fetchDeviceInfos = () => {
-    return fetch('http://localhost:8080/api/device/infos')
-        .then(handleJsonOrError);
+export const fetchDeviceInfos = async () => {
+    const response = await fetch('http://localhost:8080/api/device/infos');
+    return handleJsonOrError(response);
 };
 
-export const fetchDevicePacks = () => {
-    return fetch('http://localhost:8080/api/device/packs')
-        .then(handleJsonOrError);
+export const fetchDevicePacks = async () => {
+    const response = await fetch('http://localhost:8080/api/device/packs');
+    return handleJsonOrError(response);
 };
 
-export const addFromLibrary = (uuid, path) => {
-    return fetch('http://localhost:8080/api/device/addFromLibrary', {
+export const addFromLibrary = async (uuid:string, path:string) => {
+    const response = await fetch('http://localhost:8080/api/device/addFromLibrary', {
         method: "POST",
-        headers: { "Content-Type" : "application/json" },
-        body: JSON.stringify({uuid, path})
-    })
-        .then(handleJsonOrError);
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uuid, path })
+    });
+    return handleJsonOrError(response);
 };
 
-export const removeFromDevice = (uuid) => {
-    return fetch('http://localhost:8080/api/device/removeFromDevice', {
+export const removeFromDevice = async (uuid:string) => {
+    const response = await fetch('http://localhost:8080/api/device/removeFromDevice', {
         method: "POST",
-        headers: { "Content-Type" : "application/json" },
-        body: JSON.stringify({uuid})
-    })
-        .then(handleJsonOrError);
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uuid })
+    });
+    return handleJsonOrError(response);
 };
 
-export const reorderPacks = (uuids) => {
-    return fetch('http://localhost:8080/api/device/reorder', {
+export const reorderPacks = async (uuids:string[]) => {
+    const response = await fetch('http://localhost:8080/api/device/reorder', {
         method: "POST",
-        headers: { "Content-Type" : "application/json" },
-        body: JSON.stringify({uuids})
-    })
-        .then(handleJsonOrError);
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uuids })
+    });
+    return handleJsonOrError(response);
 };
 
-export const addToLibrary = (uuid, driver) => {
-    return fetch('http://localhost:8080/api/device/addToLibrary', {
+export const addToLibrary = async (uuid:string, driver) => {
+    const response = await fetch('http://localhost:8080/api/device/addToLibrary', {
         method: "POST",
-        headers: { "Content-Type" : "application/json" },
-        body: JSON.stringify({uuid, driver})
-    })
-        .then(handleJsonOrError);
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ uuid, driver })
+    });
+    return handleJsonOrError(response);
 };

@@ -4,11 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import React from 'react';
-import PropTypes from "prop-types";
-import {withTranslation} from "react-i18next";
-import {connect} from "react-redux";
-
+import React, { useEffect, useState } from 'react';
+import { useTranslation } from "react-i18next";
+import { useSelector } from "react-redux";
 
 const bugReportTemplate = `**Describe the bug**
 A clear and concise description of what the bug is.
@@ -43,50 +41,37 @@ __ISSUE_LOG
 Add any other context about the problem here.
 `;
 
-class IssueReportToast extends React.Component {
+interface IssueReportToastProps {
+    content: React.ReactNode;
+    error?: Error;
+}
 
-    constructor(props) {
-        super(props);
+const IssueReportToast: React.FC<IssueReportToastProps> = ({ content, error }) => {
+    const { t } = useTranslation();
+    const evergreen = useSelector((state) => state.evergreen);
+    const [url, setUrl] = useState('');
 
-        // Fill environment and error log
-        let errorLog = (this.props.error && '> ' + encodeURIComponent(this.props.error.message).replace(/(?:(\r\n|\r|\n)\t?|\t)/g, '%0a')) || '';
-        let body = encodeURIComponent(bugReportTemplate)
+    useEffect(() => {
+        const errorLog = (error && '> ' + encodeURIComponent(error.message).replace(/(?:(\r\n|\r|\n)\t?|\t)/g, '%0a')) || '';
+        const body = encodeURIComponent(bugReportTemplate)
             .replace(/__ISSUE_LOG/g, errorLog)
             .replace(/__OS/g, encodeURIComponent(window.navigator.platform))
             .replace(/__BROWSER/g, encodeURIComponent(window.navigator.userAgent))
-            .replace(/__APP_VERSION/g, this.props.evergreen.version || 'Unknown');
+            .replace(/__APP_VERSION/g, evergreen.version || 'Unknown');
 
-        this.url = 'https://github.com/marian-m12l/studio/issues/new?template=bug_report.md&body=' + body;
-    }
+        setUrl('https://github.com/marian-m12l/studio/issues/new?template=bug_report.md&body=' + body);
+    }, [error, evergreen]);
 
-    render() {
-        const { t } = this.props;
-        return (
-            <>
-                <p>{this.props.content}</p>
-                <p>
-                    <a href={this.url} target="_blank" rel="noopener noreferrer"><span className="glyphicon glyphicon-bell"/>{t('toasts.reportIssue')}</a>
-                </p>
-            </>
-        );
-    }
-}
-
-IssueReportToast.propTypes = {
-    content: PropTypes.element.isRequired,
-    error: PropTypes.instanceOf(Error)
+    return (
+        <>
+            <p>{content}</p>
+            <p>
+                <a href={url} target="_blank" rel="noopener noreferrer">
+                    <span className="glyphicon glyphicon-bell" />{t('toasts.reportIssue')}
+                </a>
+            </p>
+        </>
+    );
 };
 
-const mapStateToProps = (state, ownProps) => ({
-    evergreen: state.evergreen
-});
-
-const mapDispatchToProps = (dispatch, ownProps) => ({
-});
-
-export default withTranslation()(
-    connect(
-        mapStateToProps,
-        mapDispatchToProps
-    )(IssueReportToast)
-);
+export default IssueReportToast;

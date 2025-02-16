@@ -11,11 +11,11 @@ import {
 
 
 const initialState = {
-    announceOptOut: localStorage.getItem(LOCAL_STORAGE_ANNOUNCE_OPTOUT) === 'true' || false,
-    allowEnriched: localStorage.getItem(LOCAL_STORAGE_ALLOW_ENRICHED_BINARY_FORMAT) === 'true' || false
+    announceOptOut: localStorage.getItem(LOCAL_STORAGE_ANNOUNCE_OPTOUT) === 'true' || false,
+    allowEnriched: localStorage.getItem(LOCAL_STORAGE_ALLOW_ENRICHED_BINARY_FORMAT) === 'true' || false
 };
 
-const settings = (state = initialState, action) => {
+const settings = (state = initialState, action: { type: string; announceOptOut: string; allowEnriched: string; }) => {
     switch (action.type) {
         case 'SET_ANNOUNCE_OPTOUT':
             localStorage.setItem(LOCAL_STORAGE_ANNOUNCE_OPTOUT, action.announceOptOut);

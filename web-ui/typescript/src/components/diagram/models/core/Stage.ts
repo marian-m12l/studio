@@ -5,6 +5,10 @@
  */
 
 class Stage {
+    controls: any;
+    name: string;
+    audio: any;
+    image: any;
 
     constructor(name) {
         this.name = name;
@@ -20,7 +24,7 @@ class Stage {
     }
 
     clone() {
-        let clone = Object.assign(Object.create(Object.getPrototypeOf(this)), this);
+        const clone = Object.assign(Object.create(Object.getPrototypeOf(this)), this);
         clone.controls = Object.assign({}, this.controls);
         return clone;
     };

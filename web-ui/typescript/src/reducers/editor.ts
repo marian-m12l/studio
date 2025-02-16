@@ -10,12 +10,12 @@ const initialState = {
     errors: {}
 };
 
-const editor = (state = initialState, action) => {
+const editor = (state = initialState, action: { type: string; diagram: any; filename: string; errors: Error[]; }) => {
     switch (action.type) {
         case 'SET_EDITOR_DIAGRAM':
             return { ...state, diagram: action.diagram, filename: (action.filename || '') };
         case 'SET_EDITOR_FILENAME':
-            return { ...state, filename: (action.filename || '') };
+            return { ...state, filename: (action.filename || '') };
         case 'SET_DIAGRAM_ERRORS':
             return { ...state, errors: action.errors };
         default:

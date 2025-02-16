@@ -9,7 +9,7 @@ const initialState = {
     announce: null
 };
 
-const evergreen = (state = initialState, action) => {
+const evergreen = (state = initialState, action: { type: string; version: string; announce: string; }) => {
     switch (action.type) {
         case 'SET_APPLICATION_VERSION':
             return { ...state, version: action.version };

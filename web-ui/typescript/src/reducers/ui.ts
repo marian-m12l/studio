@@ -8,7 +8,7 @@ const initialState = {
     shown: null
 };
 
-const ui = (state = initialState, action) => {
+const ui = (state = initialState, action: { type: string; }) => {
     switch (action.type) {
         case 'SHOW_LIBRARY':
             return { ...state, shown: 'library' };
