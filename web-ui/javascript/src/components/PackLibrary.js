@@ -60,7 +60,7 @@ class PackLibrary extends React.Component {
                 show: false,
                 data: null
             },
-            searchTerm: null,
+            searchTerm: "",
             ageMinFilter: 0,
             ageMaxFilter: 12
         };
@@ -336,8 +336,9 @@ class PackLibrary extends React.Component {
         const filteredLibraryPacks = this.props.library.packs.filter((group) => {
             console.log("group: %o", group);
             const matchesSearch =
-                group.packs[0].uuid.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                group.uuid.toLowerCase().includes(searchTerm.toLowerCase());
+                group.packs[0].uuid.toLowerCase().includes(searchTerm.toLowerCase())
+                || group.uuid.toLowerCase().includes(searchTerm.toLowerCase())
+                || group.packs[0].title?.toLowerCase().includes(searchTerm.toLowerCase());
             const matchesAge = group.packs[0].ageMin >= ageMinFilter && group.packs[0].ageMin <= ageMaxFilter;
             return matchesAge && matchesSearch;
         });
@@ -486,6 +487,7 @@ class PackLibrary extends React.Component {
                                     <div className="pack-thumb" title={pack.nightModeAvailable && t('library.nightMode')}>
                                         <img src={pack.image || defaultImage} alt="" width="128" height="128" draggable={false} />
                                         <div className="pack-version"><span>{`v${pack.version}`}</span></div>
+                                        <div className="pack-age"><span>{pack.ageMax <= 0 ? `+${pack.ageMin}` : `${pack.ageMin}-${pack.ageMax}`}</span></div>
                                         {pack.official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
                                     </div>
                                     <div className="pack-title">
@@ -518,7 +520,7 @@ class PackLibrary extends React.Component {
                         <div className="filter-menu">
                             <div className="filter-section">
 
-                                {/* <div className="search-box">
+                                <div className="search-box">
                                     <label htmlFor="search">Rechercher (titre ou UUID)</label>
                                     <input
                                         type="text"
@@ -527,7 +529,7 @@ class PackLibrary extends React.Component {
                                         onChange={(e) => this.setState({ searchTerm: e.target.value }, this.applyFilters)}
                                         placeholder="Rechercher..."
                                     />
-                                </div> */}
+                                </div>
                                 <form class="form-inline">
                                     <div className="form-group">
                                         <label className="sr-only" for="age-min">Age minimum</label>
