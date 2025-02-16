@@ -17,20 +17,20 @@ import PackDiagramModel from "../components/diagram/models/PackDiagramModel";
 
 export function readFromArchive(file) {
     // Read zip archive
-    var zip = new JSZip();
+    const zip = new JSZip();
     return zip.loadAsync(file)
         .then((archive) => {
             // Read JSON story descriptor
             return archive.file("story.json").async('string').then(storyJson => {
-                let json = JSON.parse(storyJson);
+                const json = JSON.parse(storyJson);
 
-                var loadedModel = new PackDiagramModel(json.title, json.version, (json.description || ''), (json.nightModeAvailable || false));
+                const loadedModel = new PackDiagramModel(json.title, json.version, (json.description || ''), (json.nightModeAvailable || false));
 
-                let links = [];
+                const links: string[] = [];
 
                 // Async load thumbnail file
-                let thumbnailPromise = new Promise((resolve, reject) => {
-                    let thumb = archive.file('thumbnail.png');
+                const thumbnailPromise = new Promise((resolve, reject) => {
+                    const thumb = archive.file('thumbnail.png');
                     if (thumb) {
                         thumb.async('base64').then(base64Thumb => {
                             resolve(dataUrlPrefix('thumbnail.png') + base64Thumb);
@@ -40,7 +40,7 @@ export function readFromArchive(file) {
                     }
                 }).then(thumb => loadedModel.thumbnail = thumb);
 
-                let assetsPromises = [
+                const assetsPromises = [
                     thumbnailPromise
                 ];
 
@@ -48,10 +48,10 @@ export function readFromArchive(file) {
                 // First, load nodes ignoring transitions
 
                 // Actual action nodes
-                let actionNodes = new Map(
-                    json.actionNodes.filter(node => (node.type || 'action') === 'action').map(node => {
+                const actionNodes = new Map(
+                    json.actionNodes.filter(node => (node.type || 'action') === 'action').map(node => {
                         // Build action node
-                        var actionNode = new ActionNodeModel({ name: node.name });
+                        const actionNode = new ActionNodeModel({ name: node.name });
                         if (node.position) {
                             actionNode.setPosition(node.position.x, node.position.y);
                         }
@@ -60,8 +60,8 @@ export function readFromArchive(file) {
                 );
 
                 // Group 'virtual' action and stage nodes
-                let virtualNodes = json.actionNodes.filter(node => (node.type || 'action') !== 'action')
-                    .concat(json.stageNodes.filter(node => (node.type || 'stage') !== 'stage'))
+                const virtualNodes = json.actionNodes.filter(node => (node.type || 'action') !== 'action')
+                    .concat(json.stageNodes.filter(node => (node.type || 'stage') !== 'stage'))
                     .reduce(
                         (acc, node) => {
                             if (!acc[node.groupId]) {
@@ -75,18 +75,18 @@ export function readFromArchive(file) {
                 console.log(virtualNodes);
 
                 // Build simplified nodes from 'virtual' nodes
-                let simplifiedNodes = new Map(
+                const simplifiedNodes = new Map(
                     Object.values(virtualNodes).map(group => {
                         // Story node
                         if (group[0].type.startsWith('story')) {
-                            let storyVirtualStage = group.find(node => node.type === 'story');
-                            let storyVirtualAction = group.find(node => node.type === 'story.storyaction');
-                            let storyNode = new StoryNodeModel({ name: storyVirtualStage.name, uuid: storyVirtualStage.groupId });
+                            const storyVirtualStage = group.find(node => node.type === 'story');
+                            const storyVirtualAction = group.find(node => node.type === 'story.storyaction');
+                            const storyNode = new StoryNodeModel({ name: storyVirtualStage.name, uuid: storyVirtualStage.groupId });
                             if (storyVirtualStage.controlSettings.home === false) {
                                 storyNode.setDisableHome(true);
                             }
                             // Async load from asset files
-                            let audioPromise = new Promise((resolve, reject) => {
+                            const audioPromise = new Promise((resolve, reject) => {
                                 if (storyVirtualStage.audio) {
                                     archive.file('assets/' + storyVirtualStage.audio).async('base64').then(base64Asset => {
                                         resolve(dataUrlPrefix(storyVirtualStage.audio) + base64Asset);
@@ -104,11 +104,11 @@ export function readFromArchive(file) {
                         }
                         // Menu node
                         else if (group[0].type.startsWith('menu')) {
-                            let menuQuestionVirtualStage = group.find(node => node.type === 'menu.questionstage');
-                            let menuQuestionVirtualAction = group.find(node => node.type === 'menu.questionaction');
-                            let menuNode = new MenuNodeModel({ name: menuQuestionVirtualStage.name, uuid: menuQuestionVirtualStage.groupId });
+                            const menuQuestionVirtualStage = group.find(node => node.type === 'menu.questionstage');
+                            const menuQuestionVirtualAction = group.find(node => node.type === 'menu.questionaction');
+                            const menuNode = new MenuNodeModel({ name: menuQuestionVirtualStage.name, uuid: menuQuestionVirtualStage.groupId });
                             // Async load from asset files
-                            let audioPromise = new Promise((resolve, reject) => {
+                            const audioPromise = new Promise((resolve, reject) => {
                                 if (menuQuestionVirtualStage.audio) {
                                     archive.file('assets/' + menuQuestionVirtualStage.audio).async('base64').then(base64Asset => {
                                         resolve(dataUrlPrefix(menuQuestionVirtualStage.audio) + base64Asset);
@@ -124,7 +124,7 @@ export function readFromArchive(file) {
                                 menuNode.addOption();
                                 menuNode.setOptionName(idx, optionVirtualStage.name);
                                 // Async load from asset files
-                                let imagePromise = new Promise((resolve, reject) => {
+                                const imagePromise = new Promise((resolve, reject) => {
                                     if (optionVirtualStage.image) {
                                         archive.file('assets/' + optionVirtualStage.image).async('base64').then(base64Asset => {
                                             resolve(dataUrlPrefix(optionVirtualStage.image) + base64Asset);
@@ -133,7 +133,7 @@ export function readFromArchive(file) {
                                         resolve(null);
                                     }
                                 }).then(image => menuNode.setOptionImage(idx, image));
-                                let audioPromise = new Promise((resolve, reject) => {
+                                const audioPromise = new Promise((resolve, reject) => {
                                     if (optionVirtualStage.audio) {
                                         archive.file('assets/' + optionVirtualStage.audio).async('base64').then(base64Asset => {
                                             resolve(dataUrlPrefix(optionVirtualStage.audio) + base64Asset);
@@ -155,9 +155,9 @@ export function readFromArchive(file) {
                         }
                         // Cover node (TODO make sure there is only one start node !)
                         else if (group[0].type.startsWith('cover')) {
-                            let coverNode = new CoverNodeModel({ name: group[0].name, uuid: group[0].uuid });
+                            const coverNode = new CoverNodeModel({ name: group[0].name, uuid: group[0].uuid });
                             // Async load from asset files
-                            let imagePromise = new Promise((resolve, reject) => {
+                            const imagePromise = new Promise((resolve, reject) => {
                                 if (group[0].image) {
                                     archive.file('assets/' + group[0].image).async('base64').then(base64Asset => {
                                         resolve(dataUrlPrefix(group[0].image) + base64Asset);
@@ -166,7 +166,7 @@ export function readFromArchive(file) {
                                     resolve(null);
                                 }
                             }).then(image => coverNode.setImage(image));
-                            let audioPromise = new Promise((resolve, reject) => {
+                            const audioPromise = new Promise((resolve, reject) => {
                                 if (group[0].audio) {
                                     archive.file('assets/' + group[0].audio).async('base64').then(base64Asset => {
                                         resolve(dataUrlPrefix(group[0].audio) + base64Asset);
@@ -193,14 +193,14 @@ export function readFromArchive(file) {
                 console.log(simplifiedNodes);
 
                 // Actual stage nodes
-                let stageNodes = new Map(
+                const stageNodes = new Map(
                     json.stageNodes.filter(node => (node.type || 'stage') === 'stage').map(node => {
                         // Build stage node
-                        var stageNode = new StageNodeModel({ name: node.name, uuid: node.uuid });
+                        const stageNode = new StageNodeModel({ name: node.name, uuid: node.uuid });
                         // Square one
                         stageNode.setSquareOne(node.squareOne || false);
                         // Async load from asset files
-                        let imagePromise = new Promise((resolve, reject) => {
+                        const imagePromise = new Promise((resolve, reject) => {
                             if (node.image) {
                                 archive.file('assets/'+node.image).async('base64').then(base64Asset => {
                                     resolve(dataUrlPrefix(node.image) + base64Asset);
@@ -209,7 +209,7 @@ export function readFromArchive(file) {
                                 resolve(null);
                             }
                         }).then(image => stageNode.setImage(image));
-                        let audioPromise = new Promise((resolve, reject) => {
+                        const audioPromise = new Promise((resolve, reject) => {
                             if (node.audio) {
                                 archive.file('assets/'+node.audio).async('base64').then(base64Asset => {
                                     resolve(dataUrlPrefix(node.audio) + base64Asset);
@@ -240,12 +240,12 @@ export function readFromArchive(file) {
 
                 // Add options links from actual action nodes to actual stage nodes
                 json.actionNodes.filter(node => (node.type || 'action') === 'action').forEach(node => {
-                    var actionNode = actionNodes.get(node.id);
+                    const actionNode = actionNodes.get(node.id);
                     node.options.forEach((opt, idx) => {
                         while (actionNode.optionsOut.length <= idx) {
                             actionNode.addOption();
                         }
-                        let optionPort = actionNode.optionsOut[idx];
+                        const optionPort = actionNode.optionsOut[idx];
                         if (opt) {
                             links.push(optionPort.link(stageNodes.get(opt).fromPort));
                         }
@@ -254,7 +254,7 @@ export function readFromArchive(file) {
 
                 // Add links from actual stage nodes to actual action nodes or simplified nodes
                 json.stageNodes.filter(node => (node.type || 'stage') === 'stage').forEach(node => {
-                    var stageNode = stageNodes.get(node.uuid);
+                    const stageNode = stageNodes.get(node.uuid);
                     if (node.okTransition) {
                         links.push(stageNode.okPort.link(getTransitionTargetNode(node.okTransition, actionNodes, simplifiedNodes)));
                     }
@@ -268,13 +268,13 @@ export function readFromArchive(file) {
                 Object.values(virtualNodes).forEach(group => {
                     // Story node
                     if (group[0].type.startsWith('story')) {
-                        let storyVirtualStage = group.find(node => node.type === 'story');
-                        let storyVirtualAction = group.find(node => node.type === 'story.storyaction');
-                        let storyNode = simplifiedNodes.get(storyVirtualAction.id);
+                        const storyVirtualStage = group.find(node => node.type === 'story');
+                        const storyVirtualAction = group.find(node => node.type === 'story.storyaction');
+                        const storyNode = simplifiedNodes.get(storyVirtualAction.id);
                         // Add 'ok' and 'home' transitions if they do not point to the 'first useful node' (default behaviour)
-                        let coverNode = json.stageNodes.filter(node => node.squareOne)
+                        const coverNode = json.stageNodes.filter(node => node.squareOne)
                             .concat(Object.values(virtualNodes).filter(grp => grp[0].type.startsWith('cover')).map(grp => grp[0]))[0];
-                        let firstUsefulNodeUuid = coverNode.okTransition.actionNode;
+                        const firstUsefulNodeUuid = coverNode.okTransition.actionNode;
                         if (storyVirtualStage.okTransition.actionNode !== firstUsefulNodeUuid) {
                             // Enable custom OK transition to create OK port
                             storyNode.setCustomOkTransition(true);
@@ -292,8 +292,8 @@ export function readFromArchive(file) {
                     }
                     // Menu node: options transitions
                     else if (group[0].type.startsWith('menu')) {
-                        let menuQuestionVirtualAction = group.find(node => node.type === 'menu.questionaction');
-                        let menuNode = simplifiedNodes.get(menuQuestionVirtualAction.id);
+                        const menuQuestionVirtualAction = group.find(node => node.type === 'menu.questionaction');
+                        const menuNode = simplifiedNodes.get(menuQuestionVirtualAction.id);
                         // Options transitions
                         group.filter(node => node.type === 'menu.optionstage').forEach((optionVirtualStage, idx) => {
                             if (optionVirtualStage.okTransition) {
@@ -303,7 +303,7 @@ export function readFromArchive(file) {
                     }
                     // Cover node: OK transition
                     else if (group[0].type.startsWith('cover')) {
-                        let coverNode = simplifiedNodes.get(group[0].uuid);
+                        const coverNode = simplifiedNodes.get(group[0].uuid);
                         if (group[0].okTransition) {
                             links.push(coverNode.okPort.link(getTransitionTargetNode(group[0].okTransition, actionNodes, simplifiedNodes)));
                         }
@@ -324,7 +324,7 @@ export function readFromArchive(file) {
                         links.forEach(link => loadedModel.addLink(link));
 
                         // Auto distribute nodes if positions are missing
-                        let missingPositions = json.actionNodes
+                        const missingPositions = json.actionNodes
                             .filter(node => (node.type || 'action') === 'action' || (node.type || 'action') === 'menu.questionaction' || (node.type || 'action') === 'story.storyaction')
                             .concat(json.stageNodes.filter(node => (node.type || 'stage') === 'stage' || (node.type || 'stage') === 'cover'))
                             .filter(node =>
@@ -332,9 +332,9 @@ export function readFromArchive(file) {
                             ).length > 0;
                         console.log(missingPositions ? "POSITIONS ARE MISSING. AUTO DISTRIBUTE" : "POSITIONS ARE SET");
                         if (missingPositions) {
-                            let distributedNodes = distributeGraph(loadedModel);
+                            const distributedNodes = distributeGraph(loadedModel);
                             distributedNodes.forEach(node => {
-                                let modelNode = loadedModel.getNode(node.id);
+                                const modelNode = loadedModel.getNode(node.id);
                                 modelNode.setPosition(node.x - node.width / 2, node.y - node.height / 2);
                             });
                         }
@@ -350,7 +350,7 @@ export function readFromArchive(file) {
 }
 
 function dataUrlPrefix(assetFileName) {
-    let extension = assetFileName.substring(assetFileName.lastIndexOf('.')).toLowerCase();
+    const extension = assetFileName.substring(assetFileName.lastIndexOf('.')).toLowerCase();
     switch (extension) {
         case '.bmp':
             return 'data:image/bmp;base64,';
@@ -373,7 +373,7 @@ function dataUrlPrefix(assetFileName) {
 
 function getTransitionTargetNode(transition, actionNodes, simplifiedNodes) {
     // Try to find an actual action node
-    let actionNode = actionNodes.get(transition.actionNode);
+    const actionNode = actionNodes.get(transition.actionNode);
     if (actionNode) {
         while (actionNode.optionsIn.length <= transition.optionIndex) {
             actionNode.addOption();
@@ -411,7 +411,7 @@ function nodeSize(node) {
 }
 
 function distributeGraph(model) {
-    let graph = new dagre.graphlib.Graph();
+    const graph = new dagre.graphlib.Graph();
     // Configure graph layout
     graph.setGraph({
         rankdir: 'LR',  // Left-to-right

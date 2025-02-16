@@ -4,23 +4,23 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-export function hashDataUrl(dataUrl) {
+export async function hashDataUrl(dataUrl: string) {
     // Convert data url to byte array
-    let bytes = Uint8Array.from(
+    const bytes = Uint8Array.from(
         atob(dataUrl.substring(dataUrl.indexOf(',') + 1)),
         c => c.charCodeAt(0)
     );
     // Compute sha1 hash and convert to hex string
-    return window.crypto.subtle.digest('SHA-1', bytes)
-        .then(hash => hexString(hash));
+    const hash = await window.crypto.subtle.digest('SHA-1', bytes);
+    return hexString(hash);
 }
 
-function hexString(buffer) {
-    const byteArray = new Uint8Array(buffer);
+function hexString(buffer: ArrayBuffer): string {
+    const byteArray: Uint8Array = new Uint8Array(buffer);
 
-    const hexCodes = [...byteArray].map(value => {
-        const hexCode = value.toString(16);
-        const paddedHexCode = hexCode.padStart(2, '0');
+    const hexCodes: string[] = [...byteArray].map(value => {
+        const hexCode: string = value.toString(16);
+        const paddedHexCode: string = hexCode.padStart(2, '0');
         return paddedHexCode;
     });
 

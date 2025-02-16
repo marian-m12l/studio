@@ -3,14 +3,15 @@
  * License, v. 2.0. If a copy of the MPL was not distributed with this
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
+import { Packs } from '../../@types/pack'
 
-export function sortPacks(packs) {
+export function sortPacks(packs: Packs[]) {
     return packs.sort((a,b) => {
         // Official packs last, alphabetic order except for missing titles (uuids, last)
-        let titleA = (a.packs[0].title && a.packs[0].title.toUpperCase()) || '__'+a.uuid.toUpperCase();
-        let titleB = (b.packs[0].title && b.packs[0].title.toUpperCase()) || '__'+b.uuid.toUpperCase();
-        let officialA = a.packs[0].official || false;
-        let officialB = b.packs[0].official || false;
+        const titleA = (a.packs[0].title && a.packs[0].title.toUpperCase()) || '__'+a.uuid.toUpperCase();
+        const titleB = (b.packs[0].title && b.packs[0].title.toUpperCase()) || '__'+b.uuid.toUpperCase();
+        const officialA = a.packs[0].official || false;
+        const officialB = b.packs[0].official || false;
         if (officialA === officialB) {
             return (titleA < titleB) ? -1 : (titleA > titleB) ? 1 : 0;
         } else {
@@ -19,6 +20,14 @@ export function sortPacks(packs) {
     });
 }
 
-export function generateFilename(model) {
+interface Model { 
+    title: string;
+    getEntryPoint: () => {
+        getUuid: () => string
+    };
+    version: string;
+}
+
+export function generateFilename(model: Model) {
     return model.title.replace(/ /g, '_') + '-' + model.getEntryPoint().getUuid() + '-v' + model.version + '.zip';
 }
