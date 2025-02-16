@@ -4,6 +4,9 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-.modal {
-    background-color: rgba(0, 0, 0, .4);
-}
+import {createContext} from 'react';
+
+
+export const AppContext = createContext({
+    eventBus: null
+});

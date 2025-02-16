@@ -4,7 +4,6 @@
  * file, You can obtain one at https://mozilla.org/MPL/2.0/.
  */
 
-import React from 'react';
 import { toast } from 'react-toastify';
 import {Mutex, withTimeout} from 'async-mutex';
 

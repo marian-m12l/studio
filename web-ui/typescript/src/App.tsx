@@ -9,7 +9,7 @@ import { connect } from 'react-redux';
 import { ToastContainer, toast } from 'react-toastify';
 import EventBus from 'vertx3-eventbus-client';
 import { withTranslation } from 'react-i18next';
-import marked from 'marked';
+import {marked} from 'marked';
 import 'react-toastify/dist/ReactToastify.css';
 import Switch from "react-switch";
 
