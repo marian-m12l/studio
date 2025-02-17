@@ -20,7 +20,7 @@
     <packaging>jar</packaging>
 
     <properties>
-        <frontend-src-dir>${project.basedir}/typescript</frontend-src-dir>
+        <frontend-src-dir>${project.basedir}/javascript</frontend-src-dir>
         <node.version>v20.18.0</node.version>
         <yarn.version>v1.22.22</yarn.version>
         <frontend-maven-plugin.version>1.15.0</frontend-maven-plugin.version>
