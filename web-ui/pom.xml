@@ -21,8 +21,8 @@
 
     <properties>
         <frontend-src-dir>${project.basedir}/javascript</frontend-src-dir>
-        <node.version>v20.18.0</node.version>
-        <yarn.version>v1.22.22</yarn.version>
+        <node.version>v12.3.1</node.version>
+        <yarn.version>v1.16.0</yarn.version>
         <frontend-maven-plugin.version>1.15.0</frontend-maven-plugin.version>
         <vertx.version>3.9.0</vertx.version>
         <vertx.main.verticle>studio.webui.MainVerticle</vertx.main.verticle>
