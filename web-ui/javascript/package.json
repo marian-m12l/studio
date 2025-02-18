@@ -6,6 +6,7 @@
   "author": "Marian MULLER REBEYROL",
   "license": "MPL-2.0",
   "private": true,
+  "type": "module",
   "dependencies": {
     "@emotion/core": "^10.0.22",
     "@emotion/styled": "^10.0.23",
@@ -40,7 +41,7 @@
     "vertx3-eventbus-client": "^3.9.0"
   },
   "scripts": {
-    "start": "react-scripts start",
+    "start": "set NODE_OPTIONS=--openssl-legacy-provider && react-scripts start",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject",

@@ -16,6 +16,8 @@ public class StoryPackMetadata {
     private byte[] thumbnail;
     private Integer sectorSize;
     private boolean nightModeAvailable = false;
+    private Number ageMin;
+    private Number ageMax;
 
     public StoryPackMetadata() {
     }
@@ -24,7 +26,7 @@ public class StoryPackMetadata {
         this.format = format;
     }
 
-    public StoryPackMetadata(String format, String uuid, short version, String title, String description, byte[] thumbnail, Integer sectorSize, boolean nightModeAvailable) {
+    public StoryPackMetadata(String format, String uuid, short version, String title, String description, byte[] thumbnail, Integer sectorSize, boolean nightModeAvailable, Number ageMin, Number ageMax) {
         this.format = format;
         this.uuid = uuid;
         this.version = version;
@@ -33,6 +35,8 @@ public class StoryPackMetadata {
         this.thumbnail = thumbnail;
         this.sectorSize = sectorSize;
         this.nightModeAvailable = nightModeAvailable;
+        this.ageMin = ageMin;
+        this.ageMax = ageMax;
     }
 
     public String getFormat() {
@@ -97,5 +101,21 @@ public class StoryPackMetadata {
 
     public void setNightModeAvailable(boolean nightModeAvailable) {
         this.nightModeAvailable = nightModeAvailable;
+    }
+
+    public Number getAgeMin() {
+        return ageMin;
+    }
+    
+    public void setAgeMin(Number ageMin) {
+        this.ageMin = ageMin;
+    }
+
+    public Number getAgeMax() {
+        return ageMax;
+    }
+
+    public void setAgeMax(Number ageMax) {
+        this.ageMax = ageMax;
     }
 }

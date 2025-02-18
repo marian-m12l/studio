@@ -6,8 +6,8 @@
 
 import React from 'react';
 import { connect } from 'react-redux';
-import {withTranslation} from "react-i18next";
-import {toast} from "react-toastify";
+import { withTranslation } from "react-i18next";
+import { toast } from "react-toastify";
 
 import {
     actionAddFromLibrary,
@@ -23,7 +23,7 @@ import {
     actionLoadSampleInEditor,
     setAllowEnriched
 } from "../actions";
-import {AppContext} from "../AppContext";
+import { AppContext } from "../AppContext";
 import Modal from "./Modal";
 import {
     LOCAL_STORAGE_ALLOW_ENRICHED_BINARY_FORMAT
@@ -59,7 +59,10 @@ class PackLibrary extends React.Component {
             confirmConversionDialog: {
                 show: false,
                 data: null
-            }
+            },
+            searchTerm: null,
+            ageMinFilter: 0,
+            ageMaxFilter: 12
         };
     }
 
@@ -101,14 +104,14 @@ class PackLibrary extends React.Component {
                 this.setState({
                     allowEnrichedDialog: {
                         show: true,
-                        data: { pack: {...latestPack, format: this.state.device.metadata.driver}, format: this.state.device.metadata.driver, addToDevice: true }
+                        data: { pack: { ...latestPack, format: this.state.device.metadata.driver }, format: this.state.device.metadata.driver, addToDevice: true }
                     }
                 });
             } else {
                 // Pack is converted and stored in the local library, then transferred to the device
                 this.props.convertPackInLibrary(latestPack.uuid, latestPack.path, this.state.device.metadata.driver, this.props.settings.allowEnriched, this.context)
                     .then(path => {
-                        this.doAddToDevice({...latestPack, format: this.state.device.metadata.driver}, path);
+                        this.doAddToDevice({ ...latestPack, format: this.state.device.metadata.driver }, path);
                     });
             }
         } else if (latestPack.timestamp > compatiblePack.timestamp) {   // Compatible pack is not the latest pack: confirm re-conversion
@@ -117,7 +120,7 @@ class PackLibrary extends React.Component {
             this.setState({
                 confirmConversionDialog: {
                     show: true,
-                    data: { pack: {...latestPack, format: this.state.device.metadata.driver}, format: this.state.device.metadata.driver }
+                    data: { pack: { ...latestPack, format: this.state.device.metadata.driver }, format: this.state.device.metadata.driver }
                 }
             });
         } else {
@@ -180,7 +183,7 @@ class PackLibrary extends React.Component {
 
     onRemovePackFromDevice = (uuid) => {
         return () => {
-            this.setState({removingFromDevice: uuid});
+            this.setState({ removingFromDevice: uuid });
             this.showRemoveFromDeviceConfirmDialog();
         }
     };
@@ -194,11 +197,11 @@ class PackLibrary extends React.Component {
     };
 
     showRemoveFromDeviceConfirmDialog = () => {
-        this.setState({showRemoveFromDeviceConfirmDialog: true});
+        this.setState({ showRemoveFromDeviceConfirmDialog: true });
     };
 
     dismissRemoveFromDeviceConfirmDialog = () => {
-        this.setState({showRemoveFromDeviceConfirmDialog: false});
+        this.setState({ showRemoveFromDeviceConfirmDialog: false });
     };
 
     getDroppedFile = (event) => {
@@ -226,7 +229,7 @@ class PackLibrary extends React.Component {
         let packData = event.dataTransfer.getData("device-pack");
         if (!packData) {
             // Handle dropped file
-            if (event.dataTransfer.items || event.dataTransfer.files) {
+            if (event.dataTransfer.items || event.dataTransfer.files) {
                 let file = this.getDroppedFile(event);
                 this.addPackToLibrary(file);
             }
@@ -234,7 +237,7 @@ class PackLibrary extends React.Component {
             return;
         }
         var data = JSON.parse(packData);
-        
+
         // Transfer pack and show progress
         this.props.addToLibrary(data.uuid, this.state.device.metadata.driver, this.context);
     };
@@ -292,7 +295,7 @@ class PackLibrary extends React.Component {
 
     onRemovePackFromLibrary = (path) => {
         return () => {
-            this.setState({removingFromLibrary: path});
+            this.setState({ removingFromLibrary: path });
             this.showRemoveFromLibraryConfirmDialog();
         }
     };
@@ -306,15 +309,15 @@ class PackLibrary extends React.Component {
     };
 
     showRemoveFromLibraryConfirmDialog = () => {
-        this.setState({showRemoveFromLibraryConfirmDialog: true});
+        this.setState({ showRemoveFromLibraryConfirmDialog: true });
     };
 
     dismissRemoveFromLibraryConfirmDialog = () => {
-        this.setState({showRemoveFromLibraryConfirmDialog: false});
+        this.setState({ showRemoveFromLibraryConfirmDialog: false });
     };
 
     isPackDraggable = (pack) => {
-        return !pack.official;
+        return true;
     };
 
     onCreateNewPackInEditor = (e) => {
@@ -327,15 +330,34 @@ class PackLibrary extends React.Component {
         this.props.loadSampleInEditor();
     };
 
+    applyFilters = () => {
+        const { searchTerm, ageMinFilter, ageMaxFilter } = this.state;
+
+        const filteredLibraryPacks = this.props.library.packs.filter((group) => {
+            console.log("group: %o", group);
+            const matchesSearch =
+                group.packs[0].uuid.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                group.uuid.toLowerCase().includes(searchTerm.toLowerCase());
+            const matchesAge = group.packs[0].ageMin >= ageMinFilter && group.packs[0].ageMin <= ageMaxFilter;
+            return matchesAge && matchesSearch;
+        });
+        this.setState({
+            library: {
+                ...this.state.metadata,
+                packs: filteredLibraryPacks
+            }
+        });
+    };
+
     render() {
         const { t } = this.props;
         let storagePercentage = null;
         let storageStatus = null;
         if (this.state.device.metadata) {
-            storagePercentage = (100.00 * this.state.device.metadata.storage.taken / this.state.device.metadata.storage.size).toFixed(0) ;
-            if ( storagePercentage > 90 ) {
+            storagePercentage = (100.00 * this.state.device.metadata.storage.taken / this.state.device.metadata.storage.size).toFixed(0);
+            if (storagePercentage > 90) {
                 storageStatus = "critical";
-            } else if (storagePercentage > 75 ) {
+            } else if (storagePercentage > 75) {
                 storageStatus = "warning";
             } else { storageStatus = ""; }
             storagePercentage = storagePercentage + '%';
@@ -345,119 +367,119 @@ class PackLibrary extends React.Component {
             <div className="pack-library">
 
                 {this.state.showRemoveFromDeviceConfirmDialog &&
-                <Modal id="confirm-device-pack-remove"
-                       title={t('dialogs.library.removeFromDevice.title')}
-                       content={<p>{t('dialogs.library.removeFromDevice.content')}</p>}
-                       buttons={[
-                           { label: t('dialogs.shared.no'), onClick: this.dismissRemoveFromDeviceConfirmDialog},
-                           { label: t('dialogs.shared.yes'), onClick: this.doRemovePackFromDevice}
-                       ]}
-                       onClose={this.dismissRemoveFromDeviceConfirmDialog}
-                />}
+                    <Modal id="confirm-device-pack-remove"
+                        title={t('dialogs.library.removeFromDevice.title')}
+                        content={<p>{t('dialogs.library.removeFromDevice.content')}</p>}
+                        buttons={[
+                            { label: t('dialogs.shared.no'), onClick: this.dismissRemoveFromDeviceConfirmDialog },
+                            { label: t('dialogs.shared.yes'), onClick: this.doRemovePackFromDevice }
+                        ]}
+                        onClose={this.dismissRemoveFromDeviceConfirmDialog}
+                    />}
                 {this.state.showRemoveFromLibraryConfirmDialog &&
-                <Modal id="confirm-library-pack-remove"
-                       title={t('dialogs.library.removeFromLibrary.title')}
-                       content={<p>{t('dialogs.library.removeFromLibrary.content')}</p>}
-                       buttons={[
-                           { label: t('dialogs.shared.no'), onClick: this.dismissRemoveFromLibraryConfirmDialog},
-                           { label: t('dialogs.shared.yes'), onClick: this.doRemovePackFromLibrary}
-                       ]}
-                       onClose={this.dismissRemoveFromLibraryConfirmDialog}
-                />}
+                    <Modal id="confirm-library-pack-remove"
+                        title={t('dialogs.library.removeFromLibrary.title')}
+                        content={<p>{t('dialogs.library.removeFromLibrary.content')}</p>}
+                        buttons={[
+                            { label: t('dialogs.shared.no'), onClick: this.dismissRemoveFromLibraryConfirmDialog },
+                            { label: t('dialogs.shared.yes'), onClick: this.doRemovePackFromLibrary }
+                        ]}
+                        onClose={this.dismissRemoveFromLibraryConfirmDialog}
+                    />}
                 {this.state.allowEnrichedDialog.show &&
-                <Modal id="ask-allow-enriched"
-                       title={t('dialogs.library.askAllowEnriched.title')}
-                       content={<div dangerouslySetInnerHTML={{__html: t('dialogs.library.askAllowEnriched.content')}} ></div>}
-                       buttons={[
-                           { label: t('dialogs.shared.no'), onClick: this.dismissEnrichedDialog(false)},
-                           { label: t('dialogs.shared.yes'), onClick: this.dismissEnrichedDialog(true)}
-                       ]}
-                       onClose={this.dismissEnrichedDialog(false)}
-                />}
+                    <Modal id="ask-allow-enriched"
+                        title={t('dialogs.library.askAllowEnriched.title')}
+                        content={<div dangerouslySetInnerHTML={{ __html: t('dialogs.library.askAllowEnriched.content') }} ></div>}
+                        buttons={[
+                            { label: t('dialogs.shared.no'), onClick: this.dismissEnrichedDialog(false) },
+                            { label: t('dialogs.shared.yes'), onClick: this.dismissEnrichedDialog(true) }
+                        ]}
+                        onClose={this.dismissEnrichedDialog(false)}
+                    />}
                 {this.state.confirmConversionDialog.show &&
-                <Modal id="ask-confirm-conversion"
-                       title={t('dialogs.library.askConfirmConversion.title')}
-                       content={<div dangerouslySetInnerHTML={{__html: t('dialogs.library.askConfirmConversion.content')}} ></div>}
-                       buttons={[
-                           { label: t('dialogs.shared.no'), onClick: this.dismissConfirmConversionDialog(false)},
-                           { label: t('dialogs.shared.yes'), onClick: this.dismissConfirmConversionDialog(true)}
-                       ]}
-                       onClose={this.dismissConfirmConversionDialog(false)}
-                />}
+                    <Modal id="ask-confirm-conversion"
+                        title={t('dialogs.library.askConfirmConversion.title')}
+                        content={<div dangerouslySetInnerHTML={{ __html: t('dialogs.library.askConfirmConversion.content') }} ></div>}
+                        buttons={[
+                            { label: t('dialogs.shared.no'), onClick: this.dismissConfirmConversionDialog(false) },
+                            { label: t('dialogs.shared.yes'), onClick: this.dismissConfirmConversionDialog(true) }
+                        ]}
+                        onClose={this.dismissConfirmConversionDialog(false)}
+                    />}
 
                 {/* Device view, if plugged */}
                 {this.state.device.metadata && <div className="plugged-device">
                     <div className="header">
                         <h4>{t('library.device.title')}</h4>
                         <div className="header-uuid" title={this.state.device.metadata.uuid}><strong>{t('library.device.uuid')}</strong> {this.state.device.metadata.uuid}</div>
-                        <div><strong>{t('library.device.serial')}</strong> {this.state.device.metadata.serial || '-'}</div>
-                        <div><strong>{t('library.device.firmware')}</strong> {this.state.device.metadata.firmware || '-'}</div>
-                        <div><strong>{t('library.device.sdcardsize')}</strong> { (this.state.device.metadata.storage.size / 1073741824 ).toFixed(1) || '-'} {t('library.device.sdcardunit')}</div>
-                        <div><strong>{t('library.device.packs.length')}</strong> { this.state.device.packs.length || '-' }</div>
+                        <div><strong>{t('library.device.serial')}</strong> {this.state.device.metadata.serial || '-'}</div>
+                        <div><strong>{t('library.device.firmware')}</strong> {this.state.device.metadata.firmware || '-'}</div>
+                        <div><strong>{t('library.device.sdcardsize')}</strong> {(this.state.device.metadata.storage.size / 1073741824).toFixed(1) || '-'} {t('library.device.sdcardunit')}</div>
+                        <div><strong>{t('library.device.packs.length')}</strong> {this.state.device.packs.length || '-'}</div>
                         {this.state.device.metadata.error && <p><strong>DEVICE HAS ERRORS</strong></p>}
                         <div className="progress">
-                            <div className={`progress-bar ${storageStatus}`} role="progressbar" style={{width: storagePercentage}} aria-valuenow={this.state.device.metadata.storage.taken} aria-valuemin="0" aria-valuemax={this.state.device.metadata.storage.size}>{storagePercentage}</div>
+                            <div className={`progress-bar ${storageStatus}`} role="progressbar" style={{ width: storagePercentage }} aria-valuenow={this.state.device.metadata.storage.taken} aria-valuemin="0" aria-valuemax={this.state.device.metadata.storage.size}>{storagePercentage}</div>
                         </div>
                     </div>
                     <div className={`device-dropzone ${this.state.dragging !== null ? 'highlighted-dropzone' : ''}`}
-                         onDrop={this.onDropPackIntoDevice}
-                         onDragOver={event => { event.preventDefault(); }}
-                         onDragLeave={event => {
-                             // Get the location of the dropzone
-                             var rect = event.target.closest('.device-dropzone').getBoundingClientRect();
-                             // Check whether the mouse coordinates are outside the dropzone rectangle
-                             if(event.clientX > rect.left + rect.width || event.clientX < rect.left || event.clientY > rect.top + rect.height || event.clientY < rect.top) {
-                                 console.log("Reset reorder to beforeReordering: %o", this.state.beforeReordering);
-                                 this.setState({
-                                     device: {
-                                         ...this.state.device,
-                                         packs: [...this.state.beforeReordering]
-                                     }
-                                 });
-                             }
-                         }}>
+                        onDrop={this.onDropPackIntoDevice}
+                        onDragOver={event => { event.preventDefault(); }}
+                        onDragLeave={event => {
+                            // Get the location of the dropzone
+                            var rect = event.target.closest('.device-dropzone').getBoundingClientRect();
+                            // Check whether the mouse coordinates are outside the dropzone rectangle
+                            if (event.clientX > rect.left + rect.width || event.clientX < rect.left || event.clientY > rect.top + rect.height || event.clientY < rect.top) {
+                                console.log("Reset reorder to beforeReordering: %o", this.state.beforeReordering);
+                                this.setState({
+                                    device: {
+                                        ...this.state.device,
+                                        packs: [...this.state.beforeReordering]
+                                    }
+                                });
+                            }
+                        }}>
                         {this.state.device.packs.length === 0 && <div className="empty">{t('library.device.empty')}</div>}
                         {this.state.device.packs.length > 0 && <div className="pack-grid">
-                            {this.state.device.packs.map((pack,idx) =>
+                            {this.state.device.packs.map((pack, idx) =>
                                 <div key={pack.uuid}
-                                     draggable={true}
-                                     className={`pack-tile pack-${pack.format} pack-draggable ${pack.nightModeAvailable && 'pack-night-mode'}`}
-                                     onDragStart={event => {
-                                         event.dataTransfer.setData("device-pack", JSON.stringify(pack));
-                                         this.setState({dragging: "device-pack", reordering: pack, beforeReordering: [...this.state.device.packs]});
-                                     }}
-                                     onDragEnter={event => {
-                                         let data = this.state.reordering;
-                                         if (data && data.uuid !== pack.uuid) {
-                                             let reordered = this.state.device.packs;
-                                             let draggedIndex = reordered.findIndex(p => p.uuid === data.uuid);
-                                             if (draggedIndex < idx) {
-                                                 // Going down, place dragged item right after the dragged-over pack
-                                                 reordered.splice(idx + 1, 0, reordered[draggedIndex]);
-                                                 reordered.splice(draggedIndex, 1);
-                                             }
-                                             if (draggedIndex > idx) {
-                                                 // Going up, place dragged item right before the dragged-over pack
-                                                 reordered.splice(idx, 0, reordered[draggedIndex]);
-                                                 reordered.splice(++draggedIndex, 1);
-                                             }
-                                             this.setState({
-                                                 device: {
-                                                     ...this.state.device,
-                                                     packs: reordered
-                                                 }
-                                             });
-                                         }
-                                     }}
-                                     onDragEnd={event => {
-                                         // Reorder on device only if order changed
-                                         if (this.state.beforeReordering.reduce((acc,p)=>acc+','+p.uuid, '') !== this.state.device.packs.reduce((acc,p)=>acc+','+p.uuid, '')) {
-                                             console.log("Order changed, reordering...");
-                                             let uuids = this.state.device.packs.map(p => p.uuid);
-                                             this.props.reorderOnDevice(uuids);
-                                         }
-                                         this.setState({dragging: null,  reordering: null});
-                                     }}>
+                                    draggable={true}
+                                    className={`pack-tile pack-${pack.format} pack-draggable ${pack.nightModeAvailable && 'pack-night-mode'}`}
+                                    onDragStart={event => {
+                                        event.dataTransfer.setData("device-pack", JSON.stringify(pack));
+                                        this.setState({ dragging: "device-pack", reordering: pack, beforeReordering: [...this.state.device.packs] });
+                                    }}
+                                    onDragEnter={event => {
+                                        let data = this.state.reordering;
+                                        if (data && data.uuid !== pack.uuid) {
+                                            let reordered = this.state.device.packs;
+                                            let draggedIndex = reordered.findIndex(p => p.uuid === data.uuid);
+                                            if (draggedIndex < idx) {
+                                                // Going down, place dragged item right after the dragged-over pack
+                                                reordered.splice(idx + 1, 0, reordered[draggedIndex]);
+                                                reordered.splice(draggedIndex, 1);
+                                            }
+                                            if (draggedIndex > idx) {
+                                                // Going up, place dragged item right before the dragged-over pack
+                                                reordered.splice(idx, 0, reordered[draggedIndex]);
+                                                reordered.splice(++draggedIndex, 1);
+                                            }
+                                            this.setState({
+                                                device: {
+                                                    ...this.state.device,
+                                                    packs: reordered
+                                                }
+                                            });
+                                        }
+                                    }}
+                                    onDragEnd={event => {
+                                        // Reorder on device only if order changed
+                                        if (this.state.beforeReordering.reduce((acc, p) => acc + ',' + p.uuid, '') !== this.state.device.packs.reduce((acc, p) => acc + ',' + p.uuid, '')) {
+                                            console.log("Order changed, reordering...");
+                                            let uuids = this.state.device.packs.map(p => p.uuid);
+                                            this.props.reorderOnDevice(uuids);
+                                        }
+                                        this.setState({ dragging: null, reordering: null });
+                                    }}>
                                     <div className="pack-format">
                                         <span>{t(`library.format.${pack.format}`)}</span>
                                     </div>
@@ -472,7 +494,7 @@ class PackLibrary extends React.Component {
                                     <div className="pack-actions">
                                         <button className="pack-action" onClick={this.onRemovePackFromDevice(pack.uuid)}>
                                             <span className="glyphicon glyphicon-trash"
-                                                  title={t('library.device.removePack')} />
+                                                title={t('library.device.removePack')} />
                                         </button>
                                     </div>
                                 </div>
@@ -485,45 +507,95 @@ class PackLibrary extends React.Component {
                     <div className="header">
                         <h4>{t('library.local.title')}</h4>
                         {this.state.library.metadata && <div><strong>{t('library.local.path')}</strong> {this.state.library.metadata.path}</div>}
-                        <div><strong>{t('library.local.packs.length')}</strong> { this.state.library.packs.length || '-' }</div>
-                        <input type="file" id="upload" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.packAddFileSelected} />
-                        <span title={t('library.local.addPack')} className="btn btn-default glyphicon glyphicon-import" onClick={this.showAddFileSelector}/>
+                        <div><strong>{t('library.local.packs.length')}</strong> {this.state.library.packs.length || '-'}</div>
+                        <input type="file" id="upload" style={{ visibility: 'hidden', position: 'absolute' }} onChange={this.packAddFileSelected} />
+                        <span title={t('library.local.addPack')} className="btn btn-default glyphicon glyphicon-import" onClick={this.showAddFileSelector} />
                         <div className="editor-actions">
-                            <p><button className="library-action" onClick={this.onCreateNewPackInEditor}>{t('library.local.empty.link1')}</button> <button className="library-action" onClick={this.onOpenSamplePackInEditor}>{t('library.local.empty.link2')}</button> {t('library.local.empty.suffix')}</p>
+                            <p>
+                                <button className="library-action" onClick={this.onCreateNewPackInEditor}>{t('library.local.empty.link1')}</button> <button className="library-action" onClick={this.onOpenSamplePackInEditor}>{t('library.local.empty.link2')}</button> {t('library.local.empty.suffix')}
+                            </p>
                         </div>
+                        <div className="filter-menu">
+                            <div className="filter-section">
+
+                                {/* <div className="search-box">
+                                    <label htmlFor="search">Rechercher (titre ou UUID)</label>
+                                    <input
+                                        type="text"
+                                        id="search"
+                                        value={this.state.searchTerm}
+                                        onChange={(e) => this.setState({ searchTerm: e.target.value }, this.applyFilters)}
+                                        placeholder="Rechercher..."
+                                    />
+                                </div> */}
+                                <form class="form-inline">
+                                    <div className="form-group">
+                                        <label className="sr-only" for="age-min">Age minimum</label>
+                                        <div className="input-group">
+                                            <div className="input-group-addon">Age Min :</div>
+                                            <input
+                                                type="number"
+                                                id="age-min"
+                                                min="0"
+                                                max="12"
+                                                value={this.state.ageMinFilter}
+                                                onChange={(e) => this.setState({ ageMinFilter: e.target.value }, this.applyFilters)}
+                                            />
+                                        </div>
+                                    </div>
+                                    <div className="form-group">
+                                        <label className="sr-only" for="age-max">Age maximum</label>
+                                        <div className="input-group">
+                                            <div className="input-group-addon">Age Max :</div>
+                                            <input
+                                                type="number"
+                                                id="age-max"
+                                                min="0"
+                                                max="12"
+                                                value={this.state.ageMaxFilter}
+                                                onChange={(e) => this.setState({ ageMaxFilter: e.target.value }, this.applyFilters)}
+                                            />
+                                        </div>
+                                    </div>
+                                </form>
+                            </div>
+                        </div>
+
                     </div>
+
                     <div className={`library-dropzone ${this.state.dragging === 'device-pack' ? 'highlighted-dropzone' : ''}`}
-                         onDrop={this.onDropPackIntoLibrary}
-                         onDragOver={event => { event.preventDefault(); }}>
+                        onDrop={this.onDropPackIntoLibrary}
+                        onDragOver={event => { event.preventDefault(); }}>
                         {this.state.library.packs.length === 0 && <div className="empty">
                             <p>{t('library.local.empty.header')}</p>
                         </div>}
                         {this.state.library.packs.length > 0 && <div className="pack-grid">
                             {this.state.library.packs.map(group =>
                                 <div key={group.uuid}
-                                     title={group.uuid}
-                                     draggable={this.isPackDraggable(group.packs[0])}
-                                     className={`pack-tile ${this.isPackDraggable(group.packs[0]) ? 'pack-draggable' : 'pack-not-draggable'} ${group.packs[0].nightModeAvailable && 'pack-night-mode'}`}
-                                     onDragStart={event => {
-                                         // Drag first pack
-                                         event.dataTransfer.setDragImage(event.target.querySelector('.pack-entry'), 0, 0);
-                                         event.dataTransfer.setData("local-library-pack", JSON.stringify(group));
-                                         this.setState({dragging: "local-library-pack"});
-                                     }}
-                                     onDragEnd={event => {
-                                         this.setState({dragging: null});
-                                     }}>
+                                    title={group.uuid}
+                                    draggable={this.isPackDraggable(group.packs[0])}
+                                    className={`pack-tile ${this.isPackDraggable(group.packs[0]) ? 'pack-draggable' : 'pack-not-draggable'} ${group.packs[0].nightModeAvailable && 'pack-night-mode'}`}
+                                    onDragStart={event => {
+                                        // Drag first pack
+                                        event.dataTransfer.setDragImage(event.target.querySelector('.pack-entry'), 0, 0);
+                                        event.dataTransfer.setData("local-library-pack", JSON.stringify(group));
+                                        this.setState({ dragging: "local-library-pack" });
+                                    }}
+                                    onDragEnd={event => {
+                                        this.setState({ dragging: null });
+                                    }}>
                                     <div className="pack-left">
                                         <div className="pack-title">
                                             <span>{group.packs[0].title && group.packs[0].title !== "MISSING_PACK_TITLE" ? group.packs[0].title : group.uuid}</span>&nbsp;
                                         </div>
                                         <div className="pack-thumb" title={group.packs[0].nightModeAvailable && t('library.nightMode')}>
                                             <img src={group.packs[0].image || defaultImage} alt="" width="128" height="128" draggable={false} />
+                                            <div className="pack-age"><span>{group.packs[0].ageMax <= 0 ? `+${group.packs[0].ageMin}` : `${group.packs[0].ageMin}-${group.packs[0].ageMax}`}</span></div>
                                             {group.packs[0].official && <div className="pack-ribbon"><span>{t('library.official')}</span></div>}
                                         </div>
                                     </div>
                                     <div className="pack-right">
-                                        {group.packs.map((p,idx) => {
+                                        {group.packs.map((p, idx) => {
                                             return <div key={p.path} title={p.path} className={`pack-entry pack-${p.format} ${idx === 0 && 'latest'}`}>
                                                 <div className="pack-filename">
                                                     {p.format === 'archive' && <span role="img" aria-label="archive" title={t('library.format.archive')}>&#x1f5dc;</span>}
@@ -571,6 +643,8 @@ const mapStateToProps = (state, ownProps) => ({
     library: state.library,
     settings: state.settings
 });
+
+
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
     addFromLibrary: (uuid, path, format, driver, context) => dispatch(actionAddFromLibrary(uuid, path, format, driver, context, ownProps.t)),
