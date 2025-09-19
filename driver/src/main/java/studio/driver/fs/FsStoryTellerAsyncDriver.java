@@ -122,8 +122,8 @@ public class FsStoryTellerAsyncDriver {
             LOGGER.finest("Device metadata format version: " + mdVersion);
             if (mdVersion >= 1 && mdVersion <= 3) {
                 this.parseDeviceInfosMeta1to3(infos, deviceMetadataFis);
-            } else if (mdVersion == 6 || mdVersion == 7) {
-                this.parseDeviceInfosMeta6Or7(infos, mdVersion, deviceMetadataFis);
+            } else if (mdVersion >= 6 && mdVersion <= 7) {
+                this.parseDeviceInfosMeta6to7(infos, mdVersion, deviceMetadataFis);
             } else {
                 return CompletableFuture.failedFuture(new StoryTellerException("Unsupported device metadata format version: " + mdVersion));
             }
@@ -172,7 +172,7 @@ public class FsStoryTellerAsyncDriver {
         LOGGER.fine("UUID: " + Hex.encodeHexString(uuid));
     }
 
-    private void parseDeviceInfosMeta6Or7(FsDeviceInfos infos, short mdVersion, FileInputStream deviceMetadataFis) throws IOException {
+    private void parseDeviceInfosMeta6to7(FsDeviceInfos infos, short mdVersion, FileInputStream deviceMetadataFis) throws IOException {
         // Firmware version
         short major = readAsciiToShort(deviceMetadataFis, 1);
         deviceMetadataFis.skip(1);
