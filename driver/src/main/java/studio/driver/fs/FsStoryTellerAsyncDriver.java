@@ -122,8 +122,8 @@ public class FsStoryTellerAsyncDriver {
             LOGGER.finest("Device metadata format version: " + mdVersion);
             if (mdVersion >= 1 && mdVersion <= 3) {
                 this.parseDeviceInfosMeta1to3(infos, deviceMetadataFis);
-            } else if (mdVersion == 6) {
-                this.parseDeviceInfosMeta6(infos, deviceMetadataFis);
+            } else if (mdVersion >= 6 && mdVersion <= 7) {
+                this.parseDeviceInfosMeta6to7(infos, mdVersion, deviceMetadataFis);
             } else {
                 return CompletableFuture.failedFuture(new StoryTellerException("Unsupported device metadata format version: " + mdVersion));
             }
@@ -172,7 +172,7 @@ public class FsStoryTellerAsyncDriver {
         LOGGER.fine("UUID: " + Hex.encodeHexString(uuid));
     }
 
-    private void parseDeviceInfosMeta6(FsDeviceInfos infos, FileInputStream deviceMetadataFis) throws IOException {
+    private void parseDeviceInfosMeta6to7(FsDeviceInfos infos, short mdVersion, FileInputStream deviceMetadataFis) throws IOException {
         // Firmware version
         short major = readAsciiToShort(deviceMetadataFis, 1);
         deviceMetadataFis.skip(1);
@@ -188,16 +188,29 @@ public class FsStoryTellerAsyncDriver {
         LOGGER.info("Serial Number: " + serialNumber);
         infos.setSerialNumber(serialNumber);
 
-        // Construct AES key and IV from serial number
-        byte[] aesKey = new byte[16];
-        System.arraycopy(snBytes, 0, aesKey, 0 , 16);
-        byte[] aesIv = new byte[16];
-        System.arraycopy(snBytes, 16, aesIv, 0 , 8);
-        System.arraycopy(snBytes, 0, aesIv, 8 , 8);
+        byte[] aesKey, aesIv, btFile;
+        if (mdVersion == 6) {
+            // Construct AES key and IV from serial number
+            aesKey = new byte[16];
+            System.arraycopy(snBytes, 0, aesKey, 0 , 16);
+            aesIv = new byte[16];
+            System.arraycopy(snBytes, 16, aesIv, 0 , 8);
+            System.arraycopy(snBytes, 0, aesIv, 8 , 8);
 
-        // BT file content
-        deviceMetadataFis.skip(14);
-        byte[] btFile = deviceMetadataFis.readNBytes(32);
+            // BT file content
+            deviceMetadataFis.skip(14);
+            btFile = deviceMetadataFis.readNBytes(32);
+        } else {    // v7
+            // Construct AES key and IV
+            deviceMetadataFis.skip(14);
+            aesKey = deviceMetadataFis.readNBytes(16);
+            aesIv = deviceMetadataFis.readNBytes(16);
+
+            // BT file content from serial number
+            btFile = new byte[32];
+            System.arraycopy(snBytes, 0, btFile, 0 , 24);
+            System.arraycopy(snBytes, 0, btFile, 24 , 8);
+        }
 
         infos.setDeviceKeyV3(new FsDeviceKeyV3(aesKey, aesIv, btFile));
 
