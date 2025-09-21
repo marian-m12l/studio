@@ -1,11 +1,11 @@
-### New version 0.4.0 with support for V3
+### New version 0.4.2 with support for firmware 3.2.2 (V3 storytellers)
 
-Last year, Lunii introduced a new device revision (V3), again affecting transfer of story packs.
-Thanks to a community effort, STUdio is now ready to support this new version!
+During the summer, Lunii introduced a new firmware version (3.2.2) that affected transfer of story packs.
+Thanks **again** to a community effort (namely o-daneel's effort on [Lunii.QT](https://github.com/o-daneel/Lunii.QT)), STUdio is now ready to support this new version!
 
 -----
 
-### La nouvelle version 0.4.0 supporte la V3
+### La nouvelle version 0.4.2 supporte le firmware 3.2.2 (boîtes à histoires V3)
 
-L'année dernière, Lunii a sorti une nouvelle version de la boîte à histoires (V3), impactant à nouveau le transfert des packs d'histoires.
-Grâce aux travaux de la communauté, STUdio supporte maintenant cette nouvelle version !
+Cet été, Lunii a sorti une nouvelle version du firmare (3.2.2), qui impacte le transfert des packs d'histoires.
+Grâce **encore une fois** aux travaux de la communauté (en particulier grâce aux travaux de o-daneel sur [Lunii.QT](https://github.com/o-daneel/Lunii.QT)), STUdio supporte maintenant cette nouvelle version !
