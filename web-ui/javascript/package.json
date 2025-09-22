@@ -6,8 +6,10 @@
   "author": "Marian MULLER REBEYROL",
   "license": "MPL-2.0",
   "private": true,
+  "type": "module",
   "dependencies": {
     "@emotion/core": "^10.0.22",
+    "@emotion/react": "^11.14.0",
     "@emotion/styled": "^10.0.23",
     "@projectstorm/react-diagrams": "^6.0.1-beta.6",
     "@projectstorm/react-diagrams-defaults": "^6.0.1-beta.6",
