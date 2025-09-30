@@ -18,6 +18,7 @@ import studio.core.v1.Constants;
 import studio.webui.service.LibraryService;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Timer;
 import java.util.TimerTask;
 
@@ -63,15 +64,50 @@ public class LibraryController {
         router.post("/upload").blockingHandler(ctx -> {
             String uuid = ctx.request().getFormAttribute("uuid");
             String packPath = ctx.request().getFormAttribute("path");
-            boolean added = libraryService.addPackFile(packPath, ctx.fileUploads().iterator().next().uploadedFileName());
-            if (added) {
-                ctx.response()
-                        .putHeader("content-type", "application/json")
-                        .end(Json.encode(new JsonObject().put("success", true)));
+            String filename = ctx.fileUploads().iterator().next().uploadedFileName();
+            // If necessary, convert .plain.pk to archive format asynchronously
+            Future<Path> futureAddedPack = Future.future();
+            if (packPath.endsWith(".plain.pk")) {
+                Timer timer = new Timer();
+                timer.schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        LOGGER.info("Temporarily adding PLAIN PK pack to library: `" + packPath + "`");
+                        boolean added = libraryService.addPackFile(packPath, filename);
+                        if (added) {
+                            libraryService.addConvertedArchivePackFile(packPath)
+                                    .ifPresentOrElse(
+                                            packPath -> futureAddedPack.tryComplete(packPath),
+                                            () -> futureAddedPack.tryFail("Failed to read or convert pack to archive format"));
+                            LOGGER.info("Removing temporary PLAIN PK pack from library: `" + packPath + "`");
+                            libraryService.deletePack(packPath);
+                        } else {
+                            futureAddedPack.tryFail("Pack was not added to library");
+                        }
+                    }
+                }, 1000);
             } else {
-                LOGGER.error("Pack was not added to library");
-                ctx.fail(500);
+                boolean added = libraryService.addPackFile(packPath, filename);
+                if (added) {
+                    futureAddedPack.tryComplete(Paths.get(packPath));
+                } else {
+                    futureAddedPack.tryFail("Pack was not added to library");
+                }
             }
+            futureAddedPack.onComplete(maybeAddedPack -> {
+                if (maybeAddedPack.succeeded()) {
+                    // Return path to converted file within library
+                    ctx.response()
+                            .putHeader("content-type", "application/json")
+                            .end(Json.encode(new JsonObject()
+                                    .put("success", true)
+                                    .put("path", maybeAddedPack.result().toString())
+                            ));
+                } else {
+                    LOGGER.error("Failed to add pack");
+                    ctx.fail(500, maybeAddedPack.cause());
+                }
+            });
         });
 
         // Local library pack conversion
@@ -91,7 +127,6 @@ public class LibraryController {
                                 .ifPresentOrElse(
                                         packPath -> futureConvertedPack.tryComplete(packPath),
                                         () -> futureConvertedPack.tryFail("Failed to read or convert pack to raw format"));
-                        futureConvertedPack.tryComplete();
                     }
                 }, 1000);
             } else if (Constants.PACK_FORMAT_FS.equalsIgnoreCase(format)) {
@@ -103,7 +138,6 @@ public class LibraryController {
                                 .ifPresentOrElse(
                                         packPath -> futureConvertedPack.tryComplete(packPath),
                                         () -> futureConvertedPack.tryFail("Failed to read or convert pack to folder format"));
-                        futureConvertedPack.tryComplete();
                     }
                 }, 1000);
             } else if (Constants.PACK_FORMAT_ARCHIVE.equalsIgnoreCase(format)) {
@@ -114,8 +148,7 @@ public class LibraryController {
                         libraryService.addConvertedArchivePackFile(packPath)
                                 .ifPresentOrElse(
                                         packPath -> futureConvertedPack.tryComplete(packPath),
-                                        () -> futureConvertedPack.tryFail("Failed to read or convert pack to folder format"));
-                        futureConvertedPack.tryComplete();
+                                        () -> futureConvertedPack.tryFail("Failed to read or convert pack to archive format"));
                     }
                 }, 1000);
             } else {

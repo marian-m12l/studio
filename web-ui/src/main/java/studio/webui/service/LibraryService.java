@@ -18,6 +18,7 @@ import studio.core.v1.model.metadata.StoryPackMetadata;
 import studio.core.v1.reader.archive.ArchiveStoryPackReader;
 import studio.core.v1.reader.binary.BinaryStoryPackReader;
 import studio.core.v1.reader.fs.FsStoryPackReader;
+import studio.core.v1.reader.plainpk.PlainPkStoryPackReader;
 import studio.core.v1.utils.PackAssetsCompression;
 import studio.core.v1.writer.archive.ArchiveStoryPackWriter;
 import studio.core.v1.writer.binary.BinaryStoryPackWriter;
@@ -271,6 +272,36 @@ public class LibraryService {
             } catch (Exception e) {
                 LOGGER.error("Failed to convert raw format pack to archive format", e);
                 throw new RuntimeException("Failed to convert raw format pack to archive format", e);
+            }
+        } else if (packPath.endsWith(".plain.pk")) {
+            try {
+                File tmp = createTempFile(packPath, ".zip").toFile();
+
+                LOGGER.info("Pack is in PLAIN PK format. Converting to archive format and storing in temporary file: " + tmp.getAbsolutePath());
+
+                LOGGER.info("Reading PLAIN PK format pack");
+                PlainPkStoryPackReader packReader = new PlainPkStoryPackReader();
+                FileInputStream fis = new FileInputStream(libraryPath() + packPath);
+                StoryPack storyPack = packReader.read(fis);
+                fis.close();
+
+                // No need to compress pack assets
+
+                LOGGER.info("Writing archive format pack");
+                ArchiveStoryPackWriter packWriter = new ArchiveStoryPackWriter();
+                FileOutputStream fos = new FileOutputStream(tmp);
+                packWriter.write(storyPack, fos);
+                fos.close();
+
+                String destinationFileName = storyPack.getUuid() + ".converted_" + System.currentTimeMillis() + ".zip";
+                Path destinationPath = Paths.get(libraryPath() + destinationFileName);
+                LOGGER.info("Moving archive format pack into local library: " + destinationPath);
+                Files.move(tmp.toPath(), destinationPath);
+
+                return Optional.of(Paths.get(destinationFileName));
+            } catch (Exception e) {
+                LOGGER.error("Failed to convert PLAIN PK format pack to archive format", e);
+                throw new RuntimeException("Failed to convert PLAIN PK format pack to archive format", e);
             }
         } else {
             try {

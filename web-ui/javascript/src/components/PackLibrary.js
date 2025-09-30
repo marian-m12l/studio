@@ -255,7 +255,7 @@ class PackLibrary extends React.Component {
             return;
         }
         console.log(file.type);
-        if (['application/zip', 'application/x-zip-compressed'].indexOf(file.type) === -1 && !file.name.endsWith('.pack')) {
+        if (['application/zip', 'application/x-zip-compressed'].indexOf(file.type) === -1 && !file.name.endsWith('.pack') && !file.name.endsWith('.plain.pk')) {
             toast.error(t('toasts.library.packFileWrongType'));
             return;
         }

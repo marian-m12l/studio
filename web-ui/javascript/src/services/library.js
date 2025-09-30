@@ -31,8 +31,12 @@ export const uploadToLibrary = async (uuid, path, packData, progressHandler) => 
             xhr.upload.onprogress = progressHandler;
         }
         xhr.onload = () => {
-            console.log('xhr upload complete: ' + JSON.parse(xhr.responseText));
-            resolve(JSON.parse(xhr.responseText));
+            if (xhr.status === 200) {
+                console.log('xhr upload complete: ' + JSON.parse(xhr.responseText));
+                resolve(JSON.parse(xhr.responseText));
+            } else {
+                reject(new Error(xhr.statusText + ': ' + xhr.responseText));
+            }
         };
         xhr.open('post', 'http://localhost:8080/api/library/upload', true);
         let formData = new FormData();
