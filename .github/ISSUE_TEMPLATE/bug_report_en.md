@@ -7,6 +7,18 @@ assignees: ''
 
 ---
 
+
+> [!WARNING]
+> **:warning: DO NOT SUBMIT THIS ISSUE TEMPLATE AS-IS :warning:**
+> 
+> Please follow the template and replace/fill each section with appropriate information.
+
+> [!WARNING]
+> **:warning: NE PAS SOUMETTRE LE RAPPORT D'ANOMALIE TEL QUEL :warning:**
+> 
+> Merci de suivre le modèle et de remplacer/compléter chaque section avec les informations nécessaires. 
+
+
 **Describe the bug**
 A clear and concise description of what the bug is.
 
@@ -29,10 +41,10 @@ Also check **the network tab of your browser's developer tools** and look for HT
 
 **Desktop and environment (please complete the following information):**
  - OS: [e.g. Windows]
- - Browser [e.g. chrome, safari]
+ - Browser: [e.g. chrome, safari]
  - Java version: [e.g. JDK 11.0.6]
  - Maven version: [e.g. 3.6.0]
- - STUdio application version [e.g. 0.1.11]
+ - STUdio application version: [e.g. 0.1.11]
 
 **Additional context**
 Add any other context about the problem here.
