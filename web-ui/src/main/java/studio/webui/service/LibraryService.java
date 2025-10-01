@@ -105,18 +105,21 @@ public class LibraryService {
                         .forEach(entry -> {
                             List<LibraryPack> packs = entry.getValue();
                             packs.sort((a, b) -> Long.compare(b.getTimestamp(), a.getTimestamp()));
-                            LOGGER.debug("Refreshing metadata for pack `" + entry.getKey() + "` from file `" + packs.get(0).getPath() + "`");
+                            LOGGER.debug("Refreshing metadata for pack `" + entry.getKey() + "` from file `"
+                                    + packs.get(0).getPath() + "`");
                             this.readPackFile(packs.get(0).getPath()).ifPresent(
                                     meta -> databaseMetadataService.refreshUnofficialMetadata(
                                             new DatabasePackMetadata(
                                                     meta.getMetadata().getUuid(),
                                                     meta.getMetadata().getTitle(),
                                                     meta.getMetadata().getDescription(),
-                                                    Optional.ofNullable(meta.getMetadata().getThumbnail()).map(thumb -> "data:image/png;base64," + Base64.getEncoder().encodeToString(thumb)).orElse(null),
-                                                    false
-                                            )
-                                    )
-                            );
+                                                    Optional.ofNullable(meta.getMetadata().getThumbnail())
+                                                            .map(thumb -> "data:image/png;base64,"
+                                                                    + Base64.getEncoder().encodeToString(thumb))
+                                                            .orElse(null),
+                                                    false,
+                                                    meta.getMetadata().getAgeMin(),
+                                                    meta.getMetadata().getAgeMax())));
                         });
             } catch (IOException e) {
                 LOGGER.error("Failed to read packs from local library", e);
@@ -139,15 +142,14 @@ public class LibraryService {
                                         entry -> new JsonArray(
                                                 entry.getValue().stream()
                                                         // Sort packs by timestamp descending
-                                                        .sorted((a,b) -> Long.compare(b.getTimestamp(), a.getTimestamp()))
+                                                        .sorted((a, b) -> Long.compare(b.getTimestamp(),
+                                                                a.getTimestamp()))
                                                         .map(this::getPackMetadata)
-                                                        .collect(Collectors.toList())
-                                        )
-                                ))
+                                                        .collect(Collectors.toList()))))
                                 .entrySet().stream()
-                                .map(entry -> new JsonObject().put("uuid", entry.getKey()).put("packs", entry.getValue()))
-                                .collect(Collectors.toList())
-                );
+                                .map(entry -> new JsonObject().put("uuid", entry.getKey()).put("packs",
+                                        entry.getValue()))
+                                .collect(Collectors.toList()));
             } catch (IOException e) {
                 LOGGER.error("Failed to read packs from local library", e);
                 throw new RuntimeException(e);
@@ -165,7 +167,8 @@ public class LibraryService {
             try {
                 File tmp = createTempFile(packPath, ".pack").toFile();
 
-                LOGGER.info("Pack is in archive format. Converting to raw format and storing in temporary file: " + tmp.getAbsolutePath());
+                LOGGER.info("Pack is in archive format. Converting to raw format and storing in temporary file: "
+                        + tmp.getAbsolutePath());
 
                 LOGGER.info("Reading archive format pack");
                 ArchiveStoryPackReader packReader = new ArchiveStoryPackReader();
@@ -203,7 +206,8 @@ public class LibraryService {
             try {
                 File tmp = createTempFile(packPath, ".pack").toFile();
 
-                LOGGER.info("Pack is in FS format. Converting to raw format and storing in temporary file: " + tmp.getAbsolutePath());
+                LOGGER.info("Pack is in FS format. Converting to raw format and storing in temporary file: "
+                        + tmp.getAbsolutePath());
 
                 LOGGER.info("Reading FS format pack");
                 FsStoryPackReader packReader = new FsStoryPackReader();
@@ -244,7 +248,8 @@ public class LibraryService {
             try {
                 File tmp = createTempFile(packPath, ".zip").toFile();
 
-                LOGGER.info("Pack is in raw format. Converting to archive format and storing in temporary file: " + tmp.getAbsolutePath());
+                LOGGER.info("Pack is in raw format. Converting to archive format and storing in temporary file: "
+                        + tmp.getAbsolutePath());
 
                 LOGGER.info("Reading raw format pack");
                 BinaryStoryPackReader packReader = new BinaryStoryPackReader();
@@ -262,7 +267,8 @@ public class LibraryService {
                 packWriter.write(compressedPack, fos);
                 fos.close();
 
-                String destinationFileName = compressedPack.getUuid() + ".converted_" + System.currentTimeMillis() + ".zip";
+                String destinationFileName = compressedPack.getUuid() + ".converted_" + System.currentTimeMillis()
+                        + ".zip";
                 Path destinationPath = Paths.get(libraryPath() + destinationFileName);
                 LOGGER.info("Moving archive format pack into local library: " + destinationPath);
                 Files.move(tmp.toPath(), destinationPath);
@@ -276,7 +282,8 @@ public class LibraryService {
             try {
                 File tmp = createTempFile(packPath, ".zip").toFile();
 
-                LOGGER.info("Pack is in FS format. Converting to archive format and storing in temporary file: " + tmp.getAbsolutePath());
+                LOGGER.info("Pack is in FS format. Converting to archive format and storing in temporary file: "
+                        + tmp.getAbsolutePath());
 
                 LOGGER.info("Reading FS format pack");
                 FsStoryPackReader packReader = new FsStoryPackReader();
@@ -309,7 +316,9 @@ public class LibraryService {
             try {
                 Path tmp = createTempDirectory(packPath);
 
-                LOGGER.info("Pack to transfer is in archive format. Converting to FS format and storing in temporary folder: " + tmp.toAbsolutePath().toString());
+                LOGGER.info(
+                        "Pack to transfer is in archive format. Converting to FS format and storing in temporary folder: "
+                                + tmp.toAbsolutePath().toString());
 
                 LOGGER.info("Reading archive format pack");
                 ArchiveStoryPackReader packReader = new ArchiveStoryPackReader();
@@ -325,7 +334,8 @@ public class LibraryService {
                 FsStoryPackWriter writer = new FsStoryPackWriter();
                 Path folderPath = writer.write(packWithPreparedAssets, tmp);
 
-                String destinationFolder = packWithPreparedAssets.getUuid() + ".converted_" + System.currentTimeMillis();
+                String destinationFolder = packWithPreparedAssets.getUuid() + ".converted_"
+                        + System.currentTimeMillis();
                 Path destinationPath = Paths.get(libraryPath() + destinationFolder);
                 LOGGER.info("Moving FS format pack into local library: " + destinationPath);
                 Files.move(folderPath, destinationPath);
@@ -339,7 +349,8 @@ public class LibraryService {
             try {
                 Path tmp = createTempDirectory(packPath);
 
-                LOGGER.info("Pack is in raw format. Converting to FS format and storing in temporary folder: " + tmp.toAbsolutePath().toString());
+                LOGGER.info("Pack is in raw format. Converting to FS format and storing in temporary folder: "
+                        + tmp.toAbsolutePath().toString());
 
                 LOGGER.info("Reading raw format pack");
                 BinaryStoryPackReader packReader = new BinaryStoryPackReader();
@@ -355,7 +366,8 @@ public class LibraryService {
                 FsStoryPackWriter writer = new FsStoryPackWriter();
                 Path folderPath = writer.write(packWithPreparedAssets, tmp);
 
-                String destinationFolder = packWithPreparedAssets.getUuid() + ".converted_" + System.currentTimeMillis();
+                String destinationFolder = packWithPreparedAssets.getUuid() + ".converted_"
+                        + System.currentTimeMillis();
                 Path destinationPath = Paths.get(libraryPath() + destinationFolder);
                 LOGGER.info("Moving FS format pack into local library: " + destinationPath);
                 Files.move(folderPath, destinationPath);
@@ -439,7 +451,7 @@ public class LibraryService {
                 ArchiveStoryPackReader packReader = new ArchiveStoryPackReader();
                 StoryPackMetadata meta = packReader.readMetadata(fis);
                 if (meta != null) {
-                    return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
+                    return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis(), meta));
                 }
                 LOGGER.warn("Failed to read metadata for story pack: " + path.toString());
                 return Optional.empty();
@@ -453,9 +465,9 @@ public class LibraryService {
                 BinaryStoryPackReader packReader = new BinaryStoryPackReader();
                 StoryPackMetadata meta = packReader.readMetadata(fis);
                 if (meta != null) {
-                    int packSectorSize = (int)Math.ceil((double)path.toFile().length() / 512d);
+                    int packSectorSize = (int) Math.ceil((double) path.toFile().length() / 512d);
                     meta.setSectorSize(packSectorSize);
-                    return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
+                    return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis(), meta));
                 }
                 LOGGER.warn("Failed to read metadata for story pack: " + path.toString());
                 return Optional.empty();
@@ -469,9 +481,9 @@ public class LibraryService {
                 FsStoryPackReader packReader = new FsStoryPackReader();
                 StoryPackMetadata meta = packReader.readMetadata(path);
                 if (meta != null) {
-                    int packSectorSize = (int)Math.ceil((double)path.toFile().length() / 512d);
+                    int packSectorSize = (int) Math.ceil((double) path.toFile().length() / 512d);
                     meta.setSectorSize(packSectorSize);
-                    return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
+                    return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis(), meta));
                 }
                 LOGGER.warn("Failed to read metadata for story pack: " + path.toString());
                 return Optional.empty();
@@ -492,18 +504,25 @@ public class LibraryService {
                 .put("version", pack.getMetadata().getVersion())
                 .put("path", pack.getPath().getFileName().toString())
                 .put("timestamp", pack.getTimestamp())
+                .put("ageMin", pack.getMetadata().getAgeMin())
+                .put("ageMax", pack.getMetadata().getAgeMax())
                 .put("nightModeAvailable", pack.getMetadata().isNightModeAvailable());
+
         Optional.ofNullable(pack.getMetadata().getTitle()).ifPresent(title -> json.put("title", title));
         Optional.ofNullable(pack.getMetadata().getDescription()).ifPresent(desc -> json.put("description", desc));
-        Optional.ofNullable(pack.getMetadata().getThumbnail()).ifPresent(thumb -> json.put("image", "data:image/png;base64," + Base64.getEncoder().encodeToString(thumb)));
+        Optional.ofNullable(pack.getMetadata().getThumbnail()).ifPresent(
+                thumb -> json.put("image", "data:image/png;base64," + Base64.getEncoder().encodeToString(thumb)));
         Optional.ofNullable(pack.getMetadata().getSectorSize()).ifPresent(size -> json.put("sectorSize", size));
+        Optional.ofNullable(pack.getMetadata().getAgeMin()).ifPresent(ageMin -> json.put("ageMin", ageMin));
+        Optional.ofNullable(pack.getMetadata().getAgeMax()).ifPresent(ageMax -> json.put("ageMax", ageMax));
         return databaseMetadataService.getPackMetadata(pack.getMetadata().getUuid())
                 .map(metadata -> json
                         .put("title", metadata.getTitle())
                         .put("description", metadata.getDescription())
                         .put("image", metadata.getThumbnail())
                         .put("official", metadata.isOfficial())
-                )
+                        .put("ageMin", metadata.getAgeMin())
+                        .put("ageMax", metadata.getAgeMax()))
                 .orElse(json);
     }
 

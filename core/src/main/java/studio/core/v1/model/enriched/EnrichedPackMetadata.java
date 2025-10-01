@@ -10,6 +10,7 @@ public class EnrichedPackMetadata {
 
     private String title;
     private String description;
+
     // TODO Thumbnail?
 
     public EnrichedPackMetadata() {
