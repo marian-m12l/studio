@@ -108,10 +108,6 @@ Ajouter toute information ou contexte utile à l'identification et à la résolu
 
 class IssueReportToast extends React.Component {
 
-    constructor(props) {
-        super(props);
-    }
-
     render() {
         const { t, i18n } = this.props;
 
