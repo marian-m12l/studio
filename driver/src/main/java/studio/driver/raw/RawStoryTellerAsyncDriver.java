@@ -22,6 +22,8 @@ import java.nio.ByteBuffer;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.logging.Logger;
+import java.nio.channels.Channels;
+import java.nio.channels.WritableByteChannel;
 
 public class RawStoryTellerAsyncDriver {
 
@@ -318,14 +320,14 @@ public class RawStoryTellerAsyncDriver {
                                     LOGGER.finer("Reading " + (nbSectorsToRead * LibUsbMassStorageHelper.SECTOR_SIZE) + " bytes from device");
                                     return LibUsbMassStorageHelper.asyncReadSDSectors(handle, sector, nbSectorsToRead)
                                             .thenApply(read -> {
-                                                // TODO Write directly from ByteBuffer to output stream ?
-                                                byte[] bytes = new byte[read.remaining()];
-                                                read.get(bytes);
+                                                ByteBuffer chunkBuffer = read.duplicate();
+                                                chunkBuffer.clear();
+                                                int bytesToWrite = chunkBuffer.remaining();
                                                 try {
-                                                    LOGGER.finer("Writing " + bytes.length + " bytes to output stream");
-                                                    output.write(bytes);
+                                                    LOGGER.finer("Writing " + bytesToWrite + " bytes to output stream");
+                                                    writeByteBufferToStream(chunkBuffer, output);
                                                     // Compute progress
-                                                    status.setTransferred(status.getTransferred() + bytes.length);
+                                                    status.setTransferred(status.getTransferred() + bytesToWrite);
                                                     long elapsed = System.currentTimeMillis() - startTime;
                                                     double speed = ((double) status.getTransferred()) / ((double) elapsed / 1000.0);
                                                     status.setSpeed(speed);
@@ -380,14 +382,18 @@ public class RawStoryTellerAsyncDriver {
                             int sector = PACK_INDEX_SD_SECTOR + startSector.get() + offset;
                             short nbSectorsToWrite = (short) Math.min(PACK_TRANSFER_CHUNK_SIZE_IN_SECTORS, packSizeInSectors - offset);
                             promise = promise.thenCompose(status -> {
-                                // TODO Write directly from input stream to ByteBuffer ?
                                 int chunkSize = nbSectorsToWrite * LibUsbMassStorageHelper.SECTOR_SIZE;
                                 ByteBuffer bb = ByteBuffer.allocateDirect(chunkSize);
                                 try {
                                     // Read next chunk from input stream
                                     LOGGER.finer("Reading " + chunkSize + " bytes from input stream");
                                     byte[] chunk = input.readNBytes(chunkSize);
-                                    bb.put(chunk, 0, chunkSize);
+                                    if (chunk.length != chunkSize) {
+                                        throw new StoryTellerException("Unexpected end of input while uploading pack");
+                                    }
+                                    bb.clear();
+                                    bb.put(chunk);
+                                    bb.flip();
                                     LOGGER.finer("Writing " + chunkSize + " bytes to device");
                                     return LibUsbMassStorageHelper.asyncWriteSDSectors(handle, sector, nbSectorsToWrite, bb)
                                             .thenApply(written -> {
@@ -523,9 +529,11 @@ public class RawStoryTellerAsyncDriver {
     }
 
     private void writeByteBufferToStream(ByteBuffer bb, OutputStream output) throws IOException {
-        // TODO Write directly from ByteBuffer to output stream ?
-        byte[] bytes = new byte[bb.remaining()];
-        bb.get(bytes);
-        output.write(bytes);
+        ByteBuffer buffer = bb.duplicate();
+        buffer.clear();
+        WritableByteChannel channel = Channels.newChannel(output);
+        while (buffer.hasRemaining()) {
+            channel.write(buffer);
+        }
     }
 }
