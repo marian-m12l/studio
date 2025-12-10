@@ -64,7 +64,9 @@ class StageNodeModel extends NodeModel {
             this.fromPort = null;
         } else {
             // Create 'from' port
-            this.fromPort = this.addPort(this.createIncomingPort("from"));
+            if (this.fromPort === null) {
+                this.fromPort = this.addPort(this.createIncomingPort("from"));
+            }
         }
     }
 
