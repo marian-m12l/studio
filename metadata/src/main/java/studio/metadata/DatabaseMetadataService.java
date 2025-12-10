@@ -94,12 +94,17 @@ public class DatabaseMetadataService {
             JsonObject localesAvailable = packMetadata.getAsJsonObject("locales_available");
             String locale = localesAvailable.keySet().contains("fr_FR") ? "fr_FR" : localesAvailable.keySet().stream().findFirst().get();
             JsonObject localizedInfos = packMetadata.getAsJsonObject("localized_infos").getAsJsonObject(locale);
+            Number ageMin = packMetadata.get("age_min").getAsNumber();
+            Number ageMax = packMetadata.get("age_max").getAsNumber();
             return new DatabasePackMetadata(
                     uuid,
                     localizedInfos.get("title").getAsString(),
                     localizedInfos.get("description").getAsString(),
                     THUMBNAILS_STORAGE_ROOT + localizedInfos.getAsJsonObject("image").get("image_url").getAsString(),
-                    true
+                    true,
+                    ageMin,
+                    ageMax
+
             );
         });
     }
@@ -122,7 +127,9 @@ public class DatabaseMetadataService {
                         Optional.ofNullable(packMetadata.get("title")).map(JsonElement::getAsString).orElse(null),
                         Optional.ofNullable(packMetadata.get("description")).map(JsonElement::getAsString).orElse(null),
                         Optional.ofNullable(packMetadata.get("image")).map(JsonElement::getAsString).orElse(null),
-                        false
+                        false,
+                        Optional.ofNullable(packMetadata.get("age_min")).map(JsonElement::getAsNumber).orElse(0),
+                        Optional.ofNullable(packMetadata.get("age_max")).map(JsonElement::getAsNumber).orElse(0)
                 ));
             }
         } catch (FileNotFoundException e) {
