@@ -317,7 +317,7 @@ class PackLibrary extends React.Component {
     };
 
     isPackDraggable = (pack) => {
-        return true;
+        return !pack.official;
     };
 
     onCreateNewPackInEditor = (e) => {
