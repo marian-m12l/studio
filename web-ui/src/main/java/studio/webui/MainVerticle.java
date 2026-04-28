@@ -24,6 +24,7 @@ import studio.metadata.DatabaseMetadataService;
 import studio.webui.api.DeviceController;
 import studio.webui.api.EvergreenController;
 import studio.webui.api.LibraryController;
+import studio.webui.api.YoutubeImportController;
 import studio.webui.service.*;
 import studio.webui.service.mock.MockStoryTellerService;
 
@@ -39,6 +40,7 @@ public class MainVerticle extends AbstractVerticle {
     private LibraryService libraryService;
     private EvergreenService evergreenService;
     private IStoryTellerService storyTellerService;
+    private YoutubeImportService youtubeImportService;
 
     @Override
     public void start() {
@@ -60,6 +62,8 @@ public class MainVerticle extends AbstractVerticle {
             storyTellerService = new StoryTellerService(vertx.eventBus(), databaseMetadataService);
         }
 
+        // Service that manages YouTube imports
+        youtubeImportService = new YoutubeImportService();
 
         Router router = Router.router(vertx);
 
@@ -144,6 +148,9 @@ public class MainVerticle extends AbstractVerticle {
 
         // Evergreen services
         router.mountSubRouter("/evergreen", EvergreenController.apiRouter(vertx, evergreenService));
+
+        // YouTube import services
+        router.mountSubRouter("/youtube", YoutubeImportController.apiRouter(vertx, youtubeImportService));
 
         return router;
     }

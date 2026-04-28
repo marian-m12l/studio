@@ -24,6 +24,7 @@ import PackDiagramWidget from "./widgets/PackDiagramWidget";
 import FixedZoomCanvasAction from "./actions/FixedZoomCanvasAction";
 import IssueReportToast from "../IssueReportToast";
 import Modal from "../Modal";
+import YoutubeImportModal from "../YoutubeImportModal";
 import {generateFilename} from "../../utils/packs";
 import {writeToArchive} from "../../utils/writer";
 import {
@@ -67,7 +68,8 @@ class PackEditor extends React.Component {
         this.state = {
             engine,
             diagram: null,
-            showSaveConfirmDialog: false
+            showSaveConfirmDialog: false,
+            showYoutubeImportModal: false
         };
     }
 
@@ -179,6 +181,95 @@ class PackEditor extends React.Component {
         this.setState({showSaveConfirmDialog: false});
     };
 
+    showYoutubeImportModal = () => {
+        this.setState({showYoutubeImportModal: true});
+    };
+
+    dismissYoutubeImportModal = () => {
+        this.setState({showYoutubeImportModal: false});
+    };
+
+    handleYoutubeImport = (data) => {
+        const { engine } = this.state;
+        const model = engine.getModel();
+        
+        // Import node models
+        const CoverNodeModel = require('./models/CoverNodeModel').default;
+        const StoryNodeModel = require('./models/StoryNodeModel').default;
+        
+        // Convert base64 thumbnail to data URL
+        let thumbnailDataUrl = null;
+        if (data.thumbnail) {
+            thumbnailDataUrl = 'data:image/jpeg;base64,' + data.thumbnail;
+        }
+        
+        // Create CoverNode with image (no audio)
+        const coverNode = new CoverNodeModel({
+            name: data.title
+        });
+        
+        if (thumbnailDataUrl) {
+            coverNode.setImage(thumbnailDataUrl);
+        }
+        
+        // Create StoryNode with audio (same image as cover)
+        const storyNode = new StoryNodeModel({
+            name: data.title
+        });
+        
+        if (thumbnailDataUrl) {
+            storyNode.setImage(thumbnailDataUrl);
+        }
+        
+        // Load audio file from path and convert to data URL
+        fetch(`/api/youtube/audio?path=${encodeURIComponent(data.audioPath)}`)
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Failed to load audio file');
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                return new Promise((resolve, reject) => {
+                    const reader = new FileReader();
+                    reader.onload = () => resolve(reader.result);
+                    reader.onerror = reject;
+                    reader.readAsDataURL(blob);
+                });
+            })
+            .then(audioDataUrl => {
+                storyNode.setAudio(audioDataUrl);
+                
+                // Add nodes to model
+                model.addNode(coverNode);
+                model.addNode(storyNode);
+                
+                // Set cover as entry point
+                model.setEntryPoint(coverNode);
+                
+                // Create link from cover to story
+                const link = coverNode.getPort('ok').link(storyNode.getPort('in'));
+                model.addLink(link);
+                
+                // Update canvas
+                engine.repaintCanvas();
+                
+                // Cleanup temp files
+                fetch('/api/youtube/cleanup', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        audioPath: data.audioPath,
+                        thumbnailPath: data.thumbnailPath
+                    })
+                });
+            })
+            .catch(error => {
+                console.error('Error loading audio file:', error);
+                toast.error('Failed to load audio file: ' + error.message);
+            });
+    };
+
     render() {
         const { t } = this.props;
         return (
@@ -193,12 +284,19 @@ class PackEditor extends React.Component {
                        ]}
                        onClose={this.dismissSaveConfirmDialog}
                 />}
+                {this.state.showYoutubeImportModal &&
+                <YoutubeImportModal
+                    show={this.state.showYoutubeImportModal}
+                    onClose={this.dismissYoutubeImportModal}
+                    onConfirm={this.handleYoutubeImport}
+                />}
                 <div className="controls">
                     {/* eslint-disable-next-line */}
                     <a id="download" style={{visibility: 'hidden', position: 'absolute'}} />
                     <span title={t('editor.actions.save')} className="btn btn-default glyphicon glyphicon-floppy-disk" onClick={this.savePackToLibrary}/>
                     <input type="file" id="upload" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.packImportFileSelected} />
                     <span title={t('editor.actions.import')} className="btn btn-default glyphicon glyphicon-import" onClick={this.showImportFileSelector}/>
+                    <span title="Import from YouTube" className="btn btn-default glyphicon glyphicon-facetime-video" onClick={this.showYoutubeImportModal}/>
                     <span title={t('editor.actions.export')} className="btn btn-default glyphicon glyphicon-export" onClick={this.exportPack}/>
                     <span title={t('editor.actions.clear')} className="btn btn-default glyphicon glyphicon-trash" onClick={this.clear}/>
                 </div>

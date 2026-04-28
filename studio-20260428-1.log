@@ -1,0 +1,76 @@
+2026-04-28 21:24:13,558 [INFO ] [studio.webui.service.StoryTellerService] [StoryTellerService.java:53]: Setting up story teller driver
+2026-04-28 21:24:13,561 [DEBUG] [studio.driver.raw.RawStoryTellerAsyncDriver] [RawStoryTellerAsyncDriver.java:44]: Registering hotplug listener
+2026-04-28 21:24:13,563 [INFO ] [studio.driver.LibUsbDetectionHelper] [LibUsbDetectionHelper.java:48]: Initializing libusb...
+2026-04-28 21:24:13,579 [INFO ] [studio.driver.LibUsbDetectionHelper] [LibUsbDetectionHelper.java:73]: Hotplug is NOT supported. Scheduling task to actively poll USB device...
+2026-04-28 21:24:13,579 [DEBUG] [studio.driver.LibUsbAsyncEventsWorker] [LibUsbAsyncEventsWorker.java:32]: Starting worker thread to handle libusb async events...
+2026-04-28 21:24:13,583 [DEBUG] [studio.driver.fs.FsStoryTellerAsyncDriver] [FsStoryTellerAsyncDriver.java:57]: Registering hotplug listener
+2026-04-28 21:24:13,584 [INFO ] [studio.driver.LibUsbDetectionHelper] [LibUsbDetectionHelper.java:48]: Initializing libusb...
+2026-04-28 21:24:13,584 [INFO ] [studio.driver.LibUsbDetectionHelper] [LibUsbDetectionHelper.java:73]: Hotplug is NOT supported. Scheduling task to actively poll USB device...
+2026-04-28 21:24:13,584 [DEBUG] [studio.driver.LibUsbAsyncEventsWorker] [LibUsbAsyncEventsWorker.java:32]: Starting worker thread to handle libusb async events...
+2026-04-28 21:24:16,238 [WARN ] [io.vertx.core.impl.BlockedThreadChecker] [BlockedThreadChecker.java:59]: Thread Thread[#36,vert.x-eventloop-thread-0,5,main]=Thread[#36,vert.x-eventloop-thread-0,5,main] has been blocked for 2888 ms, time limit is 2000 ms
+2026-04-28 21:24:17,238 [WARN ] [io.vertx.core.impl.BlockedThreadChecker] [BlockedThreadChecker.java:59]: Thread Thread[#36,vert.x-eventloop-thread-0,5,main]=Thread[#36,vert.x-eventloop-thread-0,5,main] has been blocked for 3888 ms, time limit is 2000 ms
+2026-04-28 21:24:18,251 [WARN ] [io.vertx.core.impl.BlockedThreadChecker] [BlockedThreadChecker.java:59]: Thread Thread[#36,vert.x-eventloop-thread-0,5,main]=Thread[#36,vert.x-eventloop-thread-0,5,main] has been blocked for 4901 ms, time limit is 2000 ms
+2026-04-28 21:24:19,266 [WARN ] [io.vertx.core.impl.BlockedThreadChecker] [BlockedThreadChecker.java:63]: Thread Thread[#36,vert.x-eventloop-thread-0,5,main]=Thread[#36,vert.x-eventloop-thread-0,5,main] has been blocked for 5916 ms, time limit is 2000 ms
+io.vertx.core.VertxException: Thread blocked
+	at java.base/java.lang.ProcessImpl.waitForTimeoutInterruptibly(Native Method)
+	at java.base/java.lang.ProcessImpl.waitFor(ProcessImpl.java:598)
+	at studio.webui.service.YoutubeImportService.isYtDlpInstalled(YoutubeImportService.java:46)
+	at studio.webui.service.YoutubeImportService.ensureYtDlpInstalled(YoutubeImportService.java:60)
+	at studio.webui.service.YoutubeImportService.<init>(YoutubeImportService.java:34)
+	at studio.webui.MainVerticle.start(MainVerticle.java:66)
+	at io.vertx.core.AbstractVerticle.start(AbstractVerticle.java:106)
+	at io.vertx.core.Verticle.start(Verticle.java:66)
+	at io.vertx.core.impl.DeploymentManager.lambda$doDeploy$9(DeploymentManager.java:556)
+	at io.vertx.core.impl.ContextImpl.executeTask(ContextImpl.java:369)
+	at io.vertx.core.impl.EventLoopContext.lambda$executeAsync$0(EventLoopContext.java:38)
+	at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:164)
+	at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:472)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:500)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:989)
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.base/java.lang.Thread.run(Thread.java:1570)
+2026-04-28 21:24:20,267 [WARN ] [io.vertx.core.impl.BlockedThreadChecker] [BlockedThreadChecker.java:63]: Thread Thread[#36,vert.x-eventloop-thread-0,5,main]=Thread[#36,vert.x-eventloop-thread-0,5,main] has been blocked for 6917 ms, time limit is 2000 ms
+io.vertx.core.VertxException: Thread blocked
+	at java.base/java.lang.ProcessImpl.waitForTimeoutInterruptibly(Native Method)
+	at java.base/java.lang.ProcessImpl.waitFor(ProcessImpl.java:598)
+	at studio.webui.service.YoutubeImportService.isYtDlpInstalled(YoutubeImportService.java:46)
+	at studio.webui.service.YoutubeImportService.ensureYtDlpInstalled(YoutubeImportService.java:60)
+	at studio.webui.service.YoutubeImportService.<init>(YoutubeImportService.java:34)
+	at studio.webui.MainVerticle.start(MainVerticle.java:66)
+	at io.vertx.core.AbstractVerticle.start(AbstractVerticle.java:106)
+	at io.vertx.core.Verticle.start(Verticle.java:66)
+	at io.vertx.core.impl.DeploymentManager.lambda$doDeploy$9(DeploymentManager.java:556)
+	at io.vertx.core.impl.ContextImpl.executeTask(ContextImpl.java:369)
+	at io.vertx.core.impl.EventLoopContext.lambda$executeAsync$0(EventLoopContext.java:38)
+	at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:164)
+	at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:472)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:500)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:989)
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.base/java.lang.Thread.run(Thread.java:1570)
+2026-04-28 21:24:21,012 [INFO ] [studio.webui.MainVerticle] [MainVerticle.java:110]: Opening URL in default browser...
+2026-04-28 21:24:21,273 [WARN ] [io.vertx.core.impl.BlockedThreadChecker] [BlockedThreadChecker.java:63]: Thread Thread[#36,vert.x-eventloop-thread-0,5,main]=Thread[#36,vert.x-eventloop-thread-0,5,main] has been blocked for 7922 ms, time limit is 2000 ms
+io.vertx.core.VertxException: Thread blocked
+	at java.desktop/sun.awt.windows.WDesktopPeer.ShellExecute(Native Method)
+	at java.desktop/sun.awt.windows.WDesktopPeer.ShellExecute(WDesktopPeer.java:112)
+	at java.desktop/sun.awt.windows.WDesktopPeer.browse(WDesktopPeer.java:101)
+	at java.desktop/java.awt.Desktop.browse(Desktop.java:533)
+	at studio.webui.MainVerticle.start(MainVerticle.java:113)
+	at io.vertx.core.AbstractVerticle.start(AbstractVerticle.java:106)
+	at io.vertx.core.Verticle.start(Verticle.java:66)
+	at io.vertx.core.impl.DeploymentManager.lambda$doDeploy$9(DeploymentManager.java:556)
+	at io.vertx.core.impl.ContextImpl.executeTask(ContextImpl.java:369)
+	at io.vertx.core.impl.EventLoopContext.lambda$executeAsync$0(EventLoopContext.java:38)
+	at io.netty.util.concurrent.AbstractEventExecutor.safeExecute(AbstractEventExecutor.java:164)
+	at io.netty.util.concurrent.SingleThreadEventExecutor.runAllTasks(SingleThreadEventExecutor.java:472)
+	at io.netty.channel.nio.NioEventLoop.run(NioEventLoop.java:500)
+	at io.netty.util.concurrent.SingleThreadEventExecutor$4.run(SingleThreadEventExecutor.java:989)
+	at io.netty.util.internal.ThreadExecutorMap$2.run(ThreadExecutorMap.java:74)
+	at io.netty.util.concurrent.FastThreadLocalRunnable.run(FastThreadLocalRunnable.java:30)
+	at java.base/java.lang.Thread.run(Thread.java:1570)
+2026-04-28 21:24:21,401 [INFO ] [io.vertx.core.impl.launcher.commands.VertxIsolatedDeployer] [VertxIsolatedDeployer.java:81]: Succeeded in deploying verticle
+2026-04-28 21:25:15,561 [INFO ] [studio.webui.api.YoutubeImportController] [YoutubeImportController.java:70]: Starting YouTube import for URL: https://www.youtube.com/watch?v=1T9b0cax6s4
+2026-04-28 21:25:19,692 [ERROR] [studio.webui.service.YoutubeImportService] [YoutubeImportService.java:240]: yt-dlp download failed with exit code: 1
+2026-04-28 21:25:19,695 [ERROR] [studio.webui.api.YoutubeImportController] [YoutubeImportController.java:79]: YouTube import failed: Failed to download audio from YouTube

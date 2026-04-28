@@ -155,6 +155,30 @@
     }
   },
 
+  "youtube": {
+    "modal": {
+      "title": "Import from YouTube",
+      "label": {
+        "url": "YouTube URL",
+        "title": "Title",
+        "thumbnail": "Thumbnail"
+      },
+      "button": {
+        "import": "Import",
+        "importing": "Importing...",
+        "confirm": "Add to Pack"
+      },
+      "status": {
+        "downloading": "Downloading audio and thumbnail... This may take a while."
+      },
+      "error": {
+        "emptyUrl": "Please enter a YouTube URL",
+        "importFailed": "Failed to import from YouTube",
+        "networkError": "Network error occurred"
+      }
+    }
+  },
+
   "toasts": {
     "library": {
       "loading": "Loading library...",
