@@ -14,7 +14,7 @@ class StoryNodeModel extends StageNodeModel {
         super({
             ...options,
             type: 'story',
-            name: options.name || 'Story title'
+            name: options.name || 'Stage title'
         });
         this.customOkTransition = false;
         this.customHomeTransition = false;

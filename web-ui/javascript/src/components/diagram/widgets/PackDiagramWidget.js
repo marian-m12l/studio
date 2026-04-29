@@ -176,7 +176,7 @@ class PackDiagramWidget extends React.Component {
                 node.addOption();
                 break;
             case "story":
-                node = new StoryNodeModel({ name: "Story node" });
+                node = new StoryNodeModel({ name: "Stage node" });
                 break;
             default:
                 // Unsupported node

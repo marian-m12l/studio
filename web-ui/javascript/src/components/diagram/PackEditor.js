@@ -195,7 +195,8 @@ class PackEditor extends React.Component {
         
         // Import node models
         const CoverNodeModel = require('./models/CoverNodeModel').default;
-        const StoryNodeModel = require('./models/StoryNodeModel').default;
+        const StageNodeModel = require('./models/StageNodeModel').default;
+        const ActionNodeModel = require('./models/ActionNodeModel').default;
         
         // Convert base64 thumbnail to data URL
         let thumbnailDataUrl = null;
@@ -213,7 +214,7 @@ class PackEditor extends React.Component {
         if (model.getEntryPoint()) {
             model.getEntryPoint().renewUuid();
         }
-
+ 
         // Create CoverNode with image (no audio)
         const coverNode = new CoverNodeModel({
             name: data.title
@@ -223,14 +224,28 @@ class PackEditor extends React.Component {
             coverNode.setImage(thumbnailDataUrl);
         }
         
-        // Create StoryNode with audio (same image as cover)
-        const storyNode = new StoryNodeModel({
+        // Create StageNode with audio (same image as cover)
+        const stageNode = new StageNodeModel({
             name: data.title
         });
         
         if (thumbnailDataUrl) {
-            storyNode.setImage(thumbnailDataUrl);
+            stageNode.setImage(thumbnailDataUrl);
         }
+
+        // Configure stage node as a "story" stage
+        stageNode.setControl('wheel', false);
+        stageNode.setControl('ok', false);
+        stageNode.setControl('home', true);
+        stageNode.setControl('pause', true);
+        stageNode.setControl('autoplay', true);
+
+        // Create ActionNode (linked to the stage)
+        const actionNode = new ActionNodeModel({
+            name: data.title
+        });
+        actionNode.addOption(stageNode);
+
         
         // Load audio file from path and convert to data URL
         fetch(`/api/youtube/audio?path=${encodeURIComponent(data.audioPath)}`)
@@ -249,17 +264,18 @@ class PackEditor extends React.Component {
                 });
             })
             .then(audioDataUrl => {
-                storyNode.setAudio(audioDataUrl);
+                stageNode.setAudio(audioDataUrl);
                 
                 // Add nodes to model
                 model.addNode(coverNode);
-                model.addNode(storyNode);
+                model.addNode(stageNode);
+                model.addNode(actionNode);
                 
                 // Set cover as entry point
                 model.setEntryPoint(coverNode);
                 
-                // Create link from cover to story
-                const link = coverNode.okPort.link(storyNode.fromPort);
+                // Create link from cover to action
+                const link = coverNode.okPort.link(actionNode.getInPort());
                 model.addLink(link);
                 
                 // Update filename in Redux (automatic suggested filename)

@@ -195,23 +195,21 @@ public class YoutubeImportService {
                 }
 
                 String coverUuid = UUID.randomUUID().toString();
-                String storyGroupId = UUID.randomUUID().toString();
-                String storyStageUuid = UUID.randomUUID().toString();
-                String storyActionId = UUID.randomUUID().toString();
+                String stageUuid = UUID.randomUUID().toString();
+                String actionUuid = UUID.randomUUID().toString();
 
                 writer.name("stageNodes").beginArray();
                 
                 // Cover Node (Simplified Stage)
                 writer.beginObject();
                 writer.name("uuid").value(coverUuid);
-                writer.name("groupId").value(coverUuid);
                 writer.name("name").value(title);
                 writer.name("type").value("cover");
                 writer.name("squareOne").value(true);
                 writer.name("image").value(thumbAssetName);
                 writer.name("audio").nullValue();
                 writer.name("okTransition").beginObject()
-                    .name("actionNode").value(storyActionId)
+                    .name("actionNode").value(actionUuid)
                     .name("optionIndex").value(0)
                     .endObject();
                 writer.name("homeTransition").nullValue();
@@ -224,28 +222,21 @@ public class YoutubeImportService {
                     .endObject();
                 writer.endObject();
                 
-                // Story Node (Simplified Stage)
+                // Stage Node (Expert Stage)
                 writer.beginObject();
-                writer.name("uuid").value(storyStageUuid);
-                writer.name("groupId").value(storyGroupId);
+                writer.name("uuid").value(stageUuid);
                 writer.name("name").value(title);
-                writer.name("type").value("story");
+                writer.name("type").value("stage");
                 writer.name("image").value(thumbAssetName);
                 writer.name("audio").value(audioAssetName);
-                writer.name("okTransition").beginObject()
-                    .name("actionNode").value(storyActionId)
-                    .name("optionIndex").value(0)
-                    .endObject();
-                writer.name("homeTransition").beginObject()
-                    .name("actionNode").value(storyActionId)
-                    .name("optionIndex").value(0)
-                    .endObject();
+                writer.name("okTransition").nullValue();
+                writer.name("homeTransition").nullValue();
                 writer.name("controlSettings").beginObject()
-                    .name("wheel").value(true)
-                    .name("ok").value(true)
+                    .name("wheel").value(false)
+                    .name("ok").value(false)
                     .name("home").value(true)
                     .name("pause").value(true)
-                    .name("autoplay").value(false)
+                    .name("autoplay").value(true)
                     .endObject();
                 writer.endObject();
                 
@@ -253,13 +244,12 @@ public class YoutubeImportService {
 
                 writer.name("actionNodes").beginArray();
                 
-                // Story Node (Simplified Action component)
+                // Action Node (Expert Action)
                 writer.beginObject();
-                writer.name("id").value(storyActionId);
-                writer.name("groupId").value(storyGroupId);
+                writer.name("id").value(actionUuid);
                 writer.name("name").value(title);
-                writer.name("type").value("story.storyaction");
-                writer.name("options").beginArray().value(storyStageUuid).endArray();
+                writer.name("type").value("action");
+                writer.name("options").beginArray().value(stageUuid).endArray();
                 writer.endObject();
                 
                 writer.endArray();
