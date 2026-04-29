@@ -94,7 +94,7 @@ class StoryNodeModel extends StageNodeModel {
     goToFirstUsefulNode(diagram) {
         // The first node following pack selection (cover) node
         let coverNode = diagram.getEntryPoint();
-        return coverNode.onOk(diagram);
+        return coverNode ? coverNode.onOk(diagram) : [];
     }
 
     deserialize(event) {

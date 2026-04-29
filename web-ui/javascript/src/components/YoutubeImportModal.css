@@ -8,6 +8,88 @@
     padding: 20px 0;
 }
 
+.import-options-row {
+    display: flex;
+    gap: 15px;
+    margin-bottom: 5px;
+}
+
+.option-field {
+    flex: 1;
+}
+
+.help-block {
+    font-size: 11px;
+    color: #888;
+    margin-top: 5px;
+    font-style: italic;
+}
+
+.cookie-file-row {
+    margin-top: 10px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.cookie-file-row label {
+    margin-bottom: 0 !important;
+    font-size: 13px;
+}
+
+.cookie-warning {
+    margin-top: 15px !important;
+    margin-bottom: 0 !important;
+    padding: 8px 12px !important;
+    font-size: 11px;
+}
+
+.cookie-warning i {
+    margin-right: 8px;
+}
+
+.hidden-file-input {
+    display: none;
+}
+
+.btn-clear {
+    background: none;
+    border: none;
+    color: #999;
+    cursor: pointer;
+    font-size: 16px;
+    padding: 0 5px;
+}
+
+.btn-clear:hover {
+    color: #d9534f;
+}
+
+.oauth-challenge {
+    margin-top: 15px !important;
+    border-left: 4px solid #f0ad4e;
+    line-height: 1.6;
+}
+
+.oauth-challenge span {
+    font-family: monospace;
+    font-size: 14px;
+    display: inline-block;
+    margin: 5px 0;
+}
+
+.mt-10 {
+    margin-top: 10px;
+}
+
+.ml-10 {
+    margin-left: 10px;
+}
+
+.youtube-import-input-group {
+    min-width: 400px;
+}
+
 .youtube-import-step {
     min-width: 400px;
 }
@@ -47,15 +129,18 @@
     font-weight: 500;
 }
 
-.youtube-import-content .form-group input {
+.youtube-import-content .form-group input,
+.youtube-import-content .form-group select {
     width: 100%;
     padding: 8px 12px;
     border: 1px solid #ddd;
     border-radius: 4px;
     font-size: 14px;
+    background-color: #fff;
 }
 
-.youtube-import-content .form-group input:focus {
+.youtube-import-content .form-group input:focus,
+.youtube-import-content .form-group select:focus {
     outline: none;
     border-color: #66afe9;
     box-shadow: 0 0 8px rgba(102, 175, 233, 0.6);
@@ -77,4 +162,114 @@
     background-color: #f2dede;
     border-color: #ebccd1;
     color: #a94442;
+}
+
+.youtube-loading-container {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 20px;
+}
+
+.progress-circle-container {
+    margin-bottom: 20px;
+}
+
+.progress-circle {
+    transform: rotate(-90deg);
+}
+
+.progress-circle-bg {
+    fill: none;
+    stroke: #eee;
+    stroke-width: 8;
+}
+
+.progress-circle-fg {
+    fill: none;
+    stroke: #66afe9;
+    stroke-width: 8;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.3s ease;
+}
+
+.progress-text {
+    fill: #333;
+    font-size: 20px;
+    font-weight: bold;
+    text-anchor: middle;
+    dominant-baseline: central;
+    transform: rotate(90deg);
+    transform-origin: center;
+}
+
+.youtube-batch-list {
+    max-height: 400px;
+    overflow-y: auto;
+    padding: 10px;
+}
+
+.batch-item {
+    background: #f9f9f9;
+    border: 1px solid #eee;
+    border-radius: 4px;
+    margin-bottom: 10px;
+    padding: 12px;
+}
+
+.batch-item-info {
+    margin-bottom: 8px;
+    font-size: 14px;
+    font-weight: 500;
+}
+
+.batch-item-url {
+    word-break: break-all;
+}
+
+.batch-item-error {
+    color: #a94442;
+    font-size: 12px;
+}
+
+.batch-item-progress {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.progress-bar-container {
+    flex-grow: 1;
+    height: 8px;
+    background: #eee;
+    border-radius: 4px;
+    overflow: hidden;
+}
+
+.progress-bar-fill {
+    height: 100%;
+    background: #66afe9;
+    transition: width 0.3s ease;
+}
+
+.progress-pct {
+    font-size: 12px;
+    font-weight: bold;
+    min-width: 35px;
+}
+
+.status-completed {
+    border-left: 4px solid #5cb85c;
+}
+
+.status-completed .progress-bar-fill {
+    background: #5cb85c;
+}
+
+.status-error {
+    border-left: 4px solid #d9534f;
+}
+
+.status-error .progress-bar-fill {
+    background: #d9534f;
 }

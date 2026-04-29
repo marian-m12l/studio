@@ -157,24 +157,30 @@
 
   "youtube": {
     "modal": {
-      "title": "Importer depuis YouTube",
-      "label": {
-        "url": "URL YouTube",
-        "title": "Titre",
-        "thumbnail": "Miniature"
-      },
-      "button": {
-        "import": "Importer",
-        "importing": "Importation...",
-        "confirm": "Ajouter au pack"
-      },
-      "status": {
-        "downloading": "Téléchargement de l'audio et de la miniature... Cela peut prendre un certain temps."
-      },
+      "title": "Importation depuis YouTube",
       "error": {
         "emptyUrl": "Veuillez entrer une URL YouTube",
         "importFailed": "Échec de l'importation depuis YouTube",
         "networkError": "Une erreur réseau s'est produite"
+      },
+      "label": {
+        "url": "URL(s) YouTube",
+        "title": "Titre du pack"
+      },
+      "placeholder": {
+        "batchUrls": "Collez les URL YouTube ici (une par ligne)..."
+      },
+      "help": {
+        "batch": "Vous pouvez coller plusieurs URL pour un import par lot."
+      },
+      "status": {
+        "downloading": "Téléchargement de l'audio depuis YouTube..."
+      },
+      "button": {
+        "import": "Importer",
+        "importing": "Importation...",
+        "confirm": "Confirmer et ajouter",
+        "youtube": "YouTube"
       }
     }
   },
@@ -189,6 +195,7 @@
       "fetchingFailed": "Échec de la récupération des packs d'histoires de la bibliothèque.",
       "adding": "Ajout du pack à la bibliothèque...",
       "added": "Pack ajouté à la bibliothèque.",
+      "packAdded": "Pack ajouté à la bibliothèque.",
       "addingFailed": "Échec de l'ajout du pack à la bibliothèque.",
       "refreshingFailed": "Échec du rafraîchissement de la bibliothèque.",
       "downloading": "Téléchargement du pack d'histoires depuis la bibliothèque...",
@@ -285,7 +292,8 @@
     "shared": {
       "yes": "Oui",
       "no": "Non",
-      "ok": "OK"
+      "ok": "OK",
+      "cancel": "Annuler"
     },
     "announce": {
       "optout": "Ne plus afficher ces annonces à l'avenir"

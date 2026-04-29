@@ -9,8 +9,8 @@
   "dependencies": {
     "@emotion/core": "^10.0.22",
     "@emotion/styled": "^10.0.23",
-    "@projectstorm/react-diagrams": "^6.0.1-beta.6",
-    "@projectstorm/react-diagrams-defaults": "^6.0.1-beta.6",
+    "@projectstorm/react-diagrams": "6.0.1-beta.6",
+    "@projectstorm/react-diagrams-defaults": "6.0.1-beta.6",
     "async-mutex": "^0.2.6",
     "closest": "^0.0.1",
     "dagre": "^0.8.4",
@@ -18,7 +18,7 @@
     "i18next-browser-languagedetector": "^3.0.1",
     "i18next-xhr-backend": "^3.0.0",
     "jszip": "^3.2.1",
-    "lodash": "^4.17.15",
+    "lodash": "4.17.21",
     "marked": "^1.0.0",
     "mathjs": "^6.2.5",
     "npx": "^10.2.2",
@@ -60,5 +60,13 @@
       "last 1 firefox version",
       "last 1 safari version"
     ]
+  },
+  "resolutions": {
+    "lodash": "4.17.21",
+    "@projectstorm/react-diagrams": "6.0.1-beta.6",
+    "@projectstorm/react-diagrams-defaults": "6.0.1-beta.6",
+    "@projectstorm/react-diagrams-core": "6.0.1-beta.6",
+    "@projectstorm/react-diagrams-routing": "6.0.1-beta.6",
+    "@projectstorm/react-canvas-core": "6.0.1-beta.6"
   }
 }

@@ -17,15 +17,13 @@
 
     <artifactId>studio-web-ui</artifactId>
 
-    <packaging>jar</packaging>
-
     <properties>
         <frontend-src-dir>${project.basedir}/javascript</frontend-src-dir>
+        <frontend-maven-plugin.version>1.15.0</frontend-maven-plugin.version>
         <node.version>v12.3.1</node.version>
         <yarn.version>v1.16.0</yarn.version>
-        <frontend-maven-plugin.version>1.15.0</frontend-maven-plugin.version>
         <vertx.version>3.9.0</vertx.version>
-        <vertx.main.verticle>studio.webui.MainVerticle</vertx.main.verticle>
+        <log4j.version>2.17.1</log4j.version>
     </properties>
 
     <dependencies>
@@ -36,37 +34,14 @@
         </dependency>
         <dependency>
             <groupId>studio</groupId>
-            <artifactId>studio-metadata</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>studio</groupId>
             <artifactId>studio-driver</artifactId>
             <version>${project.version}</version>
         </dependency>
+
         <dependency>
             <groupId>studio</groupId>
             <artifactId>studio-metadata</artifactId>
             <version>${project.version}</version>
-            <classifier>jar-with-dependencies</classifier>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>studio</groupId>
-            <artifactId>studio-agent</artifactId>
-            <version>${project.version}</version>
-            <classifier>jar-with-dependencies</classifier>
-            <scope>runtime</scope>
-        </dependency>
-        <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-core</artifactId>
-            <version>${vertx.version}</version>
-        </dependency>
-        <dependency>
-            <groupId>io.vertx</groupId>
-            <artifactId>vertx-config</artifactId>
-            <version>${vertx.version}</version>
         </dependency>
         <dependency>
             <groupId>io.vertx</groupId>
@@ -79,57 +54,39 @@
             <version>${vertx.version}</version>
         </dependency>
         <dependency>
-            <groupId>com.google.code.gson</groupId>
-            <artifactId>gson</artifactId>
+            <groupId>io.vertx</groupId>
+            <artifactId>vertx-config</artifactId>
+            <version>${vertx.version}</version>
         </dependency>
-        <dependency>
-            <groupId>commons-io</groupId>
-            <artifactId>commons-io</artifactId>
-        </dependency>
+
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-api</artifactId>
-            <version>2.17.1</version>
+            <version>${log4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-core</artifactId>
-            <version>2.17.1</version>
+            <version>${log4j.version}</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
             <artifactId>log4j-jul</artifactId>
-            <version>2.17.1</version>
+            <version>${log4j.version}</version>
         </dependency>
+
         <dependency>
             <groupId>com.github.ben-manes.caffeine</groupId>
             <artifactId>caffeine</artifactId>
             <version>3.1.8</version>
         </dependency>
+
     </dependencies>
 
     <build>
         <resources>
-            <!-- regular resource processing for everything except scripts -->
             <resource>
                 <directory>src/main/resources</directory>
-                <excludes>
-                    <exclude>studio-linux.sh</exclude>
-                    <exclude>studio-macos.sh</exclude>
-                    <exclude>studio-windows.bat</exclude>
-                </excludes>
-                <filtering>true</filtering>
-            </resource>
-            <!-- resource processing with a different output directory for scripts -->
-            <resource>
-                <directory>src/main/resources</directory>
-                <includes>
-                    <include>studio-linux.sh</include>
-                    <include>studio-macos.sh</include>
-                    <include>studio-windows.bat</include>
-                </includes>
-                <!-- relative to target/classes -->
-                <targetPath>..</targetPath>
                 <filtering>true</filtering>
             </resource>
         </resources>
@@ -162,16 +119,6 @@
                         </goals>
                         <configuration>
                             <arguments>install</arguments>
-                        </configuration>
-                    </execution>
-                    <!-- npx -->
-                    <execution>
-                        <id>yarn-update-browserslist</id>
-                        <goals>
-                            <goal>yarn</goal>
-                        </goals>
-                        <configuration>
-                            <arguments>update-browserslist</arguments>
                         </configuration>
                     </execution>
                     <!-- build bundle -->
@@ -215,7 +162,6 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-dependency-plugin</artifactId>
-                <!-- Copy dependencies into `lib` folder -->
                 <executions>
                     <execution>
                         <id>copy-dependencies</id>
@@ -225,16 +171,37 @@
                         </goals>
                         <configuration>
                             <outputDirectory>${project.build.directory}/lib</outputDirectory>
+                            <overWriteReleases>false</overWriteReleases>
+                            <overWriteSnapshots>false</overWriteSnapshots>
+                            <overWriteIfNewer>true</overWriteIfNewer>
                         </configuration>
                     </execution>
                 </executions>
             </plugin>
 
-            <!-- Distributable assembly -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <version>3.1.0</version>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addClasspath>true</addClasspath>
+                            <classpathPrefix>lib/</classpathPrefix>
+                            <mainClass>io.vertx.core.Launcher</mainClass>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+
+            <plugin>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <version>3.1.1</version>
+                <configuration>
+                    <descriptors>
+                        <descriptor>src/main/assembly/dist.xml</descriptor>
+                    </descriptors>
+                </configuration>
                 <executions>
                     <execution>
                         <id>make-assembly</id>
@@ -244,14 +211,8 @@
                         </goals>
                     </execution>
                 </executions>
-                <configuration>
-                    <descriptors>
-                        <descriptor>src/main/assembly/dist.xml</descriptor>
-                    </descriptors>
-                </configuration>
             </plugin>
 
-            <!-- Run the app with `mvn exec:exec` -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>exec-maven-plugin</artifactId>
@@ -259,21 +220,20 @@
                 <configuration>
                     <executable>java</executable>
                     <arguments>
-                        <argument>-cp</argument>
-                        <argument>${project.build.directory}/classes:${project.build.directory}/lib/*</argument>
-                        <argument>-Denv=dev</argument>
-                        <argument>-Dstudio.open=false</argument>
-                        <argument>-Dfile.encoding=UTF-8</argument>
+                        <argument>-Dvertx.disableDnsResolver=true</argument>
+                        <argument>-Dvertx.options.maxWorkerExecuteTime=600000000000</argument>
                         <argument>-Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager</argument>
                         <argument>-Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.Log4j2LogDelegateFactory</argument>
+                        <argument>-cp</argument>
+                        <argument>${project.build.directory}/classes:${project.build.directory}/lib/*</argument>
                         <argument>io.vertx.core.Launcher</argument>
                         <argument>run</argument>
-                        <argument>${vertx.main.verticle}</argument>
+                        <argument>studio.webui.MainVerticle</argument>
                     </arguments>
                 </configuration>
             </plugin>
+
         </plugins>
     </build>
-
 
 </project>

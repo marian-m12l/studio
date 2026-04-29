@@ -38,7 +38,7 @@ echo Starting web UI...
 echo Open your browser to: http://localhost:8080
 echo.
 
-java -Dvertx.disableDnsResolver=true -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager -Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.Log4j2LogDelegateFactory -Dfile.encoding=UTF-8 -cp "%STUDIO_PATH%web-ui\target\studio-web-ui-0.4.3-SNAPSHOT.jar";"%STUDIO_PATH%web-ui\target\lib\*";. io.vertx.core.Launcher run studio.webui.MainVerticle
+java -Dvertx.disableDnsResolver=true -Dvertx.options.maxWorkerExecuteTime=600000000000 -Djava.util.logging.manager=org.apache.logging.log4j.jul.LogManager -Dvertx.logger-delegate-factory-class-name=io.vertx.core.logging.Log4j2LogDelegateFactory -Dfile.encoding=UTF-8 -cp "%STUDIO_PATH%web-ui\target\studio-web-ui-0.4.3-SNAPSHOT.jar";"%STUDIO_PATH%web-ui\target\lib\*";. io.vertx.core.Launcher run studio.webui.MainVerticle
 
 if %ERRORLEVEL% NEQ 0 (
     echo.

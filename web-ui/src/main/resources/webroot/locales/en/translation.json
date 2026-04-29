@@ -158,23 +158,29 @@
   "youtube": {
     "modal": {
       "title": "Import from YouTube",
-      "label": {
-        "url": "YouTube URL",
-        "title": "Title",
-        "thumbnail": "Thumbnail"
-      },
-      "button": {
-        "import": "Import",
-        "importing": "Importing...",
-        "confirm": "Add to Pack"
-      },
-      "status": {
-        "downloading": "Downloading audio and thumbnail... This may take a while."
-      },
       "error": {
         "emptyUrl": "Please enter a YouTube URL",
         "importFailed": "Failed to import from YouTube",
         "networkError": "Network error occurred"
+      },
+      "label": {
+        "url": "YouTube URL(s)",
+        "title": "Pack Title"
+      },
+      "placeholder": {
+        "batchUrls": "Paste YouTube URLs here (one per line)..."
+      },
+      "help": {
+        "batch": "You can paste multiple URLs for batch import."
+      },
+      "status": {
+        "downloading": "Downloading audio from YouTube..."
+      },
+      "button": {
+        "import": "Import",
+        "importing": "Importing...",
+        "confirm": "Confirm and Add",
+        "youtube": "YouTube"
       }
     }
   },
@@ -189,6 +195,7 @@
       "fetchingFailed": "Failed to fetch packs from library.",
       "adding": "Adding pack to local library...",
       "added": "Pack added to library.",
+      "packAdded": "Pack added to library.",
       "addingFailed": "Failed to add pack to library.",
       "refreshingFailed": "Failed to refresh library.",
       "downloading": "Downloading pack from library...",
@@ -285,7 +292,8 @@
     "shared": {
       "yes": "Yes",
       "no": "No",
-      "ok": "OK"
+      "ok": "OK",
+      "cancel": "Cancel"
     },
     "announce": {
       "optout": "Do not show these announces anymore"

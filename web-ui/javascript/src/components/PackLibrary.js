@@ -21,6 +21,7 @@ import {
     actionUploadToLibrary,
     actionCreatePackInEditor,
     actionLoadSampleInEditor,
+    actionRefreshLibrary,
     setAllowEnriched
 } from "../actions";
 import {AppContext} from "../AppContext";
@@ -30,6 +31,12 @@ import {
 } from "../utils/storage";
 
 import './PackLibrary.css';
+import YoutubeImportModal from "./YoutubeImportModal";
+import PackDiagramModel from "./diagram/models/PackDiagramModel";
+import CoverNodeModel from "./diagram/models/CoverNodeModel";
+import StoryNodeModel from "./diagram/models/StoryNodeModel";
+import {writeToArchive} from "../utils/writer";
+import {generateFilename} from "../utils/packs";
 
 
 class PackLibrary extends React.Component {
@@ -59,7 +66,8 @@ class PackLibrary extends React.Component {
             confirmConversionDialog: {
                 show: false,
                 data: null
-            }
+            },
+            showYoutubeImportModal: false
         };
     }
 
@@ -327,6 +335,45 @@ class PackLibrary extends React.Component {
         this.props.loadSampleInEditor();
     };
 
+    showYoutubeImportModal = () => {
+        this.setState({showYoutubeImportModal: true});
+    };
+
+    dismissYoutubeImportModal = () => {
+        this.setState({showYoutubeImportModal: false});
+    };
+
+    handleYoutubeImport = (data, autoSave = false) => {
+        const { t } = this.props;
+        
+        // If autoSave, we ask the server to create the pack directly in the library
+        if (autoSave || this.state.showYoutubeImportModal) {
+            fetch('/api/youtube/save', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    title: data.title,
+                    audioPath: data.audioPath,
+                    thumbnailPath: data.thumbnailPath
+                })
+            })
+            .then(response => response.json())
+            .then(result => {
+                if (result.success) {
+                    toast.success(t('toasts.library.packAdded'));
+                    // Refresh the library list
+                    this.props.refreshLibrary(t);
+                } else {
+                    toast.error('Failed to save pack to library: ' + result.error);
+                }
+            })
+            .catch(error => {
+                console.error('Error in YouTube library save:', error);
+                toast.error('Failed to save YouTube pack: ' + error.message);
+            });
+        }
+    };
+
     render() {
         const { t } = this.props;
         let storagePercentage = null;
@@ -488,10 +535,24 @@ class PackLibrary extends React.Component {
                         <div><strong>{t('library.local.packs.length')}</strong> { this.state.library.packs.length || '-' }</div>
                         <input type="file" id="upload" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.packAddFileSelected} />
                         <span title={t('library.local.addPack')} className="btn btn-default glyphicon glyphicon-import" onClick={this.showAddFileSelector}/>
+                        <button title={t('youtube.modal.button.youtube')} className="btn btn-default" onClick={this.showYoutubeImportModal} style={{marginLeft: '5px'}}>
+                            <span className="glyphicon glyphicon-play"></span> {t('youtube.modal.button.youtube')}
+                        </button>
                         <div className="editor-actions">
-                            <p><button className="library-action" onClick={this.onCreateNewPackInEditor}>{t('library.local.empty.link1')}</button> <button className="library-action" onClick={this.onOpenSamplePackInEditor}>{t('library.local.empty.link2')}</button> {t('library.local.empty.suffix')}</p>
+                            <p>
+                                <button className="library-action" onClick={this.onCreateNewPackInEditor}>{t('library.local.empty.link1')}</button> 
+                                <button className="library-action" onClick={this.onOpenSamplePackInEditor}>{t('library.local.empty.link2')}</button> 
+                                {t('library.local.empty.suffix')}
+                            </p>
                         </div>
                     </div>
+                    {this.state.showYoutubeImportModal &&
+                    <YoutubeImportModal
+                        show={this.state.showYoutubeImportModal}
+                        onClose={this.dismissYoutubeImportModal}
+                        onConfirm={this.handleYoutubeImport}
+                        autoSave={true}
+                    />}
                     <div className={`library-dropzone ${this.state.dragging === 'device-pack' ? 'highlighted-dropzone' : ''}`}
                          onDrop={this.onDropPackIntoLibrary}
                          onDragOver={event => { event.preventDefault(); }}>
@@ -584,7 +645,8 @@ const mapDispatchToProps = (dispatch, ownProps) => ({
     uploadPackToLibrary: (path, packData) => dispatch(actionUploadToLibrary(null, path, packData, ownProps.t)),
     createPackInEditor: () => dispatch(actionCreatePackInEditor(ownProps.t)),
     loadSampleInEditor: () => dispatch(actionLoadSampleInEditor(ownProps.t)),
-    setAllowEnriched: (allowEnriched) => dispatch(setAllowEnriched(allowEnriched))
+    setAllowEnriched: (allowEnriched) => dispatch(setAllowEnriched(allowEnriched)),
+    refreshLibrary: (t) => dispatch(actionRefreshLibrary(t))
 });
 
 export default withTranslation()(

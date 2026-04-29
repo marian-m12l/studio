@@ -257,7 +257,13 @@ class PackDiagramWidget extends React.Component {
         // Verify all nodes
         model.getNodes().forEach(node => {
             console.log('Verifying node... ' + node.getID());
-            if (node instanceof StageNodeModel || node instanceof CoverNodeModel || node instanceof StoryNodeModel) {
+            const isStoryNode = node instanceof StoryNodeModel || node.getType() === 'story';
+            const isStageNode = node instanceof StageNodeModel || node.getType() === 'stage';
+            const isCoverNode = node instanceof CoverNodeModel || node.getType() === 'cover';
+            const isActionNode = node instanceof ActionNodeModel || node.getType() === 'action';
+            const isMenuNode = node instanceof MenuNodeModel || node.getType() === 'menu';
+
+            if (isStageNode || isCoverNode || isStoryNode) {
                 if (node.fromPort && Object.keys(node.fromPort.getLinks()).length < 1) {
                     console.log('Missing link on FROM port: ' + node.fromPort.getName());
                     if (!errors[node.getID()]) {
@@ -279,23 +285,27 @@ class PackDiagramWidget extends React.Component {
                     }
                     errors[node.getID()].assets = t('editor.verify.errors.assets');
                 }
-                // OK and HOME transitions cannot link to the same stage node
-                if ((node.getControls().ok || node.getControls().autoplay) && node.onOk(model)[0] === node) {
-                    console.log('Invalid link on OK port: ' + (node.okPort && node.okPort.getName()));
-                    if (!errors[node.getID()]) {
-                        errors[node.getID()] = {};
+                // OK and HOME transitions cannot link to the same stage node (except for standard Story nodes that loop back to the first useful node)
+                if ((node.getControls().ok || node.getControls().autoplay) && node.onOk(model)[0] === node) {
+                    if (!(isStoryNode && !node.customOkTransition)) {
+                        console.log('Invalid link on OK port: ' + (node.okPort && node.okPort.getName()));
+                        if (!errors[node.getID()]) {
+                            errors[node.getID()] = {};
+                        }
+                        errors[node.getID()].okPort = t('editor.verify.errors.invalidOkPort');
                     }
-                    errors[node.getID()].okPort = t('editor.verify.errors.invalidOkPort');
                 }
                 if (node.getControls().home && node.onHome(model)[0] === node) {
-                    console.log('Invalid link on HOME port: ' + (node.homePort && node.homePort.getName()));
-                    if (!errors[node.getID()]) {
-                        errors[node.getID()] = {};
+                    if (!(isStoryNode && !node.customHomeTransition)) {
+                        console.log('Invalid link on HOME port: ' + (node.homePort && node.homePort.getName()));
+                        if (!errors[node.getID()]) {
+                            errors[node.getID()] = {};
+                        }
+                        errors[node.getID()].homePort = t('editor.verify.errors.invalidHomePort');
                     }
-                    errors[node.getID()].homePort = t('editor.verify.errors.invalidHomePort');
                 }
 
-            } else if (node instanceof ActionNodeModel) {
+            } else if (isActionNode) {
                 let optionsIn = node.optionsIn || [];
                 optionsIn = node.randomOptionIn ? optionsIn.concat([node.randomOptionIn]) : optionsIn;
                 if (optionsIn.reduce((acc,optIn) => acc + Object.keys(optIn.getLinks()).length, 0) < 1) {
@@ -315,7 +325,7 @@ class PackDiagramWidget extends React.Component {
                     }
                 });
                 actionNodesCount++;
-            } else if (node instanceof  MenuNodeModel) {
+            } else if (isMenuNode) {
                 if (node.fromPort && Object.keys(node.fromPort.getLinks()).length < 1) {
                     console.log('Missing link on FROM port: ' + node.fromPort.getName());
                     if (!errors[node.getID()]) {

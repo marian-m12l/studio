@@ -120,7 +120,9 @@ public class MainVerticle extends AbstractVerticle {
 
     private SockJSHandler eventBusHandler() {
         BridgeOptions options = new BridgeOptions()
-                .addOutboundPermitted(new PermittedOptions().setAddressRegex("storyteller\\.(.+)"));
+                .addOutboundPermitted(new PermittedOptions().setAddressRegex("storyteller\\.(.+)"))
+                .addOutboundPermitted(new PermittedOptions().setAddressRegex("youtube\\.progress\\.(.+)"))
+                .addOutboundPermitted(new PermittedOptions().setAddressRegex("youtube\\.result\\.(.+)"));
         SockJSHandler sockJSHandler = SockJSHandler.create(vertx);
         sockJSHandler.bridge(options, event -> {
             if (event.type() == BridgeEventType.SOCKET_CREATED) {
@@ -150,7 +152,7 @@ public class MainVerticle extends AbstractVerticle {
         router.mountSubRouter("/evergreen", EvergreenController.apiRouter(vertx, evergreenService));
 
         // YouTube import services
-        router.mountSubRouter("/youtube", YoutubeImportController.apiRouter(vertx, youtubeImportService));
+        router.mountSubRouter("/youtube", YoutubeImportController.apiRouter(vertx, youtubeImportService, libraryService));
 
         return router;
     }

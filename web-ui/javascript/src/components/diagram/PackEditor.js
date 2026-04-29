@@ -203,6 +203,17 @@ class PackEditor extends React.Component {
             thumbnailDataUrl = 'data:image/jpeg;base64,' + data.thumbnail;
         }
         
+        // Update pack metadata
+        model.title = data.title;
+        if (thumbnailDataUrl) {
+            model.thumbnail = thumbnailDataUrl;
+        }
+        
+        // Renew UUID (automatic "yes" to renewal question)
+        if (model.getEntryPoint()) {
+            model.getEntryPoint().renewUuid();
+        }
+
         // Create CoverNode with image (no audio)
         const coverNode = new CoverNodeModel({
             name: data.title
@@ -248,9 +259,12 @@ class PackEditor extends React.Component {
                 model.setEntryPoint(coverNode);
                 
                 // Create link from cover to story
-                const link = coverNode.getPort('ok').link(storyNode.getPort('in'));
+                const link = coverNode.okPort.link(storyNode.fromPort);
                 model.addLink(link);
                 
+                // Update filename in Redux (automatic suggested filename)
+                this.props.setEditorDiagram(model, generateFilename(model));
+
                 // Update canvas
                 engine.repaintCanvas();
                 
@@ -296,7 +310,6 @@ class PackEditor extends React.Component {
                     <span title={t('editor.actions.save')} className="btn btn-default glyphicon glyphicon-floppy-disk" onClick={this.savePackToLibrary}/>
                     <input type="file" id="upload" style={{visibility: 'hidden', position: 'absolute'}} onChange={this.packImportFileSelected} />
                     <span title={t('editor.actions.import')} className="btn btn-default glyphicon glyphicon-import" onClick={this.showImportFileSelector}/>
-                    <span title="Import from YouTube" className="btn btn-default glyphicon glyphicon-facetime-video" onClick={this.showYoutubeImportModal}/>
                     <span title={t('editor.actions.export')} className="btn btn-default glyphicon glyphicon-export" onClick={this.exportPack}/>
                     <span title={t('editor.actions.clear')} className="btn btn-default glyphicon glyphicon-trash" onClick={this.clear}/>
                 </div>

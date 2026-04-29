@@ -31,8 +31,17 @@ export const uploadToLibrary = async (uuid, path, packData, progressHandler) => 
             xhr.upload.onprogress = progressHandler;
         }
         xhr.onload = () => {
-            console.log('xhr upload complete: ' + JSON.parse(xhr.responseText));
-            resolve(JSON.parse(xhr.responseText));
+            if (xhr.status >= 200 && xhr.status < 300) {
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    console.log('xhr upload complete:', response);
+                    resolve(response);
+                } catch (e) {
+                    reject(new Error("Invalid JSON response from server"));
+                }
+            } else {
+                reject(new Error("Server returned status " + xhr.status + ": " + xhr.statusText));
+            }
         };
         xhr.open('post', 'http://localhost:8080/api/library/upload', true);
         let formData = new FormData();

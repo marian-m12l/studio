@@ -30,6 +30,7 @@ class Stage {
         this.image = data.image;
         this.audio = data.audio;
         this.controls = data.controls;
+        return this;
     }
 
     serialize() {

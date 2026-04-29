@@ -13,7 +13,10 @@ import io.vertx.core.logging.Logger;
 import io.vertx.core.logging.LoggerFactory;
 import io.vertx.ext.web.Router;
 import io.vertx.ext.web.RoutingContext;
+import studio.webui.service.LibraryService;
 import studio.webui.service.YoutubeImportService;
+
+import java.util.UUID;
 
 public class YoutubeImportController {
 
@@ -24,73 +27,73 @@ public class YoutubeImportController {
         this.youtubeImportService = new YoutubeImportService();
     }
 
-    public static Router apiRouter(Vertx vertx, YoutubeImportService youtubeImportService) {
+    public static Router apiRouter(Vertx vertx, YoutubeImportService youtubeImportService, LibraryService libraryService) {
         Router router = Router.router(vertx);
 
-        // Check if youtube-dl is installed
+        // Check if a downloader is installed
         router.get("/check").handler(ctx -> {
-            boolean installed = youtubeImportService.isYoutubeDlInstalled();
+            boolean installed = youtubeImportService.isDownloaderInstalled();
             ctx.response()
                     .putHeader("content-type", "application/json")
                     .end(Json.encode(new JsonObject()
                             .put("installed", installed)
-                            .put("message", installed ? "youtube-dl is installed and ready" : "youtube-dl will be installed on first use")
+                            .put("message", installed ? "YouTube downloader is ready" : "YouTube downloader will be installed on first use")
                     ));
         });
 
-        // Import from YouTube
-        router.post("/import").blockingHandler(ctx -> {
-            JsonObject requestBody = ctx.getBodyAsJson();
-            if (requestBody == null || !requestBody.containsKey("url")) {
-                ctx.response()
-                        .setStatusCode(400)
-                        .putHeader("content-type", "application/json")
-                        .end(Json.encode(new JsonObject()
-                                .put("success", false)
-                                .put("error", "Missing 'url' parameter in request body")
-                        ));
-                return;
-            }
-
-            String youtubeUrl = requestBody.getString("url");
-            
-            // Validate YouTube URL
-            if (!isValidYoutubeUrl(youtubeUrl)) {
-                ctx.response()
-                        .setStatusCode(400)
-                        .putHeader("content-type", "application/json")
-                        .end(Json.encode(new JsonObject()
-                                .put("success", false)
-                                .put("error", "Invalid YouTube URL")
-                        ));
-                return;
-            }
-
+        // Import from YouTube (Asynchronous)
+        router.post("/import").handler(ctx -> {
             try {
-                LOGGER.info("Starting YouTube import for URL: " + youtubeUrl);
-                JsonObject result = youtubeImportService.importFromYoutube(youtubeUrl);
+                io.vertx.core.MultiMap form = ctx.request().formAttributes();
+                String youtubeUrl = form.get("url");
+                String requestId = form.get("requestId");
                 
-                if (result.getBoolean("success", false)) {
-                    ctx.response()
-                            .putHeader("content-type", "application/json")
-                            .end(Json.encode(result));
-                } else {
-                    String error = result.getString("error", "Unknown error");
-                    LOGGER.error("YouTube import failed: " + error);
-                    ctx.response()
-                            .setStatusCode(500)
-                            .putHeader("content-type", "application/json")
-                            .end(Json.encode(result));
+                if (youtubeUrl == null || youtubeUrl.isEmpty()) {
+                    ctx.response().setStatusCode(400).putHeader("content-type", "application/json")
+                            .end(Json.encode(new JsonObject().put("success", false).put("error", "URL is required")));
+                    return;
                 }
-            } catch (Exception e) {
-                LOGGER.error("Error during YouTube import", e);
+
+                // Return immediately with success
                 ctx.response()
-                        .setStatusCode(500)
                         .putHeader("content-type", "application/json")
                         .end(Json.encode(new JsonObject()
-                                .put("success", false)
-                                .put("error", "Server error: " + e.getMessage())
+                                .put("success", true)
+                                .put("status", "started")
+                                .put("requestId", requestId)
                         ));
+
+                final String finalYoutubeUrl = youtubeUrl;
+                final String finalRequestId = requestId;
+
+                new Thread(() -> {
+                    try {
+                        LOGGER.info("Starting background YouTube import for URL: " + finalYoutubeUrl + (finalRequestId != null ? " [ID: " + finalRequestId + "]" : ""));
+                        
+                        JsonObject result = youtubeImportService.importFromYoutube(finalYoutubeUrl, (progress, message) -> {
+                            JsonObject progressUpdate = new JsonObject()
+                                    .put("requestId", finalRequestId)
+                                    .put("progress", progress);
+                            if (message != null) {
+                                progressUpdate.put("message", message);
+                            }
+                            vertx.eventBus().publish("youtube.progress." + finalRequestId, progressUpdate);
+                        });
+                        
+                        if (finalRequestId != null) {
+                            vertx.eventBus().publish("youtube.result." + finalRequestId, result);
+                        }
+                    } catch (Exception e) {
+                        LOGGER.error("Error during background YouTube import", e);
+                        if (finalRequestId != null) {
+                            vertx.eventBus().publish("youtube.result." + finalRequestId, new JsonObject().put("success", false).put("error", e.getMessage()));
+                        }
+                    }
+                }).start();
+
+            } catch (Exception e) {
+                LOGGER.error("Error parsing import request", e);
+                ctx.response().setStatusCode(500).end(Json.encode(new JsonObject().put("success", false).put("error", e.getMessage())));
             }
         });
 
@@ -210,6 +213,24 @@ public class YoutubeImportController {
                                 .put("error", "Error cleaning up files: " + e.getMessage())
                         ));
             }
+        });
+
+        router.post("/save").handler(rc -> {
+            JsonObject body = rc.getBodyAsJson();
+            String title = body.getString("title");
+            String audioPath = body.getString("audioPath");
+            String thumbnailPath = body.getString("thumbnailPath");
+            
+            vertx.executeBlocking(promise -> {
+                JsonObject result = youtubeImportService.createLibraryPack(title, audioPath, thumbnailPath, libraryService.libraryPath());
+                promise.complete(result);
+            }, false, result -> {
+                if (result.succeeded()) {
+                    rc.response().putHeader("content-type", "application/json").end(((JsonObject)result.result()).encode());
+                } else {
+                    rc.response().setStatusCode(500).end(result.cause().getMessage());
+                }
+            });
         });
 
         return router;

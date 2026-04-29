@@ -228,7 +228,7 @@ class MenuNodeModel extends NodeModel {
         this.uuid = event.data.uuid;
         this.name = event.data.name;
         this.fromPort = this.getPortFromID(event.data.fromPort);
-        this.questionStage = (new Stage()).deserialize(event.data.questionStage);
+        this.questionStage.deserialize(event.data.questionStage);
         this.optionsStages = event.data.optionsStages.map(os => (new Stage()).deserialize(os));
         this.optionsOut = event.data.optionsOut.map(id => this.getPortFromID(id));
         this.defaultOption = event.data.defaultOption;

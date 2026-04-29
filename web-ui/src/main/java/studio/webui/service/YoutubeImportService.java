@@ -15,31 +15,69 @@ import java.awt.*;
 import java.awt.image.BufferedImage;
 import java.io.*;
 import java.net.URL;
+import java.net.URLConnection;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
+import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.function.BiConsumer;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
+import java.util.concurrent.Semaphore;
 
 public class YoutubeImportService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(YoutubeImportService.class);
+    private static final Pattern PROGRESS_PATTERN = Pattern.compile("\\[download\\]\\s+(\\d+(?:\\.\\d+)?)%");
+    private static final Semaphore IMPORT_SEMAPHORE = new Semaphore(1);
     
-    private static final String YOUTUBE_DL_FILENAME = "youtube-dl";
+    private static final String[] DOWNLOADER_COMMANDS = {
+        "yt-dlp",
+        "youtube-dl",
+        "python -m yt_dlp",
+        "python -m youtube_dl",
+        "python3 -m yt_dlp",
+        "python3 -m youtube_dl"
+    };
+    
+    private String activeDownloaderCommand = "yt-dlp"; // Default
+    private String cookieBrowser = null; // Browser to extract cookies from
     private static final int MAX_RETRIES = 3;
     
     public YoutubeImportService() {
-        // Auto-install youtube-dl on first use if not present
-        ensureYoutubeDlInstalled();
+        // Downloader will be checked/installed on first use to avoid blocking the event loop at startup
     }
     
     /**
-     * Check if youtube-dl is installed and install it if necessary
+     * Check if a downloader is installed and which one
      */
-    public boolean isYoutubeDlInstalled() {
+    public boolean isDownloaderInstalled() {
+        for (String cmd : DOWNLOADER_COMMANDS) {
+            if (checkCommand(cmd)) {
+                activeDownloaderCommand = cmd;
+                return true;
+            }
+        }
+        return false;
+    }
+
+    private boolean checkCommand(String cmd) {
         try {
-            Process process = new ProcessBuilder(YOUTUBE_DL_FILENAME, "--version")
+            List<String> fullCmd = new ArrayList<>();
+            if (cmd.contains(" ")) {
+                for (String part : cmd.split(" ")) {
+                    fullCmd.add(part);
+                }
+            } else {
+                fullCmd.add(cmd);
+            }
+            fullCmd.add("--version");
+
+            Process process = new ProcessBuilder(fullCmd)
                     .redirectErrorStream(true)
                     .start();
             
@@ -48,265 +86,407 @@ public class YoutubeImportService {
                 return true;
             }
         } catch (Exception e) {
-            LOGGER.debug("youtube-dl not found or not executable", e);
+            LOGGER.debug("Command not found or not executable: " + cmd);
         }
         return false;
     }
     
     /**
-     * Ensure youtube-dl is installed, install if necessary
+     * Ensure a downloader is installed, install if necessary
      */
-    public boolean ensureYoutubeDlInstalled() {
-        if (isYoutubeDlInstalled()) {
+    public boolean ensureDownloaderInstalled() {
+        if (isDownloaderInstalled()) {
             return true;
         }
         
-        LOGGER.info("youtube-dl not found, attempting to install...");
+        LOGGER.info("No YouTube downloader found, attempting to install yt-dlp...");
         
-        try {
-            // Try to install using pip
-            Process pipProcess = new ProcessBuilder("pip", "install", "--upgrade", "youtube-dl")
-                    .redirectErrorStream(true)
-                    .start();
-            
-            boolean finished = pipProcess.waitFor(60, TimeUnit.SECONDS);
-            if (finished && pipProcess.exitValue() == 0) {
-                LOGGER.info("youtube-dl installed successfully via pip");
-                return true;
+        String[] installCommands = {
+            "pip install --upgrade yt-dlp",
+            "pip3 install --upgrade yt-dlp",
+            "python -m pip install --upgrade yt-dlp",
+            "python3 -m pip install --upgrade yt-dlp"
+        };
+
+        for (String installCmd : installCommands) {
+            try {
+                List<String> fullCmd = new ArrayList<>();
+                for (String part : installCmd.split(" ")) {
+                    fullCmd.add(part);
+                }
+                
+                Process process = new ProcessBuilder(fullCmd)
+                        .redirectErrorStream(true)
+                        .start();
+                
+                boolean finished = process.waitFor(120, TimeUnit.SECONDS);
+                if (finished && process.exitValue() == 0) {
+                    LOGGER.info("yt-dlp installed successfully via: " + installCmd);
+                    if (isDownloaderInstalled()) {
+                        return true;
+                    }
+                }
+            } catch (Exception e) {
+                LOGGER.error("Error attempting to install yt-dlp via: " + installCmd, e);
             }
-            
-            // Try pip3
-            Process pip3Process = new ProcessBuilder("pip3", "install", "--upgrade", "youtube-dl")
-                    .redirectErrorStream(true)
-                    .start();
-            
-            finished = pip3Process.waitFor(60, TimeUnit.SECONDS);
-            if (finished && pip3Process.exitValue() == 0) {
-                LOGGER.info("youtube-dl installed successfully via pip3");
-                return true;
-            }
-            
-            // Try python -m pip
-            Process pythonPipProcess = new ProcessBuilder("python", "-m", "pip", "install", "--upgrade", "youtube-dl")
-                    .redirectErrorStream(true)
-                    .start();
-            
-            finished = pythonPipProcess.waitFor(60, TimeUnit.SECONDS);
-            if (finished && pythonPipProcess.exitValue() == 0) {
-                LOGGER.info("youtube-dl installed successfully via python -m pip");
-                return true;
-            }
-            
-            // Try python3 -m pip
-            Process python3PipProcess = new ProcessBuilder("python3", "-m", "pip", "install", "--upgrade", "youtube-dl")
-                    .redirectErrorStream(true)
-                    .start();
-            
-            finished = python3PipProcess.waitFor(60, TimeUnit.SECONDS);
-            if (finished && python3PipProcess.exitValue() == 0) {
-                LOGGER.info("youtube-dl installed successfully via python3 -m pip");
-                return true;
-            }
-            
-            LOGGER.error("Failed to install youtube-dl. Please install it manually.");
-            return false;
-            
-        } catch (Exception e) {
-            LOGGER.error("Error installing youtube-dl", e);
-            return false;
         }
+        
+        LOGGER.error("Failed to install any YouTube downloader. Please install yt-dlp manually: pip install yt-dlp");
+        return false;
     }
     
     /**
      * Import audio and thumbnail from YouTube URL
      */
     public JsonObject importFromYoutube(String youtubeUrl) {
+        return importFromYoutube(youtubeUrl, null);
+    }
+
+    public JsonObject createLibraryPack(String title, String audioPath, String thumbnailPath, String libraryPath) {
         JsonObject result = new JsonObject();
-        
-        if (!isYoutubeDlInstalled()) {
-            if (!ensureYoutubeDlInstalled()) {
-                return result.put("success", false)
-                        .put("error", "Failed to install youtube-dl. Please install it manually: pip install youtube-dl");
-            }
-        }
+        String timestamp = String.valueOf(System.currentTimeMillis());
+        String packFileName = title.replaceAll("[\\\\/:*?\"<>|]", "_") + "_" + timestamp + ".zip";
+        Path destPath = Paths.get(libraryPath, packFileName);
         
         try {
-            String tempDir = System.getProperty("java.io.tmpdir");
-            String timestamp = String.valueOf(System.currentTimeMillis());
-            String baseName = "youtube_" + timestamp;
-            
-            // Download audio as MP3
-            String audioPath = Paths.get(tempDir, baseName + ".mp3").toString();
-            boolean audioDownloaded = downloadAudio(youtubeUrl, audioPath);
-            
-            if (!audioDownloaded) {
-                return result.put("success", false)
-                        .put("error", "Failed to download audio from YouTube");
+            String packUuid = UUID.randomUUID().toString();
+            byte[] thumbData = null;
+            if (thumbnailPath != null && Files.exists(Paths.get(thumbnailPath))) {
+                thumbData = Files.readAllBytes(Paths.get(thumbnailPath));
             }
             
-            // Get video metadata
-            JsonObject metadata = getVideoMetadata(youtubeUrl);
-            if (!metadata.containsKey("title")) {
-                // Clean up downloaded audio
-                Files.deleteIfExists(Paths.get(audioPath));
-                return result.put("success", false)
-                        .put("error", "Failed to extract video metadata");
+            byte[] audioData = null;
+            if (audioPath != null && Files.exists(Paths.get(audioPath))) {
+                audioData = Files.readAllBytes(Paths.get(audioPath));
             }
-            
-            // Download thumbnail
-            String thumbnailUrl = metadata.getString("thumbnail");
-            String thumbnailPath = Paths.get(tempDir, baseName + "_thumb.jpg").toString();
-            
-            if (thumbnailUrl != null && !thumbnailUrl.isEmpty()) {
-                boolean thumbnailDownloaded = downloadThumbnail(thumbnailUrl, thumbnailPath);
-                if (thumbnailDownloaded) {
-                    // Resize thumbnail to 320x240
-                    String resizedThumbnailPath = Paths.get(tempDir, baseName + "_thumb_resized.jpg").toString();
-                    boolean resized = resizeImage(thumbnailPath, resizedThumbnailPath, 320, 240);
-                    
-                    if (resized) {
-                        // Delete original thumbnail
-                        Files.deleteIfExists(Paths.get(thumbnailPath));
-                        thumbnailPath = resizedThumbnailPath;
-                    } else {
-                        // If resize fails, keep original
-                        LOGGER.warn("Failed to resize thumbnail, using original");
-                    }
-                } else {
-                    thumbnailPath = null;
+
+            try (OutputStream os = Files.newOutputStream(destPath);
+                 java.util.zip.ZipOutputStream zos = new java.util.zip.ZipOutputStream(os)) {
+                
+                // 1. Add thumbnail.png to root for library view
+                if (thumbData != null) {
+                    java.util.zip.ZipEntry thumbEntry = new java.util.zip.ZipEntry("thumbnail.png");
+                    zos.putNextEntry(thumbEntry);
+                    zos.write(thumbData);
+                    zos.closeEntry();
+                }
+
+                // 2. Build story.json
+                java.util.zip.ZipEntry storyEntry = new java.util.zip.ZipEntry("story.json");
+                zos.putNextEntry(storyEntry);
+                
+                com.google.gson.stream.JsonWriter writer = new com.google.gson.stream.JsonWriter(new OutputStreamWriter(zos, java.nio.charset.StandardCharsets.UTF_8));
+                writer.setIndent("    ");
+                writer.beginObject();
+                writer.name("format").value("v1");
+                writer.name("title").value(title);
+                writer.name("description").value("Imported from YouTube");
+                writer.name("version").value(1);
+                writer.name("nightModeAvailable").value(false);
+                
+                // Assets names (SHA1)
+                String thumbAssetName = null;
+                if (thumbData != null) {
+                    thumbAssetName = org.apache.commons.codec.digest.DigestUtils.sha1Hex(thumbData) + ".jpg";
+                }
+                String audioAssetName = null;
+                if (audioData != null) {
+                    audioAssetName = org.apache.commons.codec.digest.DigestUtils.sha1Hex(audioData) + ".mp3";
+                }
+
+                String coverUuid = UUID.randomUUID().toString();
+                String storyGroupId = UUID.randomUUID().toString();
+                String storyStageUuid = UUID.randomUUID().toString();
+                String storyActionId = UUID.randomUUID().toString();
+
+                writer.name("stageNodes").beginArray();
+                
+                // Cover Node (Simplified Stage)
+                writer.beginObject();
+                writer.name("uuid").value(coverUuid);
+                writer.name("groupId").value(coverUuid);
+                writer.name("name").value(title);
+                writer.name("type").value("cover");
+                writer.name("squareOne").value(true);
+                writer.name("image").value(thumbAssetName);
+                writer.name("audio").nullValue();
+                writer.name("okTransition").beginObject()
+                    .name("actionNode").value(storyActionId)
+                    .name("optionIndex").value(0)
+                    .endObject();
+                writer.name("homeTransition").nullValue();
+                writer.name("controlSettings").beginObject()
+                    .name("wheel").value(true)
+                    .name("ok").value(true)
+                    .name("home").value(true)
+                    .name("pause").value(true)
+                    .name("autoplay").value(false)
+                    .endObject();
+                writer.endObject();
+                
+                // Story Node (Simplified Stage)
+                writer.beginObject();
+                writer.name("uuid").value(storyStageUuid);
+                writer.name("groupId").value(storyGroupId);
+                writer.name("name").value(title);
+                writer.name("type").value("story");
+                writer.name("image").value(thumbAssetName);
+                writer.name("audio").value(audioAssetName);
+                writer.name("okTransition").beginObject()
+                    .name("actionNode").value(storyActionId)
+                    .name("optionIndex").value(0)
+                    .endObject();
+                writer.name("homeTransition").beginObject()
+                    .name("actionNode").value(storyActionId)
+                    .name("optionIndex").value(0)
+                    .endObject();
+                writer.name("controlSettings").beginObject()
+                    .name("wheel").value(true)
+                    .name("ok").value(true)
+                    .name("home").value(true)
+                    .name("pause").value(true)
+                    .name("autoplay").value(false)
+                    .endObject();
+                writer.endObject();
+                
+                writer.endArray();
+
+                writer.name("actionNodes").beginArray();
+                
+                // Story Node (Simplified Action component)
+                writer.beginObject();
+                writer.name("id").value(storyActionId);
+                writer.name("groupId").value(storyGroupId);
+                writer.name("name").value(title);
+                writer.name("type").value("story.storyaction");
+                writer.name("options").beginArray().value(storyStageUuid).endArray();
+                writer.endObject();
+                
+                writer.endArray();
+                
+                writer.endObject();
+                writer.flush();
+                zos.closeEntry();
+                
+                // 3. Add assets
+                if (thumbAssetName != null) {
+                    java.util.zip.ZipEntry entry = new java.util.zip.ZipEntry("assets/" + thumbAssetName);
+                    zos.putNextEntry(entry);
+                    zos.write(thumbData);
+                    zos.closeEntry();
+                }
+                if (audioAssetName != null) {
+                    java.util.zip.ZipEntry entry = new java.util.zip.ZipEntry("assets/" + audioAssetName);
+                    zos.putNextEntry(entry);
+                    zos.write(audioData);
+                    zos.closeEntry();
                 }
             }
             
-            // Read thumbnail as base64
-            String thumbnailBase64 = null;
-            if (thumbnailPath != null && Files.exists(Paths.get(thumbnailPath))) {
-                thumbnailBase64 = encodeFileToBase64(thumbnailPath);
+            // Cleanup temp files
+            if (audioPath != null) Files.deleteIfExists(Paths.get(audioPath));
+            if (thumbnailPath != null) Files.deleteIfExists(Paths.get(thumbnailPath));
+            
+            return result.put("success", true).put("packPath", packFileName).put("uuid", packUuid);
+        } catch (Exception e) {
+            LOGGER.error("Failed to create library pack", e);
+            return result.put("success", false).put("error", e.getMessage());
+        }
+    }
+
+    public JsonObject importFromYoutube(String youtubeUrl, BiConsumer<Double, String> progressConsumer) {
+        JsonObject result = new JsonObject();
+        
+        try {
+            IMPORT_SEMAPHORE.acquire();
+            try {
+                // Check and install downloader if needed
+                if (!isDownloaderInstalled()) {
+                    LOGGER.info("YouTube downloader not found, attempting installation...");
+                    if (!ensureDownloaderInstalled()) {
+                        return result.put("success", false)
+                                .put("error", "YouTube downloader (yt-dlp) is not installed and automatic installation failed. Please install it manually: pip install yt-dlp");
+                    }
+                }
+
+                // Safety delay to avoid rate limiting
+                LOGGER.info("Applying safety delay to avoid rate limiting...");
+                if (progressConsumer != null) {
+                    progressConsumer.accept(0.0, "Waiting 15 seconds to avoid rate limiting...");
+                }
+                Thread.sleep(15000);
+
+                String tempDir = System.getProperty("java.io.tmpdir");
+                String timestamp = String.valueOf(System.currentTimeMillis());
+                String baseName = "youtube_" + timestamp;
+                String thumbnailPath = Paths.get(tempDir, baseName + "_thumb.jpg").toString();
+                
+                // --- METADATA EXTRACTION WITH AUTO-RETRY ---
+                LOGGER.info("Fetching video metadata for: " + youtubeUrl);
+                
+                JsonObject metadata = null;
+                // Anonymous: Try bypass clients first
+                String[] clientsToTry = new String[]{"ios", "android", "tv", "mweb", "web"};
+                
+                for (String client : clientsToTry) {
+                    LOGGER.info("Trying metadata extraction with client: " + client);
+                    metadata = getVideoMetadata(youtubeUrl, thumbnailPath, client, progressConsumer);
+                    if (metadata.containsKey("title")) {
+                        break;
+                    }
+                    LOGGER.warn("Client " + client + " failed to extract metadata. Retrying with next client in 3s...");
+                    Thread.sleep(3000);
+                }
+
+                if (metadata == null || !metadata.containsKey("title")) {
+                    return result.put("success", false).put("error", "YouTube blocked the request or video not found.");
+                }
+                
+                String title = metadata.getString("title");
+                String thumbnailBase64 = null;
+                
+                // 2. Process thumbnail
+                if (!Files.exists(Paths.get(thumbnailPath))) {
+                    // yt-dlp didn't write the thumbnail, try downloading it manually
+                    String thumbUrl = metadata.getString("thumbnail");
+                    if (thumbUrl != null) {
+                        LOGGER.info("Attempting manual thumbnail download from: " + thumbUrl);
+                        if (!downloadThumbnail(thumbUrl, thumbnailPath)) {
+                            // Fallback to img.youtube.com if the provided URL fails
+                            String videoId = extractVideoId(youtubeUrl);
+                            if (videoId != null) {
+                                String fallbackUrl = "https://img.youtube.com/vi/" + videoId + "/maxresdefault.jpg";
+                                LOGGER.info("Attempting fallback thumbnail download from: " + fallbackUrl);
+                                downloadThumbnail(fallbackUrl, thumbnailPath);
+                            }
+                        }
+                    }
+                }
+
+                if (Files.exists(Paths.get(thumbnailPath))) {
+                    String resizedThumbnailPath = Paths.get(tempDir, baseName + "_thumb_resized.jpg").toString();
+                    if (resizeImage(thumbnailPath, resizedThumbnailPath, 320, 240)) {
+                        Files.deleteIfExists(Paths.get(thumbnailPath));
+                        thumbnailPath = resizedThumbnailPath;
+                    }
+                    if (Files.exists(Paths.get(thumbnailPath))) {
+                        thumbnailBase64 = encodeFileToBase64(thumbnailPath);
+                    }
+                }
+                
+                // 3. Download audio
+                String audioPath = Paths.get(tempDir, baseName + ".mp3").toString();
+                LOGGER.info("Downloading audio for: " + title);
+                
+                boolean audioDownloaded = downloadAudio(youtubeUrl, audioPath, progressConsumer);
+                
+                if (!audioDownloaded) {
+                    if (thumbnailPath != null) Files.deleteIfExists(Paths.get(thumbnailPath));
+                    return result.put("success", false).put("error", "Failed to download audio from YouTube");
+                }
+                
+                result.put("success", true)
+                        .put("title", title)
+                        .put("thumbnail", thumbnailBase64)
+                        .put("audioPath", audioPath)
+                        .put("thumbnailPath", thumbnailPath);
+                
+            } finally {
+                IMPORT_SEMAPHORE.release();
             }
-            
-            result.put("success", true)
-                    .put("title", metadata.getString("title"))
-                    .put("thumbnail", thumbnailBase64)
-                    .put("audioPath", audioPath)
-                    .put("thumbnailPath", thumbnailPath);
-            
         } catch (Exception e) {
             LOGGER.error("Error importing from YouTube", e);
-            result.put("success", false)
-                    .put("error", "Error importing from YouTube: " + e.getMessage());
+            result.put("success", false).put("error", "Error: " + e.getMessage());
         }
         
         return result;
     }
-    
-    /**
-     * Download audio from YouTube as MP3
-     */
-    private boolean downloadAudio(String youtubeUrl, String outputPath) {
+
+    private boolean downloadAudio(String youtubeUrl, String outputPath, BiConsumer<Double, String> progressConsumer) {
         try {
             List<String> command = new ArrayList<>();
-            command.add(YOUTUBE_DL_FILENAME);
+            command.addAll(Arrays.asList(activeDownloaderCommand.split(" ")));
             command.add("--extract-audio");
             command.add("--audio-format");
             command.add("mp3");
-            command.add("--audio-quality");
-            command.add("0");
+            command.add("--no-check-certificates");
+            
+            command.add("--extractor-args");
+            command.add("youtube:player-client=ios,android;player-skip=web");
+            
             command.add("-o");
             command.add(outputPath);
             command.add(youtubeUrl);
             
             ProcessBuilder pb = new ProcessBuilder(command);
+            injectJsRuntimePath(pb);
             pb.redirectErrorStream(true);
-            
             Process process = pb.start();
             
-            // Read output for progress/error information
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    LOGGER.debug("youtube-dl: " + line);
+                    LOGGER.info("[" + activeDownloaderCommand + "] " + line);
+                    
+                    if (progressConsumer != null) {
+                        Matcher m = PROGRESS_PATTERN.matcher(line);
+                        if (m.find()) {
+                            try { progressConsumer.accept(Double.parseDouble(m.group(1)) / 100.0, null); } catch (Exception e) {}
+                        }
+                    }
                 }
             }
-            
-            boolean finished = process.waitFor(5, TimeUnit.MINUTES);
-            
-            if (!finished) {
-                process.destroyForcibly();
-                LOGGER.error("youtube-dl download timed out");
-                return false;
-            }
-            
-            if (process.exitValue() != 0) {
-                LOGGER.error("youtube-dl download failed with exit code: " + process.exitValue());
-                return false;
-            }
-            
-            // Check if file exists (yt-dlp might add extension automatically)
-            Path mp3File = Paths.get(outputPath);
-            if (!Files.exists(mp3File)) {
-                // Try with .mp3 extension if not already present
-                if (!outputPath.endsWith(".mp3")) {
-                    mp3File = Paths.get(outputPath + ".mp3");
-                }
-            }
-            
-            return Files.exists(mp3File);
-            
+            return process.waitFor(300, TimeUnit.SECONDS) && process.exitValue() == 0;
         } catch (Exception e) {
             LOGGER.error("Error downloading audio", e);
             return false;
         }
     }
-    
-    /**
-     * Get video metadata from YouTube
-     */
-    private JsonObject getVideoMetadata(String youtubeUrl) {
+
+    private JsonObject getVideoMetadata(String youtubeUrl, String thumbnailOutputPath, String client, BiConsumer<Double, String> progressConsumer) {
         JsonObject metadata = new JsonObject();
-        
         try {
             List<String> command = new ArrayList<>();
-            command.add(YOUTUBE_DL_FILENAME);
+            command.addAll(Arrays.asList(activeDownloaderCommand.split(" ")));
+            command.add("--quiet");
             command.add("--dump-json");
             command.add("--no-playlist");
+            
+            if (thumbnailOutputPath != null) {
+                command.add("--write-thumbnail");
+                command.add("--convert-thumbnails");
+                command.add("jpg");
+                command.add("-o");
+                command.add("thumbnail:" + thumbnailOutputPath.replace(".jpg", ""));
+            }
+            
+            command.add("--no-check-certificates");
+            command.add("--extractor-args");
+            command.add("youtube:player-client=" + client);
+            
             command.add(youtubeUrl);
             
             ProcessBuilder pb = new ProcessBuilder(command);
+            injectJsRuntimePath(pb);
             pb.redirectErrorStream(true);
-            
             Process process = pb.start();
             
             StringBuilder output = new StringBuilder();
-            try (BufferedReader reader = new BufferedReader(
-                    new InputStreamReader(process.getInputStream()))) {
+            try (BufferedReader reader = new BufferedReader(new InputStreamReader(process.getInputStream()))) {
                 String line;
                 while ((line = reader.readLine()) != null) {
-                    output.append(line);
+                    if (line.trim().startsWith("{")) output.append(line);
                 }
             }
             
-            boolean finished = process.waitFor(30, TimeUnit.SECONDS);
-            
-            if (finished && process.exitValue() == 0) {
-                String jsonOutput = output.toString();
-                try {
-                    io.vertx.core.json.JsonObject youtubeDlJson = new io.vertx.core.json.JsonObject(jsonOutput);
-                    
-                    if (youtubeDlJson.containsKey("title")) {
-                        metadata.put("title", youtubeDlJson.getString("title"));
-                    }
-                    if (youtubeDlJson.containsKey("thumbnail")) {
-                        metadata.put("thumbnail", youtubeDlJson.getString("thumbnail"));
-                    }
-                } catch (Exception e) {
-                    LOGGER.error("Failed to parse youtube-dl JSON output", e);
-                }
+            if (process.waitFor(120, TimeUnit.SECONDS) && process.exitValue() == 0) {
+                io.vertx.core.json.JsonObject youtubeDlJson = new io.vertx.core.json.JsonObject(output.toString());
+                if (youtubeDlJson.containsKey("title")) metadata.put("title", youtubeDlJson.getString("title"));
+                if (youtubeDlJson.containsKey("thumbnail")) metadata.put("thumbnail", youtubeDlJson.getString("thumbnail"));
             }
-            
         } catch (Exception e) {
-            LOGGER.error("Error getting video metadata", e);
+            LOGGER.error("Error getting metadata", e);
         }
-        
         return metadata;
     }
     
@@ -316,14 +496,20 @@ public class YoutubeImportService {
     private boolean downloadThumbnail(String url, String outputPath) {
         try {
             URL imageUrl = new URL(url);
-            BufferedImage image = ImageIO.read(imageUrl);
+            java.net.URLConnection conn = imageUrl.openConnection();
+            conn.setConnectTimeout(5000);
+            conn.setReadTimeout(5000);
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36");
             
-            if (image != null) {
-                ImageIO.write(image, "jpg", new File(outputPath));
-                return true;
+            try (InputStream in = conn.getInputStream()) {
+                BufferedImage image = ImageIO.read(in);
+                if (image != null) {
+                    ImageIO.write(image, "jpg", new File(outputPath));
+                    return true;
+                }
             }
         } catch (Exception e) {
-            LOGGER.error("Error downloading thumbnail", e);
+            LOGGER.error("Error downloading thumbnail from " + url, e);
         }
         return false;
     }
@@ -375,5 +561,70 @@ public class YoutubeImportService {
                 LOGGER.warn("Failed to delete temporary file: " + path, e);
             }
         }
+    }
+
+    private String extractVideoId(String youtubeUrl) {
+        String pattern = "(?:youtube\\.com\\/(?:[^\\/]+\\/.+\\/|(?:v|e(?:mbed)?)\\/" +
+                "|.*[?&]v=)|youtu\\.be\\/)([^\"&?\\/ ]{11})";
+        Pattern compiledPattern = Pattern.compile(pattern);
+        Matcher matcher = compiledPattern.matcher(youtubeUrl);
+        if (matcher.find()) {
+            return matcher.group(1);
+        }
+        return null;
+    }
+
+    /**
+     * Inject Node.js path into ProcessBuilder environment to provide a JS runtime for yt-dlp
+     */
+    private void injectJsRuntimePath(ProcessBuilder pb) {
+        String nodeDir = findNodeDirectory();
+        if (nodeDir != null) {
+            String pathVar = "PATH";
+            for (String key : pb.environment().keySet()) {
+                if (key.equalsIgnoreCase("PATH")) {
+                    pathVar = key;
+                    break;
+                }
+            }
+            String currentPath = pb.environment().get(pathVar);
+            pb.environment().put(pathVar, nodeDir + File.pathSeparator + currentPath);
+            LOGGER.debug("Injected JS runtime path: " + nodeDir);
+        }
+    }
+
+    private String findNodeDirectory() {
+        // Try to find node in common project locations and system paths
+        String[] possibleDirs = {
+            "web-ui/target/node",
+            "target/node",
+            "../web-ui/target/node",
+            "web-ui/node",
+            "node",
+            "C:\\Program Files\\nodejs",
+            "C:\\Program Files (x86)\\nodejs"
+        };
+        
+        for (String dir : possibleDirs) {
+            try {
+                Path nodeDir = Paths.get(dir);
+                if (Files.exists(nodeDir) && Files.isDirectory(nodeDir)) {
+                    if (Files.exists(nodeDir.resolve("node.exe"))) {
+                        String absolutePath = nodeDir.toAbsolutePath().toString();
+                        LOGGER.info("Found Node.js runtime at: " + absolutePath);
+                        return absolutePath;
+                    }
+                }
+            } catch (Exception e) {
+                // Ignore invalid paths
+            }
+        }
+        
+        // Final check if node is in system path
+        if (checkCommand("node")) {
+            return null; // Already in path, no injection needed
+        }
+
+        return null;
     }
 }

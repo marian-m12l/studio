@@ -25,7 +25,18 @@ class PackDiagramModel extends DiagramModel {
 
     getEntryPoint() {
         return this.getNodes()
-            .filter(node => (node instanceof StageNodeModel || node instanceof CoverNodeModel) && node.isSquareOne())[0];
+            .filter(node => (node instanceof StageNodeModel || node instanceof CoverNodeModel || node.getType() === 'stage' || node.getType() === 'cover') && node.isSquareOne())[0];
+    }
+
+    setEntryPoint(node) {
+        this.getNodes().forEach(n => {
+            if (n instanceof StageNodeModel || n instanceof CoverNodeModel || n.getType() === 'stage' || n.getType() === 'cover') {
+                n.setSquareOne(false);
+            }
+        });
+        if (node instanceof StageNodeModel || node instanceof CoverNodeModel || node.getType() === 'stage' || node.getType() === 'cover') {
+            node.setSquareOne(true);
+        }
     }
 
     deserialize(event) {
