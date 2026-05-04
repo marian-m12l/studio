@@ -4,3 +4,7 @@
 *target
 web-ui/javascript/build
 web-ui/javascript/report.*.json
+file-uploads/
+.env
+*.cookie
+*.session
