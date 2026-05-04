@@ -8,3 +8,4 @@ file-uploads/
 .env
 *.cookie
 *.session
+*.log
