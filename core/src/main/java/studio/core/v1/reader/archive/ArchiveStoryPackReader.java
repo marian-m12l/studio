@@ -11,6 +11,7 @@ import com.google.gson.JsonObject;
 import com.google.gson.JsonParser;
 import org.apache.commons.compress.archivers.zip.ZipArchiveEntry;
 import org.apache.commons.compress.archivers.zip.ZipArchiveInputStream;
+import org.apache.commons.compress.archivers.zip.ZipFile;
 import org.apache.commons.io.IOUtils;
 import studio.core.v1.Constants;
 import studio.core.v1.model.*;
@@ -20,12 +21,59 @@ import studio.core.v1.model.enriched.EnrichedNodeType;
 import studio.core.v1.model.enriched.EnrichedPackMetadata;
 import studio.core.v1.model.metadata.StoryPackMetadata;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.util.*;
 
 public class ArchiveStoryPackReader {
+
+    // Random-access read of only the entries needed for metadata (story.json, thumbnail.png), using the zip's
+    // central directory. This avoids inflating every asset entry just to skip over it, which
+    // ZipArchiveInputStream's sequential/streaming API would otherwise require.
+    public StoryPackMetadata readMetadata(File file) throws IOException {
+        StoryPackMetadata metadata = new StoryPackMetadata(Constants.PACK_FORMAT_ARCHIVE);
+        boolean hasStoryJsonEntry = false;
+
+        try (ZipFile zipFile = new ZipFile(file)) {
+            Enumeration<ZipArchiveEntry> entries = zipFile.getEntries();
+            while (entries.hasMoreElements()) {
+                ZipArchiveEntry entry = entries.nextElement();
+                if (entry.isDirectory()) {
+                    continue;
+                }
+                if (entry.getName().equalsIgnoreCase("story.json")) {
+                    hasStoryJsonEntry = true;
+                    try (InputStream is = zipFile.getInputStream(entry)) {
+                        JsonObject root = new JsonParser().parse(new InputStreamReader(is)).getAsJsonObject();
+
+                        // Read metadata
+                        metadata.setVersion(root.get("version").getAsShort());
+                        Optional.ofNullable(root.get("title")).filter(JsonElement::isJsonPrimitive).ifPresent(title ->
+                                metadata.setTitle(title.getAsString())
+                        );
+                        Optional.ofNullable(root.get("description")).filter(JsonElement::isJsonPrimitive).ifPresent(desc ->
+                                metadata.setDescription(desc.getAsString())
+                        );
+
+                        // Night mode
+                        metadata.setNightModeAvailable(Optional.ofNullable(root.get("nightModeAvailable")).map(JsonElement::getAsBoolean).orElse(false));
+
+                        // Read first stage node
+                        JsonObject mainStageNode = root.getAsJsonArray("stageNodes").get(0).getAsJsonObject();
+                        metadata.setUuid(mainStageNode.get("uuid").getAsString());
+                    }
+                } else if (entry.getName().equalsIgnoreCase("thumbnail.png")) {
+                    try (InputStream is = zipFile.getInputStream(entry)) {
+                        metadata.setThumbnail(IOUtils.toByteArray(is));
+                    }
+                }
+            }
+        }
+
+        return hasStoryJsonEntry ? metadata : null;
+    }
 
     public StoryPackMetadata readMetadata(InputStream inputStream) throws IOException {
         // Zip archive contains a json file and separate assets

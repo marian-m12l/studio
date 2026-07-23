@@ -106,7 +106,7 @@ public class LibraryService {
                             List<LibraryPack> packs = entry.getValue();
                             packs.sort((a, b) -> Long.compare(b.getTimestamp(), a.getTimestamp()));
                             LOGGER.debug("Refreshing metadata for pack `" + entry.getKey() + "` from file `" + packs.get(0).getPath() + "`");
-                            this.readPackFile(packs.get(0).getPath()).ifPresent(
+                            cachedPacks.get(packs.get(0).getPath(), this::readPackFile).ifPresent(
                                     meta -> databaseMetadataService.refreshUnofficialMetadata(
                                             new DatabasePackMetadata(
                                                     meta.getMetadata().getUuid(),
@@ -434,10 +434,10 @@ public class LibraryService {
         LOGGER.debug("Reading pack file: " + path.toString());
         // Handle all file formats
         if (path.toString().endsWith(".zip")) {
-            try (FileInputStream fis = new FileInputStream(path.toFile())) {
+            try {
                 LOGGER.debug("Reading archive pack metadata.");
                 ArchiveStoryPackReader packReader = new ArchiveStoryPackReader();
-                StoryPackMetadata meta = packReader.readMetadata(fis);
+                StoryPackMetadata meta = packReader.readMetadata(path.toFile());
                 if (meta != null) {
                     return Optional.of(new LibraryPack(path, Files.getLastModifiedTime(path).toMillis() , meta));
                 }
