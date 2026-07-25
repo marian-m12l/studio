@@ -17,6 +17,7 @@
       "firmware": "Version firmware :",
       "empty": "Aucun pack d'histoires dans l'appareil.",
       "removePack": "Supprimer ce pack d'histoires de l'appareil",
+      "alreadyInLibrary": "Ce pack d'histoires est déjà présent dans la bibliothèque locale",
       "sdcardsize": "Taille Carte SD :",
       "sdcardunit": "Go",
       "packs": {

@@ -17,6 +17,7 @@
       "firmware": "Firmware version:",
       "empty": "No story packs in device, yet.",
       "removePack": "Remove this story pack from device",
+      "alreadyInLibrary": "This story pack is already present in the local library",
       "sdcardsize": "SD card size:",
       "sdcardunit": "GB",
       "packs": {

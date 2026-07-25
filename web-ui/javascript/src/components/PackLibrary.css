@@ -155,7 +155,8 @@
     cursor: not-allowed;
 }
 
-.local-library .pack-grid .pack-tile.pack-on-device {
+.local-library .pack-grid .pack-tile.pack-on-device,
+.plugged-device .pack-grid .pack-tile.pack-in-library {
     filter: grayscale(85%);
     opacity: 0.6;
 }
