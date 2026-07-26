@@ -124,12 +124,14 @@ public class LibraryController {
             }
             futureConvertedPack.onComplete(maybeConvertedPack -> {
                 if (maybeConvertedPack.succeeded()) {
-                    // Return path to converted file within library
+                    // Return path to converted file within library, along with its size on disk
+                    String convertedPath = maybeConvertedPack.result().toString();
                     ctx.response()
                             .putHeader("content-type", "application/json")
                             .end(Json.encode(new JsonObject()
                                     .put("success", true)
-                                    .put("path", maybeConvertedPack.result().toString())
+                                    .put("path", convertedPath)
+                                    .put("sizeInBytes", libraryService.packSizeInBytes(convertedPath))
                             ));
                 } else {
                     LOGGER.error("Failed to read or convert pack");

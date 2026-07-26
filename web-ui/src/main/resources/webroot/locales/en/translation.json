@@ -188,6 +188,8 @@
         "failure": "Story Teller failure."
       },
       "busy": "Device is busy. Wait for any other device-related operation to finish.",
+      "queued": "Queued. Waiting for the current device operation to finish...",
+      "notEnoughSpace": "Not enough estimated space left on the device for this story pack.",
       "checking": "Checking device...",
       "plugged": "Device is plugged.",
       "checkingFailed": "Failed to check device.",

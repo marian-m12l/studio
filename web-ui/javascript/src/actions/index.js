@@ -18,7 +18,17 @@ import {readFromArchive} from "../utils/reader";
 import {simplifiedSample} from "../utils/sample";
 
 
-const mutex = withTimeout(new Mutex(), 100);
+// Single mutex serializes all device (USB) operations. Quick status checks use the
+// timed-out `mutex` view so they fail fast if busy; transfer operations use the raw
+// `deviceMutex` directly so they queue up (FIFO) instead of being rejected outright.
+const deviceMutex = new Mutex();
+const mutex = withTimeout(deviceMutex, 100);
+
+// Bytes reserved by transfers that are queued or in progress towards the device, but not
+// yet reflected in the device's reported `taken`/`free` storage (which only updates after
+// a transfer completes and the device is refreshed). Used to avoid over-committing the
+// device's remaining space when several transfers are queued up.
+let reservedDeviceBytes = 0;
 
 export const actionLoadLibrary = (t) => {
     return dispatch => {
@@ -138,63 +148,81 @@ export const actionRefreshDevice = (t) => {
             });
 };
 
-export const actionAddFromLibrary = (uuid, path, format, driver, context, t) => {
-    return dispatch => mutex.acquire()
-        .then(
-            release => {
-                // First, make sure the story pack is in the right format.
-                if (driver !== format) {
-                    console.error('pack format is not compatible with the device');
-                    toast.error(t('toasts.device.notCompatible'));
-                    // Always release the mutex
+export const actionAddFromLibrary = (uuid, path, format, driver, sizeInBytes, context, t) => {
+    return (dispatch, getState) => {
+        // First, make sure the story pack is in the right format.
+        if (driver !== format) {
+            console.error('pack format is not compatible with the device');
+            toast.error(t('toasts.device.notCompatible'));
+            return Promise.resolve();
+        }
+        // Check estimated available space on the device before queueing the transfer, accounting
+        // for transfers that are already queued/in progress but not yet reflected in device storage infos
+        const deviceMetadata = getState().device.metadata;
+        if (sizeInBytes != null && deviceMetadata) {
+            let estimatedAvailable = deviceMetadata.storage.free - reservedDeviceBytes;
+            if (sizeInBytes > estimatedAvailable) {
+                console.error('not enough estimated space on device for this transfer');
+                toast.error(t('toasts.device.notEnoughSpace'));
+                return Promise.resolve();
+            }
+            reservedDeviceBytes += sizeInBytes;
+        }
+        // Queue the transfer: it starts as soon as any previous device operation is done
+        let queued = deviceMutex.isLocked();
+        let toastId = toast(t(queued ? 'toasts.device.queued' : 'toasts.device.adding'), { autoClose: false });
+        return deviceMutex.acquire()
+            .then(release => {
+                const releaseAll = () => {
+                    if (sizeInBytes != null) {
+                        reservedDeviceBytes -= sizeInBytes;
+                    }
                     release();
-                } else {
-                    // Then start transfer
-                    let toastId = toast(t('toasts.device.adding'), { autoClose: false });
-                    return addFromLibrary(uuid, path)
-                        .then(resp => {
-                            // Monitor transfer progress
-                            let transferId = resp.transferId;
-                            context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.progress', (error, message) => {
-                                console.log("Received `storyteller.transfer."+transferId+".progress` event from vert.x event bus.");
-                                console.log(message.body);
-                                if (message.body.progress < 1) {
-                                    toast.update(toastId, {progress: message.body.progress, autoClose: false});
-                                }
-                            });
-                            context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.done', (error, message) => {
-                                console.log("Received `storyteller.transfer."+transferId+".done` event from vert.x event bus.");
-                                console.log(message.body);
-                                if (message.body.success) {
-                                    toast.update(toastId, {progress: null, type: toast.TYPE.SUCCESS, render: t('toasts.device.added'), autoClose: 5000});
-                                    // Refresh device metadata and packs list
-                                    dispatch(actionRefreshDevice(t));
-                                } else {
-                                    toast.update(toastId, {progress: null, type: toast.TYPE.ERROR, render: <IssueReportToast content={<>{t('toasts.device.addingFailed')}</>} />, autoClose: false });
-                                }
-                                // Always release the mutex
-                                release();
-                            });
-                        })
-                        .catch(e => {
-                            console.error('failed to add pack to device', e);
-                            toast.update(toastId, { type: toast.TYPE.ERROR, render: <IssueReportToast content={<>{t('toasts.device.addingFailed')}</>} error={e} />, autoClose: false });
-                            // Always release the mutex
-                            release();
+                };
+                // Start transfer
+                toast.update(toastId, { render: t('toasts.device.adding') });
+                return addFromLibrary(uuid, path)
+                    .then(resp => {
+                        // Monitor transfer progress
+                        let transferId = resp.transferId;
+                        context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.progress', (error, message) => {
+                            console.log("Received `storyteller.transfer."+transferId+".progress` event from vert.x event bus.");
+                            console.log(message.body);
+                            if (message.body.progress < 1) {
+                                toast.update(toastId, {progress: message.body.progress, autoClose: false});
+                            }
                         });
-                }
-            },
-            e => {
-                // Device is busy
-                toast.error(t('toasts.device.busy'));
+                        context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.done', (error, message) => {
+                            console.log("Received `storyteller.transfer."+transferId+".done` event from vert.x event bus.");
+                            console.log(message.body);
+                            if (message.body.success) {
+                                toast.update(toastId, {progress: null, type: toast.TYPE.SUCCESS, render: t('toasts.device.added'), autoClose: 5000});
+                                // Refresh device metadata and packs list
+                                dispatch(actionRefreshDevice(t));
+                            } else {
+                                toast.update(toastId, {progress: null, type: toast.TYPE.ERROR, render: <IssueReportToast content={<>{t('toasts.device.addingFailed')}</>} />, autoClose: false });
+                            }
+                            // Always release the reservation and the mutex
+                            releaseAll();
+                        });
+                    })
+                    .catch(e => {
+                        console.error('failed to add pack to device', e);
+                        toast.update(toastId, { type: toast.TYPE.ERROR, render: <IssueReportToast content={<>{t('toasts.device.addingFailed')}</>} error={e} />, autoClose: false });
+                        // Always release the reservation and the mutex
+                        releaseAll();
+                    });
             });
+    };
 };
 
 export const actionRemoveFromDevice = (uuid, t) => {
-    return dispatch => mutex.acquire()
-        .then(
-            release => {
-                let toastId = toast(t('toasts.device.removing'), { autoClose: false });
+    return dispatch => {
+        let queued = deviceMutex.isLocked();
+        let toastId = toast(t(queued ? 'toasts.device.queued' : 'toasts.device.removing'), { autoClose: false });
+        return deviceMutex.acquire()
+            .then(release => {
+                toast.update(toastId, { render: t('toasts.device.removing') });
                 return removeFromDevice(uuid)
                     .then(resp => {
                         if (resp.success) {
@@ -213,18 +241,17 @@ export const actionRemoveFromDevice = (uuid, t) => {
                         // Always release the mutex
                         release();
                     });
-            },
-            e => {
-                // Device is busy
-                toast.error(t('toasts.device.busy'));
             });
+    };
 };
 
 export const actionReorderOnDevice = (uuids, t) => {
-    return dispatch => mutex.acquire()
-        .then(
-            release => {
-                let toastId = toast(t('toasts.device.reordering'), { autoClose: false });
+    return dispatch => {
+        let queued = deviceMutex.isLocked();
+        let toastId = toast(t(queued ? 'toasts.device.queued' : 'toasts.device.reordering'), { autoClose: false });
+        return deviceMutex.acquire()
+            .then(release => {
+                toast.update(toastId, { render: t('toasts.device.reordering') });
                 return reorderPacks(uuids)
                     .then(resp => {
                         if (resp.success) {
@@ -243,18 +270,17 @@ export const actionReorderOnDevice = (uuids, t) => {
                         // Always release the mutex
                         release();
                     });
-            },
-            e => {
-                // Device is busy
-                toast.error(t('toasts.device.busy'));
             });
+    };
 };
 
 export const actionAddToLibrary = (uuid, driver, context, t) => {
-    return dispatch => mutex.acquire()
-        .then(
-            release => {
-                let toastId = toast(t('toasts.library.adding'), { autoClose: false });
+    return dispatch => {
+        let queued = deviceMutex.isLocked();
+        let toastId = toast(t(queued ? 'toasts.device.queued' : 'toasts.library.adding'), { autoClose: false });
+        return deviceMutex.acquire()
+            .then(release => {
+                toast.update(toastId, { render: t('toasts.library.adding') });
                 return addToLibrary(uuid, driver)
                     .then(resp => {
                         // Monitor transfer progress
@@ -286,11 +312,8 @@ export const actionAddToLibrary = (uuid, driver, context, t) => {
                         // Always release the mutex
                         release();
                     });
-            },
-            e => {
-                // Device is busy
-                toast.error(t('toasts.device.busy'));
             });
+    };
 };
 
 export const actionRefreshLibrary = (t) => {
@@ -431,7 +454,7 @@ export const actionConvertInLibrary = (uuid, path, format, allowEnriched, contex
                     });
                     // Refresh device metadata and packs list
                     dispatch(actionRefreshLibrary(t));
-                    return resp.path;
+                    return { path: resp.path, sizeInBytes: resp.sizeInBytes };
                 } else {
                     toast.update(toastId, { type: toast.TYPE.ERROR, render: <IssueReportToast content={<>{t('toasts.library.convertingFailed')}</>} />, autoClose: false });
                 }
