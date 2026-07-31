@@ -93,7 +93,11 @@ public class MainVerticle extends AbstractVerticle {
         ErrorHandler errorHandler = ErrorHandler.create(true);
         router.route().failureHandler(ctx -> {
             Throwable failure = ctx.failure();
-            LOGGER.error("Exception thrown", failure);
+            if (failure != null) {
+                // Failures whose cause was already logged by their handler are reported via
+                // ctx.fail(statusCode) with no attached Throwable, to avoid double-logging.
+                LOGGER.error("Exception thrown", failure);
+            }
             errorHandler.handle(ctx);
         });
 

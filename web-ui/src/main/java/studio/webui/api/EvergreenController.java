@@ -28,8 +28,10 @@ public class EvergreenController {
                             .putHeader("content-type", "application/json")
                             .end(Json.encode(maybeJson.result()));
                 } else {
-                    LOGGER.error("Failed to get current version infos");
-                    ctx.fail(500, maybeJson.cause());
+                    LOGGER.error("Failed to get current version infos", maybeJson.cause());
+                    // Don't propagate the cause: it is already logged here, and the global failure
+                    // handler would otherwise log the same (often benign, e.g. offline) exception again.
+                    ctx.fail(500);
                 }
             });
         });
@@ -42,8 +44,10 @@ public class EvergreenController {
                             .putHeader("content-type", "application/json")
                             .end(Json.encode(maybeJson.result()));
                 } else {
-                    LOGGER.error("Failed to get latest release");
-                    ctx.fail(500, maybeJson.cause());
+                    LOGGER.error("Failed to get latest release", maybeJson.cause());
+                    // Don't propagate the cause: it is already logged here, and the global failure
+                    // handler would otherwise log the same (often benign, e.g. offline) exception again.
+                    ctx.fail(500);
                 }
             });
         });
@@ -56,8 +60,10 @@ public class EvergreenController {
                             .putHeader("content-type", "application/json")
                             .end(Json.encode(maybeJson.result()));
                 } else {
-                    LOGGER.error("Failed to get announce");
-                    ctx.fail(500, maybeJson.cause());
+                    LOGGER.error("Failed to get announce", maybeJson.cause());
+                    // Don't propagate the cause: it is already logged here, and the global failure
+                    // handler would otherwise log the same (often benign, e.g. offline) exception again.
+                    ctx.fail(500);
                 }
             });
         });
