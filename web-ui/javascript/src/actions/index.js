@@ -143,8 +143,10 @@ export const actionRefreshDevice = (t) => {
                     });
             },
             e => {
-                // Device is busy
-                toast.error(t('toasts.device.busy'));
+                // Device is busy: this refresh is called automatically after every queued
+                // transfer, so it routinely loses the race against the next queued transfer.
+                // Skip silently -- the refresh after the last queued transfer will still run.
+                console.log('device busy, skipping automatic refresh');
             });
 };
 
