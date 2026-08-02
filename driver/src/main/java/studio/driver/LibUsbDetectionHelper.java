@@ -90,6 +90,19 @@ public class LibUsbDetectionHelper {
                     if (finalScheduledExecutor != null) {
                         LOGGER.info("Shutting down active polling executor");
                         finalScheduledExecutor.shutdown();
+                        try {
+                            // Cancelling the task above cannot interrupt it if it is currently blocked in a
+                            // native libusb call (e.g. getDeviceList): interrupting a thread does not stop
+                            // native code already in flight. Actually wait for that call to return before
+                            // exiting the libusb context below -- otherwise the context can be freed while the
+                            // polling thread is still using it, natively crashing the JVM
+                            // (EXCEPTION_ACCESS_VIOLATION in libusb4java.dll).
+                            if (!finalScheduledExecutor.awaitTermination(POLL_DELAY, TimeUnit.MILLISECONDS)) {
+                                LOGGER.warning("Active polling executor did not terminate in time, exiting libusb anyway");
+                            }
+                        } catch (InterruptedException e) {
+                            Thread.currentThread().interrupt();
+                        }
                     }
                     LOGGER.info("Stopping async event handling worker thread");
                     asyncEventHandlerWorker.abort();
