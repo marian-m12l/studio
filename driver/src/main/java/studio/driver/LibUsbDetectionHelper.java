@@ -29,24 +29,23 @@ public class LibUsbDetectionHelper {
 
     private static final long POLL_DELAY = 5000L;
 
-    // LibUsb context
-    private static Context context = new Context();
-    // Worker thread to handle libusb async events
-    private static LibUsbAsyncEventsWorker asyncEventHandlerWorker = null;
-    // Scheduled task to actively poll device when hotplug is not supported
-    private static ScheduledExecutorService scheduledExecutor = null;
-    private static Future<?> activePollingTask = null;
-
     /**
-     * Initialize libusb context, start async event handling worker thread, register hotplug listener, and handle
-     * de-initialization on JVM shutdown.
+     * Initialize a libusb context, start an async event handling worker thread, register hotplug listener, and
+     * handle de-initialization on JVM shutdown.
+     * <p>
+     * This is called once per device version (raw and FS drivers each detect a different device version), so every
+     * piece of state it sets up -- the libusb context, the async event worker, the polling task -- must stay local
+     * to this call and be captured by its own shutdown hook. Previously these were shared static fields: the second
+     * call would silently overwrite the first call's context/worker/executor, and both shutdown hooks ended up
+     * reading whichever context happened to be there last, causing libusb's context to be exited more than once on
+     * shutdown (surfacing as "IllegalStateException: contextPointer is not initialized").
      * @param deviceVersion The version of the device to detect
      * @param listener A hotplug listener
      */
     public static void initializeLibUsb(DeviceVersion deviceVersion, DeviceHotplugEventListener listener) {
         // Init libusb
         LOGGER.info("Initializing libusb...");
-        context = new Context();
+        Context context = new Context();
         int result = LibUsb.init(context);
         if (result != LibUsb.SUCCESS) {
             throw new StoryTellerException("Unable to initialize libusb.", new LibUsbException(result));
@@ -56,18 +55,20 @@ public class LibUsbDetectionHelper {
         //LibUsb.setOption(context, LibUsb.OPTION_LOG_LEVEL, LibUsb.LOG_LEVEL_DEBUG);
 
         // Start worker thread to handle libusb async events
-        asyncEventHandlerWorker = new LibUsbAsyncEventsWorker(context);
+        LibUsbAsyncEventsWorker asyncEventHandlerWorker = new LibUsbAsyncEventsWorker(context);
         asyncEventHandlerWorker.start();
 
         // Hotplug detection
+        ScheduledExecutorService scheduledExecutor = null;
+        Future<?> activePollingTask = null;
         if (LibUsb.hasCapability(LibUsb.CAP_HAS_HOTPLUG)) {
             LOGGER.info("Hotplug is supported. Registering hotplug callback(s)...");
             if (deviceVersion == DeviceVersion.DEVICE_VERSION_1 || deviceVersion == DeviceVersion.DEVICE_VERSION_ANY) {
-                registerCallback(VENDOR_ID_FW1, PRODUCT_ID_FW1, listener);
+                registerCallback(context, VENDOR_ID_FW1, PRODUCT_ID_FW1, listener);
             }
             if (deviceVersion == DeviceVersion.DEVICE_VERSION_2 || deviceVersion == DeviceVersion.DEVICE_VERSION_ANY) {
-                registerCallback(VENDOR_ID_FW2, PRODUCT_ID_FW2, listener);
-                registerCallback(VENDOR_ID_V2, PRODUCT_ID_V2, listener);
+                registerCallback(context, VENDOR_ID_FW2, PRODUCT_ID_FW2, listener);
+                registerCallback(context, VENDOR_ID_V2, PRODUCT_ID_V2, listener);
             }
         } else {
             LOGGER.info("Hotplug is NOT supported. Scheduling task to actively poll USB device...");
@@ -77,25 +78,38 @@ public class LibUsbDetectionHelper {
                     0, POLL_DELAY, TimeUnit.MILLISECONDS);
         }
 
-        // De-initialize libusb context  and stop worker threads when JVM exits
+        // De-initialize this libusb context and stop its worker threads when JVM exits
+        ScheduledExecutorService finalScheduledExecutor = scheduledExecutor;
+        Future<?> finalActivePollingTask = activePollingTask;
         Runtime.getRuntime().addShutdownHook(
                 new Thread(() -> {
-                    if (activePollingTask != null && !activePollingTask.isDone()) {
+                    if (finalActivePollingTask != null && !finalActivePollingTask.isDone()) {
                         LOGGER.info("Stopping active polling worker task");
-                        activePollingTask.cancel(true);
+                        finalActivePollingTask.cancel(true);
                     }
-                    if (scheduledExecutor != null) {
+                    if (finalScheduledExecutor != null) {
                         LOGGER.info("Shutting down active polling executor");
-                        scheduledExecutor.shutdown();
-                    }
-                    if (asyncEventHandlerWorker != null) {
-                        LOGGER.info("Stopping async event handling worker thread");
-                        asyncEventHandlerWorker.abort();
+                        finalScheduledExecutor.shutdown();
                         try {
-                            asyncEventHandlerWorker.join();
+                            // Cancelling the task above cannot interrupt it if it is currently blocked in a
+                            // native libusb call (e.g. getDeviceList): interrupting a thread does not stop
+                            // native code already in flight. Actually wait for that call to return before
+                            // exiting the libusb context below -- otherwise the context can be freed while the
+                            // polling thread is still using it, natively crashing the JVM
+                            // (EXCEPTION_ACCESS_VIOLATION in libusb4java.dll).
+                            if (!finalScheduledExecutor.awaitTermination(POLL_DELAY, TimeUnit.MILLISECONDS)) {
+                                LOGGER.warning("Active polling executor did not terminate in time, exiting libusb anyway");
+                            }
                         } catch (InterruptedException e) {
-                            LOGGER.log(Level.SEVERE, "Failed to stop async event handling worker thread", e);
+                            Thread.currentThread().interrupt();
                         }
+                    }
+                    LOGGER.info("Stopping async event handling worker thread");
+                    asyncEventHandlerWorker.abort();
+                    try {
+                        asyncEventHandlerWorker.join();
+                    } catch (InterruptedException e) {
+                        LOGGER.log(Level.SEVERE, "Failed to stop async event handling worker thread", e);
                     }
                     LOGGER.info("Exiting libusb...");
                     LibUsb.exit(context);
@@ -103,7 +117,7 @@ public class LibUsbDetectionHelper {
         );
     }
 
-    private static void registerCallback(int vendorId, int productId, DeviceHotplugEventListener listener) {
+    private static void registerCallback(Context context, int vendorId, int productId, DeviceHotplugEventListener listener) {
         LibUsb.hotplugRegisterCallback(
                 context,
                 LibUsb.HOTPLUG_EVENT_DEVICE_ARRIVED | LibUsb.HOTPLUG_EVENT_DEVICE_LEFT,
