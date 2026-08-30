@@ -17,6 +17,7 @@
       "firmware": "Version firmware :",
       "empty": "Aucun pack d'histoires dans l'appareil.",
       "removePack": "Supprimer ce pack d'histoires de l'appareil",
+      "alreadyInLibrary": "Ce pack d'histoires est déjà présent dans la bibliothèque locale",
       "sdcardsize": "Taille Carte SD :",
       "sdcardunit": "Go",
       "packs": {
@@ -40,7 +41,8 @@
       "convertPackToFs": "Convertir ce pack d'histoires au format FS (v2.x)",
       "editPack": "Ouvrir ce pack d'histoires dans l'éditeur",
       "removePack": "Supprimer ce pack d'histoires de la bibliothèque",
-      "addPack": "Ajouter un pack d'histoires à la bibliothèque"
+      "addPack": "Ajouter un pack d'histoires à la bibliothèque",
+      "alreadyOnDevice": "Ce pack d'histoires est déjà présent sur l'appareil"
     },
     "official": "Officiel",
     "format": {

@@ -17,6 +17,7 @@
       "firmware": "Firmware version:",
       "empty": "No story packs in device, yet.",
       "removePack": "Remove this story pack from device",
+      "alreadyInLibrary": "This story pack is already present in the local library",
       "sdcardsize": "SD card size:",
       "sdcardunit": "GB",
       "packs": {
@@ -40,7 +41,8 @@
       "convertPackToFs": "Convert this story pack to FS format (v2.x)",
       "editPack": "Open this story pack in editor",
       "removePack": "Remove this story pack from library",
-      "addPack": "Add a story pack to the library"
+      "addPack": "Add a story pack to the library",
+      "alreadyOnDevice": "This story pack is already present on the device"
     },
     "official": "Official",
     "format": {
