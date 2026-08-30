@@ -30,6 +30,51 @@ const mutex = withTimeout(deviceMutex, 100);
 // device's remaining space when several transfers are queued up.
 let reservedDeviceBytes = 0;
 
+// If nothing is heard for a transfer (no progress, no completion) for this long, treat it as
+// failed rather than waiting forever.
+const STALLED_TRANSFER_TIMEOUT_MS = 60000;
+
+// Registers progress/done handlers for a transfer over the event bus, with a stall-timeout
+// safety net. The `done` event has been observed to never reach the client when the device
+// disconnects mid-transfer (the same disconnect that fails the transfer server-side appears to
+// sometimes also disrupt delivery of its own completion event) -- without this, the caller
+// (and the device operation queue behind it) would wait forever. `onSettled(success)` is
+// called exactly once, either from a real `done` event or from the stall timeout.
+const watchTransfer = (transferId, context, toastId, onSettled) => {
+    let settled = false;
+    let timeoutId;
+    const settle = (success) => {
+        if (settled) {
+            return;
+        }
+        settled = true;
+        clearTimeout(timeoutId);
+        onSettled(success);
+    };
+    const scheduleStallTimeout = () => {
+        clearTimeout(timeoutId);
+        timeoutId = setTimeout(() => {
+            console.error('Timed out waiting for completion of transfer: ' + transferId);
+            settle(false);
+        }, STALLED_TRANSFER_TIMEOUT_MS);
+    };
+    scheduleStallTimeout();
+    context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.progress', (error, message) => {
+        console.log("Received `storyteller.transfer."+transferId+".progress` event from vert.x event bus.");
+        console.log(message.body);
+        // Any sign of life resets the stall timeout
+        scheduleStallTimeout();
+        if (message.body.progress < 1) {
+            toast.update(toastId, {progress: message.body.progress, autoClose: false});
+        }
+    });
+    context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.done', (error, message) => {
+        console.log("Received `storyteller.transfer."+transferId+".done` event from vert.x event bus.");
+        console.log(message.body);
+        settle(!!(message.body && message.body.success));
+    });
+};
+
 export const actionLoadLibrary = (t) => {
     return dispatch => {
         let toastId = toast(t('toasts.library.loading'), { autoClose: false });
@@ -185,25 +230,15 @@ export const actionAddFromLibrary = (uuid, path, format, driver, sizeInBytes, co
                 toast.update(toastId, { render: t('toasts.device.adding') });
                 return addFromLibrary(uuid, path)
                     .then(resp => {
-                        // Monitor transfer progress
-                        let transferId = resp.transferId;
-                        context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.progress', (error, message) => {
-                            console.log("Received `storyteller.transfer."+transferId+".progress` event from vert.x event bus.");
-                            console.log(message.body);
-                            if (message.body.progress < 1) {
-                                toast.update(toastId, {progress: message.body.progress, autoClose: false});
-                            }
-                        });
-                        context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.done', (error, message) => {
-                            console.log("Received `storyteller.transfer."+transferId+".done` event from vert.x event bus.");
-                            console.log(message.body);
-                            if (message.body.success) {
+                        watchTransfer(resp.transferId, context, toastId, success => {
+                            if (success) {
                                 toast.update(toastId, {progress: null, type: toast.TYPE.SUCCESS, render: t('toasts.device.added'), autoClose: 5000});
-                                // Refresh device metadata and packs list
-                                dispatch(actionRefreshDevice(t));
                             } else {
                                 toast.update(toastId, {progress: null, type: toast.TYPE.ERROR, render: <IssueReportToast content={<>{t('toasts.device.addingFailed')}</>} />, autoClose: false });
                             }
+                            // Refresh either way: on a stalled/lost completion event we don't actually
+                            // know whether the transfer went through on the device, so reflect reality.
+                            dispatch(actionRefreshDevice(t));
                             // Always release the reservation and the mutex
                             releaseAll();
                         });
@@ -285,25 +320,15 @@ export const actionAddToLibrary = (uuid, driver, context, t) => {
                 toast.update(toastId, { render: t('toasts.library.adding') });
                 return addToLibrary(uuid, driver)
                     .then(resp => {
-                        // Monitor transfer progress
-                        let transferId = resp.transferId;
-                        context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.progress', (error, message) => {
-                            console.log("Received `storyteller.transfer."+transferId+".progress` event from vert.x event bus.");
-                            console.log(message.body);
-                            if (message.body.progress < 1) {
-                                toast.update(toastId, {progress: message.body.progress, autoClose: false});
-                            }
-                        });
-                        context.eventBus.registerHandler('storyteller.transfer.'+transferId+'.done', (error, message) => {
-                            console.log("Received `storyteller.transfer."+transferId+".done` event from vert.x event bus.");
-                            console.log(message.body);
-                            if (message.body.success) {
+                        watchTransfer(resp.transferId, context, toastId, success => {
+                            if (success) {
                                 toast.update(toastId, {progress: null, type: toast.TYPE.SUCCESS, render: t('toasts.library.added'), autoClose: 5000});
-                                // Refresh device metadata and packs list
-                                dispatch(actionRefreshLibrary(t));
                             } else {
                                 toast.update(toastId, {progress: null, type: toast.TYPE.ERROR, render: <IssueReportToast content={<>{t('toasts.library.addingFailed')}</>} />, autoClose: false });
                             }
+                            // Refresh either way: on a stalled/lost completion event we don't actually
+                            // know whether the transfer went through, so reflect reality.
+                            dispatch(actionRefreshLibrary(t));
                             // Always release the mutex
                             release();
                         });
