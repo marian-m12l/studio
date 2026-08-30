@@ -107,8 +107,8 @@ class PackLibrary extends React.Component {
             } else {
                 // Pack is converted and stored in the local library, then transferred to the device
                 this.props.convertPackInLibrary(latestPack.uuid, latestPack.path, this.state.device.metadata.driver, this.props.settings.allowEnriched, this.context)
-                    .then(path => {
-                        this.doAddToDevice({...latestPack, format: this.state.device.metadata.driver}, path);
+                    .then(({path, sizeInBytes}) => {
+                        this.doAddToDevice({...latestPack, format: this.state.device.metadata.driver, sizeInBytes}, path);
                     });
             }
         } else if (latestPack.timestamp > compatiblePack.timestamp) {   // Compatible pack is not the latest pack: confirm re-conversion
@@ -129,7 +129,7 @@ class PackLibrary extends React.Component {
 
     doAddToDevice = (data, path) => {
         // Transfer pack and show progress
-        this.props.addFromLibrary(data.uuid, path, data.format, this.state.device.metadata.driver, this.context);
+        this.props.addFromLibrary(data.uuid, path, data.format, this.state.device.metadata.driver, data.sizeInBytes, this.context);
     };
 
     dismissEnrichedDialog = (allow) => {
@@ -137,9 +137,9 @@ class PackLibrary extends React.Component {
             this.props.setAllowEnriched(allow);
             // Pack is converted and stored in the local library, then transferred to the device
             this.props.convertPackInLibrary(this.state.allowEnrichedDialog.data.pack.uuid, this.state.allowEnrichedDialog.data.pack.path, this.state.allowEnrichedDialog.data.format, allow, this.context)
-                .then(path => {
+                .then(({path, sizeInBytes}) => {
                     if (this.state.allowEnrichedDialog.data.addToDevice) {
-                        return this.doAddToDevice(this.state.allowEnrichedDialog.data.pack, path);
+                        return this.doAddToDevice({...this.state.allowEnrichedDialog.data.pack, sizeInBytes}, path);
                     }
                 })
                 .then(() => {
@@ -158,7 +158,7 @@ class PackLibrary extends React.Component {
             if (answer) {
                 // Pack is converted and stored in the local library, then transferred to the device
                 this.props.convertPackInLibrary(this.state.confirmConversionDialog.data.pack.uuid, this.state.confirmConversionDialog.data.pack.path, this.state.confirmConversionDialog.data.format, this.props.settings.allowEnriched, this.context)
-                    .then(path => this.doAddToDevice(this.state.confirmConversionDialog.data.pack, path))
+                    .then(({path, sizeInBytes}) => this.doAddToDevice({...this.state.confirmConversionDialog.data.pack, sizeInBytes}, path))
                     .then(() => {
                         this.setState({
                             confirmConversionDialog: {
@@ -573,7 +573,7 @@ const mapStateToProps = (state, ownProps) => ({
 });
 
 const mapDispatchToProps = (dispatch, ownProps) => ({
-    addFromLibrary: (uuid, path, format, driver, context) => dispatch(actionAddFromLibrary(uuid, path, format, driver, context, ownProps.t)),
+    addFromLibrary: (uuid, path, format, driver, sizeInBytes, context) => dispatch(actionAddFromLibrary(uuid, path, format, driver, sizeInBytes, context, ownProps.t)),
     removeFromDevice: (uuid) => dispatch(actionRemoveFromDevice(uuid, ownProps.t)),
     reorderOnDevice: (uuids) => dispatch(actionReorderOnDevice(uuids, ownProps.t)),
     addToLibrary: (uuid, driver, context) => dispatch(actionAddToLibrary(uuid, driver, context, ownProps.t)),

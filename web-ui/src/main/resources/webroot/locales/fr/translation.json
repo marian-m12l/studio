@@ -188,6 +188,8 @@
         "failure": "Échec d'accès à la fabrique à histoires."
       },
       "busy": "L'appareil n'est pas disponible. Attendez la fin de toute autre opération liée à l'appareil.",
+      "queued": "En file d'attente. En attente de la fin de l'opération en cours sur l'appareil...",
+      "notEnoughSpace": "Espace estimé insuffisant sur l'appareil pour ce pack d'histoires.",
       "checking": "Vérification de l'appareil...",
       "plugged": "L'appareil est branché.",
       "checkingFailed": "Échec de la vérification de l'appareil.",

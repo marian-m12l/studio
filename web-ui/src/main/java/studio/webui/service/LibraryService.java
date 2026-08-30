@@ -492,6 +492,7 @@ public class LibraryService {
                 .put("version", pack.getMetadata().getVersion())
                 .put("path", pack.getPath().getFileName().toString())
                 .put("timestamp", pack.getTimestamp())
+                .put("sizeInBytes", sizeOnDisk(pack.getPath().toFile()))
                 .put("nightModeAvailable", pack.getMetadata().isNightModeAvailable());
         Optional.ofNullable(pack.getMetadata().getTitle()).ifPresent(title -> json.put("title", title));
         Optional.ofNullable(pack.getMetadata().getDescription()).ifPresent(desc -> json.put("description", desc));
@@ -505,6 +506,23 @@ public class LibraryService {
                         .put("official", metadata.isOfficial())
                 )
                 .orElse(json);
+    }
+
+    /**
+     * Size on disk (in bytes) of a pack file or folder (FS format packs are directories).
+     * Used by the frontend to estimate whether a transfer will fit in the device's remaining space.
+     */
+    public long packSizeInBytes(String relativePackPath) {
+        return sizeOnDisk(new File(libraryPath() + relativePackPath));
+    }
+
+    private long sizeOnDisk(File file) {
+        try {
+            return file.isDirectory() ? FileUtils.sizeOfDirectory(file) : Files.size(file.toPath());
+        } catch (IOException e) {
+            LOGGER.warn("Failed to compute size on disk for " + file, e);
+            return 0L;
+        }
     }
 
 }
