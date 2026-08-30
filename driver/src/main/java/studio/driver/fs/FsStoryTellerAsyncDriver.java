@@ -255,10 +255,10 @@ public class FsStoryTellerAsyncDriver {
 
         return readPackIndex()
                 .thenApply(packUUIDs -> {
-                    try {
-                        LOGGER.fine("Number of packs in index: " + packUUIDs.size());
-                        List<FsStoryPackInfos> packs = new ArrayList<>();
-                        for (UUID packUUID : packUUIDs) {
+                    LOGGER.fine("Number of packs in index: " + packUUIDs.size());
+                    List<FsStoryPackInfos> packs = new ArrayList<>();
+                    for (UUID packUUID : packUUIDs) {
+                        try {
                             FsStoryPackInfos packInfos = new FsStoryPackInfos();
                             packInfos.setUuid(packUUID);
                             LOGGER.fine("Pack UUID: " + packUUID.toString());
@@ -286,11 +286,13 @@ public class FsStoryTellerAsyncDriver {
                             packInfos.setSizeInBytes((int) FileUtils.getFolderSize(packFolderPath));
 
                             packs.add(packInfos);
+                        } catch (Exception e) {
+                            // A single unreadable/incomplete pack folder (e.g. left over from an interrupted
+                            // transfer) must not prevent listing the rest of the device's packs.
+                            LOGGER.log(Level.WARNING, "Failed to read pack metadata on device partition for pack: " + packUUID, e);
                         }
-                        return packs;
-                    } catch (Exception e) {
-                        throw new StoryTellerException("Failed to read pack metadata on device partition", e);
                     }
+                    return packs;
                 });
     }
 
@@ -488,7 +490,20 @@ public class FsStoryTellerAsyncDriver {
                         } catch (IOException e) {
                             throw new StoryTellerException("Failed to copy pack from device", e);
                         }
-                    })).thenCompose(status -> {
+                    })).whenComplete((status, ex) -> {
+                        if (ex != null) {
+                            // The pack's UUID is only added to the index once the copy succeeds (below), so a
+                            // failed copy never leaves a *listed* pack behind. But partially-written files/folders
+                            // may still be sitting on the device -- clean them up so they don't linger as wasted
+                            // (and potentially inconsistent) space.
+                            try {
+                                LOGGER.info("Cleaning up partially transferred pack folder after failed upload: " + destFolder);
+                                org.apache.commons.io.FileUtils.deleteDirectory(destFolder);
+                            } catch (IOException cleanupException) {
+                                LOGGER.log(Level.WARNING, "Failed to clean up partially transferred pack folder: " + destFolder, cleanupException);
+                            }
+                        }
+                    }).thenCompose(status -> {
                         // Finally, add pack UUID to index
                         return readPackIndex()
                                 .thenCompose(packUUIDs -> {
