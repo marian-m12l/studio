@@ -30,6 +30,12 @@
             <artifactId>usb4java</artifactId>
             <version>1.3.0</version>
         </dependency>
+        <!-- usb4java does not ship a darwin-aarch64 native library: use a statically-linked third-party build for Apple Silicon -->
+        <dependency>
+            <groupId>io.github.dsheirer</groupId>
+            <artifactId>libusb4java-darwin-aarch64</artifactId>
+            <version>1.3.1</version>
+        </dependency>
         <dependency>
             <groupId>commons-codec</groupId>
             <artifactId>commons-codec</artifactId>
